@@ -37,8 +37,14 @@ export default function HomePage() {
           مرحباً، <span className="bz-gradient-text">{user.displayName || "طالب"}</span> 👋
         </h1>
         <p className="mt-3 text-text-muted">
-          أهلاً بك في منصتك. غرف الدراسة والمجتمع قيد البناء في المراحل القادمة.
+          أهلاً بك في منصتك. ابدأ بالدخول إلى غرف الدراسة.
         </p>
+        <button
+          onClick={() => router.push("/rooms")}
+          className="mt-6 rounded-md bg-gradient-primary px-7 py-3 font-bold text-white shadow-glow transition hover:opacity-90"
+        >
+          غرف الدراسة
+        </button>
       </section>
     </main>
   );
