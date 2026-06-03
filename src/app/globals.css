@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================================================
+   نظام تصميم BacZoneDZ — مُرحّل ومُنظّف من الكود القديم
+   ======================================================================== */
+:root {
+  /* الهوية اللونية (قنوات RGB لتعمل شفافية Tailwind مثل bg-primary/10) */
+  --bz-primary: 79 70 229;
+  --bz-primary-hover: 67 56 202;
+  --bz-secondary: 16 185 129;
+  --bz-accent: 139 92 246;
+  --bz-danger: 239 68 68;
+  --bz-warning: 245 158 11;
+
+  /* الوضع الفاتح */
+  --bz-bg: #f3f4f6;
+  --bz-surface: #ffffff;
+  --bz-text: #111827;
+  --bz-text-muted: #6b7280;
+  --bz-border: #e5e7eb;
+
+  /* مساحة العمل (غرفة الدراسة) */
+  --bz-workspace: #0a0a0f;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bz-bg: #0f172a;
+  --bz-surface: #1e293b;
+  --bz-text: #f9fafb;
+  --bz-text-muted: #94a3b8;
+  --bz-border: #334155;
+  --bz-workspace: #0f1117;
+
+  color-scheme: dark;
+}
+
+/* ========================================================================
+   الأساسيات + RTL
+   ======================================================================== */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* iOS height fix لاحقاً عبر --vh */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bz-bg);
+  color: var(--bz-text);
+  font-family: var(--font-tajawal), system-ui, sans-serif;
+  direction: rtl;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* شريط تمرير نحيف */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bz-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========================================================================
+   أدوات مساعدة (Utilities)
+   ======================================================================== */
+.bz-glass {
+  background: color-mix(in srgb, var(--bz-surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--bz-border);
+}
+
+.bz-gradient-text {
+  background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* خلفية "كونية" دراسية للهيرو */
+.bz-cosmic-bg {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(79, 70, 229, 0.16), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.1), transparent 50%);
+}
