@@ -19,11 +19,23 @@ export default function LoginPage() {
     setMsg(null);
     try {
       await loginUser(email, password);
-      const user = auth.currentUser!;
-      router.push((await needsOnboarding(user)) ? "/onboarding" : "/home");
+      const current = auth.currentUser;
+      if (!current) throw new AuthError("تعذّر إكمال الدخول. حاول مجدداً.");
+
+      // فحص الإعداد عبر Firestore — مع مهلة حتى لا يتجمّد الدخول إن تأخّر
+      let goOnboarding = false;
+      try {
+        goOnboarding = await Promise.race([
+          needsOnboarding(current),
+          new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)),
+        ]);
+      } catch (e) {
+        console.error("[BacZone] فشل فحص الإعداد — تأكّد أن Firestore مُفعّل:", e);
+      }
+      router.push(goOnboarding ? "/onboarding" : "/home");
     } catch (err) {
+      console.error("[BacZone] خطأ الدخول:", err);
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });
-    } finally {
       setLoading(false);
     }
   }

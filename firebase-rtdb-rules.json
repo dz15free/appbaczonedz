@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "rooms": {
+      ".read": "auth != null",
+      ".indexOn": ["type"],
+      "$roomId": {
+        ".write": "auth != null",
+        "messages": {
+          ".write": "auth != null"
+        }
+      }
+    },
+
+    "presence": {
+      "$roomId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    }
+  }
+}
