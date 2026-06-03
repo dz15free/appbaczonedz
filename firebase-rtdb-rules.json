@@ -32,6 +32,9 @@
         ".read": "auth != null",
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "whiteboard": {
+          ".write": "auth != null"
         }
       }
     }

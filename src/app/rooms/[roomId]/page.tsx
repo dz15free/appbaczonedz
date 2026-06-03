@@ -17,11 +17,12 @@ import { getRoom, type Room } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { VideoSync } from "@/features/video/video-sync";
+import { Whiteboard } from "@/features/whiteboard/whiteboard";
 
 const TOOLS = [
   { id: "welcome", label: "مرحباً", icon: faHouse, ready: true },
   { id: "video", label: "فيديو", icon: faVideo, ready: true },
-  { id: "whiteboard", label: "سبورة", icon: faChalkboard, ready: false },
+  { id: "whiteboard", label: "سبورة", icon: faChalkboard, ready: true },
   { id: "files", label: "ملفات", icon: faFolderOpen, ready: false },
 ];
 
@@ -105,7 +106,9 @@ export default function RoomPage() {
 
           {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
 
-          {(tool === "whiteboard" || tool === "files") && (
+          {tool === "whiteboard" && <Whiteboard roomId={roomId} />}
+
+          {tool === "files" && (
             <div className="flex flex-1 items-center justify-center p-6 text-center text-text-muted">
               هذه الأداة قيد البناء في الخطوة القادمة.
             </div>
