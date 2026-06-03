@@ -11,6 +11,7 @@ import {
   faComments,
   faArrowRight,
   faXmark,
+  faMicrophoneLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { getRoom, type Room } from "@/features/rooms/rooms";
@@ -18,9 +19,11 @@ import { usePresence } from "@/features/rooms/use-presence";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { VideoSync } from "@/features/video/video-sync";
 import { Whiteboard } from "@/features/whiteboard/whiteboard";
+import { VoiceRoom } from "@/features/voice/voice-room";
 
 const TOOLS = [
   { id: "welcome", label: "مرحباً", icon: faHouse, ready: true },
+  { id: "voice", label: "صوت", icon: faMicrophoneLines, ready: true },
   { id: "video", label: "فيديو", icon: faVideo, ready: true },
   { id: "whiteboard", label: "سبورة", icon: faChalkboard, ready: true },
   { id: "files", label: "ملفات", icon: faFolderOpen, ready: false },
@@ -103,6 +106,8 @@ export default function RoomPage() {
               </div>
             </div>
           )}
+
+          {tool === "voice" && <VoiceRoom roomId={roomId} isOwner={isOwner} />}
 
           {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
 

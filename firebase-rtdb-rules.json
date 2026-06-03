@@ -35,6 +35,11 @@
         },
         "whiteboard": {
           ".write": "auth != null"
+        },
+        "voice": {
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
+          }
         }
       }
     }
