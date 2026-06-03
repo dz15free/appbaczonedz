@@ -16,10 +16,11 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { getRoom, type Room } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { ChatPanel } from "@/features/chat/chat-panel";
+import { VideoSync } from "@/features/video/video-sync";
 
 const TOOLS = [
   { id: "welcome", label: "مرحباً", icon: faHouse, ready: true },
-  { id: "video", label: "فيديو", icon: faVideo, ready: false },
+  { id: "video", label: "فيديو", icon: faVideo, ready: true },
   { id: "whiteboard", label: "سبورة", icon: faChalkboard, ready: false },
   { id: "files", label: "ملفات", icon: faFolderOpen, ready: false },
 ];
@@ -34,6 +35,7 @@ export default function RoomPage() {
   const [chatOpen, setChatOpen] = useState(false);
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
+  const isOwner = !!room && !!user && room.ownerId === user.uid;
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -87,15 +89,27 @@ export default function RoomPage() {
 
       {/* المحتوى + الدردشة */}
       <div className="flex flex-1 overflow-hidden">
-        <section className="flex flex-1 items-center justify-center p-6 text-center">
-          <div>
-            <FontAwesomeIcon icon={faHouse} className="h-10 w-10 text-primary" />
-            <h2 className="mt-4 font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-            <p className="mt-2 max-w-sm text-sm text-text-muted">
-              الأدوات (الفيديو المتزامن، السبورة، الملفات، الصوت) ستُضاف في الخطوات القادمة.
-              الدردشة والحضور يعملان الآن — جرّبهما!
-            </p>
-          </div>
+        <section className="flex flex-1 flex-col overflow-hidden">
+          {tool === "welcome" && (
+            <div className="flex flex-1 items-center justify-center p-6 text-center">
+              <div>
+                <FontAwesomeIcon icon={faHouse} className="h-10 w-10 text-primary" />
+                <h2 className="mt-4 font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
+                <p className="mt-2 max-w-sm text-sm text-text-muted">
+                  جرّب تبويب «فيديو» للمشاهدة الجماعية المتزامنة. السبورة والصوت قادمان قريباً.
+                  الدردشة والحضور يعملان الآن.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+
+          {(tool === "whiteboard" || tool === "files") && (
+            <div className="flex flex-1 items-center justify-center p-6 text-center text-text-muted">
+              هذه الأداة قيد البناء في الخطوة القادمة.
+            </div>
+          )}
         </section>
 
         {/* الدردشة: جانبية على الحاسوب، درج على الجوال */}
@@ -106,11 +120,19 @@ export default function RoomPage() {
 
       {/* درج الدردشة على الجوال */}
       {chatOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-surface lg:hidden">
+        <div
+          className="fixed inset-0 z-[60] flex flex-col bg-surface lg:hidden"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <span className="font-bold">الدردشة</span>
-            <button onClick={() => setChatOpen(false)} aria-label="إغلاق">
-              <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              aria-label="إغلاق الدردشة"
+              className="grid h-11 w-11 place-items-center rounded-md text-text-muted active:bg-primary/10"
+            >
+              <FontAwesomeIcon icon={faXmark} className="pointer-events-none h-6 w-6" />
             </button>
           </div>
           <div className="flex-1 overflow-hidden">

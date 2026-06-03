@@ -9,7 +9,7 @@
 
     "rooms": {
       ".read": "auth != null",
-      ".indexOn": ["type"],
+      ".indexOn": ["type", "name"],
       "$roomId": {
         ".write": "auth != null",
         "messages": {
@@ -19,10 +19,19 @@
     },
 
     "presence": {
+      ".read": "auth != null",
       "$roomId": {
-        ".read": "auth != null",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    },
+
+    "roomLive": {
+      "$roomId": {
+        ".read": "auth != null",
+        "videoState": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     }

@@ -9,6 +9,7 @@ import { Input, Button } from "@/components/ui/field";
 const TYPES: { id: RoomType; label: string }[] = [
   { id: "public", label: "عامة" },
   { id: "private", label: "خاصة" },
+  { id: "teacher", label: "أستاذ" },
 ];
 
 export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
@@ -49,7 +50,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
           />
           <div>
             <span className="mb-2 block text-sm font-semibold">نوع الغرفة</span>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {TYPES.map((t) => (
                 <button
                   key={t.id}

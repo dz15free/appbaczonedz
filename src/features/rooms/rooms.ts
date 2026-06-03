@@ -73,6 +73,47 @@ export async function listPublicRooms(): Promise<Room[]> {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
+export interface LiveRoom extends Room {
+  activeCount: number;
+}
+
+const ACTIVE_WINDOW_MS = 5 * 60 * 1000; // 5 دقائق
+
+// عدّ الحاضرين النشطين (آخر نبض خلال 5 دقائق) في خريطة حضور غرفة
+function countActive(roomPresence: Record<string, { lastActive?: number }> | null): number {
+  if (!roomPresence) return 0;
+  const now = Date.now();
+  return Object.values(roomPresence).filter(
+    (m) => typeof m.lastActive === "number" && now - m.lastActive < ACTIVE_WINDOW_MS
+  ).length;
+}
+
+// الغرف العامة النشطة فقط: بها شخص واحد على الأقل نشط خلال آخر 5 دقائق
+export async function listLiveRooms(): Promise<LiveRoom[]> {
+  const [rooms, presenceSnap] = await Promise.all([
+    listPublicRooms(),
+    get(ref(rtdb, "presence")),
+  ]);
+  const presence = (presenceSnap.val() as Record<string, Record<string, { lastActive?: number }>>) ?? {};
+  return rooms
+    .map((r) => ({ ...r, activeCount: countActive(presence[r.id]) }))
+    .filter((r) => r.activeCount >= 1)
+    .sort((a, b) => b.activeCount - a.activeCount);
+}
+
+// الانضمام بكتابة اسم الغرفة (يشمل الخاصة وغرف الأستاذ غير الظاهرة في القائمة)
+export async function findRoomByName(name: string): Promise<Room | null> {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const q = query(ref(rtdb, "rooms"), orderByChild("name"), equalTo(trimmed));
+  const snap = await get(q);
+  const val = (snap.val() as Record<string, Omit<Room, "id">>) ?? {};
+  const matches = Object.entries(val).map(([id, v]) => ({ id, ...v }));
+  if (matches.length === 0) return null;
+  // عند تطابق عدة غرف بالاسم، نأخذ الأحدث
+  return matches.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))[0];
+}
+
 export async function sendMessage(
   roomId: string,
   msg: { userId: string; userName: string; text: string }
