@@ -30,7 +30,7 @@ export interface ChatMessage {
   userName: string;
   text?: string;
   type: "text" | "image" | "file";
-  url?: string;
+  attachmentId?: string;
   fileName?: string;
   createdAt: number | null;
 }
@@ -129,16 +129,24 @@ export async function sendMessage(
 
 export async function sendAttachment(
   roomId: string,
-  msg: { userId: string; userName: string; kind: "image" | "file"; url: string; fileName: string }
+  msg: { userId: string; userName: string; kind: "image" | "file"; dataUrl: string; fileName: string }
 ) {
+  // نخزّن المرفق (base64) في عقدة منفصلة، والرسالة تحمل مرجعه فقط (تبقى الدردشة خفيفة)
+  const aRef = push(ref(rtdb, `rooms/${roomId}/attachments`));
+  await set(aRef, msg.dataUrl);
   await push(ref(rtdb, `rooms/${roomId}/messages`), {
     userId: msg.userId,
     userName: msg.userName,
     type: msg.kind,
-    url: msg.url,
+    attachmentId: aRef.key,
     fileName: msg.fileName,
     createdAt: Date.now(),
   });
+}
+
+export async function getAttachment(roomId: string, attachmentId: string): Promise<string | null> {
+  const snap = await get(ref(rtdb, `rooms/${roomId}/attachments/${attachmentId}`));
+  return (snap.val() as string) ?? null;
 }
 
 // الاستماع اللحظي للرسائل (آخر 200)

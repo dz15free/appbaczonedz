@@ -12,6 +12,7 @@ import {
   startAt,
   endAt,
   limitToLast,
+  increment,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
@@ -21,8 +22,9 @@ export interface Post {
   authorName: string;
   text: string;
   createdAt: number;
-  likeCount: number;
-  likedByMe: boolean;
+  score: number;
+  myVote: number; // 1 | -1 | 0
+  commentCount: number;
 }
 export interface Comment {
   id: string;
@@ -62,15 +64,20 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
   const q = query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(100));
   return onValue(q, (snap) => {
     const val = (snap.val() as Record<string, any>) ?? {};
-    const posts = Object.entries(val).map(([id, p]: [string, any]) => ({
-      id,
-      authorId: p.authorId,
-      authorName: p.authorName,
-      text: p.text,
-      createdAt: p.createdAt ?? 0,
-      likeCount: p.likes ? Object.keys(p.likes).length : 0,
-      likedByMe: !!(p.likes && p.likes[myUid]),
-    }));
+    const posts = Object.entries(val).map(([id, p]: [string, any]) => {
+      const votes = (p.votes as Record<string, number>) ?? {};
+      const score = Object.values(votes).reduce((a, b) => a + (b as number), 0);
+      return {
+        id,
+        authorId: p.authorId,
+        authorName: p.authorName,
+        text: p.text,
+        createdAt: p.createdAt ?? 0,
+        score,
+        myVote: votes[myUid] ?? 0,
+        commentCount: p.commentCount ?? 0,
+      };
+    });
     posts.sort((a, b) => b.createdAt - a.createdAt);
     cb(posts);
   });
@@ -80,22 +87,25 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
   return onValue(ref(rtdb, `community/posts/${postId}`), (snap) => {
     const p = snap.val() as any;
     if (!p) return cb(null);
+    const votes = (p.votes as Record<string, number>) ?? {};
     cb({
       id: postId,
       authorId: p.authorId,
       authorName: p.authorName,
       text: p.text,
       createdAt: p.createdAt ?? 0,
-      likeCount: p.likes ? Object.keys(p.likes).length : 0,
-      likedByMe: !!(p.likes && p.likes[myUid]),
+      score: Object.values(votes).reduce((a, b) => a + (b as number), 0),
+      myVote: votes[myUid] ?? 0,
+      commentCount: p.commentCount ?? 0,
     });
   });
 }
 
-export async function toggleLike(postId: string, uid: string, like: boolean) {
-  const r = ref(rtdb, `community/posts/${postId}/likes/${uid}`);
-  if (like) await set(r, true);
-  else await remove(r);
+// تصويت: 1 (إعجاب/رفع) أو -1 (خفض)؛ الضغط مجدداً يلغي
+export async function votePost(postId: string, uid: string, value: 1 | -1, current: number) {
+  const r = ref(rtdb, `community/posts/${postId}/votes/${uid}`);
+  if (current === value) await remove(r);
+  else await set(r, value);
 }
 
 /* ───────── التعليقات ───────── */
@@ -106,6 +116,7 @@ export async function addComment(postId: string, authorId: string, authorName: s
     text: text.trim(),
     createdAt: Date.now(),
   });
+  await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(1) });
 }
 
 export function listenComments(postId: string, cb: (comments: Comment[]) => void) {

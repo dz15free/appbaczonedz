@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -59,6 +59,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <div>{children}</div>
+
+      {/* زر Omibot العائم (كل الصفحات) */}
+      {pathname !== "/omibot" && (
+        <Link
+          href="/omibot"
+          aria-label="Omibot"
+          className="fixed bottom-24 left-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105 lg:bottom-6"
+        >
+          <FontAwesomeIcon icon={faRobot} className="h-6 w-6" />
+        </Link>
+      )}
 
       {/* شريط التنقّل السفلي (هاتف فقط) */}
       <nav

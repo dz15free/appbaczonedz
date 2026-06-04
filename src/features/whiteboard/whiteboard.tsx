@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ref, onChildAdded, onChildRemoved, set, remove } from "firebase/database";
+import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -197,28 +197,33 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     return () => ro.disconnect();
   }, [fullRedraw]);
 
-  // ── مزامنة RTDB ──
+  // ── مزامنة RTDB (onValue: متين، يصل للجميع) ──
   useEffect(() => {
     const sref = ref(rtdb, strokesPath);
-    const unsubAdd = onChildAdded(sref, (snap) => {
-      const id = snap.key!;
-      if (drawnIds.current.has(id)) return;
-      const s = { id, ...(snap.val() as Omit<Shape, "id">) };
-      drawnIds.current.add(id);
-      shapes.current.push(s);
+    const unsub = onValue(sref, (snap) => {
+      const val = (snap.val() as Record<string, Omit<Shape, "id">>) ?? {};
+      const ids = Object.keys(val);
+      const present = new Set(ids);
+      // حذف؟ أعد البناء كاملاً
+      const removed = shapes.current.some((s) => !present.has(s.id));
+      if (removed) {
+        shapes.current = ids.map((id) => ({ id, ...val[id] }));
+        drawnIds.current = new Set(ids);
+        scheduleRedraw();
+        return;
+      }
+      // إضافات: ارسمها تزايدياً (بلا وميض)
       const ctx = mainRef.current?.getContext("2d");
-      if (ctx) drawShape(s, ctx);
+      for (const id of ids) {
+        if (!drawnIds.current.has(id)) {
+          const s = { id, ...val[id] } as Shape;
+          drawnIds.current.add(id);
+          shapes.current.push(s);
+          if (ctx) drawShape(s, ctx);
+        }
+      }
     });
-    const unsubRemove = onChildRemoved(sref, (snap) => {
-      const id = snap.key!;
-      drawnIds.current.delete(id);
-      shapes.current = shapes.current.filter((s) => s.id !== id);
-      scheduleRedraw();
-    });
-    return () => {
-      unsubAdd();
-      unsubRemove();
-    };
+    return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 

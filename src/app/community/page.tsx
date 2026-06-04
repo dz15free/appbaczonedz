@@ -5,13 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faHeart,
   faComment,
   faUserPlus,
   faCheck,
   faXmark,
   faMessage,
   faPaperPlane,
+  faArrowUp,
+  faArrowDown,
+  faFire,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -19,7 +22,7 @@ import { AppShell } from "@/components/app-shell";
 import {
   createPost,
   listenPosts,
-  toggleLike,
+  votePost,
   searchUsers,
   sendFriendRequest,
   acceptFriendRequest,
@@ -90,8 +93,14 @@ function Feed({ me }: { me: Person }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const [sort, setSort] = useState<"recent" | "top">("recent");
+  const [friends, setFriends] = useState<Person[]>([]);
+  const [sent, setSent] = useState<Record<string, boolean>>({});
 
   useEffect(() => listenPosts(me.uid, setPosts), [me.uid]);
+  useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
+
+  const friendIds = new Set(friends.map((f) => f.uid));
 
   async function publish() {
     if (!text.trim()) return;
@@ -100,6 +109,13 @@ function Feed({ me }: { me: Person }) {
     setText("");
     setPosting(false);
   }
+
+  async function addFriend(uid: string, name: string) {
+    await sendFriendRequest(me, uid);
+    setSent((s) => ({ ...s, [uid]: true }));
+  }
+
+  const shown = [...posts].sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
 
   return (
     <div className="space-y-4">
@@ -122,35 +138,88 @@ function Feed({ me }: { me: Person }) {
         </div>
       </div>
 
-      {posts.length === 0 && <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>}
+      {/* الترتيب */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setSort("recent")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"
+          }`}
+        >
+          <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
+        </button>
+        <button
+          onClick={() => setSort("top")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"
+          }`}
+        >
+          <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
+        </button>
+      </div>
 
-      {posts.map((p) => (
-        <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
-          <div className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-              {p.authorName.charAt(0)}
-            </span>
-            <div>
-              <span className="block text-sm font-bold">{p.authorName}</span>
-              <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
+      {shown.length === 0 && <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>}
+
+      {shown.map((p) => {
+        const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId);
+        return (
+          <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
+                  {p.authorName.charAt(0)}
+                </span>
+                <div>
+                  <span className="block text-sm font-bold">{p.authorName}</span>
+                  <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
+                </div>
+              </div>
+              {showAdd &&
+                (sent[p.authorId] ? (
+                  <span className="text-xs text-text-muted">تم الإرسال</span>
+                ) : (
+                  <button
+                    onClick={() => addFriend(p.authorId, p.authorName)}
+                    className="flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs text-primary"
+                  >
+                    <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
+                    صداقة
+                  </button>
+                ))}
+            </div>
+
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>
+
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              {/* تصويت */}
+              <div className="flex items-center gap-1 rounded-full bg-background px-1">
+                <button
+                  onClick={() => votePost(p.id, me.uid, 1, p.myVote)}
+                  className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"}`}
+                  aria-label="رفع"
+                >
+                  <FontAwesomeIcon icon={faArrowUp} className="h-4 w-4" />
+                </button>
+                <span className={`min-w-4 text-center text-sm font-bold ${p.score > 0 ? "text-secondary" : p.score < 0 ? "text-danger" : "text-text-muted"}`}>
+                  {p.score}
+                </span>
+                <button
+                  onClick={() => votePost(p.id, me.uid, -1, p.myVote)}
+                  className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"}`}
+                  aria-label="خفض"
+                >
+                  <FontAwesomeIcon icon={faArrowDown} className="h-4 w-4" />
+                </button>
+              </div>
+
+              <Link href={`/community/${p.id}`} className="flex items-center gap-1.5 text-text-muted hover:text-primary">
+                <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
+                {p.commentCount > 0 ? `${p.commentCount} تعليق` : "تعليق"}
+              </Link>
             </div>
           </div>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>
-          <div className="mt-3 flex items-center gap-4 text-sm text-text-muted">
-            <button
-              onClick={() => toggleLike(p.id, me.uid, !p.likedByMe)}
-              className={`flex items-center gap-1.5 ${p.likedByMe ? "text-danger" : "hover:text-danger"}`}
-            >
-              <FontAwesomeIcon icon={faHeart} className="h-4 w-4" />
-              {p.likeCount > 0 && p.likeCount}
-            </button>
-            <Link href={`/community/${p.id}`} className="flex items-center gap-1.5 hover:text-primary">
-              <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
-              تعليق ومناقشة
-            </Link>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -15,11 +15,64 @@ import {
   listenMessages,
   sendMessage,
   sendAttachment,
+  getAttachment,
   type ChatMessage,
 } from "@/features/rooms/rooms";
 import { useAuth } from "@/features/auth/auth-provider";
 import { playMessageSound } from "@/lib/sound";
-import { uploadFile } from "@/lib/upload";
+import { prepareFile } from "@/lib/upload";
+
+// مرفق يُحمَّل عند العرض فقط (يبقي الدردشة خفيفة)
+function Attachment({
+  roomId,
+  msg,
+  onZoom,
+}: {
+  roomId: string;
+  msg: ChatMessage;
+  onZoom: (url: string, name: string) => void;
+}) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    if (msg.attachmentId) getAttachment(roomId, msg.attachmentId).then((d) => alive && setDataUrl(d));
+    return () => {
+      alive = false;
+    };
+  }, [roomId, msg.attachmentId]);
+
+  if (!dataUrl)
+    return (
+      <div className="mt-1 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-text-muted">
+        <FontAwesomeIcon icon={faSpinner} className="h-3 w-3 animate-spin" />
+        جارٍ التحميل...
+      </div>
+    );
+
+  if (msg.type === "image")
+    return (
+      <button
+        onClick={() => onZoom(dataUrl, msg.fileName || "image")}
+        className="mt-1 overflow-hidden rounded-md border border-border"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={dataUrl} alt={msg.fileName || ""} className="max-h-48 max-w-[12rem] object-cover" />
+      </button>
+    );
+
+  return (
+    <a
+      href={dataUrl}
+      download={msg.fileName}
+      className="mt-1 flex max-w-[85%] items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:border-primary"
+    >
+      <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-primary" />
+      <span className="truncate">{msg.fileName || "ملف"}</span>
+      <FontAwesomeIcon icon={faDownload} className="h-3 w-3 text-text-muted" />
+    </a>
+  );
+}
 
 export function ChatPanel({ roomId }: { roomId: string }) {
   const { user } = useAuth();
@@ -53,11 +106,7 @@ export function ChatPanel({ roomId }: { roomId: string }) {
     const trimmed = text.trim();
     if (!trimmed || !user) return;
     setText("");
-    await sendMessage(roomId, {
-      userId: user.uid,
-      userName: user.displayName || "طالب",
-      text: trimmed,
-    });
+    await sendMessage(roomId, { userId: user.uid, userName: user.displayName || "طالب", text: trimmed });
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -66,13 +115,13 @@ export function ChatPanel({ roomId }: { roomId: string }) {
     if (!file || !user) return;
     setUploading(true);
     try {
-      const up = await uploadFile(file);
+      const prepared = await prepareFile(file);
       await sendAttachment(roomId, {
         userId: user.uid,
         userName: user.displayName || "طالب",
-        kind: up.kind,
-        url: up.url,
-        fileName: up.name,
+        kind: prepared.kind,
+        dataUrl: prepared.dataUrl,
+        fileName: prepared.name,
       });
     } catch (err) {
       alert(err instanceof Error ? err.message : "فشل الرفع.");
@@ -92,7 +141,6 @@ export function ChatPanel({ roomId }: { roomId: string }) {
           return (
             <div key={m.id} className="flex flex-col items-start">
               <span className="text-xs font-bold text-primary">{m.userName}</span>
-
               {m.type === "text" && (
                 <div
                   className={`mt-1 max-w-[85%] rounded-md px-3 py-2 text-sm ${
@@ -102,29 +150,8 @@ export function ChatPanel({ roomId }: { roomId: string }) {
                   {m.text}
                 </div>
               )}
-
-              {m.type === "image" && m.url && (
-                <button
-                  onClick={() => setLightbox({ url: m.url!, name: m.fileName || "image" })}
-                  className="mt-1 overflow-hidden rounded-md border border-border"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.url} alt={m.fileName || ""} className="max-h-48 max-w-[12rem] object-cover" />
-                </button>
-              )}
-
-              {m.type === "file" && m.url && (
-                <a
-                  href={m.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={m.fileName}
-                  className="mt-1 flex max-w-[85%] items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:border-primary"
-                >
-                  <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-primary" />
-                  <span className="truncate">{m.fileName || "ملف"}</span>
-                  <FontAwesomeIcon icon={faDownload} className="h-3 w-3 text-text-muted" />
-                </a>
+              {(m.type === "image" || m.type === "file") && (
+                <Attachment roomId={roomId} msg={m} onZoom={(url, name) => setLightbox({ url, name })} />
               )}
             </div>
           );
@@ -132,11 +159,9 @@ export function ChatPanel({ roomId }: { roomId: string }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* أدوات الإدخال */}
       <div className="flex items-center gap-2 border-t border-border p-3">
         <input ref={imageInput} type="file" accept="image/*" hidden onChange={handleUpload} />
         <input ref={fileInput} type="file" hidden onChange={handleUpload} />
-
         <button
           onClick={() => imageInput.current?.click()}
           disabled={uploading}
@@ -153,7 +178,6 @@ export function ChatPanel({ roomId }: { roomId: string }) {
         >
           <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
         </button>
-
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -174,17 +198,11 @@ export function ChatPanel({ roomId }: { roomId: string }) {
         </button>
       </div>
 
-      {/* عارض الصور (زوم + تحميل) */}
       {lightbox && (
-        <div
-          className="fixed inset-0 z-[70] flex flex-col bg-black/90"
-          onClick={() => setLightbox(null)}
-        >
+        <div className="fixed inset-0 z-[70] flex flex-col bg-black/90" onClick={() => setLightbox(null)}>
           <div className="flex items-center justify-end gap-2 p-3">
             <a
               href={lightbox.url}
-              target="_blank"
-              rel="noopener noreferrer"
               download={lightbox.name}
               onClick={(e) => e.stopPropagation()}
               className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white"
@@ -202,12 +220,7 @@ export function ChatPanel({ roomId }: { roomId: string }) {
           </div>
           <div className="flex flex-1 items-center justify-center overflow-auto p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightbox.url}
-              alt={lightbox.name}
-              onClick={(e) => e.stopPropagation()}
-              className="max-h-full max-w-full object-contain"
-            />
+            <img src={lightbox.url} alt={lightbox.name} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full object-contain" />
           </div>
         </div>
       )}

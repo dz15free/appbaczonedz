@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faHeart, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
@@ -11,7 +11,7 @@ import {
   listenPost,
   listenComments,
   addComment,
-  toggleLike,
+  votePost,
   type Post,
   type Comment,
 } from "@/features/community/social";
@@ -68,13 +68,23 @@ export default function PostPage() {
                 <span className="font-bold">{post.authorName}</span>
               </div>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>
-              <button
-                onClick={() => toggleLike(post.id, user.uid, !post.likedByMe)}
-                className={`mt-3 flex items-center gap-1.5 text-sm ${post.likedByMe ? "text-danger" : "text-text-muted"}`}
-              >
-                <FontAwesomeIcon icon={faHeart} className="h-4 w-4" />
-                {post.likeCount} إعجاب
-              </button>
+              <div className="mt-3 flex items-center gap-1 rounded-full bg-background px-1" style={{ width: "fit-content" }}>
+                <button
+                  onClick={() => votePost(post.id, user.uid, 1, post.myVote)}
+                  className={`grid h-8 w-8 place-items-center rounded-full ${post.myVote === 1 ? "text-secondary" : "text-text-muted"}`}
+                  aria-label="رفع"
+                >
+                  <FontAwesomeIcon icon={faArrowUp} className="h-4 w-4" />
+                </button>
+                <span className="min-w-5 text-center text-sm font-bold">{post.score}</span>
+                <button
+                  onClick={() => votePost(post.id, user.uid, -1, post.myVote)}
+                  className={`grid h-8 w-8 place-items-center rounded-full ${post.myVote === -1 ? "text-danger" : "text-text-muted"}`}
+                  aria-label="خفض"
+                >
+                  <FontAwesomeIcon icon={faArrowDown} className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <h2 className="mb-2 mt-5 text-sm font-bold">المناقشة ({comments.length})</h2>

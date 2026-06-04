@@ -1,33 +1,60 @@
-// رفع الملفات/الصور إلى Cloudinary (رفع غير موقّع — بلا خادم)
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+// تحضير المرفقات بلا أي خدمة خارجية: الصور تُضغط، والكل يُحوّل إلى base64
+const MAX_IMAGE_SRC = 15 * 1024 * 1024; // 15MB مصدر الصورة (تُضغط بعدها)
+const MAX_FILE = 1024 * 1024; // 1MB للملفات غير الصورية
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 ميجابايت
-
-export interface Uploaded {
-  url: string;
+export interface Prepared {
   kind: "image" | "file";
   name: string;
+  dataUrl: string;
 }
 
-export async function uploadFile(file: File): Promise<Uploaded> {
-  if (!CLOUD || !PRESET) {
-    throw new Error(
-      "Cloudinary غير مُعدّ. أضف NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME و NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET في Vercel."
-    );
-  }
-  if (file.size > MAX_BYTES) throw new Error("الحجم الأقصى 10 ميجابايت.");
-
+export async function prepareFile(file: File): Promise<Prepared> {
   const isImage = file.type.startsWith("image/");
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", PRESET);
+  if (isImage) {
+    if (file.size > MAX_IMAGE_SRC) throw new Error("الصورة كبيرة جداً.");
+    const dataUrl = await compressImage(file, 1000, 0.7);
+    return { kind: "image", name: file.name, dataUrl };
+  }
+  if (file.size > MAX_FILE) throw new Error("الحد الأقصى للملف 1 ميجابايت.");
+  const dataUrl = await readAsDataUrl(file);
+  return { kind: "file", name: file.name, dataUrl };
+}
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/auto/upload`, {
-    method: "POST",
-    body: form,
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(new Error("فشل قراءة الملف."));
+    r.readAsDataURL(file);
   });
-  if (!res.ok) throw new Error("فشل رفع الملف. حاول مجدداً.");
-  const data = await res.json();
-  return { url: data.secure_url as string, kind: isImage ? "image" : "file", name: file.name };
+}
+
+// تصغير الصورة وضغطها (JPEG) لتصبح خفيفة
+function compressImage(file: File, maxDim: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width >= height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("تعذّر معالجة الصورة."));
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("تعذّر تحميل الصورة."));
+    img.src = url;
+  });
 }
