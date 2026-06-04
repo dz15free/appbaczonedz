@@ -28,8 +28,10 @@ export interface ChatMessage {
   id: string;
   userId: string;
   userName: string;
-  text: string;
-  type: "text";
+  text?: string;
+  type: "text" | "image" | "file";
+  url?: string;
+  fileName?: string;
   createdAt: number | null;
 }
 
@@ -77,7 +79,7 @@ export interface LiveRoom extends Room {
   activeCount: number;
 }
 
-const ACTIVE_WINDOW_MS = 5 * 60 * 1000; // 5 دقائق
+const ACTIVE_WINDOW_MS = 60 * 1000; // دقيقة واحدة
 
 // عدّ الحاضرين النشطين (آخر نبض خلال 5 دقائق) في خريطة حضور غرفة
 function countActive(roomPresence: Record<string, { lastActive?: number }> | null): number {
@@ -121,6 +123,20 @@ export async function sendMessage(
   await push(ref(rtdb, `rooms/${roomId}/messages`), {
     ...msg,
     type: "text",
+    createdAt: Date.now(),
+  });
+}
+
+export async function sendAttachment(
+  roomId: string,
+  msg: { userId: string; userName: string; kind: "image" | "file"; url: string; fileName: string }
+) {
+  await push(ref(rtdb, `rooms/${roomId}/messages`), {
+    userId: msg.userId,
+    userName: msg.userName,
+    type: msg.kind,
+    url: msg.url,
+    fileName: msg.fileName,
     createdAt: Date.now(),
   });
 }

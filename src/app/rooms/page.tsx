@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,6 +10,7 @@ import {
   faArrowRight,
   faCircle,
   faRightToBracket,
+  faRotate,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listLiveRooms, findRoomByName, type LiveRoom } from "@/features/rooms/rooms";
@@ -26,28 +27,30 @@ export default function RoomsPage() {
   const [joinName, setJoinName] = useState("");
   const [joinMsg, setJoinMsg] = useState("");
   const [joining, setJoining] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
+  const loadRooms = useCallback(async () => {
+    const r = await listLiveRooms();
+    setRooms(r);
+    setFetching(false);
+  }, []);
+
+  async function manualRefresh() {
+    setRefreshing(true);
+    await loadRooms();
+    setRefreshing(false);
+  }
+
   useEffect(() => {
     if (!user) return;
-    let active = true;
-    const load = () =>
-      listLiveRooms().then((r) => {
-        if (active) {
-          setRooms(r);
-          setFetching(false);
-        }
-      });
-    load();
-    const t = setInterval(load, 30000);
-    return () => {
-      active = false;
-      clearInterval(t);
-    };
-  }, [user]);
+    loadRooms();
+    const t = setInterval(loadRooms, 30000);
+    return () => clearInterval(t);
+  }, [user, loadRooms]);
 
   async function handleJoinByName() {
     if (!joinName.trim()) return;
@@ -69,13 +72,22 @@ export default function RoomsPage() {
       <section className="mx-auto max-w-4xl px-5 py-8">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-extrabold">الغرف النشطة الآن</h1>
-          <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
-            <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-            غرفة جديدة
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={manualRefresh}
+              aria-label="تحديث"
+              className="grid h-10 w-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-primary"
+            >
+              <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+            <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+              غرفة جديدة
+            </Button>
+          </div>
         </div>
         <p className="mt-1 text-sm text-text-muted">
-          تظهر هنا الغرف العامة التي بها طلاب متصلون خلال آخر 5 دقائق فقط.
+          تظهر هنا الغرف العامة التي بها طالب متصل خلال آخر دقيقة. اضغط التحديث للبحث عن الجديد.
         </p>
 
         {/* الانضمام بكتابة اسم الغرفة */}

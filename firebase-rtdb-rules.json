@@ -2,8 +2,43 @@
   "rules": {
     "users": {
       ".read": "auth != null",
+      ".indexOn": ["name"],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "community": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "posts": { ".indexOn": ["createdAt"] }
+    },
+
+    "friends": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "friendRequests": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null"
+      }
+    },
+
+    "dms": {
+      "$threadId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "dmThreads": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null"
       }
     },
 
@@ -30,6 +65,9 @@
     "roomLive": {
       "$roomId": {
         ".read": "auth != null",
+        "activeTool": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         },
@@ -37,6 +75,11 @@
           ".write": "auth != null"
         },
         "voice": {
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
+          }
+        },
+        "hands": {
           "$uid": {
             ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
           }

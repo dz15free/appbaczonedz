@@ -4,13 +4,14 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faGlobe, faChalkboardUser } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faGlobe, faChalkboardUser, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 
 const QUICK = [
   { href: "/rooms", label: "غرف الدراسة", desc: "ادرس وراجع جماعياً", icon: faUsers },
+  { href: "/omibot", label: "Omibot", desc: "مساعدك الذكي للدراسة", icon: faRobot },
   { href: "/community", label: "المجتمع", desc: "اسأل وشارك", icon: faGlobe },
 ];
 
@@ -53,7 +54,7 @@ export default function HomePage() {
 
         <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-border p-5 text-text-muted">
           <FontAwesomeIcon icon={faChalkboardUser} className="h-5 w-5" />
-          <span className="text-sm">الإنجازات والتحديات والمساعد الذكي Omibot قادمة قريباً.</span>
+          <span className="text-sm">الإنجازات والتحديات والمجموعات قادمة قريباً.</span>
         </div>
       </section>
     </AppShell>

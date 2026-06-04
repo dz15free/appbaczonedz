@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  ref,
-  onChildAdded,
-  onChildRemoved,
-  set,
-  remove,
-} from "firebase/database";
+import { ref, onChildAdded, onChildRemoved, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPen,
+  faHighlighter,
+  faSlash,
+  faArrowRight,
+  faSquare,
+  faCircle,
+  faFont,
   faEraser,
   faRotateLeft,
   faRotateRight,
@@ -21,87 +21,144 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 
 interface Point {
-  x: number; // مُطبَّع 0..1
+  x: number;
   y: number;
 }
-interface Stroke {
+type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "eraser";
+interface Shape {
   id: string;
   uid: string;
+  kind: Kind;
   color: string;
   size: number;
-  erase: boolean;
   points: Point[];
+  text?: string;
 }
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
 const SIZES = [2, 4, 8];
+const SYMBOLS = ["+", "−", "×", "÷", "=", "√", "π", "²", "³", "≤", "≥", "→", "∞", "∫", "Σ", "θ", "α", "Δ"];
 
-export function Whiteboard({ roomId }: { roomId: string }) {
+const TOOLS: { id: Kind; icon: typeof faPen; label: string }[] = [
+  { id: "pen", icon: faPen, label: "قلم" },
+  { id: "highlighter", icon: faHighlighter, label: "تحديد" },
+  { id: "line", icon: faSlash, label: "خط" },
+  { id: "arrow", icon: faArrowRight, label: "سهم" },
+  { id: "rect", icon: faSquare, label: "مستطيل" },
+  { id: "ellipse", icon: faCircle, label: "دائرة" },
+  { id: "text", icon: faFont, label: "نص" },
+  { id: "eraser", icon: faEraser, label: "ممحاة" },
+];
+
+export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw?: boolean }) {
   const { user } = useAuth();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const mainRef = useRef<HTMLCanvasElement>(null);
+  const previewRef = useRef<HTMLCanvasElement>(null);
 
-  // ذاكرة الضربات بالترتيب (لإعادة الرسم عند الحذف/التحجيم)
-  const strokesRef = useRef<Stroke[]>([]);
+  const shapes = useRef<Shape[]>([]);
   const drawnIds = useRef<Set<string>>(new Set());
+  const redoStack = useRef<Shape[]>([]);
   const redrawScheduled = useRef(false);
 
-  // حالة الرسم الحالية
   const drawing = useRef(false);
-  const current = useRef<Stroke | null>(null);
+  const currentShape = useRef<Shape | null>(null);
 
-  // مكدّس التراجع/الإعادة (محلي)
-  const redoStack = useRef<Stroke[]>([]);
-
-  const [tool, setTool] = useState<"pen" | "eraser">("pen");
+  const [tool, setTool] = useState<Kind>("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [grid, setGrid] = useState(true);
+  const [stamp, setStamp] = useState<string | null>(null);
 
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
   const sizeRef = useRef(size);
+  const stampRef = useRef(stamp);
   toolRef.current = tool;
   colorRef.current = color;
   sizeRef.current = size;
+  stampRef.current = stamp;
 
   const strokesPath = `roomLive/${roomId}/whiteboard/strokes`;
+  const dpr = () => window.devicePixelRatio || 1;
 
-  // ── رسم ضربة كاملة ──
-  const drawStroke = useCallback((s: Stroke) => {
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    if (!ctx || !canvas || s.points.length === 0) return;
-    const w = canvas.width;
-    const h = canvas.height;
+  // ── رسم شكل على سياق معيّن ──
+  const drawShape = useCallback((s: Shape, ctx: CanvasRenderingContext2D) => {
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    const P = (p: Point) => ({ x: p.x * w, y: p.y * h });
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalCompositeOperation = s.erase ? "destination-out" : "source-over";
     ctx.strokeStyle = s.color;
-    ctx.lineWidth = s.size * (window.devicePixelRatio || 1);
-    ctx.beginPath();
-    ctx.moveTo(s.points[0].x * w, s.points[0].y * h);
-    for (let i = 1; i < s.points.length; i++) {
-      ctx.lineTo(s.points[i].x * w, s.points[i].y * h);
+    ctx.fillStyle = s.color;
+    ctx.lineWidth = s.size * dpr();
+    if (s.kind === "eraser") ctx.globalCompositeOperation = "destination-out";
+    else if (s.kind === "highlighter") ctx.globalAlpha = 0.35;
+
+    const pts = s.points;
+    if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
+      if (pts.length) {
+        ctx.beginPath();
+        const a = P(pts[0]);
+        ctx.moveTo(a.x, a.y);
+        for (let i = 1; i < pts.length; i++) {
+          const b = P(pts[i]);
+          ctx.lineTo(b.x, b.y);
+        }
+        if (pts.length === 1) ctx.lineTo(a.x + 0.5, a.y + 0.5);
+        ctx.stroke();
+      }
+    } else if (s.kind === "line" || s.kind === "arrow") {
+      if (pts.length >= 2) {
+        const a = P(pts[0]);
+        const b = P(pts[1]);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        if (s.kind === "arrow") {
+          const ang = Math.atan2(b.y - a.y, b.x - a.x);
+          const head = 10 * dpr() + s.size * dpr();
+          ctx.beginPath();
+          ctx.moveTo(b.x, b.y);
+          ctx.lineTo(b.x - head * Math.cos(ang - Math.PI / 6), b.y - head * Math.sin(ang - Math.PI / 6));
+          ctx.moveTo(b.x, b.y);
+          ctx.lineTo(b.x - head * Math.cos(ang + Math.PI / 6), b.y - head * Math.sin(ang + Math.PI / 6));
+          ctx.stroke();
+        }
+      }
+    } else if (s.kind === "rect") {
+      if (pts.length >= 2) {
+        const a = P(pts[0]);
+        const b = P(pts[1]);
+        ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      }
+    } else if (s.kind === "ellipse") {
+      if (pts.length >= 2) {
+        const a = P(pts[0]);
+        const b = P(pts[1]);
+        ctx.beginPath();
+        ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (s.kind === "text" && s.text) {
+      const a = P(pts[0]);
+      const px = s.size * 8 * dpr();
+      ctx.font = `bold ${px}px sans-serif`;
+      ctx.textBaseline = "top";
+      ctx.fillText(s.text, a.x, a.y);
     }
-    if (s.points.length === 1) {
-      // نقطة واحدة = دائرة صغيرة
-      ctx.lineTo(s.points[0].x * w + 0.01, s.points[0].y * h + 0.01);
-    }
-    ctx.stroke();
     ctx.restore();
   }, []);
 
-  // ── إعادة الرسم الكاملة (مرة واحدة في الإطار — بلا وميض) ──
   const fullRedraw = useCallback(() => {
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
+    const ctx = mainRef.current?.getContext("2d");
+    const canvas = mainRef.current;
     if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const s of strokesRef.current) drawStroke(s);
-  }, [drawStroke]);
+    for (const s of shapes.current) drawShape(s, ctx);
+  }, [drawShape]);
 
   const scheduleRedraw = useCallback(() => {
     if (redrawScheduled.current) return;
@@ -112,49 +169,52 @@ export function Whiteboard({ roomId }: { roomId: string }) {
     });
   }, [fullRedraw]);
 
-  // ── تهيئة الكانفاس + التجاوب (DPR + ResizeObserver) ──
+  const clearPreview = useCallback(() => {
+    const ctx = previewRef.current?.getContext("2d");
+    const c = previewRef.current;
+    if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+  }, []);
+
+  // ── تهيئة + تجاوب ──
   useEffect(() => {
-    const canvas = canvasRef.current;
     const wrap = wrapRef.current;
-    if (!canvas || !wrap) return;
-    ctxRef.current = canvas.getContext("2d");
-
+    const main = mainRef.current;
+    const prev = previewRef.current;
+    if (!wrap || !main || !prev) return;
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = wrap.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      fullRedraw(); // إعادة الرسم بالإحداثيات المُطبَّعة
+      const r = wrap.getBoundingClientRect();
+      for (const c of [main, prev]) {
+        c.width = Math.max(1, Math.floor(r.width * dpr()));
+        c.height = Math.max(1, Math.floor(r.height * dpr()));
+        c.style.width = `${r.width}px`;
+        c.style.height = `${r.height}px`;
+      }
+      fullRedraw();
     };
-
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
     return () => ro.disconnect();
   }, [fullRedraw]);
 
-  // ── المزامنة عبر RTDB ──
+  // ── مزامنة RTDB ──
   useEffect(() => {
     const sref = ref(rtdb, strokesPath);
-
     const unsubAdd = onChildAdded(sref, (snap) => {
       const id = snap.key!;
-      if (drawnIds.current.has(id)) return; // ضربتي رسمتها محلياً
-      const s = { id, ...(snap.val() as Omit<Stroke, "id">) };
+      if (drawnIds.current.has(id)) return;
+      const s = { id, ...(snap.val() as Omit<Shape, "id">) };
       drawnIds.current.add(id);
-      strokesRef.current.push(s);
-      drawStroke(s); // رسم تزايدي فوري — بلا وميض
+      shapes.current.push(s);
+      const ctx = mainRef.current?.getContext("2d");
+      if (ctx) drawShape(s, ctx);
     });
-
     const unsubRemove = onChildRemoved(sref, (snap) => {
       const id = snap.key!;
       drawnIds.current.delete(id);
-      strokesRef.current = strokesRef.current.filter((s) => s.id !== id);
-      scheduleRedraw(); // إعادة رسم مُجمّعة (للتراجع/المسح)
+      shapes.current = shapes.current.filter((s) => s.id !== id);
+      scheduleRedraw();
     });
-
     return () => {
       unsubAdd();
       unsubRemove();
@@ -162,12 +222,30 @@ export function Whiteboard({ roomId }: { roomId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
-  // ── إحداثيات المؤشّر → مُطبَّعة ──
   function getPoint(e: React.PointerEvent): Point {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    const r = previewRef.current!.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+  }
+
+  function commit(s: Shape) {
+    drawnIds.current.add(s.id);
+    shapes.current.push(s);
+    redoStack.current = [];
+    const ctx = mainRef.current?.getContext("2d");
+    if (ctx) drawShape(s, ctx);
+    const { id, ...data } = s;
+    set(ref(rtdb, `${strokesPath}/${id}`), data);
+  }
+
+  function newShape(kind: Kind, p: Point, text?: string): Shape {
     return {
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
+      id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      uid: user!.uid,
+      kind,
+      color: colorRef.current,
+      size: sizeRef.current,
+      points: [p],
+      text,
     };
   }
 
@@ -175,128 +253,150 @@ export function Whiteboard({ roomId }: { roomId: string }) {
     if (!user) return;
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    const p = getPoint(e);
+    const t = toolRef.current;
+
+    // ختم رمز رياضي
+    if (stampRef.current) {
+      commit(newShape("text", p, stampRef.current));
+      return;
+    }
+    // نص حرّ
+    if (t === "text") {
+      const txt = window.prompt("النص:");
+      if (txt) commit(newShape("text", p, txt));
+      return;
+    }
+    // أدوات الرسم
     drawing.current = true;
-    current.current = {
-      id: `${user.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      uid: user.uid,
-      color: colorRef.current,
-      size: sizeRef.current,
-      erase: toolRef.current === "eraser",
-      points: [getPoint(e)],
-    };
+    currentShape.current = newShape(t, p);
+    if (t === "line" || t === "arrow" || t === "rect" || t === "ellipse") {
+      currentShape.current.points.push(p); // نقطة نهاية مبدئية
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!drawing.current || !current.current) return;
+    if (!drawing.current || !currentShape.current) return;
     e.preventDefault();
     const p = getPoint(e);
-    const pts = current.current.points;
-    const last = pts[pts.length - 1];
-    // تقليل النقاط: تجاهل الحركة الصغيرة جداً
-    if (Math.hypot(p.x - last.x, p.y - last.y) < 0.003) return;
-    pts.push(p);
-    // رسم المقطع الحي
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    if (ctx && canvas) {
-      ctx.save();
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.globalCompositeOperation = current.current.erase ? "destination-out" : "source-over";
-      ctx.strokeStyle = current.current.color;
-      ctx.lineWidth = current.current.size * (window.devicePixelRatio || 1);
-      ctx.beginPath();
-      ctx.moveTo(last.x * canvas.width, last.y * canvas.height);
-      ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
-      ctx.stroke();
-      ctx.restore();
+    const s = currentShape.current;
+
+    if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
+      const last = s.points[s.points.length - 1];
+      if (Math.hypot(p.x - last.x, p.y - last.y) < 0.003) return;
+      s.points.push(p);
+      // رسم المقطع الحي على الطبقة الرئيسية
+      const ctx = mainRef.current?.getContext("2d");
+      if (ctx) {
+        const tmp: Shape = { ...s, points: [last, p] };
+        drawShape(tmp, ctx);
+      }
+    } else {
+      // أشكال: معاينة على الطبقة العلوية
+      s.points[1] = p;
+      clearPreview();
+      const ctx = previewRef.current?.getContext("2d");
+      if (ctx) drawShape(s, ctx);
     }
   }
 
   function onPointerUp() {
-    if (!drawing.current || !current.current) return;
+    if (!drawing.current || !currentShape.current) return;
     drawing.current = false;
-    const s = current.current;
-    current.current = null;
-    if (s.points.length === 0) return;
-    // خزّنها محلياً (حتى لا نعيد رسمها عند الصدى) وادفعها
-    drawnIds.current.add(s.id);
-    strokesRef.current.push(s);
-    redoStack.current = []; // أي رسم جديد يُلغي الإعادة
-    const { id, ...data } = s;
-    set(ref(rtdb, `${strokesPath}/${id}`), data);
+    const s = currentShape.current;
+    currentShape.current = null;
+    clearPreview();
+    if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
+      // رُسمت حيّاً؛ خزّنها وادفعها
+      drawnIds.current.add(s.id);
+      shapes.current.push(s);
+      redoStack.current = [];
+      const { id, ...data } = s;
+      set(ref(rtdb, `${strokesPath}/${id}`), data);
+    } else {
+      commit(s); // الأشكال: ارسمها على الرئيسية وادفعها
+    }
   }
 
-  // ── تراجع: احذف آخر ضربة لي ──
   function undo() {
-    const mine = [...strokesRef.current].reverse().find((s) => s.uid === user?.uid);
+    const mine = [...shapes.current].reverse().find((s) => s.uid === user?.uid);
     if (!mine) return;
     redoStack.current.push(mine);
     remove(ref(rtdb, `${strokesPath}/${mine.id}`));
   }
-
-  // ── إعادة: أعد آخر ضربة تراجعت عنها ──
   function redo() {
     const s = redoStack.current.pop();
     if (!s) return;
     const { id, ...data } = s;
     set(ref(rtdb, `${strokesPath}/${id}`), data);
   }
-
-  // ── مسح الكل ──
   function clearAll() {
     if (!confirm("مسح السبورة بالكامل للجميع؟")) return;
     remove(ref(rtdb, strokesPath));
   }
 
+  function pickTool(k: Kind) {
+    setTool(k);
+    setStamp(null);
+  }
+
   return (
     <div className="flex h-full flex-col">
-      {/* شريط الأدوات */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface p-2">
-        <ToolBtn active={tool === "pen"} onClick={() => setTool("pen")} icon={faPen} label="قلم" />
-        <ToolBtn active={tool === "eraser"} onClick={() => setTool("eraser")} icon={faEraser} label="ممحاة" />
+      {canDraw && (
+        <div className="space-y-1 border-b border-border bg-surface p-2">
+          {/* الأدوات */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {TOOLS.map((t) => (
+              <ToolBtn key={t.id} active={tool === t.id && !stamp} onClick={() => pickTool(t.id)} icon={t.icon} label={t.label} />
+            ))}
+            <div className="mx-1 h-6 w-px bg-border" />
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  setColor(c);
+                  if (tool === "eraser") pickTool("pen");
+                }}
+                aria-label={`لون`}
+                className={`h-6 w-6 rounded-full border-2 ${color === c ? "border-primary" : "border-transparent"}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+            <div className="mx-1 h-6 w-px bg-border" />
+            {SIZES.map((sz) => (
+              <button
+                key={sz}
+                onClick={() => setSize(sz)}
+                aria-label={`سُمك`}
+                className={`grid h-8 w-8 place-items-center rounded-md ${size === sz ? "bg-primary/10" : "hover:bg-primary/10"}`}
+              >
+                <span className="rounded-full bg-text-primary" style={{ width: sz + 2, height: sz + 2 }} />
+              </button>
+            ))}
+            <div className="mx-1 h-6 w-px bg-border" />
+            <ToolBtn active={grid} onClick={() => setGrid((g) => !g)} icon={faBorderAll} label="شبكة" />
+            <ToolBtn onClick={undo} icon={faRotateLeft} label="تراجع" />
+            <ToolBtn onClick={redo} icon={faRotateRight} label="إعادة" />
+            <ToolBtn onClick={clearAll} icon={faTrash} label="مسح" danger />
+          </div>
+          {/* الرموز الرياضية */}
+          <div className="flex flex-wrap items-center gap-1">
+            {SYMBOLS.map((sym) => (
+              <button
+                key={sym}
+                onClick={() => setStamp((cur) => (cur === sym ? null : sym))}
+                className={`grid h-7 min-w-7 place-items-center rounded px-1.5 text-sm font-bold ${
+                  stamp === sym ? "bg-gradient-primary text-white" : "bg-background text-text-primary hover:bg-primary/10"
+                }`}
+              >
+                {sym}
+              </button>
+            ))}
+            {stamp && <span className="text-xs text-text-muted">اضغط على السبورة لوضع: {stamp}</span>}
+          </div>
+        </div>
+      )}
 
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            onClick={() => {
-              setColor(c);
-              setTool("pen");
-            }}
-            aria-label={`لون ${c}`}
-            className={`h-6 w-6 rounded-full border-2 transition ${
-              color === c && tool === "pen" ? "border-primary" : "border-transparent"
-            }`}
-            style={{ backgroundColor: c }}
-          />
-        ))}
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        {SIZES.map((sz) => (
-          <button
-            key={sz}
-            onClick={() => setSize(sz)}
-            aria-label={`سُمك ${sz}`}
-            className={`grid h-8 w-8 place-items-center rounded-md transition ${
-              size === sz ? "bg-primary/10" : "hover:bg-primary/10"
-            }`}
-          >
-            <span className="rounded-full bg-text-primary" style={{ width: sz + 2, height: sz + 2 }} />
-          </button>
-        ))}
-
-        <div className="mx-1 h-6 w-px bg-border" />
-
-        <ToolBtn active={grid} onClick={() => setGrid((g) => !g)} icon={faBorderAll} label="شبكة" />
-        <ToolBtn onClick={undo} icon={faRotateLeft} label="تراجع" />
-        <ToolBtn onClick={redo} icon={faRotateRight} label="إعادة" />
-        <ToolBtn onClick={clearAll} icon={faTrash} label="مسح" danger />
-      </div>
-
-      {/* لوح الرسم */}
       <div
         ref={wrapRef}
         className="relative flex-1 overflow-hidden bg-white"
@@ -310,14 +410,15 @@ export function Whiteboard({ roomId }: { roomId: string }) {
             : undefined
         }
       >
+        <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
         <canvas
-          ref={canvasRef}
-          className="absolute inset-0 touch-none"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerUp}
-          onPointerCancel={onPointerUp}
+          ref={previewRef}
+          className={`absolute inset-0 ${canDraw ? "touch-none" : "pointer-events-none"}`}
+          onPointerDown={canDraw ? onPointerDown : undefined}
+          onPointerMove={canDraw ? onPointerMove : undefined}
+          onPointerUp={canDraw ? onPointerUp : undefined}
+          onPointerLeave={canDraw ? onPointerUp : undefined}
+          onPointerCancel={canDraw ? onPointerUp : undefined}
         />
       </div>
     </div>
