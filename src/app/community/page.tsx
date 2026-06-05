@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,10 +15,15 @@ import {
   faArrowDown,
   faFire,
   faClock,
+  faImage,
+  faPaperclip,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
+import { prepareFile } from "@/lib/upload";
+import { PostAttachment } from "@/features/community/post-attachment";
 import {
   createPost,
   listenPosts,
@@ -96,17 +101,37 @@ function Feed({ me }: { me: Person }) {
   const [sort, setSort] = useState<"recent" | "top">("recent");
   const [friends, setFriends] = useState<Person[]>([]);
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [pending, setPending] = useState<{ kind: "image" | "file"; dataUrl: string; name: string } | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => listenPosts(me.uid, setPosts), [me.uid]);
   useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
 
   const friendIds = new Set(friends.map((f) => f.uid));
 
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPreparing(true);
+    try {
+      const p = await prepareFile(file);
+      setPending({ kind: p.kind, dataUrl: p.dataUrl, name: p.name });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "فشل تجهيز الملف.");
+    } finally {
+      setPreparing(false);
+    }
+  }
+
   async function publish() {
-    if (!text.trim()) return;
+    if (!text.trim() && !pending) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text);
+    await createPost(me.uid, me.name, text, pending ?? undefined);
     setText("");
+    setPending(null);
     setPosting(false);
   }
 
@@ -127,10 +152,43 @@ function Feed({ me }: { me: Person }) {
           rows={3}
           className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
-        <div className="mt-2 flex justify-start">
+
+        {/* معاينة المرفق */}
+        {(pending || preparing) && (
+          <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-background p-2 text-sm">
+            {preparing ? (
+              <span className="flex items-center gap-2 text-text-muted">
+                <FontAwesomeIcon icon={faSpinner} className="h-3 w-3 animate-spin" /> جارٍ التجهيز...
+              </span>
+            ) : pending?.kind === "image" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={pending.dataUrl} alt="" className="h-12 w-12 rounded object-cover" />
+            ) : (
+              <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4 text-primary" />
+            )}
+            {pending && <span className="flex-1 truncate">{pending.name}</span>}
+            {pending && (
+              <button onClick={() => setPending(null)} aria-label="إزالة" className="text-danger">
+                <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
+            <input ref={fileInput} type="file" hidden onChange={pick} />
+            <button onClick={() => imageInput.current?.click()} aria-label="صورة" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+              <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+            </button>
+            <button onClick={() => fileInput.current?.click()} aria-label="ملف" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+              <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
+            </button>
+          </div>
           <button
             onClick={publish}
-            disabled={posting || !text.trim()}
+            disabled={posting || (!text.trim() && !pending)}
             className="rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
           >
             نشر
@@ -188,10 +246,10 @@ function Feed({ me }: { me: Person }) {
                 ))}
             </div>
 
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>
+            {p.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>}
+            <PostAttachment post={p} />
 
             <div className="mt-3 flex items-center gap-4 text-sm">
-              {/* تصويت */}
               <div className="flex items-center gap-1 rounded-full bg-background px-1">
                 <button
                   onClick={() => votePost(p.id, me.uid, 1, p.myVote)}
@@ -331,7 +389,7 @@ function People({ me }: { me: Person }) {
                   </span>
                   {f.name}
                 </span>
-                <Link href={`/messages/${f.uid}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
+                <Link href={`/messages/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
                   <FontAwesomeIcon icon={faMessage} className="h-3.5 w-3.5" />
                   مراسلة
                 </Link>
@@ -359,7 +417,7 @@ function Messages({ me }: { me: Person }) {
   return (
     <div className="space-y-2">
       {threads.map((t) => (
-        <Link key={t.uid} href={`/messages/${t.uid}`} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary">
+        <Link key={t.uid} href={`/messages/${t.uid}?name=${encodeURIComponent(t.name)}`} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary font-bold text-white">
             {t.name.charAt(0)}
           </span>

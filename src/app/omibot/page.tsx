@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRobot, faPaperPlane, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
+import { useProfile } from "@/features/auth/use-profile";
+import { TRACKS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 
 interface Msg {
@@ -25,6 +27,8 @@ const SUGGESTIONS = [
 export default function OmibotPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const profile = useProfile(user?.uid);
+  const trackName = TRACKS.find((t) => t.id === profile?.track)?.name ?? "";
   const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", text: GREETING }]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -48,7 +52,7 @@ export default function OmibotPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // نرسل آخر 12 رسالة فقط لتوفير الحصة
-        body: JSON.stringify({ messages: next.slice(-12) }),
+        body: JSON.stringify({ messages: next.slice(-12), track: trackName }),
       });
       const data = await res.json();
       setMessages((m) => [

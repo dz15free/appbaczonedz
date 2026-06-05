@@ -11,7 +11,6 @@ export interface VoiceParticipant {
   sessionId?: string;
   trackName?: string;
   muted?: boolean;
-  forceMuted?: boolean;
   kicked?: boolean;
 }
 
@@ -29,6 +28,7 @@ export class VoiceManager {
 
   onRemoteStream?: (uid: string, stream: MediaStream) => void;
   onParticipants?: (list: VoiceParticipant[]) => void;
+  onMyMuteChange?: (muted: boolean) => void;
   onLeave?: () => void;
 
   constructor(
@@ -72,9 +72,13 @@ export class VoiceManager {
     });
     await this.pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
 
+    // افتراضياً: مايك المالك مفتوح، والمنضمّون مكتومون
+    const initialMuted = !this.isOwner;
+    this.localStream.getAudioTracks().forEach((t) => (t.enabled = !initialMuted));
+
     // أعلن وجودي في RTDB + حذف تلقائي عند قطع الاتصال
     const myRef = ref(rtdb, `${this.voicePath()}/${this.uid}`);
-    await set(myRef, { name: this.name, sessionId: this.sessionId, trackName, muted: false });
+    await set(myRef, { name: this.name, sessionId: this.sessionId, trackName, muted: initialMuted });
     onDisconnect(myRef).remove();
 
     // راقب المشاركين واشترك في الجدد
@@ -83,13 +87,17 @@ export class VoiceManager {
       const list = Object.entries(val).map(([id, v]) => ({ ...v, uid: id }));
       this.onParticipants?.(list);
 
-      // أوامر المالك عليّ
       const me = val[this.uid];
       if (me?.kicked) {
         this.leave();
         return;
       }
-      if (me?.forceMuted) this.setMuted(true, false);
+      // حالة الكتم يتحكّم بها المالك (وتُطبَّق فوراً على ميكروفوني)
+      if (me) {
+        const muted = !!me.muted;
+        this.localStream?.getAudioTracks().forEach((t) => (t.enabled = !muted));
+        this.onMyMuteChange?.(muted);
+      }
 
       for (const p of list) {
         if (p.uid !== this.uid && p.sessionId && p.trackName && !this.subscribed.has(p.uid)) {
@@ -120,19 +128,14 @@ export class VoiceManager {
       .catch((e) => console.error("[BacZone voice] خطأ الاشتراك:", e));
   }
 
-  setMuted(muted: boolean, propagate = true) {
-    this.localStream?.getAudioTracks().forEach((t) => (t.enabled = !muted));
-    if (propagate) update(ref(rtdb, `${this.voicePath()}/${this.uid}`), { muted });
-  }
-
   getLocalStream() {
     return this.localStream;
   }
 
   // أوامر المالك
-  ownerToggleMute(uid: string, forceMuted: boolean) {
+  ownerToggleMute(uid: string, muted: boolean) {
     if (!this.isOwner) return;
-    update(ref(rtdb, `${this.voicePath()}/${uid}`), { forceMuted });
+    update(ref(rtdb, `${this.voicePath()}/${uid}`), { muted });
   }
   ownerKick(uid: string) {
     if (!this.isOwner) return;

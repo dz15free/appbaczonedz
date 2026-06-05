@@ -38,6 +38,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
     setConnecting(true);
     const m = new VoiceManager(roomId, user.uid, user.displayName || "طالب", isOwner);
     m.onParticipants = setParticipants;
+    m.onMyMuteChange = (mt) => setMuted(mt);
     m.onRemoteStream = (uid, stream) => {
       setStreams((s) => ({ ...s, [uid]: stream }));
       monitors.current[uid]?.();
@@ -78,9 +79,9 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   }
 
   function toggleMute() {
-    const next = !muted;
-    setMuted(next);
-    managerRef.current?.setMuted(next);
+    // المالك فقط يتحكّم بميكروفونه (والطلاب يتحكّم بهم المالك)
+    if (!isOwner || !user) return;
+    managerRef.current?.ownerToggleMute(user.uid, !muted);
   }
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
             {participants.map((p) => {
               const isMe = p.uid === user?.uid;
-              const isMuted = p.muted || p.forceMuted;
+              const isMuted = !!p.muted;
               const isSpeaking = speaking[p.uid] && !isMuted;
               return (
                 <div key={p.uid} className="flex flex-col items-center text-center">
@@ -118,15 +119,19 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
                       </span>
                     )}
                   </div>
-                  <span className="mt-1 max-w-[4rem] truncate text-[10px]">{p.name}</span>
+                  <span className="mt-1 max-w-[4rem] truncate text-[10px]">
+                    {p.name}
+                    {isMe && " (أنت)"}
+                  </span>
                   {isOwner && !isMe && (
                     <div className="mt-0.5 flex gap-1">
                       <button
-                        onClick={() => managerRef.current?.ownerToggleMute(p.uid, !p.forceMuted)}
-                        className="grid h-6 w-6 place-items-center rounded text-text-muted hover:bg-primary/10"
-                        aria-label="كتم"
+                        onClick={() => managerRef.current?.ownerToggleMute(p.uid, !isMuted)}
+                        className={`grid h-6 w-6 place-items-center rounded ${isMuted ? "text-text-muted hover:bg-primary/10" : "text-secondary hover:bg-secondary/10"}`}
+                        aria-label={isMuted ? "فتح الميكروفون" : "كتم"}
+                        title={isMuted ? "فتح الميكروفون" : "كتم"}
                       >
-                        <FontAwesomeIcon icon={faMicrophoneSlash} className="h-2.5 w-2.5" />
+                        <FontAwesomeIcon icon={isMuted ? faMicrophone : faMicrophoneSlash} className="h-2.5 w-2.5" />
                       </button>
                       <button
                         onClick={() => managerRef.current?.ownerKick(p.uid)}
@@ -168,12 +173,17 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
               المشاركون ({participants.length})
             </button>
             <div className="flex items-center gap-2">
+              {!isOwner && (
+                <span className="text-[11px] text-text-muted">المعلّم يتحكّم بالميكروفون</span>
+              )}
               <button
                 onClick={toggleMute}
+                disabled={!isOwner}
                 className={`grid h-10 w-10 place-items-center rounded-full ${
-                  muted ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"
-                }`}
-                aria-label={muted ? "إلغاء الكتم" : "كتم"}
+                  muted ? "bg-danger/10 text-danger" : "bg-secondary/10 text-secondary"
+                } ${!isOwner ? "opacity-70" : ""}`}
+                aria-label={muted ? "مكتوم" : "مفتوح"}
+                title={isOwner ? (muted ? "إلغاء الكتم" : "كتم") : "المعلّم يتحكّم بالميكروفون"}
               >
                 <FontAwesomeIcon icon={muted ? faMicrophoneSlash : faMicrophone} className="h-4 w-4" />
               </button>

@@ -25,6 +25,9 @@ export interface Post {
   score: number;
   myVote: number; // 1 | -1 | 0
   commentCount: number;
+  attachmentId?: string;
+  attachmentKind?: "image" | "file";
+  fileName?: string;
 }
 export interface Comment {
   id: string;
@@ -51,13 +54,31 @@ export interface DMMessage {
 }
 
 /* ───────── المنشورات ───────── */
-export async function createPost(authorId: string, authorName: string, text: string) {
-  await push(ref(rtdb, "community/posts"), {
+export async function createPost(
+  authorId: string,
+  authorName: string,
+  text: string,
+  attachment?: { kind: "image" | "file"; dataUrl: string; name: string }
+) {
+  const post: Record<string, unknown> = {
     authorId,
     authorName,
     text: text.trim(),
     createdAt: Date.now(),
-  });
+  };
+  if (attachment) {
+    const aRef = push(ref(rtdb, "community/postAttachments"));
+    await set(aRef, attachment.dataUrl);
+    post.attachmentId = aRef.key;
+    post.attachmentKind = attachment.kind;
+    post.fileName = attachment.name;
+  }
+  await push(ref(rtdb, "community/posts"), post);
+}
+
+export async function getPostAttachment(attachmentId: string): Promise<string | null> {
+  const snap = await get(ref(rtdb, `community/postAttachments/${attachmentId}`));
+  return (snap.val() as string) ?? null;
 }
 
 export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
@@ -76,6 +97,9 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
         score,
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
+        attachmentId: p.attachmentId,
+        attachmentKind: p.attachmentKind,
+        fileName: p.fileName,
       };
     });
     posts.sort((a, b) => b.createdAt - a.createdAt);
@@ -97,6 +121,9 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       score: Object.values(votes).reduce((a, b) => a + (b as number), 0),
       myVote: votes[myUid] ?? 0,
       commentCount: p.commentCount ?? 0,
+      attachmentId: p.attachmentId,
+      attachmentKind: p.attachmentKind,
+      fileName: p.fileName,
     });
   });
 }

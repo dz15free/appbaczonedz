@@ -3,17 +3,21 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
+import { PostAttachment } from "@/features/community/post-attachment";
 import {
   listenPost,
   listenComments,
   addComment,
   votePost,
+  listenFriends,
+  sendFriendRequest,
   type Post,
   type Comment,
+  type Person,
 } from "@/features/community/social";
 
 export default function PostPage() {
@@ -24,10 +28,24 @@ export default function PostPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
+  const [friends, setFriends] = useState<Person[]>([]);
+  const [sent, setSent] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    return listenFriends(user.uid, setFriends);
+  }, [user]);
+
+  const friendIds = new Set(friends.map((f) => f.uid));
+  async function addFriend(uid: string, name: string) {
+    if (!user) return;
+    await sendFriendRequest({ uid: user.uid, name: profile?.name || user.displayName || "طالب" }, uid);
+    setSent((s) => ({ ...s, [uid]: true }));
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -67,7 +85,8 @@ export default function PostPage() {
                 </span>
                 <span className="font-bold">{post.authorName}</span>
               </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>
+              {post.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>}
+              <PostAttachment post={post} />
               <div className="mt-3 flex items-center gap-1 rounded-full bg-background px-1" style={{ width: "fit-content" }}>
                 <button
                   onClick={() => votePost(post.id, user.uid, 1, post.myVote)}
@@ -89,12 +108,29 @@ export default function PostPage() {
 
             <h2 className="mb-2 mt-5 text-sm font-bold">المناقشة ({comments.length})</h2>
             <div className="space-y-2">
-              {comments.map((c) => (
-                <div key={c.id} className="rounded-lg border border-border bg-surface p-3">
-                  <span className="text-xs font-bold text-primary">{c.authorName}</span>
-                  <p className="mt-1 whitespace-pre-wrap text-sm">{c.text}</p>
-                </div>
-              ))}
+              {comments.map((c) => {
+                const showAdd = c.authorId !== user.uid && !friendIds.has(c.authorId);
+                return (
+                  <div key={c.id} className="rounded-lg border border-border bg-surface p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-primary">{c.authorName}</span>
+                      {showAdd &&
+                        (sent[c.authorId] ? (
+                          <span className="text-[10px] text-text-muted">تم الإرسال</span>
+                        ) : (
+                          <button
+                            onClick={() => addFriend(c.authorId, c.authorName)}
+                            className="flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary"
+                          >
+                            <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
+                            صداقة
+                          </button>
+                        ))}
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-sm">{c.text}</p>
+                  </div>
+                );
+              })}
               {comments.length === 0 && <p className="text-sm text-text-muted">لا تعليقات بعد — ابدأ النقاش!</p>}
             </div>
 

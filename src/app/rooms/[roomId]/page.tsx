@@ -23,6 +23,7 @@ import { ChatPanel } from "@/features/chat/chat-panel";
 import { VideoSync } from "@/features/video/video-sync";
 import { Whiteboard } from "@/features/whiteboard/whiteboard";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
+import { RoomFiles } from "@/features/rooms/room-files";
 import { playHandRaiseSound } from "@/lib/sound";
 
 const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
@@ -209,11 +210,7 @@ export default function RoomPage() {
           {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
           {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
 
-          {tool === "files" && (
-            <div className="flex flex-1 items-center justify-center p-6 text-center text-text-muted">
-              رفع الملفات قيد البناء في الخطوة القادمة.
-            </div>
-          )}
+          {tool === "files" && <RoomFiles roomId={roomId} />}
         </section>
 
         <aside className="hidden w-96 border-r border-border lg:block">

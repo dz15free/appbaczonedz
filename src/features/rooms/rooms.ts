@@ -160,3 +160,35 @@ export function listenMessages(roomId: string, cb: (messages: ChatMessage[]) => 
     cb(msgs);
   });
 }
+
+/* ───────── ملفات الغرفة ───────── */
+export interface RoomFile {
+  id: string;
+  name: string;
+  uploaderName: string;
+  attachmentId: string;
+  createdAt: number;
+}
+
+export async function addRoomFile(
+  roomId: string,
+  data: { uploaderName: string; dataUrl: string; name: string }
+) {
+  const aRef = push(ref(rtdb, `rooms/${roomId}/attachments`));
+  await set(aRef, data.dataUrl);
+  await push(ref(rtdb, `rooms/${roomId}/files`), {
+    name: data.name,
+    uploaderName: data.uploaderName,
+    attachmentId: aRef.key,
+    createdAt: Date.now(),
+  });
+}
+
+export function listenRoomFiles(roomId: string, cb: (files: RoomFile[]) => void) {
+  return onValue(ref(rtdb, `rooms/${roomId}/files`), (snap) => {
+    const val = (snap.val() as Record<string, Omit<RoomFile, "id">>) ?? {};
+    const list = Object.entries(val).map(([id, f]) => ({ id, ...f }));
+    list.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    cb(list);
+  });
+}

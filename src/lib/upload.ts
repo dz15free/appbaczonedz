@@ -1,6 +1,6 @@
 // تحضير المرفقات بلا أي خدمة خارجية: الصور تُضغط، والكل يُحوّل إلى base64
 const MAX_IMAGE_SRC = 15 * 1024 * 1024; // 15MB مصدر الصورة (تُضغط بعدها)
-const MAX_FILE = 1024 * 1024; // 1MB للملفات غير الصورية
+const MAX_FILE = 5 * 1024 * 1024; // 5MB حد عملي لـ base64 في RTDB
 
 export interface Prepared {
   kind: "image" | "file";
@@ -15,7 +15,7 @@ export async function prepareFile(file: File): Promise<Prepared> {
     const dataUrl = await compressImage(file, 1000, 0.7);
     return { kind: "image", name: file.name, dataUrl };
   }
-  if (file.size > MAX_FILE) throw new Error("الحد الأقصى للملف 1 ميجابايت.");
+  if (file.size > MAX_FILE) throw new Error("الحد الأقصى للملف 5 ميجابايت.");
   const dataUrl = await readAsDataUrl(file);
   return { kind: "file", name: file.name, dataUrl };
 }

@@ -82,6 +82,13 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   const strokesPath = `roomLive/${roomId}/whiteboard/strokes`;
   const dpr = () => window.devicePixelRatio || 1;
 
+  // يزيل أي قيمة undefined قبل الكتابة (Firebase يرفض undefined)
+  const clean = (o: Record<string, unknown>) => {
+    const r: Record<string, unknown> = {};
+    for (const k in o) if (o[k] !== undefined) r[k] = o[k];
+    return r;
+  };
+
   // ── رسم شكل على سياق معيّن ──
   const drawShape = useCallback((s: Shape, ctx: CanvasRenderingContext2D) => {
     const w = ctx.canvas.width;
@@ -239,19 +246,20 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const ctx = mainRef.current?.getContext("2d");
     if (ctx) drawShape(s, ctx);
     const { id, ...data } = s;
-    set(ref(rtdb, `${strokesPath}/${id}`), data);
+    set(ref(rtdb, `${strokesPath}/${id}`), clean(data));
   }
 
   function newShape(kind: Kind, p: Point, text?: string): Shape {
-    return {
+    const s: Shape = {
       id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       uid: user!.uid,
       kind,
       color: colorRef.current,
       size: sizeRef.current,
       points: [p],
-      text,
     };
+    if (text !== undefined) s.text = text; // لا نُدرج text إن لم يوجد (Firebase يرفض undefined)
+    return s;
   }
 
   function onPointerDown(e: React.PointerEvent) {
@@ -317,7 +325,7 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
       shapes.current.push(s);
       redoStack.current = [];
       const { id, ...data } = s;
-      set(ref(rtdb, `${strokesPath}/${id}`), data);
+      set(ref(rtdb, `${strokesPath}/${id}`), clean(data));
     } else {
       commit(s); // الأشكال: ارسمها على الرئيسية وادفعها
     }
@@ -333,7 +341,7 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const s = redoStack.current.pop();
     if (!s) return;
     const { id, ...data } = s;
-    set(ref(rtdb, `${strokesPath}/${id}`), data);
+    set(ref(rtdb, `${strokesPath}/${id}`), clean(data));
   }
   function clearAll() {
     if (!confirm("مسح السبورة بالكامل للجميع؟")) return;

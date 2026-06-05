@@ -24,7 +24,10 @@ export default function DMPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    getUserName(otherUid).then(setOtherName);
+    // الاسم يأتي من الرابط مباشرة (الأكثر موثوقية)، وإلا نجلبه
+    const fromUrl = new URLSearchParams(window.location.search).get("name");
+    if (fromUrl) setOtherName(fromUrl);
+    else getUserName(otherUid).then((n) => n && setOtherName(n));
   }, [otherUid]);
 
   useEffect(() => {
