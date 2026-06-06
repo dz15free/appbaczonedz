@@ -142,6 +142,11 @@ export class VoiceManager {
     update(ref(rtdb, `${this.voicePath()}/${uid}`), { kicked: true });
   }
 
+  // الطالب يستطيع إغلاق ميكروفونه بنفسه فقط (الفتح بيد المالك)
+  selfMute() {
+    update(ref(rtdb, `${this.voicePath()}/${this.uid}`), { muted: true });
+  }
+
   async leave() {
     this.unsub?.();
     try {

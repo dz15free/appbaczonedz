@@ -21,6 +21,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { playMessageSound } from "@/lib/sound";
 import { prepareFile } from "@/lib/upload";
+import { FileViewer } from "@/features/files/file-viewer";
 
 // مرفق يُحمَّل عند العرض فقط (يبقي الدردشة خفيفة)
 function Attachment({
@@ -33,6 +34,7 @@ function Attachment({
   onZoom: (url: string, name: string) => void;
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [viewFile, setViewFile] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -62,15 +64,17 @@ function Attachment({
     );
 
   return (
-    <a
-      href={dataUrl}
-      download={msg.fileName}
-      className="mt-1 flex max-w-[85%] items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:border-primary"
-    >
-      <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-primary" />
-      <span className="truncate">{msg.fileName || "ملف"}</span>
-      <FontAwesomeIcon icon={faDownload} className="h-3 w-3 text-text-muted" />
-    </a>
+    <>
+      <button
+        onClick={() => setViewFile(true)}
+        className="mt-1 flex max-w-[85%] items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:border-primary"
+      >
+        <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-primary" />
+        <span className="truncate">{msg.fileName || "ملف"}</span>
+        <span className="text-xs text-text-muted">عرض</span>
+      </button>
+      {viewFile && <FileViewer dataUrl={dataUrl} name={msg.fileName || "ملف"} onClose={() => setViewFile(false)} />}
+    </>
   );
 }
 

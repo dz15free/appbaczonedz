@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag } from "@fortawesome/free-solid-svg-icons";
@@ -14,6 +15,7 @@ import {
   addComment,
   votePost,
   listenFriends,
+  listenSentRequests,
   sendFriendRequest,
   deletePost,
   deleteComment,
@@ -33,6 +35,7 @@ export default function PostPage() {
   const [text, setText] = useState("");
   const [friends, setFriends] = useState<Person[]>([]);
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [sentSet, setSentSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -41,6 +44,11 @@ export default function PostPage() {
   useEffect(() => {
     if (!user) return;
     return listenFriends(user.uid, setFriends);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    return listenSentRequests(user.uid, setSentSet);
   }, [user]);
 
   const friendIds = new Set(friends.map((f) => f.uid));
@@ -83,12 +91,12 @@ export default function PostPage() {
           <>
             <div className="rounded-lg border border-border bg-surface p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <Link href={`/u/${post.authorId}`} className="flex items-center gap-2 hover:opacity-80">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                     {post.authorName.charAt(0)}
                   </span>
                   <span className="font-bold">{post.authorName}</span>
-                </div>
+                </Link>
                 {post.authorId === user.uid ? (
                   <button
                     onClick={() => {
@@ -143,7 +151,9 @@ export default function PostPage() {
                 return (
                   <div key={c.id} className="rounded-lg border border-border bg-surface p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-primary">{c.authorName}</span>
+                      <Link href={`/u/${c.authorId}`} className="text-xs font-bold text-primary hover:underline">
+                        {c.authorName}
+                      </Link>
                       <div className="flex items-center gap-1.5">
                         {c.authorId === user.uid ? (
                           <button
@@ -158,7 +168,7 @@ export default function PostPage() {
                         ) : (
                           <>
                             {showAdd &&
-                              (sent[c.authorId] ? (
+                              (sent[c.authorId] || sentSet.has(c.authorId) ? (
                                 <span className="text-[10px] text-text-muted">تم الإرسال</span>
                               ) : (
                                 <button
@@ -179,6 +189,17 @@ export default function PostPage() {
                             >
                               <FontAwesomeIcon icon={faFlag} className="h-3 w-3" />
                             </button>
+                            {post?.authorId === user.uid && (
+                              <button
+                                onClick={() => {
+                                  if (confirm("حذف هذا التعليق من منشورك؟")) deleteComment(postId, c.id);
+                                }}
+                                aria-label="حذف"
+                                className="text-text-muted hover:text-danger"
+                              >
+                                <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                              </button>
+                            )}
                           </>
                         )}
                       </div>

@@ -12,6 +12,8 @@ export interface Profile {
   role?: string;
   points?: number;
   level?: number;
+  postCount?: number;
+  commentCount?: number;
   avatarUrl?: string | null;
 }
 

@@ -20,6 +20,9 @@ import {
   faSpinner,
   faTrash,
   faFlag,
+  faGlobe,
+  faUserGroup,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -38,6 +41,7 @@ import {
   rejectFriendRequest,
   listenFriendRequests,
   listenFriends,
+  listenSentRequests,
   listenThreads,
   type Post,
   type Person,
@@ -105,13 +109,16 @@ function Feed({ me }: { me: Person }) {
   const [sort, setSort] = useState<"recent" | "top">("recent");
   const [friends, setFriends] = useState<Person[]>([]);
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<{ kind: "image" | "file"; dataUrl: string; name: string } | null>(null);
   const [preparing, setPreparing] = useState(false);
+  const [visibility, setVisibility] = useState<"public" | "friends" | "private">("public");
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => listenPosts(me.uid, setPosts), [me.uid]);
   useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
+  useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
 
   const friendIds = new Set(friends.map((f) => f.uid));
 
@@ -133,9 +140,10 @@ function Feed({ me }: { me: Person }) {
   async function publish() {
     if (!text.trim() && !pending) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text, pending ?? undefined);
+    await createPost(me.uid, me.name, text, pending ?? undefined, visibility);
     setText("");
     setPending(null);
+    setVisibility("public");
     setPosting(false);
   }
 
@@ -144,7 +152,15 @@ function Feed({ me }: { me: Person }) {
     setSent((s) => ({ ...s, [uid]: true }));
   }
 
-  const shown = [...posts].sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
+  // فلترة حسب الخصوصية: عام للجميع، أصدقاء للأصدقاء، خاص لصاحبه فقط
+  const visible = (p: Post) =>
+    p.visibility === "public" ||
+    p.authorId === me.uid ||
+    (p.visibility === "friends" && friendIds.has(p.authorId));
+
+  const shown = [...posts]
+    .filter(visible)
+    .sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
 
   return (
     <div className="space-y-4">
@@ -189,6 +205,24 @@ function Feed({ me }: { me: Person }) {
             <button onClick={() => fileInput.current?.click()} aria-label="ملف" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
               <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
             </button>
+            <div className="mx-1 h-5 w-px bg-border" />
+            {([
+              { id: "public", icon: faGlobe, label: "عام" },
+              { id: "friends", icon: faUserGroup, label: "أصدقاء" },
+              { id: "private", icon: faLock, label: "خاص" },
+            ] as const).map((v) => (
+              <button
+                key={v.id}
+                onClick={() => setVisibility(v.id)}
+                aria-label={v.label}
+                title={v.label}
+                className={`grid h-9 w-9 place-items-center rounded-md ${
+                  visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"
+                }`}
+              >
+                <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
+              </button>
+            ))}
           </div>
           <button
             onClick={publish}
@@ -227,15 +261,21 @@ function Feed({ me }: { me: Person }) {
         return (
           <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <Link href={`/u/${p.authorId}`} className="flex items-center gap-2">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                   {p.authorName.charAt(0)}
                 </span>
                 <div>
-                  <span className="block text-sm font-bold">{p.authorName}</span>
-                  <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
+                  <span className="block text-sm font-bold hover:underline">{p.authorName}</span>
+                  <span className="flex items-center gap-1 text-xs text-text-muted">
+                    {timeAgo(p.createdAt)}
+                    <FontAwesomeIcon
+                      icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
+                      className="h-2.5 w-2.5"
+                    />
+                  </span>
                 </div>
-              </div>
+              </Link>
               <div className="flex items-center gap-2">
                 {p.authorId === me.uid ? (
                   <button
@@ -250,7 +290,7 @@ function Feed({ me }: { me: Person }) {
                 ) : (
                   <>
                     {showAdd &&
-                      (sent[p.authorId] ? (
+                      (sent[p.authorId] || sentSet.has(p.authorId) ? (
                         <span className="text-xs text-text-muted">تم الإرسال</span>
                       ) : (
                         <button
@@ -319,9 +359,11 @@ function People({ me }: { me: Person }) {
   const [results, setResults] = useState<Person[]>([]);
   const [searching, setSearching] = useState(false);
   const [sent, setSent] = useState<Record<string, boolean>>({});
+  const [sentSet, setSentSet] = useState<Set<string>>(new Set());
 
   useEffect(() => listenFriendRequests(me.uid, setRequests), [me.uid]);
   useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
+  useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
 
   async function doSearch() {
     if (!term.trim()) return;
@@ -391,7 +433,7 @@ function People({ me }: { me: Person }) {
                 </span>
                 {isFriend ? (
                   <span className="text-xs text-secondary">صديق</span>
-                ) : sent[p.uid] ? (
+                ) : sent[p.uid] || sentSet.has(p.uid) ? (
                   <span className="text-xs text-text-muted">تم الإرسال</span>
                 ) : (
                   <button onClick={() => addFriend(p)} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">

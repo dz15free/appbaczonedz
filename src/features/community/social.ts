@@ -11,10 +11,12 @@ import {
   orderByChild,
   startAt,
   endAt,
+  equalTo,
   limitToLast,
   increment,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { awardActivity } from "@/features/gamification/points";
 
 export interface Post {
   id: string;
@@ -25,6 +27,7 @@ export interface Post {
   score: number;
   myVote: number; // 1 | -1 | 0
   commentCount: number;
+  visibility: "public" | "friends" | "private";
   attachmentId?: string;
   attachmentKind?: "image" | "file";
   fileName?: string;
@@ -58,13 +61,15 @@ export async function createPost(
   authorId: string,
   authorName: string,
   text: string,
-  attachment?: { kind: "image" | "file"; dataUrl: string; name: string }
+  attachment?: { kind: "image" | "file"; dataUrl: string; name: string },
+  visibility: "public" | "friends" | "private" = "public"
 ) {
   const post: Record<string, unknown> = {
     authorId,
     authorName,
     text: text.trim(),
     createdAt: Date.now(),
+    visibility,
   };
   if (attachment) {
     const aRef = push(ref(rtdb, "community/postAttachments"));
@@ -74,6 +79,7 @@ export async function createPost(
     post.fileName = attachment.name;
   }
   await push(ref(rtdb, "community/posts"), post);
+  await awardActivity(authorId, "post");
 }
 
 export async function getPostAttachment(attachmentId: string): Promise<string | null> {
@@ -125,6 +131,7 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
         score,
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
+        visibility: p.visibility ?? "public",
         attachmentId: p.attachmentId,
         attachmentKind: p.attachmentKind,
         fileName: p.fileName,
@@ -149,10 +156,38 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       score: Object.values(votes).reduce((a, b) => a + (b as number), 0),
       myVote: votes[myUid] ?? 0,
       commentCount: p.commentCount ?? 0,
+      visibility: p.visibility ?? "public",
       attachmentId: p.attachmentId,
       attachmentKind: p.attachmentKind,
       fileName: p.fileName,
     });
+  });
+}
+
+// منشورات مستخدم معيّن (لصفحة البروفايل)
+export function listenUserPosts(authorUid: string, myUid: string, cb: (posts: Post[]) => void) {
+  const q = query(ref(rtdb, "community/posts"), orderByChild("authorId"), equalTo(authorUid));
+  return onValue(q, (snap) => {
+    const val = (snap.val() as Record<string, any>) ?? {};
+    const posts = Object.entries(val).map(([id, p]: [string, any]) => {
+      const votes = (p.votes as Record<string, number>) ?? {};
+      return {
+        id,
+        authorId: p.authorId,
+        authorName: p.authorName,
+        text: p.text,
+        createdAt: p.createdAt ?? 0,
+        score: Object.values(votes).reduce((a, b) => a + (b as number), 0),
+        myVote: votes[myUid] ?? 0,
+        commentCount: p.commentCount ?? 0,
+        visibility: p.visibility ?? "public",
+        attachmentId: p.attachmentId,
+        attachmentKind: p.attachmentKind,
+        fileName: p.fileName,
+      } as Post;
+    });
+    posts.sort((a, b) => b.createdAt - a.createdAt);
+    cb(posts);
   });
 }
 
@@ -172,6 +207,7 @@ export async function addComment(postId: string, authorId: string, authorName: s
     createdAt: Date.now(),
   });
   await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(1) });
+  await awardActivity(authorId, "comment");
 }
 
 export function listenComments(postId: string, cb: (comments: Comment[]) => void) {
@@ -200,6 +236,15 @@ export async function sendFriendRequest(from: Person, toUid: string) {
   await set(ref(rtdb, `friendRequests/${toUid}/${from.uid}`), {
     name: from.name,
     createdAt: Date.now(),
+  });
+  // نحفظ أنّنا أرسلنا الطلب (يبقى بعد التحديث)
+  await set(ref(rtdb, `sentRequests/${from.uid}/${toUid}`), true);
+}
+
+export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void) {
+  return onValue(ref(rtdb, `sentRequests/${myUid}`), (snap) => {
+    const val = (snap.val() as Record<string, boolean>) ?? {};
+    cb(new Set(Object.keys(val)));
   });
 }
 

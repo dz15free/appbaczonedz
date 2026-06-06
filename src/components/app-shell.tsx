@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
+import { recordDailyVisit } from "@/features/gamification/points";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
@@ -21,6 +23,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
   const initial = (profile?.name || user?.displayName || "ط").charAt(0);
+
+  useEffect(() => {
+    if (user?.uid) recordDailyVisit(user.uid);
+  }, [user?.uid]);
 
   return (
     <div className="min-h-[100dvh] pb-20 lg:pb-0">

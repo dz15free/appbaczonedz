@@ -6,15 +6,27 @@ import { faFileArrowUp, faFile, faDownload, faSpinner } from "@fortawesome/free-
 import { useAuth } from "@/features/auth/auth-provider";
 import { addRoomFile, listenRoomFiles, getAttachment, type RoomFile } from "@/features/rooms/rooms";
 import { prepareFile } from "@/lib/upload";
+import { FileViewer } from "@/features/files/file-viewer";
 
 export function RoomFiles({ roomId }: { roomId: string }) {
   const { user } = useAuth();
   const [files, setFiles] = useState<RoomFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<{ dataUrl: string; name: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => listenRoomFiles(roomId, setFiles), [roomId]);
+
+  async function open(f: RoomFile) {
+    setBusy(f.id);
+    try {
+      const dataUrl = await getAttachment(roomId, f.attachmentId);
+      if (dataUrl) setViewing({ dataUrl, name: f.name });
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -32,21 +44,6 @@ export function RoomFiles({ roomId }: { roomId: string }) {
       alert(err instanceof Error ? err.message : "فشل الرفع.");
     } finally {
       setUploading(false);
-    }
-  }
-
-  async function download(f: RoomFile) {
-    setBusy(f.id);
-    try {
-      const dataUrl = await getAttachment(roomId, f.attachmentId);
-      if (dataUrl) {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = f.name;
-        a.click();
-      }
-    } finally {
-      setBusy(null);
     }
   }
 
@@ -70,26 +67,28 @@ export function RoomFiles({ roomId }: { roomId: string }) {
           <p className="py-10 text-center text-sm text-text-muted">لا ملفات بعد. ارفع ملفاً ليشاركه الجميع.</p>
         ) : (
           files.map((f) => (
-            <div key={f.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
+            <button
+              key={f.id}
+              onClick={() => open(f)}
+              className="flex w-full items-center gap-3 rounded-lg border border-border bg-surface p-3 text-right transition hover:border-primary"
+            >
               <FontAwesomeIcon icon={faFile} className="h-5 w-5 text-primary" />
               <div className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold">{f.name}</span>
-                <span className="text-xs text-text-muted">رفعه {f.uploaderName}</span>
+                <span className="text-xs text-text-muted">رفعه {f.uploaderName} · اضغط للعرض</span>
               </div>
-              <button
-                onClick={() => download(f)}
-                disabled={busy === f.id}
-                aria-label="تحميل"
-                className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary"
-              >
-                <FontAwesomeIcon icon={busy === f.id ? faSpinner : faDownload} className={`h-4 w-4 ${busy === f.id ? "animate-spin" : ""}`} />
-              </button>
-            </div>
+              <FontAwesomeIcon
+                icon={busy === f.id ? faSpinner : faDownload}
+                className={`h-4 w-4 text-text-muted ${busy === f.id ? "animate-spin" : ""}`}
+              />
+            </button>
           ))
         )}
       </div>
 
       <p className="mt-2 text-center text-xs text-text-muted">الحدّ الأقصى للملف 5 ميجابايت (الصور تُضغط تلقائياً).</p>
+
+      {viewing && <FileViewer dataUrl={viewing.dataUrl} name={viewing.name} onClose={() => setViewing(null)} />}
     </div>
   );
 }

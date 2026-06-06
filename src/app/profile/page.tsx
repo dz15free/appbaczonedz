@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGraduationCap, faLocationDot, faStar, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
@@ -10,15 +10,23 @@ import { logoutUser } from "@/lib/firebase/auth";
 import { TRACKS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/field";
+import { ProfileBadges } from "@/features/gamification/profile-stats";
+import { listenFriends, type Person } from "@/features/community/social";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
+  const [friends, setFriends] = useState<Person[]>([]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    return listenFriends(user.uid, setFriends);
+  }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
@@ -59,6 +67,14 @@ export default function ProfilePage() {
               <span className="font-bold">{profile?.wilaya ?? "—"}</span>
             </div>
           </div>
+        </div>
+
+        {/* الإنجازات */}
+        <div className="mt-4">
+          <ProfileBadges
+            stats={{ points: profile?.points, postCount: profile?.postCount, commentCount: profile?.commentCount }}
+            friendCount={friends.length}
+          />
         </div>
 
         <Button

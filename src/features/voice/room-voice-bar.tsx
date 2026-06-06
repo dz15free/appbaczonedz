@@ -79,9 +79,13 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   }
 
   function toggleMute() {
-    // المالك فقط يتحكّم بميكروفونه (والطلاب يتحكّم بهم المالك)
-    if (!isOwner || !user) return;
-    managerRef.current?.ownerToggleMute(user.uid, !muted);
+    if (!user) return;
+    if (isOwner) {
+      managerRef.current?.ownerToggleMute(user.uid, !muted);
+    } else if (!muted) {
+      // الطالب يغلق ميكروفونه فقط (الفتح بيد المعلّم)
+      managerRef.current?.selfMute();
+    }
   }
 
   useEffect(() => {
@@ -173,17 +177,25 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
               المشاركون ({participants.length})
             </button>
             <div className="flex items-center gap-2">
-              {!isOwner && (
-                <span className="text-[11px] text-text-muted">المعلّم يتحكّم بالميكروفون</span>
+              {!isOwner && muted && (
+                <span className="text-[11px] text-text-muted">المعلّم يفتح الميكروفون</span>
               )}
               <button
                 onClick={toggleMute}
-                disabled={!isOwner}
+                disabled={!isOwner && muted}
                 className={`grid h-10 w-10 place-items-center rounded-full ${
                   muted ? "bg-danger/10 text-danger" : "bg-secondary/10 text-secondary"
-                } ${!isOwner ? "opacity-70" : ""}`}
-                aria-label={muted ? "مكتوم" : "مفتوح"}
-                title={isOwner ? (muted ? "إلغاء الكتم" : "كتم") : "المعلّم يتحكّم بالميكروفون"}
+                } ${!isOwner && muted ? "opacity-70" : ""}`}
+                aria-label={muted ? "مكتوم" : "إغلاق الميكروفون"}
+                title={
+                  isOwner
+                    ? muted
+                      ? "فتح الميكروفون"
+                      : "كتم"
+                    : muted
+                      ? "المعلّم يفتح الميكروفون"
+                      : "إغلاق ميكروفوني"
+                }
               >
                 <FontAwesomeIcon icon={muted ? faMicrophoneSlash : faMicrophone} className="h-4 w-4" />
               </button>

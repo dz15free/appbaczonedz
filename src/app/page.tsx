@@ -77,9 +77,12 @@ export default function HomePage() {
             ابدأ رحلتك الآن
             <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4" />
           </Link>
-          <button className="rounded-md border border-border bg-surface px-7 py-3 font-bold text-text-primary transition hover:bg-primary/10">
+          <Link
+            href="/login"
+            className="rounded-md border border-border bg-surface px-7 py-3 font-bold text-text-primary transition hover:bg-primary/10"
+          >
             استكشف المنصة
-          </button>
+          </Link>
         </div>
 
         {/* مزايا حقيقية بدل أرقام وهمية */}

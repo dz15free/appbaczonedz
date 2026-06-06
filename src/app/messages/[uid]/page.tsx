@@ -8,6 +8,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { listenDM, sendDM, getUserName, type DMMessage, type Person } from "@/features/community/social";
+import { playMessageSound } from "@/lib/sound";
 
 export default function DMPage() {
   const { uid: otherUid } = useParams<{ uid: string }>();
@@ -18,6 +19,8 @@ export default function DMPage() {
   const [messages, setMessages] = useState<DMMessage[]>([]);
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
+  const lastCount = useRef(0);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -32,7 +35,15 @@ export default function DMPage() {
 
   useEffect(() => {
     if (!user) return;
-    return listenDM(user.uid, otherUid, setMessages);
+    return listenDM(user.uid, otherUid, (msgs) => {
+      setMessages(msgs);
+      if (initialized.current && msgs.length > lastCount.current) {
+        const latest = msgs[msgs.length - 1];
+        if (latest && latest.senderId !== user.uid) playMessageSound();
+      }
+      lastCount.current = msgs.length;
+      initialized.current = true;
+    });
   }, [user, otherUid]);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
