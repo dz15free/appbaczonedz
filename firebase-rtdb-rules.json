@@ -10,8 +10,30 @@
 
     "community": {
       ".read": "auth != null",
-      ".write": "auth != null",
-      "posts": { ".indexOn": ["createdAt"] }
+      "posts": {
+        ".indexOn": ["createdAt"],
+        "$postId": {
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))",
+          "votes": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid"
+            }
+          },
+          "commentCount": {
+            ".write": "auth != null"
+          }
+        }
+      },
+      "comments": {
+        "$postId": {
+          "$commentId": {
+            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))"
+          }
+        }
+      },
+      "postAttachments": {
+        ".write": "auth != null"
+      }
     },
 
     "friends": {
@@ -24,14 +46,16 @@
     "friendRequests": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null"
+        "$from": {
+          ".write": "auth != null && ($from === auth.uid || $uid === auth.uid)"
+        }
       }
     },
 
     "dms": {
       "$threadId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": "auth != null && $threadId.contains(auth.uid)",
+        ".write": "auth != null && $threadId.contains(auth.uid)"
       }
     },
 
@@ -40,6 +64,10 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null"
       }
+    },
+
+    "reports": {
+      ".write": "auth != null"
     },
 
     "rooms": {

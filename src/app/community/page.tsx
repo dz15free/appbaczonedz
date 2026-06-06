@@ -18,6 +18,8 @@ import {
   faImage,
   faPaperclip,
   faSpinner,
+  faTrash,
+  faFlag,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -28,6 +30,8 @@ import {
   createPost,
   listenPosts,
   votePost,
+  deletePost,
+  reportContent,
   searchUsers,
   sendFriendRequest,
   acceptFriendRequest,
@@ -232,18 +236,44 @@ function Feed({ me }: { me: Person }) {
                   <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
                 </div>
               </div>
-              {showAdd &&
-                (sent[p.authorId] ? (
-                  <span className="text-xs text-text-muted">تم الإرسال</span>
-                ) : (
+              <div className="flex items-center gap-2">
+                {p.authorId === me.uid ? (
                   <button
-                    onClick={() => addFriend(p.authorId, p.authorName)}
-                    className="flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs text-primary"
+                    onClick={() => {
+                      if (confirm("حذف هذا المنشور؟")) deletePost(p);
+                    }}
+                    aria-label="حذف"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger"
                   >
-                    <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
-                    صداقة
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
                   </button>
-                ))}
+                ) : (
+                  <>
+                    {showAdd &&
+                      (sent[p.authorId] ? (
+                        <span className="text-xs text-text-muted">تم الإرسال</span>
+                      ) : (
+                        <button
+                          onClick={() => addFriend(p.authorId, p.authorName)}
+                          className="flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs text-primary"
+                        >
+                          <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
+                          صداقة
+                        </button>
+                      ))}
+                    <button
+                      onClick={() => {
+                        reportContent("post", p.id, me);
+                        alert("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
+                      }}
+                      aria-label="إبلاغ"
+                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"
+                    >
+                      <FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {p.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>}

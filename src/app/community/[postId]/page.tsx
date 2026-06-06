@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
@@ -15,6 +15,9 @@ import {
   votePost,
   listenFriends,
   sendFriendRequest,
+  deletePost,
+  deleteComment,
+  reportContent,
   type Post,
   type Comment,
   type Person,
@@ -79,11 +82,38 @@ export default function PostPage() {
         ) : (
           <>
             <div className="rounded-lg border border-border bg-surface p-4">
-              <div className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                  {post.authorName.charAt(0)}
-                </span>
-                <span className="font-bold">{post.authorName}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
+                    {post.authorName.charAt(0)}
+                  </span>
+                  <span className="font-bold">{post.authorName}</span>
+                </div>
+                {post.authorId === user.uid ? (
+                  <button
+                    onClick={() => {
+                      if (confirm("حذف هذا المنشور؟")) {
+                        deletePost(post);
+                        router.push("/community");
+                      }
+                    }}
+                    aria-label="حذف"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger"
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "طالب" });
+                      alert("تم الإبلاغ. شكراً.");
+                    }}
+                    aria-label="إبلاغ"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"
+                  >
+                    <FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
               {post.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>}
               <PostAttachment post={post} />
@@ -114,18 +144,44 @@ export default function PostPage() {
                   <div key={c.id} className="rounded-lg border border-border bg-surface p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-primary">{c.authorName}</span>
-                      {showAdd &&
-                        (sent[c.authorId] ? (
-                          <span className="text-[10px] text-text-muted">تم الإرسال</span>
-                        ) : (
+                      <div className="flex items-center gap-1.5">
+                        {c.authorId === user.uid ? (
                           <button
-                            onClick={() => addFriend(c.authorId, c.authorName)}
-                            className="flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary"
+                            onClick={() => {
+                              if (confirm("حذف التعليق؟")) deleteComment(postId, c.id);
+                            }}
+                            aria-label="حذف"
+                            className="text-text-muted hover:text-danger"
                           >
-                            <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
-                            صداقة
+                            <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
                           </button>
-                        ))}
+                        ) : (
+                          <>
+                            {showAdd &&
+                              (sent[c.authorId] ? (
+                                <span className="text-[10px] text-text-muted">تم الإرسال</span>
+                              ) : (
+                                <button
+                                  onClick={() => addFriend(c.authorId, c.authorName)}
+                                  className="flex items-center gap-1 rounded bg-primary/10 px-2 py-1 text-[11px] text-primary"
+                                >
+                                  <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
+                                  صداقة
+                                </button>
+                              ))}
+                            <button
+                              onClick={() => {
+                                reportContent("comment", c.id, { uid: user.uid, name: profile?.name || user.displayName || "طالب" });
+                                alert("تم الإبلاغ. شكراً.");
+                              }}
+                              aria-label="إبلاغ"
+                              className="text-text-muted hover:text-warning"
+                            >
+                              <FontAwesomeIcon icon={faFlag} className="h-3 w-3" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <p className="mt-1 whitespace-pre-wrap text-sm">{c.text}</p>
                   </div>

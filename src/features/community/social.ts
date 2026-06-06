@@ -81,6 +81,34 @@ export async function getPostAttachment(attachmentId: string): Promise<string | 
   return (snap.val() as string) ?? null;
 }
 
+/* ───────── الإشراف ───────── */
+export async function deletePost(post: { id: string; attachmentId?: string }) {
+  const updates: Record<string, null> = { [`community/posts/${post.id}`]: null };
+  if (post.attachmentId) updates[`community/postAttachments/${post.attachmentId}`] = null;
+  await update(ref(rtdb), updates);
+}
+
+export async function deleteComment(postId: string, commentId: string) {
+  await remove(ref(rtdb, `community/comments/${postId}/${commentId}`));
+  await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(-1) });
+}
+
+export async function reportContent(
+  kind: "post" | "comment",
+  id: string,
+  reporter: Person,
+  reason = ""
+) {
+  await push(ref(rtdb, "reports"), {
+    kind,
+    id,
+    reporterId: reporter.uid,
+    reporterName: reporter.name,
+    reason,
+    createdAt: Date.now(),
+  });
+}
+
 export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
   const q = query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(100));
   return onValue(q, (snap) => {
