@@ -10,6 +10,7 @@ import {
   faLocationDot,
   faStar,
   faUserPlus,
+  faUserXmark,
   faMessage,
   faArrowUp,
   faArrowDown,
@@ -29,6 +30,7 @@ import {
   listenFriends,
   listenSentRequests,
   sendFriendRequest,
+  cancelFriendRequest,
   votePost,
   type Post,
   type Person,
@@ -54,8 +56,13 @@ export default function UserProfilePage() {
   const [theirFriends, setTheirFriends] = useState<Person[]>([]);
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [sentLocal, setSentLocal] = useState(false);
+  const [nameParam, setNameParam] = useState("");
 
   const isMe = user?.uid === uid;
+
+  useEffect(() => {
+    setNameParam(new URLSearchParams(window.location.search).get("name") || "");
+  }, [uid]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -80,7 +87,7 @@ export default function UserProfilePage() {
   const isFriend = friends.some((f) => f.uid === uid);
   const isSent = sentSet.has(uid) || sentLocal;
   const trackName = TRACKS.find((t) => t.id === theirProfile?.track)?.name ?? "—";
-  const name = theirProfile?.name || "طالب";
+  const name = theirProfile?.name || nameParam || "طالب";
 
   // الخصوصية: عام للجميع، أصدقاء للأصدقاء، خاص لصاحبه
   const visiblePosts = posts.filter(
@@ -91,6 +98,11 @@ export default function UserProfilePage() {
     if (!user) return;
     await sendFriendRequest({ uid: user.uid, name: myProfile?.name || user.displayName || "طالب" }, uid);
     setSentLocal(true);
+  }
+  async function cancelReq() {
+    if (!user) return;
+    await cancelFriendRequest(user.uid, uid);
+    setSentLocal(false);
   }
 
   return (
@@ -130,7 +142,9 @@ export default function UserProfilePage() {
                   <FontAwesomeIcon icon={faMessage} className="h-4 w-4" /> مراسلة
                 </Link>
               ) : isSent ? (
-                <span className="rounded-md bg-surface px-5 py-2 text-sm text-text-muted">تم إرسال الطلب</span>
+                <button onClick={cancelReq} className="flex items-center gap-2 rounded-md bg-surface px-5 py-2 text-sm text-text-muted hover:text-danger">
+                  <FontAwesomeIcon icon={faUserXmark} className="h-4 w-4" /> إلغاء الطلب
+                </button>
               ) : (
                 <button onClick={addFriend} className="flex items-center gap-2 rounded-md bg-primary/10 px-5 py-2 text-sm font-bold text-primary">
                   <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" /> إضافة صديق

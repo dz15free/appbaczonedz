@@ -4,6 +4,7 @@ import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Preloader } from "@/components/preloader";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>
       <body className="min-h-screen font-sans antialiased">
+        <Preloader />
         <Providers>{children}</Providers>
       </body>
     </html>

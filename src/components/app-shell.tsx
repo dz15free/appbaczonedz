@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,6 +8,7 @@ import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot } from "@fortawesome
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { recordDailyVisit } from "@/features/gamification/points";
+import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
@@ -23,9 +24,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
   const initial = (profile?.name || user?.displayName || "ط").charAt(0);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     if (user?.uid) recordDailyVisit(user.uid);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    return listenNotifications(user.uid, (list) => setUnread(list.filter((n) => !n.read).length));
   }, [user?.uid]);
 
   return (
@@ -46,7 +53,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 pathname === n.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/10"
               }`}
             >
-              <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
+              <span className="relative">
+                <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
+                {n.href === "/notifications" && unread > 0 && (
+                  <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </span>
               {n.label}
             </Link>
           ))}
@@ -90,7 +104,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               pathname === n.href ? "text-primary" : "text-text-muted"
             }`}
           >
-            <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
+            <span className="relative">
+              <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
+              {n.href === "/notifications" && unread > 0 && (
+                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </span>
             {n.label}
           </Link>
         ))}

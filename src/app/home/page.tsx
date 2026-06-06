@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faGlobe, faChalkboardUser, faRobot } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck, faUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
@@ -13,6 +13,22 @@ const QUICK = [
   { href: "/rooms", label: "غرف الدراسة", desc: "ادرس وراجع جماعياً", icon: faUsers },
   { href: "/omibot", label: "Omibot", desc: "مساعدك الذكي للدراسة", icon: faRobot },
   { href: "/community", label: "المجتمع", desc: "اسأل وشارك", icon: faGlobe },
+];
+
+// روابط لميزات الموقع الرئيسي
+const EXTERNAL = [
+  {
+    href: "https://www.baczonedz.com/p/blog-page_81.html",
+    label: "محاكاة البكالوريا",
+    desc: "عِش تجربة الامتحان الحقيقي",
+    icon: faClipboardCheck,
+  },
+  {
+    href: "https://www.baczonedz.com/p/blog-page_5.html",
+    label: "إنشاء برنامج مراجعة",
+    desc: "خطّة مراجعة منظّمة لك",
+    icon: faCalendarCheck,
+  },
 ];
 
 export default function HomePage() {
@@ -52,9 +68,27 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="mt-6 flex items-center gap-3 rounded-lg border border-dashed border-border p-5 text-text-muted">
-          <FontAwesomeIcon icon={faChalkboardUser} className="h-5 w-5" />
-          <span className="text-sm">الإنجازات والتحديات والمجموعات قادمة قريباً.</span>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {EXTERNAL.map((q) => (
+            <a
+              key={q.href}
+              href={q.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 rounded-lg border border-border bg-gradient-to-l from-primary/10 to-transparent p-5 transition hover:-translate-y-1 hover:shadow-glass"
+            >
+              <span className="grid h-12 w-12 place-items-center rounded-md bg-gradient-primary text-white">
+                <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
+              </span>
+              <div className="flex-1">
+                <span className="flex items-center gap-1.5 font-bold">
+                  {q.label}
+                  <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />
+                </span>
+                <span className="text-sm text-text-muted">{q.desc}</span>
+              </div>
+            </a>
+          ))}
         </div>
       </section>
     </AppShell>

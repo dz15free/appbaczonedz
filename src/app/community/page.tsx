@@ -37,6 +37,7 @@ import {
   reportContent,
   searchUsers,
   sendFriendRequest,
+  cancelFriendRequest,
   acceptFriendRequest,
   rejectFriendRequest,
   listenFriendRequests,
@@ -151,6 +152,10 @@ function Feed({ me }: { me: Person }) {
     await sendFriendRequest(me, uid);
     setSent((s) => ({ ...s, [uid]: true }));
   }
+  async function cancelReq(uid: string) {
+    await cancelFriendRequest(me.uid, uid);
+    setSent((s) => ({ ...s, [uid]: false }));
+  }
 
   // فلترة حسب الخصوصية: عام للجميع، أصدقاء للأصدقاء، خاص لصاحبه فقط
   const visible = (p: Post) =>
@@ -261,7 +266,7 @@ function Feed({ me }: { me: Person }) {
         return (
           <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
             <div className="flex items-center justify-between">
-              <Link href={`/u/${p.authorId}`} className="flex items-center gap-2">
+              <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="flex items-center gap-2">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                   {p.authorName.charAt(0)}
                 </span>
@@ -291,7 +296,9 @@ function Feed({ me }: { me: Person }) {
                   <>
                     {showAdd &&
                       (sent[p.authorId] || sentSet.has(p.authorId) ? (
-                        <span className="text-xs text-text-muted">تم الإرسال</span>
+                        <button onClick={() => cancelReq(p.authorId)} className="rounded-md px-2 py-1 text-xs text-text-muted hover:text-danger">
+                          إلغاء الطلب
+                        </button>
                       ) : (
                         <button
                           onClick={() => addFriend(p.authorId, p.authorName)}
@@ -375,6 +382,10 @@ function People({ me }: { me: Person }) {
     await sendFriendRequest(me, p.uid);
     setSent((s) => ({ ...s, [p.uid]: true }));
   }
+  async function cancelReq(uid: string) {
+    await cancelFriendRequest(me.uid, uid);
+    setSent((s) => ({ ...s, [uid]: false }));
+  }
 
   const friendIds = new Set(friends.map((f) => f.uid));
 
@@ -413,7 +424,7 @@ function People({ me }: { me: Person }) {
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doSearch()}
-            placeholder="اكتب اسم الطالب..."
+            placeholder="ابحث بالاسم أو البريد الإلكتروني..."
             className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
           />
           <button onClick={doSearch} disabled={searching} className="rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
@@ -425,16 +436,18 @@ function People({ me }: { me: Person }) {
             const isFriend = friendIds.has(p.uid);
             return (
               <div key={p.uid} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
-                <span className="flex items-center gap-2 font-semibold">
+                <Link href={`/u/${p.uid}?name=${encodeURIComponent(p.name)}`} className="flex items-center gap-2 font-semibold hover:opacity-80">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                     {p.name.charAt(0)}
                   </span>
                   {p.name}
-                </span>
+                </Link>
                 {isFriend ? (
                   <span className="text-xs text-secondary">صديق</span>
                 ) : sent[p.uid] || sentSet.has(p.uid) ? (
-                  <span className="text-xs text-text-muted">تم الإرسال</span>
+                  <button onClick={() => cancelReq(p.uid)} className="rounded-md px-2 py-1 text-xs text-text-muted hover:text-danger">
+                    إلغاء الطلب
+                  </button>
                 ) : (
                   <button onClick={() => addFriend(p)} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
                     <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" />
@@ -455,12 +468,12 @@ function People({ me }: { me: Person }) {
           <div className="space-y-2">
             {friends.map((f) => (
               <div key={f.uid} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
-                <span className="flex items-center gap-2 font-semibold">
+                <Link href={`/u/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-2 font-semibold hover:opacity-80">
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                     {f.name.charAt(0)}
                   </span>
                   {f.name}
-                </span>
+                </Link>
                 <Link href={`/messages/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
                   <FontAwesomeIcon icon={faMessage} className="h-3.5 w-3.5" />
                   مراسلة

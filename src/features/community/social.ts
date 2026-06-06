@@ -38,6 +38,7 @@ export interface Comment {
   authorName: string;
   text: string;
   createdAt: number;
+  parentId?: string;
 }
 export interface Person {
   uid: string;
@@ -199,13 +200,21 @@ export async function votePost(postId: string, uid: string, value: 1 | -1, curre
 }
 
 /* ───────── التعليقات ───────── */
-export async function addComment(postId: string, authorId: string, authorName: string, text: string) {
-  await push(ref(rtdb, `community/comments/${postId}`), {
+export async function addComment(
+  postId: string,
+  authorId: string,
+  authorName: string,
+  text: string,
+  parentId?: string
+) {
+  const data: Record<string, unknown> = {
     authorId,
     authorName,
     text: text.trim(),
     createdAt: Date.now(),
-  });
+  };
+  if (parentId) data.parentId = parentId;
+  await push(ref(rtdb, `community/comments/${postId}`), data);
   await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(1) });
   await awardActivity(authorId, "comment");
 }
@@ -223,12 +232,18 @@ export function listenComments(postId: string, cb: (comments: Comment[]) => void
 export async function searchUsers(term: string, myUid: string): Promise<Person[]> {
   const t = term.trim();
   if (!t) return [];
-  const q = query(ref(rtdb, "users"), orderByChild("name"), startAt(t), endAt(t + "\uf8ff"), limitToLast(20));
-  const snap = await get(q);
-  const val = (snap.val() as Record<string, any>) ?? {};
-  return Object.entries(val)
-    .map(([uid, u]: [string, any]) => ({ uid, name: u.name ?? "طالب" }))
-    .filter((p) => p.uid !== myUid);
+  const usersRef = ref(rtdb, "users");
+  const byName = query(usersRef, orderByChild("name"), startAt(t), endAt(t + "\uf8ff"), limitToLast(20));
+  const byEmail = query(usersRef, orderByChild("email"), startAt(t.toLowerCase()), endAt(t.toLowerCase() + "\uf8ff"), limitToLast(20));
+  const [sn, se] = await Promise.all([get(byName), get(byEmail)]);
+  const out = new Map<string, Person>();
+  for (const snap of [sn, se]) {
+    const val = (snap.val() as Record<string, any>) ?? {};
+    for (const [uid, u] of Object.entries(val) as [string, any][]) {
+      if (uid !== myUid) out.set(uid, { uid, name: u.name ?? "طالب" });
+    }
+  }
+  return [...out.values()];
 }
 
 /* ───────── الصداقات ───────── */
@@ -237,8 +252,20 @@ export async function sendFriendRequest(from: Person, toUid: string) {
     name: from.name,
     createdAt: Date.now(),
   });
-  // نحفظ أنّنا أرسلنا الطلب (يبقى بعد التحديث)
   await set(ref(rtdb, `sentRequests/${from.uid}/${toUid}`), true);
+  await addNotification(toUid, {
+    type: "friend_request",
+    text: `${from.name} أرسل لك طلب صداقة`,
+    link: "/community",
+  });
+}
+
+// إلغاء طلب صداقة مُرسَل
+export async function cancelFriendRequest(fromUid: string, toUid: string) {
+  await update(ref(rtdb), {
+    [`friendRequests/${toUid}/${fromUid}`]: null,
+    [`sentRequests/${fromUid}/${toUid}`]: null,
+  });
 }
 
 export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void) {
@@ -253,6 +280,12 @@ export async function acceptFriendRequest(me: Person, other: Person) {
     [`friends/${me.uid}/${other.uid}`]: { name: other.name },
     [`friends/${other.uid}/${me.uid}`]: { name: me.name },
     [`friendRequests/${me.uid}/${other.uid}`]: null,
+    [`sentRequests/${other.uid}/${me.uid}`]: null,
+  });
+  await addNotification(other.uid, {
+    type: "friend_accept",
+    text: `${me.name} قبِل طلب صداقتك`,
+    link: `/u/${me.uid}?name=${encodeURIComponent(me.name)}`,
   });
 }
 
@@ -310,6 +343,11 @@ export async function sendDM(me: Person, other: Person, text: string) {
     [`dmThreads/${me.uid}/${other.uid}`]: { name: other.name, lastText: trimmed, lastAt: Date.now() },
     [`dmThreads/${other.uid}/${me.uid}`]: { name: me.name, lastText: trimmed, lastAt: Date.now() },
   });
+  await addNotification(other.uid, {
+    type: "dm",
+    text: `رسالة جديدة من ${me.name}`,
+    link: `/messages/${me.uid}?name=${encodeURIComponent(me.name)}`,
+  });
 }
 
 export function listenDM(a: string, b: string, cb: (msgs: DMMessage[]) => void) {
@@ -340,4 +378,52 @@ export function listenThreads(myUid: string, cb: (threads: Thread[]) => void) {
 export async function getUserName(uid: string): Promise<string> {
   const snap = await get(ref(rtdb, `users/${uid}/name`));
   return (snap.val() as string) ?? "طالب";
+}
+
+/* ───────── الإشعارات ───────── */
+export interface AppNotification {
+  id: string;
+  type: string;
+  text: string;
+  link?: string;
+  read?: boolean;
+  createdAt: number;
+}
+
+export async function addNotification(
+  toUid: string,
+  n: { type: string; text: string; link?: string }
+) {
+  try {
+    await push(ref(rtdb, `notifications/${toUid}`), {
+      type: n.type,
+      text: n.text,
+      link: n.link ?? "",
+      read: false,
+      createdAt: Date.now(),
+    });
+  } catch {
+    /* لا نُفشل العملية الأساسية إن تعذّر الإشعار */
+  }
+}
+
+export function listenNotifications(uid: string, cb: (list: AppNotification[]) => void) {
+  const q = query(ref(rtdb, `notifications/${uid}`), limitToLast(50));
+  return onValue(q, (snap) => {
+    const val = (snap.val() as Record<string, any>) ?? {};
+    const list = Object.entries(val).map(([id, n]: [string, any]) => ({ id, ...n })) as AppNotification[];
+    list.sort((a, b) => b.createdAt - a.createdAt);
+    cb(list);
+  });
+}
+
+export async function markNotificationsRead(uid: string, ids: string[]) {
+  if (!ids.length) return;
+  const updates: Record<string, boolean> = {};
+  for (const id of ids) updates[`notifications/${uid}/${id}/read`] = true;
+  await update(ref(rtdb), updates);
+}
+
+export async function clearNotifications(uid: string) {
+  await remove(ref(rtdb, `notifications/${uid}`));
 }

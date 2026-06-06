@@ -2,7 +2,7 @@
   "rules": {
     "users": {
       ".read": "auth != null",
-      ".indexOn": ["name"],
+      ".indexOn": ["name", "email"],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid"
       }
@@ -11,7 +11,7 @@
     "community": {
       ".read": "auth != null",
       "posts": {
-        ".indexOn": ["createdAt"],
+        ".indexOn": ["createdAt", "authorId"],
         "$postId": {
           ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))",
           "votes": {
@@ -27,7 +27,7 @@
       "comments": {
         "$postId": {
           "$commentId": {
-            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))"
+            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('community').child('posts').child($postId).child('authorId').val() === auth.uid)))"
           }
         }
       },
@@ -49,6 +49,20 @@
         "$from": {
           ".write": "auth != null && ($from === auth.uid || $uid === auth.uid)"
         }
+      }
+    },
+
+    "sentRequests": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null"
       }
     },
 

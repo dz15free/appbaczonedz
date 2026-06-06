@@ -9,6 +9,7 @@ import {
   equalTo,
   limitToLast,
   onValue,
+  update,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
@@ -166,22 +167,36 @@ export interface RoomFile {
   id: string;
   name: string;
   uploaderName: string;
-  attachmentId: string;
+  uploaderId?: string;
+  attachmentId?: string; // قديم: base64
+  driveId?: string; // جديد: Google Drive
   createdAt: number;
 }
 
 export async function addRoomFile(
   roomId: string,
-  data: { uploaderName: string; dataUrl: string; name: string }
+  data: { uploaderId: string; uploaderName: string; name: string; driveId?: string; dataUrl?: string }
 ) {
-  const aRef = push(ref(rtdb, `rooms/${roomId}/attachments`));
-  await set(aRef, data.dataUrl);
-  await push(ref(rtdb, `rooms/${roomId}/files`), {
+  const meta: Record<string, unknown> = {
     name: data.name,
+    uploaderId: data.uploaderId,
     uploaderName: data.uploaderName,
-    attachmentId: aRef.key,
     createdAt: Date.now(),
-  });
+  };
+  if (data.driveId) {
+    meta.driveId = data.driveId;
+  } else if (data.dataUrl) {
+    const aRef = push(ref(rtdb, `rooms/${roomId}/attachments`));
+    await set(aRef, data.dataUrl);
+    meta.attachmentId = aRef.key;
+  }
+  await push(ref(rtdb, `rooms/${roomId}/files`), meta);
+}
+
+export async function deleteRoomFile(roomId: string, file: RoomFile) {
+  const updates: Record<string, null> = { [`rooms/${roomId}/files/${file.id}`]: null };
+  if (file.attachmentId) updates[`rooms/${roomId}/attachments/${file.attachmentId}`] = null;
+  await update(ref(rtdb), updates);
 }
 
 export function listenRoomFiles(roomId: string, cb: (files: RoomFile[]) => void) {

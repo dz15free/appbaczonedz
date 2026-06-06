@@ -210,7 +210,7 @@ export default function RoomPage() {
           {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
           {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
 
-          {tool === "files" && <RoomFiles roomId={roomId} />}
+          {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
         </section>
 
         <aside className="hidden w-96 border-r border-border lg:block">
