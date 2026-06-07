@@ -1,72 +1,98 @@
 // رفع الملفات إلى Google Drive الخاص بالمستخدم (مجاني — 15 جيغا لكل حساب)
-// يستخدم النطاق غير الحسّاس drive.file (لا يحتاج مراجعة أمنية)
+// النطاق غير الحسّاس drive.file (لا يحتاج مراجعة أمنية)
 
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 
-let gisLoaded = false;
+let scriptPromise: Promise<void> | null = null;
+let tokenClient: any = null;
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("تعذّر تحميل خدمة Google."));
-    document.head.appendChild(s);
-  });
-}
-
-async function ensureGis() {
-  if (gisLoaded) return;
-  await loadScript("https://accounts.google.com/gsi/client");
-  gisLoaded = true;
-}
+let pendingResolve: ((t: string) => void) | null = null;
+let pendingReject: ((e: Error) => void) | null = null;
 
 export function isDriveConfigured() {
   return !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 }
 
-// يطلب رمز وصول (نافذة موافقة أول مرّة فقط، ثم صامت)
-export async function getAccessToken(): Promise<string> {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  if (!clientId) throw new Error("لم يتم ضبط ربط Google Drive بعد.");
-  if (cachedToken && Date.now() < tokenExpiry - 60000) return cachedToken;
+function loadScript(): Promise<void> {
+  if (scriptPromise) return scriptPromise;
+  scriptPromise = new Promise((resolve, reject) => {
+    const src = "https://accounts.google.com/gsi/client";
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("تعذّر تحميل خدمة Google."));
+    document.head.appendChild(s);
+  });
+  return scriptPromise;
+}
 
-  await ensureGis();
+// تهيئة مبكرة (عند فتح الصفحة) لتجهيز كل شيء قبل النقر
+export async function initDrive(): Promise<boolean> {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!clientId) return false;
+  await loadScript();
+  if (!tokenClient) {
+    // @ts-expect-error GIS عام من السكربت
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPE,
+      callback: (resp: { access_token?: string; expires_in?: number }) => {
+        if (resp.access_token) {
+          cachedToken = resp.access_token;
+          tokenExpiry = Date.now() + (resp.expires_in ?? 3600) * 1000;
+          pendingResolve?.(resp.access_token);
+        } else {
+          pendingReject?.(new Error("تعذّر تسجيل الدخول بحساب Google."));
+        }
+        pendingResolve = null;
+        pendingReject = null;
+      },
+    });
+  }
+  return true;
+}
+
+export function hasDriveToken() {
+  return !!cachedToken && Date.now() < tokenExpiry - 60000;
+}
+
+// تُستدعى مباشرةً داخل معالج نقرة (وإلا يحجب المتصفّح النافذة)
+export function connectDrive(): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (hasDriveToken()) {
+      resolve(cachedToken as string);
+      return;
+    }
+    if (!tokenClient) {
+      reject(new Error("لم تكتمل تهيئة Google بعد، أعد المحاولة بعد لحظات."));
+      return;
+    }
+    pendingResolve = resolve;
+    pendingReject = reject;
     try {
-      // @ts-expect-error GIS عام من السكربت
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: SCOPE,
-        callback: (resp: { access_token?: string; expires_in?: number; error?: string }) => {
-          if (resp.access_token) {
-            cachedToken = resp.access_token;
-            tokenExpiry = Date.now() + (resp.expires_in ?? 3600) * 1000;
-            resolve(resp.access_token);
-          } else {
-            reject(new Error("تعذّر تسجيل الدخول بحساب Google."));
-          }
-        },
-      });
-      client.requestAccessToken({ prompt: cachedToken ? "" : "consent" });
+      tokenClient.requestAccessToken({ prompt: cachedToken ? "" : "consent" });
     } catch {
-      reject(new Error("تعذّر بدء تسجيل الدخول بـ Google."));
+      pendingResolve = null;
+      pendingReject = null;
+      reject(new Error("تعذّر فتح نافذة Google."));
     }
   });
 }
 
-// رفع متواصل (resumable) يدعم الملفات الكبيرة بلا base64
 export async function uploadToDrive(
   file: File,
   onProgress?: (pct: number) => void
 ): Promise<{ id: string; name: string }> {
-  const token = await getAccessToken();
+  const token = cachedToken;
+  if (!token) throw new Error("لم يتم ربط حساب Google بعد.");
 
-  // 1) بدء جلسة الرفع
   const init = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name",
     {
@@ -79,7 +105,6 @@ export async function uploadToDrive(
   const sessionUrl = init.headers.get("Location");
   if (!sessionUrl) throw new Error("لم يصل رابط جلسة الرفع من Drive.");
 
-  // 2) رفع البايتات (مع تقدّم عبر XHR)
   const result = await new Promise<{ id: string; name: string }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", sessionUrl, true);
@@ -102,7 +127,6 @@ export async function uploadToDrive(
     xhr.send(file);
   });
 
-  // 3) جعل الملف قابلاً للعرض عبر الرابط (للجميع: قراءة فقط)
   await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

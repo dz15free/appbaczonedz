@@ -17,6 +17,7 @@ import {
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { awardActivity } from "@/features/gamification/points";
+import { tryPushNotification } from "@/lib/push";
 
 export interface Post {
   id: string;
@@ -258,6 +259,11 @@ export async function sendFriendRequest(from: Person, toUid: string) {
     text: `${from.name} أرسل لك طلب صداقة`,
     link: "/community",
   });
+  tryPushNotification(toUid, {
+    title: "طلب صداقة جديد 👋",
+    body: `${from.name} أرسل لك طلب صداقة`,
+    link: "/community",
+  });
 }
 
 // إلغاء طلب صداقة مُرسَل
@@ -286,6 +292,11 @@ export async function acceptFriendRequest(me: Person, other: Person) {
     type: "friend_accept",
     text: `${me.name} قبِل طلب صداقتك`,
     link: `/u/${me.uid}?name=${encodeURIComponent(me.name)}`,
+  });
+  tryPushNotification(other.uid, {
+    title: "قبِل صداقتك ✅",
+    body: `${me.name} قبِل طلب صداقتك`,
+    link: `/u/${me.uid}`,
   });
 }
 
@@ -347,6 +358,11 @@ export async function sendDM(me: Person, other: Person, text: string) {
     type: "dm",
     text: `رسالة جديدة من ${me.name}`,
     link: `/messages/${me.uid}?name=${encodeURIComponent(me.name)}`,
+  });
+  tryPushNotification(other.uid, {
+    title: `💬 ${me.name}`,
+    body: trimmed.length > 60 ? trimmed.slice(0, 57) + "..." : trimmed,
+    link: `/messages/${me.uid}`,
   });
 }
 

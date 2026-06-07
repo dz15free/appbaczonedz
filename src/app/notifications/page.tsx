@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUserPlus, faUserCheck, faMessage, faCheckDouble } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faUserPlus, faUserCheck, faMessage, faCheckDouble, faBellSlash } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { AppShell } from "@/components/app-shell";
+import { isPushSupported, subscribePush, unsubscribePush } from "@/lib/push";
 import {
   listenNotifications,
   markNotificationsRead,
@@ -33,6 +34,8 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [pushPerm, setPushPerm] = useState<"granted" | "denied" | "default" | "na">("na");
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -43,12 +46,31 @@ export default function NotificationsPage() {
     return listenNotifications(user.uid, setItems);
   }, [user]);
 
-  // علّم الكل كمقروء عند فتح الصفحة
   useEffect(() => {
     if (!user || items.length === 0) return;
     const unread = items.filter((n) => !n.read).map((n) => n.id);
     if (unread.length) markNotificationsRead(user.uid, unread);
   }, [user, items]);
+
+  useEffect(() => {
+    if (!isPushSupported()) { setPushPerm("na"); return; }
+    setPushPerm(Notification.permission as any);
+  }, []);
+
+  async function enablePush() {
+    if (!user) return;
+    setPushBusy(true);
+    const ok = await subscribePush(user.uid);
+    setPushPerm(ok ? "granted" : Notification.permission as any);
+    setPushBusy(false);
+  }
+  async function disablePush() {
+    if (!user) return;
+    setPushBusy(true);
+    await unsubscribePush(user.uid);
+    setPushPerm("default");
+    setPushBusy(false);
+  }
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
@@ -63,6 +85,29 @@ export default function NotificationsPage() {
             </button>
           )}
         </div>
+
+        {/* بطاقة إشعارات المتصفّح */}
+        {pushPerm !== "na" && (
+          <div className={`mb-4 flex items-center justify-between rounded-xl border p-3 ${pushPerm === "granted" ? "border-secondary/30 bg-secondary/5" : "border-primary/30 bg-primary/5"}`}>
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon={pushPerm === "granted" ? faBell : faBellSlash} className={`h-5 w-5 ${pushPerm === "granted" ? "text-secondary" : "text-primary"}`} />
+              <span className="text-sm font-semibold">
+                {pushPerm === "granted" ? "إشعارات المتصفّح مفعّلة" : "فعّل الإشعارات لتصلك تنبيهات حتى حين تكون خارج التطبيق"}
+              </span>
+            </div>
+            {pushPerm === "granted" ? (
+              <button onClick={disablePush} disabled={pushBusy} className="rounded-md px-3 py-1.5 text-xs text-danger hover:bg-danger/10 disabled:opacity-50">
+                إيقاف
+              </button>
+            ) : pushPerm !== "denied" ? (
+              <button onClick={enablePush} disabled={pushBusy} className="rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                {pushBusy ? "..." : "تفعيل"}
+              </button>
+            ) : (
+              <span className="text-xs text-text-muted">محظور في المتصفّح</span>
+            )}
+          </div>
+        )}
 
         {items.length === 0 ? (
           <div className="grid place-items-center py-20 text-center">

@@ -2,7 +2,7 @@
   "rules": {
     "users": {
       ".read": "auth != null",
-      ".indexOn": ["name", "email"],
+      ".indexOn": ["name", "email", "points"],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid"
       }
@@ -82,6 +82,44 @@
 
     "reports": {
       ".write": "auth != null"
+    },
+
+    "groups": {
+      ".read": "auth != null",
+      ".indexOn": ["createdAt", "subject"],
+      "$groupId": {
+        ".write": "auth != null && (!data.exists() && newData.child('ownerId').val() === auth.uid || (data.exists() && !newData.exists() && data.child('ownerId').val() === auth.uid))"
+      }
+    },
+
+    "groupMembers": {
+      "$groupId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && ($uid === auth.uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)"
+        }
+      }
+    },
+
+    "groupMessages": {
+      "$groupId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "groupFiles": {
+      "$groupId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "userGroups": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
     },
 
     "rooms": {

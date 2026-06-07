@@ -95,3 +95,14 @@ export async function needsOnboarding(user: User): Promise<boolean> {
 export async function saveProfile(uid: string, track: string, wilaya: string) {
   await update(ref(rtdb, `users/${uid}`), { track, wilaya });
 }
+
+// تعديل بيانات الحساب (الاسم/الشعبة/الولاية)
+export async function updateAccount(
+  user: User,
+  data: { name: string; track: string; wilaya: string }
+) {
+  const name = data.name.trim();
+  if (!name) throw new AuthError("الرجاء إدخال الاسم.");
+  await update(ref(rtdb, `users/${user.uid}`), { name, track: data.track, wilaya: data.wilaya });
+  if (user.displayName !== name) await updateProfile(user, { displayName: name });
+}

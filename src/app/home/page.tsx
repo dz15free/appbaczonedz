@@ -4,15 +4,17 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck, faUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck, faUpRightFromSquare, faBrain, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 
 const QUICK = [
   { href: "/rooms", label: "غرف الدراسة", desc: "ادرس وراجع جماعياً", icon: faUsers },
+  { href: "/groups", label: "المجموعات", desc: "تعاون مع زملائك", icon: faGlobe },
   { href: "/omibot", label: "Omibot", desc: "مساعدك الذكي للدراسة", icon: faRobot },
-  { href: "/community", label: "المجتمع", desc: "اسأل وشارك", icon: faGlobe },
+  { href: "/tools/pomodoro", label: "مؤقّت بومودورو", desc: "راجع بتركيز واحترافية", icon: faBrain },
+  { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy },
 ];
 
 // روابط لميزات الموقع الرئيسي

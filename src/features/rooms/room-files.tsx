@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFileArrowUp, faFile, faEye, faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faFileArrowUp, faFile, faEye, faSpinner, faTrash, faLink } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { addRoomFile, listenRoomFiles, getAttachment, deleteRoomFile, type RoomFile } from "@/features/rooms/rooms";
-import { uploadToDrive, isDriveConfigured } from "@/lib/gdrive";
+import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
 import { DrivePreview } from "@/features/files/drive-preview";
 import { FileViewer } from "@/features/files/file-viewer";
 
@@ -15,20 +15,37 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [ready, setReady] = useState(false);
   const [drive, setDrive] = useState<{ id: string; name: string } | null>(null);
   const [legacy, setLegacy] = useState<{ dataUrl: string; name: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => listenRoomFiles(roomId, setFiles), [roomId]);
 
+  // تهيئة Google مبكراً (قبل أي نقرة) لتفادي حجب النافذة
+  useEffect(() => {
+    if (!isDriveConfigured()) return;
+    initDrive().then((ok) => {
+      setReady(ok);
+      setConnected(hasDriveToken());
+    });
+  }, []);
+
+  // ربط الحساب — يجب أن يكون داخل نقرة مباشرة
+  async function connect() {
+    try {
+      await connectDrive();
+      setConnected(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "تعذّر ربط Google.");
+    }
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || !user) return;
-    if (!isDriveConfigured()) {
-      alert("رفع الملفات عبر Google Drive غير مُفعّل بعد على الموقع.");
-      return;
-    }
     setUploading(true);
     setProgress(0);
     try {
@@ -65,17 +82,30 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
 
   return (
     <div className="flex h-full flex-col p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-bold">ملفات الغرفة</h2>
         <input ref={input} type="file" hidden onChange={handleUpload} />
-        <button
-          onClick={() => input.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-        >
-          <FontAwesomeIcon icon={uploading ? faSpinner : faFileArrowUp} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
-          {uploading ? `جارٍ الرفع ${progress}%` : "رفع ملف"}
-        </button>
+        {!isDriveConfigured() ? (
+          <span className="text-xs text-text-muted">الرفع غير مُفعّل بعد</span>
+        ) : !connected ? (
+          <button
+            onClick={connect}
+            disabled={!ready}
+            className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          >
+            <FontAwesomeIcon icon={faLink} className="h-4 w-4" />
+            ربط حساب Google
+          </button>
+        ) : (
+          <button
+            onClick={() => input.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          >
+            <FontAwesomeIcon icon={uploading ? faSpinner : faFileArrowUp} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
+            {uploading ? `جارٍ الرفع ${progress}%` : "رفع ملف"}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto">

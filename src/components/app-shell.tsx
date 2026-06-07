@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { recordDailyVisit } from "@/features/gamification/points";
@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
   { href: "/rooms", label: "الغرف", icon: faUsers },
+  { href: "/groups", label: "المجموعات", icon: faLayerGroup },
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/notifications", label: "الإشعارات", icon: faBell },
   { href: "/profile", label: "حسابي", icon: faUser },
