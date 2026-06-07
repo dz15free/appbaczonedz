@@ -27,6 +27,7 @@ export const metadata: Metadata = {
   title: "BacZoneDZ — أكبر مجتمع دراسي لطلاب البكالوريا في الجزائر",
   description:
     "منصة تعليمية ومجتمع دراسي متكامل لطلاب البكالوريا الجزائريين: غرف دراسة، سبورة ذكية، مشاركة ملفات، صوت جماعي، ومساعد ذكي.",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

@@ -38,6 +38,7 @@ import {
   searchUsers,
   sendFriendRequest,
   cancelFriendRequest,
+  getUserName,
   acceptFriendRequest,
   rejectFriendRequest,
   listenFriendRequests,
@@ -489,7 +490,21 @@ function People({ me }: { me: Person }) {
 
 function Messages({ me }: { me: Person }) {
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
   useEffect(() => listenThreads(me.uid, setThreads), [me.uid]);
+
+  // نجلب الاسم الحالي لكل شخص من RTDB لضمان صحّته
+  useEffect(() => {
+    if (!threads.length) return;
+    Promise.all(
+      threads.map(async (t) => {
+        const n = await getUserName(t.uid);
+        return [t.uid, n || t.name] as [string, string];
+      })
+    ).then((pairs) => setNames(Object.fromEntries(pairs)));
+  }, [threads]);
+
+  const displayName = (t: Thread) => names[t.uid] || t.name || "طالب";
 
   if (threads.length === 0)
     return (
@@ -502,12 +517,12 @@ function Messages({ me }: { me: Person }) {
   return (
     <div className="space-y-2">
       {threads.map((t) => (
-        <Link key={t.uid} href={`/messages/${t.uid}?name=${encodeURIComponent(t.name)}`} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary">
+        <Link key={t.uid} href={`/messages/${t.uid}?name=${encodeURIComponent(displayName(t))}`} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary">
           <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary font-bold text-white">
-            {t.name.charAt(0)}
+            {displayName(t).charAt(0)}
           </span>
           <div className="min-w-0 flex-1">
-            <span className="block font-bold">{t.name}</span>
+            <span className="block font-bold">{displayName(t)}</span>
             <span className="block truncate text-sm text-text-muted">{t.lastText}</span>
           </div>
         </Link>

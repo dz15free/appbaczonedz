@@ -114,6 +114,12 @@ export default function ProfilePage() {
           <FontAwesomeIcon icon={faRightFromBracket} className="h-4 w-4" />
           تسجيل الخروج
         </Button>
+
+        {profile?.role === "admin" && (
+          <a href="/admin" className="mt-2 block text-center text-xs text-text-muted hover:text-primary">
+            🛡️ لوحة الإدارة
+          </a>
+        )}
       </section>
 
       {/* نافذة التعديل */}

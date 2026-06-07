@@ -15,7 +15,7 @@ interface Msg {
 }
 
 const GREETING =
-  "أهلاً! أنا Omibot 🌟 طالبة تحصّلت على 18+ في الباك، وهنا لأساعدك. اسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك!";
+  "أهلاً! أنا Bothelper 🌟 طالبة تحصّلت على 18+ في الباك، وهنا لأساعدك. اسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك!";
 
 const SUGGESTIONS = [
   "اشرح لي مبرهنة فيثاغورس",
@@ -77,7 +77,7 @@ export default function OmibotPage() {
             <FontAwesomeIcon icon={faRobot} className="h-5 w-5" />
           </span>
           <div>
-            <h1 className="font-display font-extrabold leading-tight">Omibot</h1>
+            <h1 className="font-display font-extrabold leading-tight">Bothelper</h1>
             <span className="text-xs text-text-muted">مساعدتك الدراسية الذكية</span>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function OmibotPage() {
           {thinking && (
             <div className="flex items-center gap-2 text-sm text-text-muted">
               <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 animate-spin" />
-              Omibot تكتب...
+              Bothelper تكتب...
             </div>
           )}
           <div ref={bottomRef} />
@@ -127,7 +127,7 @@ export default function OmibotPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send(input)}
-            placeholder="اسأل Omibot..."
+            placeholder="اسأل Bothelper..."
             disabled={thinking}
             className="flex-1 rounded-md border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
           />
