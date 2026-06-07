@@ -96,6 +96,19 @@ export async function saveProfile(uid: string, track: string, wilaya: string) {
   await update(ref(rtdb, `users/${uid}`), { track, wilaya });
 }
 
+// يضمن وجود الاسم في RTDB — يُستدعى عند تحميل التطبيق لإصلاح الحسابات القديمة
+export async function ensureNameInRTDB(user: User) {
+  const displayName = user.displayName;
+  if (!displayName) return;
+  try {
+    const snap = await get(ref(rtdb, `users/${user.uid}/name`));
+    const stored = snap.val() as string | null;
+    if (!stored || stored === "طالب") {
+      await update(ref(rtdb, `users/${user.uid}`), { name: displayName });
+    }
+  } catch { /* تجاهل */ }
+}
+
 // تعديل بيانات الحساب (الاسم/الشعبة/الولاية)
 export async function updateAccount(
   user: User,

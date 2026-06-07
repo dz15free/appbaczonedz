@@ -104,7 +104,8 @@
     "groupMessages": {
       "$groupId": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null",
+        ".indexOn": ["createdAt"]
       }
     },
 

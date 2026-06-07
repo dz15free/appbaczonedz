@@ -8,6 +8,7 @@ import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup } from
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { recordDailyVisit } from "@/features/gamification/points";
+import { ensureNameInRTDB } from "@/lib/firebase/auth";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -28,7 +29,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    if (user?.uid) recordDailyVisit(user.uid);
+    if (user?.uid) {
+      recordDailyVisit(user.uid);
+      ensureNameInRTDB(user); // يصلح الأسماء المفقودة من الحسابات القديمة
+    }
   }, [user?.uid]);
 
   useEffect(() => {

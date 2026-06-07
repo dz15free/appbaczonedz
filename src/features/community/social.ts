@@ -282,11 +282,12 @@ export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void
 }
 
 export async function acceptFriendRequest(me: Person, other: Person) {
+  // ملاحظة: لا نحذف sentRequests/${other.uid} لأن القواعد لا تسمح بالكتابة في عقدة شخص آخر.
+  // الـ UI يُعطي الأولوية لـ friendIds على sentSet فيُظهر «صديق» بدل «تم الإرسال».
   await update(ref(rtdb), {
     [`friends/${me.uid}/${other.uid}`]: { name: other.name },
     [`friends/${other.uid}/${me.uid}`]: { name: me.name },
     [`friendRequests/${me.uid}/${other.uid}`]: null,
-    [`sentRequests/${other.uid}/${me.uid}`]: null,
   });
   await addNotification(other.uid, {
     type: "friend_accept",
