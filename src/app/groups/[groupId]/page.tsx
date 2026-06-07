@@ -193,7 +193,7 @@ export default function GroupPage() {
               </div>
             )}
           </>
-        ) : (
+        ) : tab === "members" ? (
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
             {members.map((m) => (
               <div key={m.uid} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
