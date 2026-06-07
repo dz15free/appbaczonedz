@@ -96,17 +96,19 @@ export default function GroupPage() {
   const color = SUBJECT_COLOR[group.subject] ?? "bg-primary/10 text-primary";
 
   async function join() {
+    if (!user) return;
     setJoining(true);
     try { await joinGroup(user.uid, me.name, groupId); } finally { setJoining(false); }
   }
   async function leave() {
+    if (!user) return;
     if (isOwner && !confirm("أنت مالك هذه المجموعة. مغادرتك ستمحوها نهائياً. تأكيد؟")) return;
     if (!isOwner && !confirm("مغادرة المجموعة؟")) return;
     if (isOwner) { await deleteGroup(groupId); router.push("/groups"); }
     else { await leaveGroup(user.uid, groupId); router.push("/groups"); }
   }
   async function send() {
-    if (!text.trim() || !isMember) return;
+    if (!text.trim() || !isMember || !user) return;
     const t = text;
     setText("");
     await sendGroupMessage(groupId, me, t);
