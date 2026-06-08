@@ -4,6 +4,7 @@ import {
   get,
   set,
   push,
+  remove,
   query,
   orderByChild,
   equalTo,
@@ -194,9 +195,8 @@ export async function addRoomFile(
 }
 
 export async function deleteRoomFile(roomId: string, file: RoomFile) {
-  const updates: Record<string, null> = { [`rooms/${roomId}/files/${file.id}`]: null };
-  if (file.attachmentId) updates[`rooms/${roomId}/attachments/${file.attachmentId}`] = null;
-  await update(ref(rtdb), updates);
+  await remove(ref(rtdb, `rooms/${roomId}/files/${file.id}`));
+  if (file.attachmentId) await remove(ref(rtdb, `rooms/${roomId}/attachments/${file.attachmentId}`));
 }
 
 export function listenRoomFiles(roomId: string, cb: (files: RoomFile[]) => void) {

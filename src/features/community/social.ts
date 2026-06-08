@@ -91,9 +91,8 @@ export async function getPostAttachment(attachmentId: string): Promise<string | 
 
 /* ───────── الإشراف ───────── */
 export async function deletePost(post: { id: string; attachmentId?: string }) {
-  const updates: Record<string, null> = { [`community/posts/${post.id}`]: null };
-  if (post.attachmentId) updates[`community/postAttachments/${post.attachmentId}`] = null;
-  await update(ref(rtdb), updates);
+  await remove(ref(rtdb, `community/posts/${post.id}`));
+  if (post.attachmentId) await remove(ref(rtdb, `community/postAttachments/${post.attachmentId}`));
 }
 
 export async function deleteComment(postId: string, commentId: string) {
@@ -268,10 +267,8 @@ export async function sendFriendRequest(from: Person, toUid: string) {
 
 // إلغاء طلب صداقة مُرسَل
 export async function cancelFriendRequest(fromUid: string, toUid: string) {
-  await update(ref(rtdb), {
-    [`friendRequests/${toUid}/${fromUid}`]: null,
-    [`sentRequests/${fromUid}/${toUid}`]: null,
-  });
+  await remove(ref(rtdb, `friendRequests/${toUid}/${fromUid}`));
+  await remove(ref(rtdb, `sentRequests/${fromUid}/${toUid}`));
 }
 
 export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void) {
@@ -282,13 +279,9 @@ export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void
 }
 
 export async function acceptFriendRequest(me: Person, other: Person) {
-  // ملاحظة: لا نحذف sentRequests/${other.uid} لأن القواعد لا تسمح بالكتابة في عقدة شخص آخر.
-  // الـ UI يُعطي الأولوية لـ friendIds على sentSet فيُظهر «صديق» بدل «تم الإرسال».
-  await update(ref(rtdb), {
-    [`friends/${me.uid}/${other.uid}`]: { name: other.name },
-    [`friends/${other.uid}/${me.uid}`]: { name: me.name },
-    [`friendRequests/${me.uid}/${other.uid}`]: null,
-  });
+  await update(ref(rtdb, `friends/${me.uid}`), { [other.uid]: { name: other.name } });
+  await update(ref(rtdb, `friends/${other.uid}`), { [me.uid]: { name: me.name } });
+  await remove(ref(rtdb, `friendRequests/${me.uid}/${other.uid}`));
   await addNotification(other.uid, {
     type: "friend_accept",
     text: `${me.name} قبِل طلب صداقتك`,
@@ -306,10 +299,8 @@ export async function rejectFriendRequest(myUid: string, fromUid: string) {
 }
 
 export async function removeFriend(myUid: string, otherUid: string) {
-  await update(ref(rtdb), {
-    [`friends/${myUid}/${otherUid}`]: null,
-    [`friends/${otherUid}/${myUid}`]: null,
-  });
+  await remove(ref(rtdb, `friends/${myUid}/${otherUid}`));
+  await remove(ref(rtdb, `friends/${otherUid}/${myUid}`));
 }
 
 export function listenFriendRequests(myUid: string, cb: (list: Person[]) => void) {
@@ -351,10 +342,10 @@ export async function sendDM(me: Person, other: Person, text: string) {
     createdAt: Date.now(),
   });
   // حدّث قائمة المحادثات للطرفين
-  await update(ref(rtdb), {
-    [`dmThreads/${me.uid}/${other.uid}`]: { name: other.name, lastText: trimmed, lastAt: Date.now() },
-    [`dmThreads/${other.uid}/${me.uid}`]: { name: me.name, lastText: trimmed, lastAt: Date.now() },
-  });
+  const threadData = { name: other.name, lastText: trimmed, lastAt: Date.now() };
+  const myThreadData = { name: me.name, lastText: trimmed, lastAt: Date.now() };
+  await update(ref(rtdb, `dmThreads/${me.uid}`), { [other.uid]: threadData });
+  await update(ref(rtdb, `dmThreads/${other.uid}`), { [me.uid]: myThreadData });
   await addNotification(other.uid, {
     type: "dm",
     text: `رسالة جديدة من ${me.name}`,
@@ -437,8 +428,8 @@ export function listenNotifications(uid: string, cb: (list: AppNotification[]) =
 export async function markNotificationsRead(uid: string, ids: string[]) {
   if (!ids.length) return;
   const updates: Record<string, boolean> = {};
-  for (const id of ids) updates[`notifications/${uid}/${id}/read`] = true;
-  await update(ref(rtdb), updates);
+  for (const id of ids) updates[`${id}/read`] = true;
+  await update(ref(rtdb, `notifications/${uid}`), updates);
 }
 
 export async function clearNotifications(uid: string) {

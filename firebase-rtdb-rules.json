@@ -95,6 +95,7 @@
     "groupMembers": {
       "$groupId": {
         ".read": "auth != null",
+        ".write": "auth != null && root.child('groups').child($groupId).child('ownerId').val() === auth.uid",
         "$uid": {
           ".write": "auth != null && ($uid === auth.uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)"
         }

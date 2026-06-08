@@ -100,11 +100,10 @@ export async function leaveGroup(uid: string, groupId: string) {
 }
 
 export async function deleteGroup(groupId: string) {
-  await update(ref(rtdb), {
-    [`groups/${groupId}`]: null,
-    [`groupMembers/${groupId}`]: null,
-    [`groupMessages/${groupId}`]: null,
-  });
+  // استخدام remove منفصلة لكل مسار بدل multi-path update (يتجنّب permission_denied)
+  await remove(ref(rtdb, `groups/${groupId}`));
+  await remove(ref(rtdb, `groupMembers/${groupId}`));
+  await remove(ref(rtdb, `groupMessages/${groupId}`));
 }
 
 export async function sendGroupMessage(
