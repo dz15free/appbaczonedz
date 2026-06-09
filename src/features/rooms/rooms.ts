@@ -207,3 +207,62 @@ export function listenRoomFiles(roomId: string, cb: (files: RoomFile[]) => void)
     cb(list);
   });
 }
+
+/* ═══════════════════════════════════════════════════════════
+   إدارة الغرفة: المشرفون — الطرد — الحظر
+═══════════════════════════════════════════════════════════ */
+
+/** ترقية عضو إلى مشرف */
+export async function promoteToMod(roomId: string, uid: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/mods/${uid}`), true);
+}
+
+/** إلغاء ترقية مشرف */
+export async function demoteMod(roomId: string, uid: string) {
+  await remove(ref(rtdb, `roomLive/${roomId}/mods/${uid}`));
+}
+
+/** استماع لقائمة المشرفين */
+export function listenMods(roomId: string, cb: (mods: Set<string>) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/mods`), (snap) => {
+    cb(new Set(Object.keys(snap.val() ?? {})));
+  });
+}
+
+/** طرد مؤقّت — المستخدم يستلم إشارة ويغادر */
+export async function kickUser(roomId: string, uid: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/kicked/${uid}`), Date.now());
+  // نُزيل حضوره بعد ثانية
+  setTimeout(() => remove(ref(rtdb, `presence/${roomId}/${uid}`)), 1000);
+}
+
+/** استماع لإشارة الطرد لمستخدم بعينه */
+export function listenKicked(roomId: string, uid: string, cb: (kicked: boolean) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/kicked/${uid}`), (snap) => {
+    cb(snap.exists());
+  });
+}
+
+/** حظر دائم من الغرفة */
+export async function banUser(roomId: string, uid: string) {
+  await set(ref(rtdb, `bannedUsers/${roomId}/${uid}`), true);
+  await kickUser(roomId, uid);
+}
+
+/** فك الحظر */
+export async function unbanUser(roomId: string, uid: string) {
+  await remove(ref(rtdb, `bannedUsers/${roomId}/${uid}`));
+}
+
+/** قائمة المحظورين في الغرفة */
+export function listenBanned(roomId: string, cb: (banned: Set<string>) => void) {
+  return onValue(ref(rtdb, `bannedUsers/${roomId}`), (snap) => {
+    cb(new Set(Object.keys(snap.val() ?? {})));
+  });
+}
+
+/** هل المستخدم محظور؟ */
+export async function isUserBanned(roomId: string, uid: string): Promise<boolean> {
+  const snap = await get(ref(rtdb, `bannedUsers/${roomId}/${uid}`));
+  return snap.exists();
+}

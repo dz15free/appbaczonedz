@@ -85,9 +85,9 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-bold">ملفات الغرفة</h2>
         <input ref={input} type="file" hidden onChange={handleUpload} />
-        {!isDriveConfigured() ? (
+        {isOwner && !isDriveConfigured() ? (
           <span className="text-xs text-text-muted">الرفع غير مُفعّل بعد</span>
-        ) : !connected ? (
+        ) : isOwner && !connected ? (
           <button
             onClick={connect}
             disabled={!ready}
@@ -96,7 +96,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
             <FontAwesomeIcon icon={faLink} className="h-4 w-4" />
             ربط حساب Google
           </button>
-        ) : (
+        ) : isOwner && connected ? (
           <button
             onClick={() => input.current?.click()}
             disabled={uploading}
@@ -105,7 +105,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
             <FontAwesomeIcon icon={uploading ? faSpinner : faFileArrowUp} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
             {uploading ? `جارٍ الرفع ${progress}%` : "رفع ملف"}
           </button>
-        )}
+        ) : null}
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto">

@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGraduationCap, faLocationDot, faStar, faRightFromBracket, faPen, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faGraduationCap, faLocationDot, faStar, faRightFromBracket, faPen, faXmark, faCamera } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { logoutUser, updateAccount } from "@/lib/firebase/auth";
+import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
+import { compressAvatar } from "@/lib/avatar";
 import { TRACKS, WILAYAS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/field";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import { listenFriends, type Person } from "@/features/community/social";
 
@@ -24,6 +26,8 @@ export default function ProfilePage() {
   const [wilaya, setWilaya] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const avatarInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -56,6 +60,18 @@ export default function ProfilePage() {
     }
   }
 
+  async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setAvatarLoading(true);
+    try {
+      const compressed = await compressAvatar(file);
+      await updateAvatar(user.uid, compressed);
+    } catch { /* تجاهل */ }
+    finally { setAvatarLoading(false); }
+  }
+
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   const trackName = TRACKS.find((t) => t.id === profile?.track)?.name ?? "—";
@@ -71,9 +87,18 @@ export default function ProfilePage() {
           >
             <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
           </button>
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-3xl font-extrabold text-white">
-            {(profile?.name || user.displayName || "ط").charAt(0)}
-          </div>
+          <input ref={avatarInput} type="file" accept="image/*" hidden onChange={pickAvatar} />
+          <button
+            onClick={() => avatarInput.current?.click()}
+            className="relative"
+            aria-label="تغيير الصورة"
+            disabled={avatarLoading}
+          >
+            <UserAvatar name={profile?.name || user.displayName || "ط"} avatarUrl={profile?.avatarUrl} size="xl" />
+            <span className="absolute bottom-0 right-0 grid h-7 w-7 place-items-center rounded-full bg-gradient-primary text-white shadow">
+              <FontAwesomeIcon icon={faCamera} className="h-3.5 w-3.5" />
+            </span>
+          </button>
           <h1 className="mt-4 font-display text-xl font-extrabold">{profile?.name || user.displayName || "طالب"}</h1>
           <span className="mt-1 text-sm text-text-muted">{user.email}</span>
           <div className="mt-4 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">

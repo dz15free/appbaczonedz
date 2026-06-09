@@ -12,11 +12,18 @@ import {
   faArrowRight,
   faXmark,
   faHand,
+  faUsers,
+  faCrown,
+  faUserShield,
+  faUserSlash,
+  faBan,
+  faUnlock,
+  faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
-import { getRoom, type Room } from "@/features/rooms/rooms";
+import { getRoom, type Room, promoteToMod, demoteMod, kickUser, banUser, unbanUser, listenMods, listenKicked, listenBanned } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
@@ -53,6 +60,24 @@ export default function RoomPage() {
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
   const isOwner = !!room && !!user && room.ownerId === user.uid;
   const { tool, setTool } = useActiveTool(roomId, isOwner);
+
+  const [mods, setMods] = useState<Set<string>>(new Set());
+  const [banned, setBanned] = useState<Set<string>>(new Set());
+  const [showParticipants, setShowParticipants] = useState(false);
+  const isMod = user ? mods.has(user.uid) : false;
+  const isPrivileged = isOwner || isMod;
+
+  // الاستماع للمشرفين والمحظورين
+  useEffect(() => listenMods(roomId, setMods), [roomId]);
+  useEffect(() => listenBanned(roomId, setBanned), [roomId]);
+
+  // إذا طُرد المستخدم الحالي — يغادر تلقائياً
+  useEffect(() => {
+    if (!user) return;
+    return listenKicked(roomId, user.uid, (kicked) => {
+      if (kicked) router.replace("/rooms");
+    });
+  }, [roomId, user, router]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -121,6 +146,17 @@ export default function RoomPage() {
           )}
 
           {/* الأيدي المرفوعة: للمالك */}
+          {isPrivileged && (
+            <button
+              onClick={() => setShowParticipants((s) => !s)}
+              title="المشاركون"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-text-muted hover:bg-primary/10 hover:text-primary"
+            >
+              <FontAwesomeIcon icon={faUsers} className="h-4 w-4" />
+              <span className="hidden sm:inline">المشاركون</span>
+              <span className="text-xs font-bold text-primary">{members.length}</span>
+            </button>
+          )}
           {isOwner && (
             <button
               onClick={() => setHandsOpen((o) => !o)}
@@ -240,6 +276,89 @@ export default function RoomPage() {
           </div>
           <div className="flex-1 overflow-hidden">
             <ChatPanel roomId={roomId} />
+          </div>
+        </div>
+      )}
+      {/* درج المشاركين — للمالك والمشرف */}
+      {showParticipants && isPrivileged && (
+        <div className="fixed inset-0 z-[70] bg-black/50" onClick={() => setShowParticipants(false)}>
+          <div
+            className="absolute left-0 top-0 flex h-full w-full max-w-xs flex-col bg-surface shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="font-bold">المشاركون ({members.length})</span>
+              <button onClick={() => setShowParticipants(false)} className="text-text-muted hover:text-danger">
+                <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {members.map((m) => {
+                const isMe = m.uid === user?.uid;
+                const memberIsOwner = m.uid === room?.ownerId;
+                const memberIsMod = mods.has(m.uid);
+                const memberIsBanned = banned.has(m.uid);
+                return (
+                  <div key={m.uid} className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
+                      {(m.name || "ط").charAt(0)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{m.name || "طالب"}{isMe && " (أنا)"}</span>
+                      <span className={`text-xs font-bold ${memberIsOwner ? "text-warning" : memberIsMod ? "text-primary" : "text-text-muted"}`}>
+                        {memberIsOwner ? "👑 مالك" : memberIsMod ? "🛡️ مشرف" : "طالب"}
+                      </span>
+                    </div>
+                    {!isMe && !memberIsOwner && (
+                      <div className="flex gap-1">
+                        {isOwner && (
+                          <button
+                            title={memberIsMod ? "إلغاء الترقية" : "ترقية إلى مشرف"}
+                            onClick={() => memberIsMod ? demoteMod(roomId, m.uid) : promoteToMod(roomId, m.uid)}
+                            className={`grid h-8 w-8 place-items-center rounded-md text-xs ${memberIsMod ? "bg-primary/10 text-primary" : "hover:bg-primary/10 text-text-muted hover:text-primary"}`}
+                          >
+                            <FontAwesomeIcon icon={memberIsMod ? faCircleCheck : faUserShield} className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <button
+                          title="طرد مؤقّت"
+                          onClick={() => kickUser(roomId, m.uid)}
+                          className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-warning/10 hover:text-warning"
+                        >
+                          <FontAwesomeIcon icon={faUserSlash} className="h-3.5 w-3.5" />
+                        </button>
+                        {isOwner && (
+                          <button
+                            title={memberIsBanned ? "فك الحظر" : "حظر دائم"}
+                            onClick={() => memberIsBanned ? unbanUser(roomId, m.uid) : banUser(roomId, m.uid)}
+                            className={`grid h-8 w-8 place-items-center rounded-md ${memberIsBanned ? "bg-secondary/10 text-secondary hover:bg-secondary/20" : "text-text-muted hover:bg-danger/10 hover:text-danger"}`}
+                          >
+                            <FontAwesomeIcon icon={memberIsBanned ? faUnlock : faBan} className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* قائمة المحظورين */}
+            {isOwner && banned.size > 0 && (
+              <div className="border-t border-border p-3">
+                <p className="mb-2 text-xs font-bold text-danger">محظورون ({banned.size})</p>
+                {[...banned].map((uid) => (
+                  <div key={uid} className="mb-1 flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2 text-sm">
+                    <span className="truncate text-xs text-text-muted">{uid.slice(0, 12)}...</span>
+                    <button
+                      onClick={() => unbanUser(roomId, uid)}
+                      className="flex items-center gap-1 rounded-md bg-secondary/10 px-2 py-1 text-xs font-bold text-secondary hover:bg-secondary/20"
+                    >
+                      <FontAwesomeIcon icon={faUnlock} className="h-3 w-3" /> فك الحظر
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

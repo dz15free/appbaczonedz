@@ -70,8 +70,17 @@ export async function POST(req: NextRequest) {
     const data: any = await res.json();
     if (!res.ok) {
       console.error("[Omibot] Gemini error:", JSON.stringify(data));
-      const msg = data?.error?.message || "حدث خطأ في خدمة الذكاء الاصطناعي.";
-      return Response.json({ error: msg }, { status: 500 });
+      // رسائل عربية لأخطاء الاستخدام الشائعة
+      const code = res.status;
+      const raw = (data?.error?.message as string) ?? "";
+      let msg = "حدث خطأ في خدمة الذكاء الاصطناعي. أعد المحاولة.";
+      if (code === 429 || raw.toLowerCase().includes("quota") || raw.toLowerCase().includes("rate"))
+        msg = "⏳ Bothelper مشغولة بطلبات كثيرة الآن. انتظري دقيقة وأعيدي المحاولة!";
+      else if (code === 503 || raw.toLowerCase().includes("overload") || raw.toLowerCase().includes("demand"))
+        msg = "⏳ خدمة الذكاء الاصطناعي مزدحمة لحظياً. حاولي مجدداً بعد ثوانٍ قليلة.";
+      else if (code === 500)
+        msg = "⚠️ خطأ داخلي في خدمة Bothelper. أعيدي المحاولة.";
+      return Response.json({ error: msg }, { status: 200 }); // 200 حتى تعرضه الواجهة كرسالة عادية
     }
     const text =
       data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ??

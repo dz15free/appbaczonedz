@@ -1,18 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser, resetPassword, needsOnboarding, AuthError } from "@/lib/firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // قراءة المعاملات من الرابط (قادم من Blogger)
+  useEffect(() => {
+    const e = params.get("email");
+    const verified = params.get("verified");
+    const reset = params.get("reset");
+    if (e) setEmail(decodeURIComponent(e));
+    if (verified === "1") setMsg({ type: "success", text: "✅ تم تفعيل حسابك! سجّل الدخول للمتابعة." });
+    if (reset === "1") setMsg({ type: "success", text: "✅ تم تغيير كلمة المرور! سجّل الدخول بكلمة مرورك الجديدة." });
+  }, [params]);
 
   async function handleLogin() {
     setLoading(true);

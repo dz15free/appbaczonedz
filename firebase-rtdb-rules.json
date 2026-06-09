@@ -86,35 +86,24 @@
 
     "groups": {
       ".read": "auth != null",
-      ".indexOn": ["createdAt", "subject"],
-      "$groupId": {
-        ".write": "auth != null && (!data.exists() && newData.child('ownerId').val() === auth.uid || (data.exists() && !newData.exists() && data.child('ownerId').val() === auth.uid))"
-      }
+      ".write": "auth != null",
+      ".indexOn": ["createdAt", "subject"]
     },
 
     "groupMembers": {
-      "$groupId": {
-        ".read": "auth != null",
-        ".write": "auth != null && root.child('groups').child($groupId).child('ownerId').val() === auth.uid",
-        "$uid": {
-          ".write": "auth != null && ($uid === auth.uid || root.child('groups').child($groupId).child('ownerId').val() === auth.uid)"
-        }
-      }
+      ".read": "auth != null",
+      ".write": "auth != null"
     },
 
     "groupMessages": {
-      "$groupId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        ".indexOn": ["createdAt"]
-      }
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["createdAt"]
     },
 
     "groupFiles": {
-      "$groupId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
+      ".read": "auth != null",
+      ".write": "auth != null"
     },
 
     "userGroups": {
@@ -144,11 +133,30 @@
       }
     },
 
+    "bannedUsers": {
+      "$roomId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        }
+      }
+    },
+
     "roomLive": {
       "$roomId": {
         ".read": "auth != null",
+        "mods": {
+          "$uid": {
+            ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+          }
+        },
+        "kicked": {
+          "$uid": {
+            ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
+          }
+        },
         "activeTool": {
-          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
@@ -158,12 +166,12 @@
         },
         "voice": {
           "$uid": {
-            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
           }
         },
         "hands": {
           "$uid": {
-            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
           }
         }
       }

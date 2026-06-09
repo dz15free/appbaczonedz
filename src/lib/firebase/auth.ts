@@ -96,6 +96,10 @@ export async function saveProfile(uid: string, track: string, wilaya: string) {
   await update(ref(rtdb, `users/${uid}`), { track, wilaya });
 }
 
+export async function updateAvatar(uid: string, dataUrl: string) {
+  await update(ref(rtdb, `users/${uid}`), { avatarUrl: dataUrl });
+}
+
 // يضمن وجود الاسم في RTDB — يُستدعى عند تحميل التطبيق لإصلاح الحسابات القديمة
 export async function ensureNameInRTDB(user: User) {
   const displayName = user.displayName;
