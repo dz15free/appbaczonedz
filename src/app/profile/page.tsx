@@ -17,8 +17,7 @@ import { Button } from "@/components/ui/field";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import { listenFriends, type Person } from "@/features/community/social";
-import { ref, query, orderByChild, limitToLast, get } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { useLeaderboardRank } from "@/features/gamification/use-rank";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -32,8 +31,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [rank, setRank] = useState<number | null>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
+  const rank = useLeaderboardRank(user?.uid, profile?.points);
 
   async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -55,20 +54,6 @@ export default function ProfilePage() {
     if (!user) return;
     return listenFriends(user.uid, setFriends);
   }, [user]);
-
-  // احسب ترتيبك على لوحة المتصدّرين
-  useEffect(() => {
-    if (!user || !profile?.points) return;
-    const q = query(ref(rtdb, "users"), orderByChild("points"), limitToLast(500));
-    get(q).then((snap) => {
-      const val = snap.val() ?? {};
-      const sorted = Object.entries(val)
-        .map(([id, u]: any) => ({ id, pts: u.points ?? 0 }))
-        .sort((a, b) => b.pts - a.pts);
-      const idx = sorted.findIndex((u) => u.id === user.uid);
-      setRank(idx >= 0 ? idx + 1 : null);
-    });
-  }, [user, profile?.points]);
 
   function openEdit() {
     setName(profile?.name || user?.displayName || "");
