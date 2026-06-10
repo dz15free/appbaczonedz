@@ -38,7 +38,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
     const id = await createRoom({
       name,
       type,
-      subject: subject || null,
+      subject: subject || undefined,
       ownerId: user.uid,
       ownerName: user.displayName || "طالب",
     });
