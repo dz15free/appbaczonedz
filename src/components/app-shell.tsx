@@ -8,6 +8,7 @@ import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMag
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
+import { recordDailyVisit } from "@/features/gamification/points";
 import { ensureNameInRTDB } from "@/lib/firebase/auth";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
