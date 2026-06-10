@@ -119,3 +119,7 @@ export async function updateAccount(
   await update(ref(rtdb, `users/${user.uid}`), { name, track: data.track, wilaya: data.wilaya });
   if (user.displayName !== name) await updateProfile(user, { displayName: name });
 }
+
+export async function updateAvatar(uid: string, dataUrl: string) {
+  await update(ref(rtdb, `users/${uid}`), { avatarUrl: dataUrl });
+}
