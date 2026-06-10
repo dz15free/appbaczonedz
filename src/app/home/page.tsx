@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck,
-  faUpRightFromSquare, faBrain, faTrophy, faGraduationCap, faFire,
+  faUpRightFromSquare, faBrain, faTrophy, faGraduationCap, faFire, faListCheck, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -17,6 +17,8 @@ const QUICK = [
   { href: "/groups", label: "المجموعات", desc: "تعاون مع زملائك", icon: faGlobe },
   { href: "/omibot", label: "Bothelper", desc: "رفيقتك الذكية — معدّل 18 ✨", icon: faRobot },
   { href: "/tools/pomodoro", label: "مؤقّت بومودورو", desc: "راجع بتركيز واحترافية", icon: faBrain },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك موضوعاً بموضوع", icon: faListCheck },
   { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy },
 ];
 
@@ -62,7 +64,17 @@ export default function HomePage() {
         <h1 className="font-display text-2xl font-extrabold">
           مرحباً، <span className="bz-gradient-text">{profile?.name || user.displayName || "طالب"}</span> 👋
         </h1>
-        <p className="mt-1 text-text-muted">ماذا تريد أن تفعل اليوم؟</p>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <p className="text-text-muted">ماذا تريد أن تفعل اليوم؟</p>
+          {(profile?.streak ?? 0) >= 2 && (
+            <span className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
+              (profile?.streak ?? 0) >= 7 ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
+            }`}>
+              <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5" />
+              {profile?.streak} أيام متتالية
+            </span>
+          )}
+        </div>
 
         {/* عدّاد البكالوريا */}
         <div className="mt-5 overflow-hidden rounded-xl border border-border bg-surface">

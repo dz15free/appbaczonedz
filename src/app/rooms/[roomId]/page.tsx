@@ -7,6 +7,7 @@ import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
   faComments, faArrowRight, faXmark, faHand,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
+  faExpand, faCompress, faChartBar,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -16,7 +17,9 @@ import {
   promoteToMod, demoteMod,
   kickUser, banUser, unbanUser,
   listenMods, listenKicked, listenBanned,
+  listenPoll, type RoomPoll,
 } from "@/features/rooms/rooms";
+import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
@@ -57,17 +60,27 @@ export default function RoomPage() {
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
   useEffect(() => listenMods(roomId, setMods), [roomId]);
   useEffect(() => listenBanned(roomId, setBanned), [roomId]);
+  useEffect(() => listenPoll(roomId, setActivePoll), [roomId]);
   useEffect(() => {
     if (!user) return;
     return listenKicked(roomId, user.uid, (kicked) => {
       if (kicked) router.replace("/rooms");
     });
   }, [roomId, user, router]);
+  // Escape يُلغي الشاشة الكاملة
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -199,7 +212,7 @@ export default function RoomPage() {
 
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
-        <nav className="flex gap-1 border-b border-border px-3 py-2">
+        <nav className="flex items-center gap-1 border-b border-border px-3 py-2">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -212,35 +225,87 @@ export default function RoomPage() {
               {t.label}
             </button>
           ))}
+          {/* استفتاء سريع */}
+          <button
+            onClick={() => setShowCreatePoll(true)}
+            title="إنشاء استفتاء سريع"
+            className="mr-auto flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-text-muted hover:bg-primary/10 hover:text-primary"
+          >
+            <FontAwesomeIcon icon={faChartBar} className="h-4 w-4" />
+            <span className="hidden sm:inline">استفتاء</span>
+          </button>
+          {/* شاشة كاملة */}
+          <button
+            onClick={() => setFullscreen((f) => !f)}
+            title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
+            className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+          >
+            <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
+          </button>
         </nav>
       ) : (
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-sm text-text-muted">
-          <FontAwesomeIcon icon={faHouse} className="h-4 w-4 text-primary" />
-          يعرض المعلّم الآن: <span className="font-bold text-text-primary">{currentLabel}</span>
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+          <div className="flex flex-1 items-center gap-2 text-sm text-text-muted">
+            <FontAwesomeIcon icon={faHouse} className="h-4 w-4 text-primary" />
+            يعرض المعلّم الآن: <span className="font-bold text-text-primary">{currentLabel}</span>
+          </div>
+          {/* شاشة كاملة للطالب أيضاً */}
+          <button
+            onClick={() => setFullscreen((f) => !f)}
+            title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
+            className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+          >
+            <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {/* المحتوى + الدردشة */}
       <div className="flex flex-1 overflow-hidden">
-        <section className="flex flex-1 flex-col overflow-hidden">
-          {tool === "welcome" && (
-            <div className="flex flex-1 items-center justify-center p-6 text-center">
-              <div>
-                <FontAwesomeIcon icon={faHouse} className="h-10 w-10 text-primary" />
-                <h2 className="mt-4 font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-                <p className="mt-2 max-w-sm text-sm text-text-muted">
-                  {isOwner
-                    ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
-                    : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}
-                </p>
-              </div>
-            </div>
+        <section className={`flex flex-col overflow-hidden transition-all ${
+          fullscreen
+            ? "fixed inset-0 z-[80] bg-background"
+            : "flex-1"
+        }`}>
+          {/* زر الخروج من الشاشة الكاملة */}
+          {fullscreen && (
+            <button
+              onClick={() => setFullscreen(false)}
+              className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-md bg-black/40 px-3 py-1.5 text-sm text-white backdrop-blur-sm hover:bg-black/60"
+            >
+              <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
+              خروج
+            </button>
           )}
 
-          {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-          {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
-
-          {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+          {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
+          {activePoll?.open ? (
+            <RoomPollPanel
+              roomId={roomId}
+              poll={activePoll}
+              isOwner={isOwner}
+              myUid={user?.uid ?? ""}
+            />
+          ) : (
+            <>
+              {tool === "welcome" && (
+                <div className="flex flex-1 items-center justify-center p-6 text-center">
+                  <div>
+                    <FontAwesomeIcon icon={faHouse} className="h-10 w-10 text-primary" />
+                    <h2 className="mt-4 font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
+                    <p className="mt-2 max-w-sm text-sm text-text-muted">
+                      {isOwner
+                        ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
+                        : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
+              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+            </>
+          )}
         </section>
 
         <aside className="hidden w-96 border-r border-border lg:block">
@@ -272,6 +337,11 @@ export default function RoomPage() {
             <ChatPanel roomId={roomId} isOwner={isOwner} />
           </div>
         </div>
+      )}
+
+      {/* نافذة إنشاء استفتاء */}
+      {showCreatePoll && isOwner && (
+        <CreatePollModal roomId={roomId} onClose={() => setShowCreatePoll(false)} />
       )}
 
       {/* لوحة إدارة المشاركين */}

@@ -45,6 +45,7 @@ import {
   listenFriends,
   listenSentRequests,
   listenThreads,
+  getFriendSuggestions,
   type Post,
   type Person,
   type Thread,
@@ -109,6 +110,8 @@ function Feed({ me }: { me: Person }) {
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [sort, setSort] = useState<"recent" | "top">("recent");
+  const [subjectFilter, setSubjectFilter] = useState("");
+  const [postSubject, setPostSubject] = useState("");
   const [friends, setFriends] = useState<Person[]>([]);
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
@@ -142,10 +145,11 @@ function Feed({ me }: { me: Person }) {
   async function publish() {
     if (!text.trim() && !pending) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text, pending ?? undefined, visibility);
+    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined);
     setText("");
     setPending(null);
     setVisibility("public");
+    setPostSubject("");
     setPosting(false);
   }
 
@@ -166,6 +170,7 @@ function Feed({ me }: { me: Person }) {
 
   const shown = [...posts]
     .filter(visible)
+    .filter((p) => !subjectFilter || (p as any).subject === subjectFilter)
     .sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
 
   return (
@@ -229,6 +234,17 @@ function Feed({ me }: { me: Person }) {
                 <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
               </button>
             ))}
+            <select
+              value={postSubject}
+              onChange={(e) => setPostSubject(e.target.value)}
+              className="h-9 rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+              title="فئة المنشور"
+            >
+              <option value="">بدون فئة</option>
+              {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
           <button
             onClick={publish}
@@ -240,24 +256,23 @@ function Feed({ me }: { me: Person }) {
         </div>
       </div>
 
-      {/* الترتيب */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSort("recent")}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-            sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"
-          }`}
-        >
+      {/* الترتيب + فلتر الفئة */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setSort("recent")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
           <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
         </button>
-        <button
-          onClick={() => setSort("top")}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-            sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"
-          }`}
-        >
+        <button onClick={() => setSort("top")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
           <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
         </button>
+        <div className="mx-1 h-5 w-px self-center bg-border" />
+        {["","رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة"].map((s) => (
+          <button key={s} onClick={() => setSubjectFilter(s)}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${subjectFilter === s ? "bg-gradient-primary text-white" : "border border-border text-text-muted hover:text-primary"}`}>
+            {s || "الكل"}
+          </button>
+        ))}
       </div>
 
       {shown.length === 0 && <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>}
@@ -368,10 +383,20 @@ function People({ me }: { me: Person }) {
   const [searching, setSearching] = useState(false);
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
+  const [suggestions, setSuggestions] = useState<{ uid: string; name: string; track?: string }[]>([]);
+  const { user } = useAuth();
+  const profile = useProfile(user?.uid);
 
   useEffect(() => listenFriendRequests(me.uid, setRequests), [me.uid]);
   useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
   useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
+
+  // اقتراحات الأصدقاء بناءً على الشعبة
+  useEffect(() => {
+    if (!profile?.track || !me.uid) return;
+    const excluded = new Set([me.uid, ...friends.map((f) => f.uid), ...Array.from(sentSet)]);
+    getFriendSuggestions(me.uid, profile.track, excluded).then(setSuggestions);
+  }, [me.uid, profile?.track, friends, sentSet]);
 
   async function doSearch() {
     if (!term.trim()) return;

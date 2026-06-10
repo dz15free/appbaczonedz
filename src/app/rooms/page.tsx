@@ -14,7 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listLiveRooms, findRoomByName, type LiveRoom } from "@/features/rooms/rooms";
-import { CreateRoomDialog } from "@/features/rooms/create-room-dialog";
+import { CreateRoomDialog, ROOM_SUBJECTS } from "@/features/rooms/create-room-dialog";
 import { AppShell } from "@/components/app-shell";
 import { Input, Button } from "@/components/ui/field";
 
@@ -28,6 +28,7 @@ export default function RoomsPage() {
   const [joinMsg, setJoinMsg] = useState("");
   const [joining, setJoining] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [subjectFilter, setSubjectFilter] = useState("");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -119,38 +120,71 @@ export default function RoomsPage() {
 
         {fetching ? (
           <p className="mt-8 text-text-muted">جارٍ تحميل الغرف...</p>
-        ) : rooms.length === 0 ? (
-          <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
-            <p className="text-text-muted">لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!</p>
-            <Button onClick={() => setShowCreate(true)} className="mt-4">
-              إنشاء غرفة
-            </Button>
-          </div>
         ) : (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {rooms.map((r) => (
-              <Link
-                key={r.id}
-                href={`/rooms/${r.id}`}
-                className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
-                    <span className="font-bold">{r.name}</span>
-                  </div>
-                  <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
-                    <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
-                    {r.activeCount} متصل الآن · أنشأها {r.ownerName}
-                  </span>
+          <>
+            {/* فلتر المواد */}
+            {rooms.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {[{ id: "", label: "الكل" }, ...ROOM_SUBJECTS.filter((s) => s.id)].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSubjectFilter(s.id)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                      subjectFilter === s.id
+                        ? "bg-gradient-primary text-white"
+                        : "border border-border text-text-muted hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* قائمة الغرف */}
+            {(() => {
+              const filtered = subjectFilter
+                ? rooms.filter((r) => r.subject === subjectFilter)
+                : rooms;
+              return filtered.length === 0 ? (
+                <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
+                  <p className="text-text-muted">
+                    {rooms.length === 0
+                      ? "لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!"
+                      : `لا غرف نشطة لمادة «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}» الآن.`}
+                  </p>
+                  <Button onClick={() => setShowCreate(true)} className="mt-4">إنشاء غرفة</Button>
                 </div>
-                <FontAwesomeIcon
-                  icon={faArrowRight}
-                  className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary"
-                />
-              </Link>
-            ))}
-          </div>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {filtered.map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/rooms/${r.id}`}
+                      className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
+                          <span className="font-bold">{r.name}</span>
+                          {r.subject && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                              {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
+                            </span>
+                          )}
+                        </div>
+                        <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
+                          <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
+                          {r.activeCount} متصل الآن · {r.ownerName}
+                        </span>
+                      </div>
+                      <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary" />
+                    </Link>
+                  ))}
+                </div>
+              );
+            })()}
+          </>
         )}
       </section>
 

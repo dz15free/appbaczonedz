@@ -144,6 +144,20 @@
       }
     },
 
+    "flashcards": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "studyProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
     "bannedUsers": {
       "$roomId": {
         ".read": "auth != null",
@@ -159,6 +173,14 @@
         "mods": {
           "$uid": {
             ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+          }
+        },
+        "poll": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+          "votes": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
           }
         },
         "kicked": {

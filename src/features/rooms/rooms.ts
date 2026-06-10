@@ -262,3 +262,39 @@ export function listenBanned(roomId: string, cb: (banned: Set<string>) => void) 
 export async function deleteRoomMessage(roomId: string, messageId: string) {
   await remove(ref(rtdb, `rooms/${roomId}/messages/${messageId}`));
 }
+
+/* ══════════════════════════════════════════
+   استفتاء سريع (Quick Poll) في الغرفة
+══════════════════════════════════════════ */
+
+export interface RoomPoll {
+  question: string;
+  options: string[];
+  votes: Record<string, number>;
+  open: boolean;
+  createdAt: number;
+}
+
+export async function createPoll(roomId: string, question: string, options: string[]) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll`), {
+    question: question.trim(),
+    options: options.map((o) => o.trim()).filter(Boolean),
+    votes: {},
+    open: true,
+    createdAt: Date.now(),
+  });
+}
+
+export async function closePoll(roomId: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll/open`), false);
+}
+
+export async function castVote(roomId: string, uid: string, optionIdx: number) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll/votes/${uid}`), optionIdx);
+}
+
+export function listenPoll(roomId: string, cb: (poll: RoomPoll | null) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/poll`), (snap) => {
+    cb((snap.val() as RoomPoll | null) ?? null);
+  });
+}

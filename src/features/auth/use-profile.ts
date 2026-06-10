@@ -12,6 +12,7 @@ export interface Profile {
   role?: string;
   points?: number;
   level?: number;
+  streak?: number;
   postCount?: number;
   commentCount?: number;
   avatarUrl?: string | null;
