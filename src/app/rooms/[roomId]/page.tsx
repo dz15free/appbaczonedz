@@ -23,6 +23,7 @@ import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
+import { FullscreenChatOverlay } from "@/features/chat/fullscreen-chat";
 import { VideoSync } from "@/features/video/video-sync";
 import { Whiteboard } from "@/features/whiteboard/whiteboard";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
@@ -305,6 +306,10 @@ export default function RoomPage() {
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
             </>
+          )}
+          {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
+          {fullscreen && (
+            <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} />
           )}
         </section>
 
