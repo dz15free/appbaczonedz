@@ -13,6 +13,7 @@ import {
   endAt,
   equalTo,
   limitToLast,
+  limitToFirst,
   increment,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
