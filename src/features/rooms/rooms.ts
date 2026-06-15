@@ -262,3 +262,149 @@ export function listenBanned(roomId: string, cb: (banned: Set<string>) => void) 
 export async function deleteRoomMessage(roomId: string, messageId: string) {
   await remove(ref(rtdb, `rooms/${roomId}/messages/${messageId}`));
 }
+
+/* ══════════════════════════════════════════
+   استفتاء سريع (Quick Poll) في الغرفة
+══════════════════════════════════════════ */
+
+export interface RoomPoll {
+  question: string;
+  options: string[];
+  votes: Record<string, number>;
+  open: boolean;
+  createdAt: number;
+}
+
+export async function createPoll(roomId: string, question: string, options: string[]) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll`), {
+    question: question.trim(),
+    options: options.map((o) => o.trim()).filter(Boolean),
+    votes: {},
+    open: true,
+    createdAt: Date.now(),
+  });
+}
+
+export async function closePoll(roomId: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll/open`), false);
+}
+
+export async function castVote(roomId: string, uid: string, optionIdx: number) {
+  await set(ref(rtdb, `roomLive/${roomId}/poll/votes/${uid}`), optionIdx);
+}
+
+export function listenPoll(roomId: string, cb: (poll: RoomPoll | null) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/poll`), (snap) => {
+    cb((snap.val() as RoomPoll | null) ?? null);
+  });
+}
+
+/* ══════════════════════════════════════════
+   ردود أفعال الطلاب (Reactions) + مشاركة
+══════════════════════════════════════════ */
+
+export interface RoomReaction {
+  id: string;
+  uid: string;
+  name: string;
+  type: "got_it" | "question" | "confused" | "ready";
+  sentAt: number;
+}
+
+export async function sendReaction(
+  roomId: string,
+  uid: string,
+  name: string,
+  type: RoomReaction["type"]
+) {
+  const r = push(ref(rtdb, `roomLive/${roomId}/reactions`));
+  await set(r, { uid, name, type, sentAt: Date.now() });
+}
+
+export function listenReactions(
+  roomId: string,
+  cb: (reactions: RoomReaction[]) => void
+) {
+  return onValue(
+    query(ref(rtdb, `roomLive/${roomId}/reactions`), limitToLast(30)),
+    (snap) => {
+      const val = (snap.val() as Record<string, any>) ?? {};
+      const list = Object.entries(val)
+        .map(([id, r]) => ({ id, ...r }) as RoomReaction)
+        .filter((r) => Date.now() - r.sentAt < 15_000); // آخر 15 ثانية
+      cb(list);
+    }
+  );
+}
+
+/* ══════════════════════════════════════════
+   جدول الجلسات الدراسية القادمة
+══════════════════════════════════════════ */
+
+export interface ScheduledSession {
+  id: string;
+  name: string;
+  subject: string | null;
+  roomId: string;
+  ownerId: string;
+  ownerName: string;
+  scheduledAt: number;
+  createdAt: number;
+}
+
+const SESSION_HIDE_AFTER_MS = 60 * 60 * 1000; // أخفِ الجلسة بعد مرور ساعة من وقتها
+
+export async function scheduleSession(input: {
+  name: string;
+  subject?: string;
+  ownerId: string;
+  ownerName: string;
+  scheduledAt: number;
+}): Promise<string> {
+  // أنشئ غرفة الجلسة فوراً (تصبح جاهزة للانضمام عند حلول الوقت)
+  const roomId = await createRoom({
+    name: input.name,
+    type: "public",
+    subject: input.subject,
+    ownerId: input.ownerId,
+    ownerName: input.ownerName,
+  });
+
+  const sRef = push(ref(rtdb, "scheduledSessions"));
+  await set(sRef, {
+    name: input.name.trim(),
+    subject: input.subject ?? null,
+    roomId,
+    ownerId: input.ownerId,
+    ownerName: input.ownerName,
+    scheduledAt: input.scheduledAt,
+    createdAt: Date.now(),
+  });
+  return roomId;
+}
+
+export async function listUpcomingSessions(): Promise<ScheduledSession[]> {
+  const snap = await get(ref(rtdb, "scheduledSessions"));
+  const val = (snap.val() as Record<string, Omit<ScheduledSession, "id">>) ?? {};
+  const now = Date.now();
+  return Object.entries(val)
+    .map(([id, s]) => ({ id, ...s }))
+    .filter((s) => s.scheduledAt > now - SESSION_HIDE_AFTER_MS)
+    .sort((a, b) => a.scheduledAt - b.scheduledAt);
+}
+
+export function listenUpcomingSessions(cb: (sessions: ScheduledSession[]) => void) {
+  return onValue(ref(rtdb, "scheduledSessions"), (snap) => {
+    const val = (snap.val() as Record<string, Omit<ScheduledSession, "id">>) ?? {};
+    const now = Date.now();
+    const list = Object.entries(val)
+      .map(([id, s]) => ({ id, ...s }))
+      .filter((s) => s.scheduledAt > now - SESSION_HIDE_AFTER_MS)
+      .sort((a, b) => a.scheduledAt - b.scheduledAt);
+    cb(list);
+  });
+}
+
+export async function deleteScheduledSession(id: string) {
+  await remove(ref(rtdb, `scheduledSessions/${id}`));
+}

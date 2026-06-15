@@ -13,6 +13,7 @@ import {
   endAt,
   equalTo,
   limitToLast,
+  limitToFirst,
   increment,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -32,6 +33,8 @@ export interface Post {
   attachmentId?: string;
   attachmentKind?: "image" | "file";
   fileName?: string;
+  subject?: string;
+  locked?: boolean;
 }
 export interface Comment {
   id: string;
@@ -64,7 +67,8 @@ export async function createPost(
   authorName: string,
   text: string,
   attachment?: { kind: "image" | "file"; dataUrl: string; name: string },
-  visibility: "public" | "friends" | "private" = "public"
+  visibility: "public" | "friends" | "private" = "public",
+  subject?: string
 ) {
   const post: Record<string, unknown> = {
     authorId,
@@ -73,6 +77,7 @@ export async function createPost(
     createdAt: Date.now(),
     visibility,
   };
+  if (subject) post.subject = subject;
   if (attachment) {
     const aRef = push(ref(rtdb, "community/postAttachments"));
     await set(aRef, attachment.dataUrl);
@@ -93,6 +98,11 @@ export async function getPostAttachment(attachmentId: string): Promise<string | 
 export async function deletePost(post: { id: string; attachmentId?: string }) {
   await remove(ref(rtdb, `community/posts/${post.id}`));
   if (post.attachmentId) await remove(ref(rtdb, `community/postAttachments/${post.attachmentId}`));
+}
+
+/** قفل/فتح منشور (يمنع/يسمح بإضافة تعليقات جديدة) — للإدارة فقط */
+export async function setPostLocked(postId: string, locked: boolean) {
+  await update(ref(rtdb, `community/posts/${postId}`), { locked });
 }
 
 export async function deleteComment(postId: string, commentId: string) {
@@ -434,4 +444,31 @@ export async function markNotificationsRead(uid: string, ids: string[]) {
 
 export async function clearNotifications(uid: string) {
   await remove(ref(rtdb, `notifications/${uid}`));
+}
+
+/* ═══════════════════════════════
+   اقتراح الأصدقاء
+═══════════════════════════════ */
+export async function getFriendSuggestions(
+  uid: string,
+  track: string | null | undefined,
+  excludeUids: Set<string>,
+  limit = 6
+): Promise<{ uid: string; name: string; track?: string }[]> {
+  if (!track) return [];
+  try {
+    const snap = await get(
+      query(
+        ref(rtdb, "users"),
+        orderByChild("track"),
+        equalTo(track),
+        limitToFirst(20)
+      )
+    );
+    const val = (snap.val() as Record<string, any>) ?? {};
+    return Object.entries(val)
+      .filter(([id, u]) => id !== uid && !excludeUids.has(id) && u.name)
+      .slice(0, limit)
+      .map(([id, u]) => ({ uid: id, name: u.name, track: u.track }));
+  } catch { return []; }
 }

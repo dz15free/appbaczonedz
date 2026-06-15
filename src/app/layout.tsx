@@ -28,6 +28,11 @@ export const metadata: Metadata = {
   description:
     "منصة تعليمية ومجتمع دراسي متكامل لطلاب البكالوريا الجزائريين: غرف دراسة، سبورة ذكية، مشاركة ملفات، صوت جماعي، ومساعد ذكي.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
