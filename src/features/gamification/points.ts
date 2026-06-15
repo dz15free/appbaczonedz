@@ -69,16 +69,13 @@ export async function awardActivity(uid: string, kind: "post" | "comment") {
   }
 }
 
-// نقاط الزيارة اليومية (مرّة واحدة في اليوم) + عدّاد أيام متتالية
+// نقاط الزيارة اليومية (مرّة واحدة في اليوم)
 export async function recordDailyVisit(uid: string) {
   const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   try {
     await runTransaction(ref(rtdb, `users/${uid}`), (u) => {
       if (!u) return u;
       if (u.lastVisit === today) return undefined; // إلغاء — لا تغيير
-      // تحديث السلسلة
-      u.streak = u.lastVisit === yesterday ? (u.streak || 0) + 1 : 1;
       u.lastVisit = today;
       u.points = (u.points || 0) + POINTS.daily;
       u.level = levelFromPoints(u.points);
@@ -88,4 +85,3 @@ export async function recordDailyVisit(uid: string) {
     /* تجاهل */
   }
 }
-

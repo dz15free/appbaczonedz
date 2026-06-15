@@ -11,13 +11,10 @@ import {
   faCircle,
   faRightToBracket,
   faRotate,
-  faCalendarPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listLiveRooms, findRoomByName, type LiveRoom } from "@/features/rooms/rooms";
-import { CreateRoomDialog, ROOM_SUBJECTS } from "@/features/rooms/create-room-dialog";
-import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog";
-import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
+import { CreateRoomDialog } from "@/features/rooms/create-room-dialog";
 import { AppShell } from "@/components/app-shell";
 import { Input, Button } from "@/components/ui/field";
 
@@ -27,12 +24,10 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
   const [fetching, setFetching] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [showSchedule, setShowSchedule] = useState(false);
   const [joinName, setJoinName] = useState("");
   const [joinMsg, setJoinMsg] = useState("");
   const [joining, setJoining] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [subjectFilter, setSubjectFilter] = useState("");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -85,10 +80,6 @@ export default function RoomsPage() {
             >
               <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
-            <Button onClick={() => setShowSchedule(true)} variant="ghost" className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faCalendarPlus} className="h-4 w-4" />
-              <span className="hidden sm:inline">جدولة جلسة</span>
-            </Button>
             <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
               <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
               غرفة جديدة
@@ -98,9 +89,6 @@ export default function RoomsPage() {
         <p className="mt-1 text-sm text-text-muted">
           تظهر هنا الغرف العامة التي بها طالب متصل خلال آخر دقيقة. اضغط التحديث للبحث عن الجديد.
         </p>
-
-        {/* الجلسات القادمة */}
-        <UpcomingSessions />
 
         {/* الانضمام بكتابة اسم الغرفة */}
         <div className="mt-5 rounded-lg border border-border bg-surface p-4">
@@ -131,76 +119,42 @@ export default function RoomsPage() {
 
         {fetching ? (
           <p className="mt-8 text-text-muted">جارٍ تحميل الغرف...</p>
+        ) : rooms.length === 0 ? (
+          <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
+            <p className="text-text-muted">لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!</p>
+            <Button onClick={() => setShowCreate(true)} className="mt-4">
+              إنشاء غرفة
+            </Button>
+          </div>
         ) : (
-          <>
-            {/* فلتر المواد */}
-            {rooms.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2">
-                {[{ id: "", label: "الكل" }, ...ROOM_SUBJECTS.filter((s) => s.id)].map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSubjectFilter(s.id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                      subjectFilter === s.id
-                        ? "bg-gradient-primary text-white"
-                        : "border border-border text-text-muted hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* قائمة الغرف */}
-            {(() => {
-              const filtered = subjectFilter
-                ? rooms.filter((r) => r.subject === subjectFilter)
-                : rooms;
-              return filtered.length === 0 ? (
-                <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
-                  <p className="text-text-muted">
-                    {rooms.length === 0
-                      ? "لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!"
-                      : `لا غرف نشطة لمادة «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}» الآن.`}
-                  </p>
-                  <Button onClick={() => setShowCreate(true)} className="mt-4">إنشاء غرفة</Button>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {rooms.map((r) => (
+              <Link
+                key={r.id}
+                href={`/rooms/${r.id}`}
+                className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
+                    <span className="font-bold">{r.name}</span>
+                  </div>
+                  <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
+                    <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
+                    {r.activeCount} متصل الآن · أنشأها {r.ownerName}
+                  </span>
                 </div>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {filtered.map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/rooms/${r.id}`}
-                      className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
-                          <span className="font-bold">{r.name}</span>
-                          {r.subject && (
-                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                              {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
-                            </span>
-                          )}
-                        </div>
-                        <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
-                          <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
-                          {r.activeCount} متصل الآن · {r.ownerName}
-                        </span>
-                      </div>
-                      <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary" />
-                    </Link>
-                  ))}
-                </div>
-              );
-            })()}
-          </>
+                <FontAwesomeIcon
+                  icon={faArrowRight}
+                  className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary"
+                />
+              </Link>
+            ))}
+          </div>
         )}
       </section>
 
       {showCreate && <CreateRoomDialog onClose={() => setShowCreate(false)} />}
-      {showSchedule && <ScheduleSessionDialog onClose={() => setShowSchedule(false)} />}
     </AppShell>
   );
 }

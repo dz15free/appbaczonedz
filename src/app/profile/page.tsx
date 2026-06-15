@@ -1,23 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faGraduationCap, faLocationDot, faStar, faRightFromBracket,
-  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines,
-} from "@fortawesome/free-solid-svg-icons";
+import { faGraduationCap, faLocationDot, faStar, faRightFromBracket, faPen, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
-import { compressAvatar } from "@/lib/avatar";
+import { logoutUser, updateAccount } from "@/lib/firebase/auth";
 import { TRACKS, WILAYAS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/field";
-import { UserAvatar } from "@/components/ui/user-avatar";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import { listenFriends, type Person } from "@/features/community/social";
-import { useLeaderboardRank } from "@/features/gamification/use-rank";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -30,21 +24,6 @@ export default function ProfilePage() {
   const [wilaya, setWilaya] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [avatarLoading, setAvatarLoading] = useState(false);
-  const avatarInput = useRef<HTMLInputElement>(null);
-  const rank = useLeaderboardRank(user?.uid, profile?.points);
-
-  async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !user) return;
-    setAvatarLoading(true);
-    try {
-      const compressed = await compressAvatar(file);
-      await updateAvatar(user.uid, compressed);
-    } catch { /* تجاهل */ }
-    finally { setAvatarLoading(false); }
-  }
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -92,55 +71,15 @@ export default function ProfilePage() {
           >
             <FontAwesomeIcon icon={faPen} className="h-4 w-4" />
           </button>
-          <input ref={avatarInput} type="file" accept="image/*" hidden onChange={pickAvatar} />
-          {/* Avatar + edit button */}
-          <button onClick={() => avatarInput.current?.click()} disabled={avatarLoading}
-            className="relative" aria-label="تغيير الصورة">
-            <UserAvatar name={profile?.name || user.displayName || "ط"} avatarUrl={profile?.avatarUrl} size="xl" />
-            <span className="absolute bottom-0 right-0 grid h-7 w-7 place-items-center rounded-full bg-gradient-primary text-white shadow">
-              <FontAwesomeIcon icon={faCamera} className="h-3.5 w-3.5" />
-            </span>
-          </button>
-
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-3xl font-extrabold text-white">
+            {(profile?.name || user.displayName || "ط").charAt(0)}
+          </div>
           <h1 className="mt-4 font-display text-xl font-extrabold">{profile?.name || user.displayName || "طالب"}</h1>
-          <span className="mt-0.5 text-sm text-text-muted">{user.email}</span>
-
-          {/* Streak */}
-          {(profile?.streak ?? 0) >= 2 && (
-            <div className={`mt-2 flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${
-              (profile?.streak ?? 0) >= 7 ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
-            }`}>
-              <FontAwesomeIcon icon={faFire} className="h-4 w-4" />
-              {profile?.streak} أيام متتالية
-            </div>
-          )}
-
-          {/* Level + Points */}
-          <div className="mt-3 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
+          <span className="mt-1 text-sm text-text-muted">{user.email}</span>
+          <div className="mt-4 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
             <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
             المستوى {profile?.level ?? 1} · {profile?.points ?? 0} نقطة
           </div>
-
-          {/* Stats grid */}
-          <div className="mt-4 grid w-full grid-cols-4 gap-2 text-center">
-            {[
-              { icon: faFileLines, val: profile?.postCount ?? 0,   label: "منشور" },
-              { icon: faComments,  val: profile?.commentCount ?? 0, label: "تعليق" },
-              { icon: faUsers,     val: friends.length,             label: "صديق" },
-              { icon: faStar,      val: rank ? `#${rank}` : "—",   label: "ترتيبي" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-border bg-surface py-3">
-                <FontAwesomeIcon icon={s.icon} className="h-4 w-4 text-primary" />
-                <p className="mt-1 text-lg font-extrabold">{s.val}</p>
-                <p className="text-xs text-text-muted">{s.label}</p>
-              </div>
-            ))}
-          </div>
-          {rank && (
-            <a href="/leaderboard" className="mt-2 block text-center text-xs text-primary hover:underline">
-              عرض لوحة الترتيب الكاملة →
-            </a>
-          )}
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">

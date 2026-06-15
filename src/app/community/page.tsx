@@ -45,7 +45,6 @@ import {
   listenFriends,
   listenSentRequests,
   listenThreads,
-  getFriendSuggestions,
   type Post,
   type Person,
   type Thread,
@@ -110,8 +109,6 @@ function Feed({ me }: { me: Person }) {
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [sort, setSort] = useState<"recent" | "top">("recent");
-  const [subjectFilter, setSubjectFilter] = useState("");
-  const [postSubject, setPostSubject] = useState("");
   const [friends, setFriends] = useState<Person[]>([]);
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
@@ -145,11 +142,10 @@ function Feed({ me }: { me: Person }) {
   async function publish() {
     if (!text.trim() && !pending) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined);
+    await createPost(me.uid, me.name, text, pending ?? undefined, visibility);
     setText("");
     setPending(null);
     setVisibility("public");
-    setPostSubject("");
     setPosting(false);
   }
 
@@ -170,7 +166,6 @@ function Feed({ me }: { me: Person }) {
 
   const shown = [...posts]
     .filter(visible)
-    .filter((p) => !subjectFilter || (p as any).subject === subjectFilter)
     .sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
 
   return (
@@ -206,68 +201,63 @@ function Feed({ me }: { me: Person }) {
           </div>
         )}
 
-        {/* صف الأدوات — متجاوب تماماً */}
-        <div className="mt-2 space-y-2">
-          {/* صف 1: أدوات الإرفاق + الخصوصية */}
-          <div className="flex flex-wrap items-center gap-1">
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center gap-1">
             <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
             <input ref={fileInput} type="file" hidden onChange={pick} />
-            <button onClick={() => imageInput.current?.click()} aria-label="صورة"
-              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+            <button onClick={() => imageInput.current?.click()} aria-label="صورة" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
               <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
             </button>
-            <button onClick={() => fileInput.current?.click()} aria-label="ملف"
-              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+            <button onClick={() => fileInput.current?.click()} aria-label="ملف" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
               <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
             </button>
             <div className="mx-1 h-5 w-px bg-border" />
             {([
-              { id: "public",  icon: faGlobe,     label: "عام" },
+              { id: "public", icon: faGlobe, label: "عام" },
               { id: "friends", icon: faUserGroup, label: "أصدقاء" },
-              { id: "private", icon: faLock,       label: "خاص" },
+              { id: "private", icon: faLock, label: "خاص" },
             ] as const).map((v) => (
-              <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
-                className={`grid h-9 w-9 place-items-center rounded-md ${visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"}`}>
+              <button
+                key={v.id}
+                onClick={() => setVisibility(v.id)}
+                aria-label={v.label}
+                title={v.label}
+                className={`grid h-9 w-9 place-items-center rounded-md ${
+                  visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"
+                }`}
+              >
                 <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
               </button>
             ))}
           </div>
-
-          {/* صف 2: الفئة + زر النشر — تكديس عمودي على الهاتف، جنباً إلى جنب على الشاشات الأوسع */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary sm:flex-1"
-              title="فئة المنشور">
-              <option value="">بدون فئة</option>
-              {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
-              className="h-10 w-full shrink-0 rounded-md bg-gradient-primary text-sm font-bold text-white disabled:opacity-50 sm:w-auto sm:px-6">
-              {posting ? "جارٍ النشر..." : "نشر"}
-            </button>
-          </div>
+          <button
+            onClick={publish}
+            disabled={posting || (!text.trim() && !pending)}
+            className="rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+          >
+            نشر
+          </button>
         </div>
       </div>
 
-      {/* الترتيب + فلتر الفئة */}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => setSort("recent")}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
+      {/* الترتيب */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setSort("recent")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"
+          }`}
+        >
           <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
         </button>
-        <button onClick={() => setSort("top")}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
+        <button
+          onClick={() => setSort("top")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"
+          }`}
+        >
           <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
         </button>
-        <div className="mx-1 h-5 w-px self-center bg-border" />
-        {["","رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة"].map((s) => (
-          <button key={s} onClick={() => setSubjectFilter(s)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold ${subjectFilter === s ? "bg-gradient-primary text-white" : "border border-border text-text-muted hover:text-primary"}`}>
-            {s || "الكل"}
-          </button>
-        ))}
       </div>
 
       {shown.length === 0 && <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>}
@@ -289,12 +279,11 @@ function Feed({ me }: { me: Person }) {
                       icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
                       className="h-2.5 w-2.5"
                     />
-                    {p.locked && <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5 text-warning" title="مُغلق" />}
                   </span>
                 </div>
               </Link>
               <div className="flex items-center gap-2">
-                {(p.authorId === me.uid || profile?.role === "admin") ? (
+                {p.authorId === me.uid ? (
                   <button
                     onClick={() => {
                       if (confirm("حذف هذا المنشور؟")) deletePost(p);
@@ -379,20 +368,10 @@ function People({ me }: { me: Person }) {
   const [searching, setSearching] = useState(false);
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
-  const [suggestions, setSuggestions] = useState<{ uid: string; name: string; track?: string }[]>([]);
-  const { user } = useAuth();
-  const profile = useProfile(user?.uid);
 
   useEffect(() => listenFriendRequests(me.uid, setRequests), [me.uid]);
   useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
   useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
-
-  // اقتراحات الأصدقاء بناءً على الشعبة
-  useEffect(() => {
-    if (!profile?.track || !me.uid) return;
-    const excluded = new Set([me.uid, ...friends.map((f) => f.uid), ...Array.from(sentSet)]);
-    getFriendSuggestions(me.uid, profile.track, excluded).then(setSuggestions);
-  }, [me.uid, profile?.track, friends, sentSet]);
 
   async function doSearch() {
     if (!term.trim()) return;

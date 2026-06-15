@@ -1,10 +1,5 @@
 {
   "rules": {
-    "settings": {
-      ".read": true,
-      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
-    },
-
     "users": {
       ".read": "auth != null",
       ".indexOn": ["name", "email", "points"],
@@ -18,7 +13,7 @@
       "posts": {
         ".indexOn": ["createdAt", "authorId"],
         "$postId": {
-          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))",
           "votes": {
             "$uid": {
               ".write": "auth != null && $uid === auth.uid"
@@ -26,16 +21,13 @@
           },
           "commentCount": {
             ".write": "auth != null"
-          },
-          "locked": {
-            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
           }
         }
       },
       "comments": {
         "$postId": {
           "$commentId": {
-            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('community').child('posts').child($postId).child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))"
+            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('community').child('posts').child($postId).child('authorId').val() === auth.uid)))"
           }
         }
       },
@@ -143,33 +135,12 @@
       }
     },
 
-    "scheduledSessions": {
-      ".read": "auth != null",
-      "$sessionId": {
-        ".write": "auth != null && (!data.exists() || data.child('ownerId').val() === auth.uid)"
-      }
-    },
-
     "presence": {
       ".read": "auth != null",
       "$roomId": {
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
         }
-      }
-    },
-
-    "flashcards": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-
-    "studyProgress": {
-      "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
       }
     },
 
@@ -189,18 +160,6 @@
           "$uid": {
             ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
           }
-        },
-        "poll": {
-          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-          "votes": {
-            "$uid": {
-              ".write": "auth != null && auth.uid === $uid"
-            }
-          }
-        },
-        "reactions": {
-          ".write": "auth != null",
-          ".read": "auth != null"
         },
         "kicked": {
           "$uid": {

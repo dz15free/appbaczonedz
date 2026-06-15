@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag, faReply, faXmark, faSpinner, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag, faReply, faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
@@ -21,7 +21,6 @@ import {
   deletePost,
   deleteComment,
   reportContent,
-  setPostLocked,
   type Post,
   type Comment,
   type Person,
@@ -183,50 +182,31 @@ export default function PostPage() {
                   </span>
                   <span className="font-bold">{post.authorName}</span>
                 </Link>
-                <div className="flex items-center gap-1">
-                  {post.locked && (
-                    <span className="flex items-center gap-1 rounded-full bg-warning/10 px-2 py-1 text-[10px] font-bold text-warning">
-                      <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5" />
-                      مُغلق
-                    </span>
-                  )}
-                  {/* أدوات الإدارة */}
-                  {profile?.role === "admin" && (
-                    <button
-                      onClick={() => setPostLocked(post.id, !post.locked)}
-                      aria-label={post.locked ? "فتح التعليقات" : "إغلاق التعليقات"}
-                      title={post.locked ? "فتح التعليقات" : "إغلاق التعليقات"}
-                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-warning/10 hover:text-warning"
-                    >
-                      <FontAwesomeIcon icon={post.locked ? faLockOpen : faLock} className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  {(post.authorId === user.uid || profile?.role === "admin") ? (
-                    <button
-                      onClick={() => {
-                        if (confirm("حذف هذا المنشور؟")) {
-                          deletePost(post);
-                          router.push("/community");
-                        }
-                      }}
-                      aria-label="حذف"
-                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger"
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "طالب" });
-                        alert("تم الإبلاغ. شكراً.");
-                      }}
-                      aria-label="إبلاغ"
-                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"
-                    >
-                      <FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
+                {post.authorId === user.uid ? (
+                  <button
+                    onClick={() => {
+                      if (confirm("حذف هذا المنشور؟")) {
+                        deletePost(post);
+                        router.push("/community");
+                      }
+                    }}
+                    aria-label="حذف"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger"
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "طالب" });
+                      alert("تم الإبلاغ. شكراً.");
+                    }}
+                    aria-label="إبلاغ"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"
+                  >
+                    <FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
               {post.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>}
               <PostAttachment post={post} />
@@ -263,35 +243,26 @@ export default function PostPage() {
             </div>
 
             <div className="mt-3">
-              {post.locked ? (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-text-muted">
-                  <FontAwesomeIcon icon={faLock} className="h-3.5 w-3.5" />
-                  التعليقات مُغلقة على هذا المنشور من قِبل الإدارة.
+              {replyTo && (
+                <div className="mb-1 flex items-center justify-between rounded-md bg-primary/5 px-3 py-1.5 text-xs text-text-muted">
+                  <span>ترد على {replyTo.name}</span>
+                  <button onClick={() => setReplyTo(null)} aria-label="إلغاء الرد" className="hover:text-danger">
+                    <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              ) : (
-                <>
-                  {replyTo && (
-                    <div className="mb-1 flex items-center justify-between rounded-md bg-primary/5 px-3 py-1.5 text-xs text-text-muted">
-                      <span>ترد على {replyTo.name}</span>
-                      <button onClick={() => setReplyTo(null)} aria-label="إلغاء الرد" className="hover:text-danger">
-                        <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && send()}
-                      placeholder={replyTo ? `ردّك على ${replyTo.name}...` : "اكتب تعليقك..."}
-                      className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                    />
-                    <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="grid h-11 w-11 place-items-center rounded-md bg-gradient-primary text-white disabled:opacity-50">
-                      <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
-                    </button>
-                  </div>
-                </>
               )}
+              <div className="flex items-center gap-2">
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && send()}
+                  placeholder={replyTo ? `ردّك على ${replyTo.name}...` : "اكتب تعليقك..."}
+                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="grid h-11 w-11 place-items-center rounded-md bg-gradient-primary text-white disabled:opacity-50">
+                  <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
+                </button>
+              </div>
             </div>
           </>
         )}
