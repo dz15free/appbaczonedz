@@ -13,6 +13,7 @@ export interface Profile {
   points?: number;
   level?: number;
   streak?: number;
+  quizCount?: number;
   postCount?: number;
   commentCount?: number;
   avatarUrl?: string | null;

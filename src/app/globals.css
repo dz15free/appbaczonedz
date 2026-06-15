@@ -113,3 +113,134 @@ body {
 .animate-msg-in {
   animation: msg-slide-up 0.3s ease-out forwards;
 }
+
+/* ─────────────────────────────────────────────
+   وضع الشاشة الكاملة لغرف الدراسة (يعمل على iOS/Android/Desktop)
+───────────────────────────────────────────── */
+.bz-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100vh !important;   /* احتياط للمتصفحات القديمة */
+  height: 100dvh !important;  /* الارتفاع الديناميكي الحقيقي (iOS 15.4+) */
+  height: -webkit-fill-available !important; /* احتياط إضافي لـ iOS Safari */
+  height: var(--bz-vvh, 100dvh) !important; /* يتكيّف مع لوحة المفاتيح */
+  max-height: var(--bz-vvh, 100dvh) !important;
+  z-index: 9999 !important;
+  background: var(--color-background, #0f0f1a);
+  overflow: hidden !important;
+  /* يمنع أي "ارتداد" (bounce) من كشف ما تحته على iOS */
+  touch-action: none;
+}
+.bz-fullscreen > * {
+  touch-action: auto; /* يُعيد السماح بالتمرير داخل عناصر الأداة نفسها */
+}
+
+/* يُمنع تمرير الجسم بالكامل أثناء وضع الشاشة الكاملة */
+body.bz-fullscreen-active {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   استوديو الغرفة — هوية بصرية مظلمة موحّدة (مثل أكبر منصّات
+   البث التعليمي المباشر) — تُطبَّق داخل صفحة الغرفة فقط
+════════════════════════════════════════════════════════ */
+.bz-studio {
+  --studio-bg: #0a0b10;
+  --studio-panel: #13151f;
+  --studio-border: rgba(255, 255, 255, 0.07);
+  --studio-text: #f5f6f8;
+  --studio-dim: rgba(245, 246, 248, 0.55);
+  --studio-faint: rgba(245, 246, 248, 0.32);
+  background: var(--studio-bg);
+  color: var(--studio-text);
+}
+
+/* خلفية "شبكية" خفيفة للوحة الدراسة */
+.bz-studio-mesh {
+  background:
+    radial-gradient(circle at 12% -10%, rgba(99, 102, 241, 0.16), transparent 42%),
+    radial-gradient(circle at 90% 105%, rgba(139, 92, 246, 0.12), transparent 48%),
+    var(--studio-bg);
+}
+
+/* أشرطة زجاجية (رأس/أدوات/صوت) */
+.bz-studio-bar {
+  background: color-mix(in srgb, var(--studio-panel) 90%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-color: var(--studio-border) !important;
+}
+
+/* نقطة "مباشر" بنبض */
+.bz-live-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  flex-shrink: 0;
+}
+.bz-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: #34d399;
+  opacity: 0.55;
+  animation: bz-live-pulse 1.8s ease-out infinite;
+}
+@keyframes bz-live-pulse {
+  0% { transform: scale(0.5); opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* زر أداة في المُحوِّل المقسَّم */
+.bz-studio-tool {
+  color: var(--studio-dim);
+  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.bz-studio-tool:hover { color: var(--studio-text); background: rgba(255, 255, 255, 0.06); }
+.bz-studio-tool:active { transform: scale(0.97); }
+.bz-studio-tool.active {
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+  box-shadow: 0 6px 18px -6px rgba(99, 102, 241, 0.65);
+}
+
+/* زر أيقونة مساعد (مشاركة/استفتاء/شاشة كاملة...) */
+.bz-studio-icon {
+  color: var(--studio-dim);
+  background: rgba(255, 255, 255, 0.045);
+  transition: color 0.15s, background-color 0.15s, transform 0.15s;
+}
+.bz-studio-icon:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.bz-studio-icon:active { transform: scale(0.94); }
+.bz-studio-icon.on {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.14);
+}
+.bz-studio-icon.warn {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.14);
+}
+
+/* رقاقة معلومة (عدد المتصلين، اسم الأداة الحالية...) */
+.bz-studio-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-dim);
+}
+
+/* توهّج خلفي للشعار/الأيقونة الرئيسية */
+.bz-studio-glow {
+  box-shadow: 0 8px 28px -8px rgba(99, 102, 241, 0.55);
+}

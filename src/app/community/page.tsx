@@ -206,53 +206,48 @@ function Feed({ me }: { me: Person }) {
           </div>
         )}
 
-        <div className="mt-2 flex items-center justify-between">
-          <div className="flex items-center gap-1">
+        {/* صف الأدوات — متجاوب تماماً */}
+        <div className="mt-2 space-y-2">
+          {/* صف 1: أدوات الإرفاق + الخصوصية */}
+          <div className="flex flex-wrap items-center gap-1">
             <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
             <input ref={fileInput} type="file" hidden onChange={pick} />
-            <button onClick={() => imageInput.current?.click()} aria-label="صورة" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+            <button onClick={() => imageInput.current?.click()} aria-label="صورة"
+              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
               <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
             </button>
-            <button onClick={() => fileInput.current?.click()} aria-label="ملف" className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
+            <button onClick={() => fileInput.current?.click()} aria-label="ملف"
+              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
               <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
             </button>
             <div className="mx-1 h-5 w-px bg-border" />
             {([
-              { id: "public", icon: faGlobe, label: "عام" },
+              { id: "public",  icon: faGlobe,     label: "عام" },
               { id: "friends", icon: faUserGroup, label: "أصدقاء" },
-              { id: "private", icon: faLock, label: "خاص" },
+              { id: "private", icon: faLock,       label: "خاص" },
             ] as const).map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setVisibility(v.id)}
-                aria-label={v.label}
-                title={v.label}
-                className={`grid h-9 w-9 place-items-center rounded-md ${
-                  visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"
-                }`}
-              >
+              <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
+                className={`grid h-9 w-9 place-items-center rounded-md ${visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"}`}>
                 <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
               </button>
             ))}
-            <select
-              value={postSubject}
-              onChange={(e) => setPostSubject(e.target.value)}
-              className="h-9 rounded-md border border-border bg-background px-2 text-xs outline-none focus:border-primary"
-              title="فئة المنشور"
-            >
+          </div>
+
+          {/* صف 2: الفئة + زر النشر — تكديس عمودي على الهاتف، جنباً إلى جنب على الشاشات الأوسع */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary sm:flex-1"
+              title="فئة المنشور">
               <option value="">بدون فئة</option>
               {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
+              className="h-10 w-full shrink-0 rounded-md bg-gradient-primary text-sm font-bold text-white disabled:opacity-50 sm:w-auto sm:px-6">
+              {posting ? "جارٍ النشر..." : "نشر"}
+            </button>
           </div>
-          <button
-            onClick={publish}
-            disabled={posting || (!text.trim() && !pending)}
-            className="rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
-          >
-            نشر
-          </button>
         </div>
       </div>
 

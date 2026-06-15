@@ -135,6 +135,13 @@
       }
     },
 
+    "scheduledSessions": {
+      ".read": "auth != null",
+      "$sessionId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerId').val() === auth.uid)"
+      }
+    },
+
     "presence": {
       ".read": "auth != null",
       "$roomId": {
@@ -182,6 +189,10 @@
               ".write": "auth != null && auth.uid === $uid"
             }
           }
+        },
+        "reactions": {
+          ".write": "auth != null",
+          ".read": "auth != null"
         },
         "kicked": {
           "$uid": {

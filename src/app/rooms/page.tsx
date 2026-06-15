@@ -11,10 +11,13 @@ import {
   faCircle,
   faRightToBracket,
   faRotate,
+  faCalendarPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listLiveRooms, findRoomByName, type LiveRoom } from "@/features/rooms/rooms";
 import { CreateRoomDialog, ROOM_SUBJECTS } from "@/features/rooms/create-room-dialog";
+import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog";
+import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
 import { AppShell } from "@/components/app-shell";
 import { Input, Button } from "@/components/ui/field";
 
@@ -24,6 +27,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
   const [fetching, setFetching] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
   const [joinName, setJoinName] = useState("");
   const [joinMsg, setJoinMsg] = useState("");
   const [joining, setJoining] = useState(false);
@@ -81,6 +85,10 @@ export default function RoomsPage() {
             >
               <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
+            <Button onClick={() => setShowSchedule(true)} variant="ghost" className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faCalendarPlus} className="h-4 w-4" />
+              <span className="hidden sm:inline">جدولة جلسة</span>
+            </Button>
             <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
               <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
               غرفة جديدة
@@ -90,6 +98,9 @@ export default function RoomsPage() {
         <p className="mt-1 text-sm text-text-muted">
           تظهر هنا الغرف العامة التي بها طالب متصل خلال آخر دقيقة. اضغط التحديث للبحث عن الجديد.
         </p>
+
+        {/* الجلسات القادمة */}
+        <UpcomingSessions />
 
         {/* الانضمام بكتابة اسم الغرفة */}
         <div className="mt-5 rounded-lg border border-border bg-surface p-4">

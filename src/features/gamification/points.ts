@@ -11,7 +11,7 @@ import {
   faCrown,
 } from "@fortawesome/free-solid-svg-icons";
 
-export const POINTS = { post: 10, comment: 5, daily: 5 } as const;
+export const POINTS = { post: 10, comment: 5, daily: 5, quiz: 15 } as const;
 const PER_LEVEL = 100; // كل 100 نقطة = مستوى
 
 export function levelFromPoints(points = 0): number {
@@ -86,5 +86,23 @@ export async function recordDailyVisit(uid: string) {
     });
   } catch {
     /* تجاهل */
+  }
+}
+
+// نقاط اختبار تجريبي ناجح (مرّة واحدة لكل اختبار، حسب نسبة النجاح)
+export async function awardQuiz(uid: string, scorePct: number) {
+  if (scorePct < 50) return; // يجب 50% فأكثر لمنح النقاط
+  const bonus = scorePct === 100 ? 10 : 0; // مكافأة العلامة الكاملة
+  const pts = POINTS.quiz + bonus;
+  try {
+    await runTransaction(ref(rtdb, `users/${uid}`), (u) => {
+      if (!u) return u;
+      u.points = (u.points || 0) + pts;
+      u.quizCount = (u.quizCount || 0) + 1;
+      u.level = levelFromPoints(u.points);
+      return u;
+    });
+  } catch {
+    /* لا نُفشل العملية الأساسية إن تعذّر منح النقاط */
   }
 }

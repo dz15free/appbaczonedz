@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck,
-  faUpRightFromSquare, faBrain, faTrophy, faGraduationCap, faFire, faListCheck, faLayerGroup,
+  faUpRightFromSquare, faBrain, faTrophy, faGraduationCap, faFire, faListCheck, faLayerGroup, faQuestionCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -18,6 +18,7 @@ const QUICK = [
   { href: "/omibot", label: "Bothelper", desc: "رفيقتك الذكية — معدّل 18 ✨", icon: faRobot },
   { href: "/tools/pomodoro", label: "مؤقّت بومودورو", desc: "راجع بتركيز واحترافية", icon: faBrain },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup },
+  { href: "/tools/quizzes", label: "اختبارات تجريبية", desc: "أسئلة اختيار من متعدّد فورية", icon: faQuestionCircle },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك موضوعاً بموضوع", icon: faListCheck },
   { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy },
 ];

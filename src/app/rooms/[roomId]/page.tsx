@@ -7,7 +7,7 @@ import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
   faComments, faArrowRight, faXmark, faHand,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
-  faExpand, faCompress, faChartBar,
+  faExpand, faCompress, faChartBar, faShareNodes, faFaceSmile,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -20,6 +20,8 @@ import {
   listenPoll, type RoomPoll,
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
+import { RoomReactions } from "@/features/rooms/room-reactions";
+import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
@@ -62,8 +64,71 @@ export default function RoomPage() {
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+
+  // شاشة كاملة حقيقية (Fullscreen API) للحاسوب + CSS لـ iOS
+  async function enterFullscreen() {
+    try {
+      const el = document.documentElement as any;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen(); // Safari
+      else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
+    } catch { /* iOS — يكتفي بـ CSS */ }
+    setFullscreen(true);
+  }
+  async function exitFullscreen() {
+    try {
+      const doc = document as any;
+      if (doc.exitFullscreen) await doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+    } catch {}
+    setFullscreen(false);
+  }
+
+  // قفل تمرير الصفحة بالكامل أثناء الشاشة الكاملة (يمنع ظهور المحتوى خلفها على iOS)
+  useEffect(() => {
+    if (fullscreen) {
+      document.body.classList.add("bz-fullscreen-active");
+    } else {
+      document.body.classList.remove("bz-fullscreen-active");
+    }
+    return () => document.body.classList.remove("bz-fullscreen-active");
+  }, [fullscreen]);
+
+  // تتبّع ارتفاع الواجهة الفعلي (يتغيّر مع لوحة المفاتيح على iOS)
+  useEffect(() => {
+    if (!fullscreen) return;
+    const vv = window.visualViewport;
+    function update() {
+      const h = vv?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--bz-vvh", `${h}px`);
+    }
+    update();
+    vv?.addEventListener("resize", update);
+    window.addEventListener("resize", update);
+    return () => {
+      vv?.removeEventListener("resize", update);
+      window.removeEventListener("resize", update);
+      document.documentElement.style.removeProperty("--bz-vvh");
+    };
+  }, [fullscreen]);
+
+  // مزامنة عند الخروج من الشاشة بـ ESC أو زر المتصفّح
+  useEffect(() => {
+    const onFSChange = () => {
+      const doc = document as any;
+      const active = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
+      if (!active) setFullscreen(false);
+    };
+    document.addEventListener("fullscreenchange", onFSChange);
+    document.addEventListener("webkitfullscreenchange", onFSChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFSChange);
+      document.removeEventListener("webkitfullscreenchange", onFSChange);
+    };
+  }, []);
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [showReactions, setShowReactions] = useState(true);
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
@@ -76,12 +141,11 @@ export default function RoomPage() {
       if (kicked) router.replace("/rooms");
     });
   }, [roomId, user, router]);
-  // Escape يُلغي الشاشة الكاملة
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && fullscreen) exitFullscreen(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [fullscreen]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -122,30 +186,44 @@ export default function RoomPage() {
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
 
   return (
-    <main className="flex h-[100dvh] flex-col">
+    <main className="bz-studio flex h-[100dvh] flex-col">
       {/* الشريط العلوي */}
-      <header className="bz-glass flex items-center justify-between px-4 py-2.5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push("/rooms")} aria-label="رجوع" className="text-text-muted">
-            <FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" />
+      <header className="bz-studio-bar relative z-20 flex items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <button
+            onClick={() => router.push("/rooms")}
+            aria-label="رجوع"
+            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+          >
+            <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" />
           </button>
-          <div>
-            <h1 className="font-bold leading-tight">{room?.name ?? "..."}</h1>
-            <span className="text-xs text-text-muted">{members.length} متصل الآن</span>
+
+          {/* شعار الغرفة */}
+          <span className="bz-studio-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white sm:h-10 sm:w-10">
+            {(room?.name ?? "").charAt(0) || "B"}
+          </span>
+
+          <div className="min-w-0">
+            <h1 className="truncate text-sm font-bold leading-tight sm:text-base">{room?.name ?? "..."}</h1>
+            <div className="mt-0.5 flex items-center gap-1.5">
+              <span className="bz-live-dot" />
+              <span className="text-[11px] font-semibold" style={{ color: "var(--studio-dim)" }}>
+                {members.length} متصل الآن
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* رفع اليد: للطلاب */}
           {!isOwner && (
             <button
               onClick={toggleHand}
               aria-label="رفع اليد"
-              className={`grid h-10 w-10 place-items-center rounded-md ${
-                myHand ? "bg-warning/20 text-warning" : "bg-primary/10 text-primary"
-              }`}
+              title="رفع اليد"
+              className={`bz-studio-icon grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${myHand ? "warn" : ""}`}
             >
-              <FontAwesomeIcon icon={faHand} className="h-5 w-5" />
+              <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
             </button>
           )}
 
@@ -154,13 +232,12 @@ export default function RoomPage() {
             <button
               onClick={() => setHandsOpen((o) => !o)}
               aria-label="الأيدي المرفوعة"
-              className={`relative grid h-10 w-10 place-items-center rounded-md ${
-                hands.length ? "bg-warning/20 text-warning" : "bg-primary/10 text-text-muted"
-              }`}
+              title="الأيدي المرفوعة"
+              className={`bz-studio-icon relative grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${hands.length ? "warn" : ""}`}
             >
-              <FontAwesomeIcon icon={faHand} className="h-5 w-5" />
+              <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
               {hands.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white ring-2 ring-[var(--studio-panel)]">
                   {hands.length}
                 </span>
               )}
@@ -173,38 +250,43 @@ export default function RoomPage() {
               onClick={() => setShowParticipants((s) => !s)}
               aria-label="المشاركون"
               title="إدارة المشاركين"
-              className={`relative grid h-10 w-10 place-items-center rounded-md ${showParticipants ? "bg-primary/20 text-primary" : "bg-primary/10 text-text-muted hover:text-primary"}`}
+              className={`bz-studio-icon relative grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${showParticipants ? "on" : ""}`}
             >
-              <FontAwesomeIcon icon={faUsers} className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-white">
+              <FontAwesomeIcon icon={faUsers} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+              <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-[var(--studio-panel)]">
                 {members.length}
               </span>
             </button>
           )}
 
+          {/* الدردشة — جوال */}
           <button
             onClick={() => setChatOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary lg:hidden"
+            className="bz-studio-icon grid h-9 w-9 place-items-center rounded-xl lg:hidden sm:h-10 sm:w-10"
             aria-label="الدردشة"
           >
-            <FontAwesomeIcon icon={faComments} className="h-5 w-5" />
+            <FontAwesomeIcon icon={faComments} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
           </button>
         </div>
       </header>
 
       {/* قائمة الأيدي المرفوعة (للمالك) */}
       {isOwner && handsOpen && hands.length > 0 && (
-        <div className="border-b border-border bg-surface px-4 py-2">
-          <span className="text-xs font-bold text-text-muted">طلاب رفعوا أيديهم:</span>
-          <div className="mt-1 flex flex-wrap gap-2">
+        <div className="bz-studio-bar border-b px-4 py-2.5">
+          <span className="text-[11px] font-bold" style={{ color: "var(--studio-faint)" }}>
+            طلاب رفعوا أيديهم
+          </span>
+          <div className="mt-1.5 flex flex-wrap gap-2">
             {hands.map((h) => (
               <button
                 key={h.uid}
                 onClick={() => lowerHand(h.uid)}
-                className="flex items-center gap-1 rounded-full bg-warning/10 px-3 py-1 text-sm text-warning"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-amber-300"
+                style={{ background: "rgba(251,191,36,0.12)" }}
               >
                 <FontAwesomeIcon icon={faHand} className="h-3 w-3" />
-                {h.name} ✕
+                {h.name}
+                <FontAwesomeIcon icon={faXmark} className="h-3 w-3 opacity-60" />
               </button>
             ))}
           </div>
@@ -213,48 +295,76 @@ export default function RoomPage() {
 
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
-        <nav className="flex items-center gap-1 border-b border-border px-3 py-2">
-          {TOOLS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTool(t.id)}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold transition ${
-                tool === t.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"
-              }`}
-            >
-              <FontAwesomeIcon icon={t.icon} className="h-4 w-4" />
-              {t.label}
-            </button>
-          ))}
+        <nav className="bz-studio-bar flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.03)" }}>
+            {TOOLS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTool(t.id)}
+                className={`bz-studio-tool flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                  tool === t.id ? "active" : ""
+                }`}
+              >
+                <FontAwesomeIcon icon={t.icon} className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--studio-border)" }} />
+
           {/* استفتاء سريع */}
           <button
             onClick={() => setShowCreatePoll(true)}
             title="إنشاء استفتاء سريع"
-            className="mr-auto flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-text-muted hover:bg-primary/10 hover:text-primary"
+            className="bz-studio-icon flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold"
           >
             <FontAwesomeIcon icon={faChartBar} className="h-4 w-4" />
             <span className="hidden sm:inline">استفتاء</span>
           </button>
+
+          <div className="mr-auto" />
+
+          {/* ردود الطلاب */}
+          <button
+            onClick={() => setShowReactions((r) => !r)}
+            title={showReactions ? "إخفاء الردود" : "إظهار الردود"}
+            className={`bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl ${showReactions ? "on" : ""}`}
+          >
+            <FontAwesomeIcon icon={faFaceSmile} className="h-4 w-4" />
+          </button>
+          {/* مشاركة الرابط */}
+          <button
+            onClick={() => {
+              const url = window.location.href;
+              navigator.clipboard?.writeText(url).then(() => alert("✅ تم نسخ رابط الغرفة!")).catch(() => prompt("انسخ الرابط:", url));
+            }}
+            title="مشاركة الغرفة"
+            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+          >
+            <FontAwesomeIcon icon={faShareNodes} className="h-4 w-4" />
+          </button>
           {/* شاشة كاملة */}
           <button
-            onClick={() => setFullscreen((f) => !f)}
+            onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
             title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
           </button>
         </nav>
       ) : (
-        <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-          <div className="flex flex-1 items-center gap-2 text-sm text-text-muted">
-            <FontAwesomeIcon icon={faHouse} className="h-4 w-4 text-primary" />
-            يعرض المعلّم الآن: <span className="font-bold text-text-primary">{currentLabel}</span>
+        <div className="bz-studio-bar flex items-center gap-2 border-b px-3 py-2 sm:px-4">
+          <div className="bz-studio-chip flex flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-sm">
+            <span className="bz-live-dot" />
+            <span style={{ color: "var(--studio-faint)" }}>يعرض المعلّم الآن</span>
+            <span className="font-bold" style={{ color: "var(--studio-text)" }}>{currentLabel}</span>
           </div>
           {/* شاشة كاملة للطالب أيضاً */}
           <button
-            onClick={() => setFullscreen((f) => !f)}
+            onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
             title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
           </button>
@@ -263,16 +373,16 @@ export default function RoomPage() {
 
       {/* المحتوى + الدردشة */}
       <div className="flex flex-1 overflow-hidden">
-        <section className={`flex flex-col overflow-hidden transition-all ${
-          fullscreen
-            ? "fixed inset-0 z-[80] bg-background"
-            : "flex-1"
-        }`}>
+        <section
+          className={`bz-studio-mesh relative flex flex-col overflow-hidden ${fullscreen ? "bz-fullscreen" : ""}`}
+          style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
+        >
           {/* زر الخروج من الشاشة الكاملة */}
           {fullscreen && (
             <button
-              onClick={() => setFullscreen(false)}
-              className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-md bg-black/40 px-3 py-1.5 text-sm text-white backdrop-blur-sm hover:bg-black/60"
+              onClick={exitFullscreen}
+              className="bz-studio-icon absolute left-3 z-10 flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold"
+              style={{ top: "max(12px, env(safe-area-inset-top, 12px))" }}
             >
               <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
               خروج
@@ -291,10 +401,18 @@ export default function RoomPage() {
             <>
               {tool === "welcome" && (
                 <div className="flex flex-1 items-center justify-center p-6 text-center">
-                  <div>
-                    <FontAwesomeIcon icon={faHouse} className="h-10 w-10 text-primary" />
-                    <h2 className="mt-4 font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-                    <p className="mt-2 max-w-sm text-sm text-text-muted">
+                  <div className="max-w-sm">
+                    <div className="relative mx-auto mb-5 grid h-16 w-16 place-items-center">
+                      <span
+                        className="absolute inset-0 rounded-2xl blur-xl"
+                        style={{ background: "linear-gradient(135deg, #4f46e5, #8b5cf6)", opacity: 0.45 }}
+                      />
+                      <span className="bz-studio-glow relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+                        <FontAwesomeIcon icon={faHouse} className="h-7 w-7 text-white" />
+                      </span>
+                    </div>
+                    <h2 className="font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--studio-dim)" }}>
                       {isOwner
                         ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
                         : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}
@@ -311,6 +429,22 @@ export default function RoomPage() {
           {fullscreen && (
             <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} />
           )}
+
+          {/* ردود أفعال الطلاب */}
+          {showReactions && !activePoll?.open && (
+            <RoomReactions roomId={roomId} isOwner={isOwner} />
+          )}
+
+          {/* إشعارات الأنشطة المباشرة */}
+          <RoomActivityToasts
+            members={members}
+            hands={hands}
+            mods={mods}
+            activePoll={activePoll}
+            isOwner={isOwner}
+            isMod={isMod}
+            myUid={user?.uid}
+          />
         </section>
 
         <aside className="hidden w-96 border-r border-border lg:block">
@@ -353,7 +487,7 @@ export default function RoomPage() {
       {showParticipants && isPrivileged && (
         <div className="fixed inset-0 z-[70] bg-black/50" onClick={() => setShowParticipants(false)}>
           <div
-            className="absolute inset-y-0 left-0 flex w-80 max-w-full flex-col bg-surface shadow-2xl"
+            className="absolute inset-y-0 left-0 flex w-80 max-w-full flex-col rounded-l-none rounded-r-2xl border-r border-border bg-surface shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* رأس اللوحة */}
