@@ -1,5 +1,10 @@
 {
   "rules": {
+    "settings": {
+      ".read": true,
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+
     "users": {
       ".read": "auth != null",
       ".indexOn": ["name", "email", "points"],
@@ -13,7 +18,7 @@
       "posts": {
         ".indexOn": ["createdAt", "authorId"],
         "$postId": {
-          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('authorId').val() === auth.uid))",
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
           "votes": {
             "$uid": {
               ".write": "auth != null && $uid === auth.uid"
@@ -21,13 +26,16 @@
           },
           "commentCount": {
             ".write": "auth != null"
+          },
+          "locked": {
+            ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
           }
         }
       },
       "comments": {
         "$postId": {
           "$commentId": {
-            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('community').child('posts').child($postId).child('authorId').val() === auth.uid)))"
+            ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('community').child('posts').child($postId).child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))"
           }
         }
       },

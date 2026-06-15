@@ -289,11 +289,12 @@ function Feed({ me }: { me: Person }) {
                       icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
                       className="h-2.5 w-2.5"
                     />
+                    {p.locked && <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5 text-warning" title="مُغلق" />}
                   </span>
                 </div>
               </Link>
               <div className="flex items-center gap-2">
-                {p.authorId === me.uid ? (
+                {(p.authorId === me.uid || profile?.role === "admin") ? (
                   <button
                     onClick={() => {
                       if (confirm("حذف هذا المنشور؟")) deletePost(p);

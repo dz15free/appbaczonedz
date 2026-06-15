@@ -34,6 +34,7 @@ export interface Post {
   attachmentKind?: "image" | "file";
   fileName?: string;
   subject?: string;
+  locked?: boolean;
 }
 export interface Comment {
   id: string;
@@ -97,6 +98,11 @@ export async function getPostAttachment(attachmentId: string): Promise<string | 
 export async function deletePost(post: { id: string; attachmentId?: string }) {
   await remove(ref(rtdb, `community/posts/${post.id}`));
   if (post.attachmentId) await remove(ref(rtdb, `community/postAttachments/${post.attachmentId}`));
+}
+
+/** قفل/فتح منشور (يمنع/يسمح بإضافة تعليقات جديدة) — للإدارة فقط */
+export async function setPostLocked(postId: string, locked: boolean) {
+  await update(ref(rtdb, `community/posts/${postId}`), { locked });
 }
 
 export async function deleteComment(postId: string, commentId: string) {

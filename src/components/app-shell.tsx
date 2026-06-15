@@ -53,11 +53,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [user?.uid]);
 
   return (
-    <div className="min-h-[100dvh] pb-20 lg:pb-0">
+    <div className="min-h-[100dvh] pb-24 lg:pb-0">
       {/* الشريط العلوي (هاتف + حاسوب) */}
-      <header className="bz-glass sticky top-0 z-40 flex items-center justify-between px-4 py-2.5">
-        <Link href="/home" className="font-display text-lg font-extrabold">
-          BacZone <span className="bz-gradient-text">DZ</span>
+      <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+        <Link href="/home" className="flex items-center gap-2">
+          <span className="bz-studio-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white">
+            BZ
+          </span>
+          <span className="hidden font-display text-lg font-extrabold sm:inline">
+            BacZone <span className="bz-gradient-text">DZ</span>
+          </span>
         </Link>
 
         {/* تنقّل الحاسوب */}
@@ -66,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               key={n.href}
               href={n.href}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold transition ${
-                pathname === n.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/10"
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                pathname === n.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/5 hover:text-text-primary"
               }`}
             >
               <span className="relative">
@@ -83,11 +88,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+            className="grid h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
           </button>
@@ -95,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link
             href="/profile"
             aria-label="حسابي"
-            className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary font-bold text-white"
+            className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white ring-2 ring-primary/15 transition hover:ring-primary/30"
           >
             {initial}
           </Link>
@@ -113,11 +118,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
-      {/* زر Bothelper العائم (كل الصفحات) */}
+      {/* زر مروة العائم (كل الصفحات) */}
       {pathname !== "/omibot" && (
         <Link
           href="/omibot"
-          aria-label="Bothelper"
+          aria-label="مروة"
           className="fixed bottom-24 left-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105 lg:bottom-6"
         >
           <FontAwesomeIcon icon={faRobot} className="h-6 w-6" />
@@ -126,28 +131,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* شريط التنقّل السفلي (هاتف فقط) */}
       <nav
-        className="bz-glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border py-2 lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`flex flex-col items-center gap-0.5 px-2 text-[11px] ${
-              pathname === n.href ? "text-primary" : "text-text-muted"
-            }`}
-          >
-            <span className="relative">
-              <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
-              {n.href === "/notifications" && unread > 0 && (
-                <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-                  {unread > 9 ? "9+" : unread}
+        <div className="bz-glass mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border px-1 py-1.5 shadow-glass">
+          {NAV.map((n) => {
+            const active = pathname === n.href;
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition ${
+                  active ? "text-primary" : "text-text-muted"
+                }`}
+              >
+                {active && (
+                  <span className="absolute inset-x-2 top-0.5 h-7 rounded-lg bg-primary/10" />
+                )}
+                <span className="relative z-10">
+                  <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
+                  {n.href === "/notifications" && unread > 0 && (
+                    <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-            {n.label}
-          </Link>
-        ))}
+                <span className="relative z-10">{n.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );

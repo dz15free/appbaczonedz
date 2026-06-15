@@ -200,6 +200,7 @@ export default function RoomsPage() {
       </section>
 
       {showCreate && <CreateRoomDialog onClose={() => setShowCreate(false)} />}
+      {showSchedule && <ScheduleSessionDialog onClose={() => setShowSchedule(false)} />}
     </AppShell>
   );
 }
