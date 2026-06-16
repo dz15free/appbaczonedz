@@ -75,23 +75,24 @@ export default function RoomsPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-4xl px-5 py-8">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-extrabold">الغرف النشطة الآن</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-xl font-extrabold sm:text-2xl">الغرف النشطة الآن</h1>
           <div className="flex items-center gap-2">
             <button
               onClick={manualRefresh}
               aria-label="تحديث"
-              className="grid h-10 w-10 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-primary"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-primary"
             >
               <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
-            <Button onClick={() => setShowSchedule(true)} variant="ghost" className="flex items-center gap-2">
+            <Button onClick={() => setShowSchedule(true)} variant="ghost" className="flex items-center gap-2 px-3 sm:px-4">
               <FontAwesomeIcon icon={faCalendarPlus} className="h-4 w-4" />
               <span className="hidden sm:inline">جدولة جلسة</span>
             </Button>
-            <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
+            <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-3 sm:px-4">
               <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-              غرفة جديدة
+              <span className="hidden sm:inline">غرفة جديدة</span>
+              <span className="sm:hidden">جديدة</span>
             </Button>
           </div>
         </div>

@@ -39,7 +39,8 @@ export default function LandingPage() {
       {/* الشريط العلوي */}
       <header className="bz-glass sticky top-0 z-50 flex items-center justify-between px-5 py-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-gradient-primary font-display text-lg font-extrabold text-white">B</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="BacZoneDZ" className="h-9 w-9 rounded-xl shadow-glow" />
           <span className="font-display text-xl font-extrabold">BacZone <span className="bz-gradient-text">DZ</span></span>
         </div>
         <div className="flex items-center gap-3">

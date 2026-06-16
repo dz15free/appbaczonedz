@@ -14,7 +14,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
-import { useBacExamDate, setBacExamDate } from "@/features/settings/use-bac-date";
+import { useBacExamDate, setBacExamDate, useSiteBanner, setSiteBanner } from "@/features/settings/use-bac-date";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
 
 interface Report {
@@ -57,6 +57,12 @@ export default function AdminPage() {
   const [dateInput, setDateInput] = useState("");
   const [savingDate, setSavingDate] = useState(false);
 
+  // ─── إعدادات: بانر الموقع ───
+  const banner = useSiteBanner();
+  const [bannerText, setBannerText] = useState("");
+  const [bannerActive, setBannerActive] = useState(false);
+  const [savingBanner, setSavingBanner] = useState(false);
+
   // ─── منشورات: إعلان رسمي ───
   const [announceText, setAnnounceText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -69,6 +75,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (bacDate) setDateInput(bacDate);
   }, [bacDate]);
+
+  useEffect(() => {
+    if (banner) { setBannerText(banner.text ?? ""); setBannerActive(!!banner.active); }
+  }, [banner]);
 
   useEffect(() => {
     if (!user || profile?.role !== "admin") return;
@@ -117,6 +127,15 @@ export default function AdminPage() {
       await setBacExamDate(dateInput);
     } finally {
       setSavingDate(false);
+    }
+  }
+
+  async function saveBanner() {
+    setSavingBanner(true);
+    try {
+      await setSiteBanner({ text: bannerText, active: bannerActive });
+    } finally {
+      setSavingBanner(false);
     }
   }
 
@@ -224,6 +243,41 @@ export default function AdminPage() {
                   التاريخ الحالي المحفوظ: <span className="font-bold text-secondary">{bacDate}</span>
                 </p>
               )}
+            </div>
+
+            {/* بانر إعلاني للموقع كله */}
+            <div className="rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center gap-2">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary/10 text-secondary">
+                  <FontAwesomeIcon icon={faBullhorn} className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-bold">بانر إعلاني لكل المستخدمين</p>
+                  <p className="text-xs text-text-muted">يظهر أسفل الهيدر في كل صفحات الموقع — للإعلانات أو التنبيهات المهمة</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <input
+                  value={bannerText}
+                  onChange={(e) => setBannerText(e.target.value)}
+                  placeholder="مثال: 🎉 تم إطلاق ميزة الاختبارات الجديدة! جرّبها الآن"
+                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+                />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={bannerActive} onChange={(e) => setBannerActive(e.target.checked)} className="h-4 w-4 accent-primary" />
+                    إظهار البانر الآن
+                  </label>
+                  <button
+                    onClick={saveBanner}
+                    disabled={savingBanner}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-gradient-primary text-sm font-bold text-white disabled:opacity-50 sm:w-auto sm:px-6"
+                  >
+                    <FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />
+                    {savingBanner ? "جارٍ الحفظ..." : "حفظ"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

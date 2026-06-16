@@ -177,8 +177,11 @@ export default function ProfilePage() {
         </Button>
 
         {profile?.role === "admin" && (
-          <a href="/admin" className="mt-2 block text-center text-xs text-text-muted hover:text-primary">
-            🛡️ لوحة الإدارة
+          <a
+            href="/admin"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/10"
+          >
+            🛡️ لوحة إدارة BacZoneDZ
           </a>
         )}
       </section>

@@ -29,9 +29,14 @@ export const metadata: Metadata = {
     "منصة تعليمية ومجتمع دراسي متكامل لطلاب البكالوريا الجزائريين: غرف دراسة، سبورة ذكية، مشاركة ملفات، صوت جماعي، ومساعد ذكي.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon-192.png",
   },
 };
 

@@ -4,9 +4,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="bz-cosmic-bg flex min-h-screen flex-col items-center justify-center px-5 py-10">
       <Link href="/" className="mb-8 flex items-center gap-2">
-        <span className="grid h-10 w-10 place-items-center rounded-md bg-gradient-primary font-display text-lg font-extrabold text-white">
-          B
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icon.svg" alt="BacZoneDZ" className="h-10 w-10 rounded-xl shadow-glow" />
         <span className="font-display text-2xl font-extrabold">
           BacZone <span className="bz-gradient-text">DZ</span>
         </span>

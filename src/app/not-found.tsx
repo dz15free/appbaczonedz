@@ -6,9 +6,8 @@ export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 text-center">
       {/* شعار */}
-      <div className="mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-gradient-primary font-display text-2xl font-extrabold text-white">
-        BZ
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icon.svg" alt="BacZoneDZ" className="mb-6 h-16 w-16 rounded-2xl shadow-glow" />
 
       {/* الرقم */}
       <h1 className="font-display text-8xl font-extrabold leading-none">

@@ -59,6 +59,9 @@ export interface DMMessage {
   senderId: string;
   text: string;
   createdAt: number;
+  type?: "text" | "image" | "file";
+  attachmentId?: string;
+  fileName?: string;
 }
 
 /* ───────── المنشورات ───────── */
@@ -366,6 +369,47 @@ export async function sendDM(me: Person, other: Person, text: string) {
     body: trimmed.length > 60 ? trimmed.slice(0, 57) + "..." : trimmed,
     link: `/messages/${me.uid}`,
   });
+}
+
+/** إرسال مرفق (صورة/ملف) في محادثة خاصة */
+export async function sendDMAttachment(
+  me: Person,
+  other: Person,
+  attachment: { kind: "image" | "file"; dataUrl: string; name: string }
+) {
+  const tid = threadId(me.uid, other.uid);
+  const aRef = push(ref(rtdb, `dms/${tid}/attachments`));
+  await set(aRef, attachment.dataUrl);
+  await push(ref(rtdb, `dms/${tid}/messages`), {
+    senderId: me.uid,
+    text: "",
+    type: attachment.kind,
+    attachmentId: aRef.key,
+    fileName: attachment.name,
+    createdAt: Date.now(),
+  });
+  const preview = attachment.kind === "image" ? "📷 صورة" : `📎 ${attachment.name}`;
+  const threadData = { name: other.name, lastText: preview, lastAt: Date.now() };
+  const myThreadData = { name: me.name, lastText: preview, lastAt: Date.now() };
+  await update(ref(rtdb, `dmThreads/${me.uid}`), { [other.uid]: threadData });
+  await update(ref(rtdb, `dmThreads/${other.uid}`), { [me.uid]: myThreadData });
+  await addNotification(other.uid, {
+    type: "dm",
+    text: `${me.name} أرسل ${preview}`,
+    link: `/messages/${me.uid}?name=${encodeURIComponent(me.name)}`,
+  });
+  tryPushNotification(other.uid, {
+    title: `💬 ${me.name}`,
+    body: preview,
+    link: `/messages/${me.uid}`,
+  });
+}
+
+/** جلب محتوى مرفق محادثة خاصة */
+export async function getDMAttachment(a: string, b: string, attachmentId: string): Promise<string | null> {
+  const tid = threadId(a, b);
+  const snap = await get(ref(rtdb, `dms/${tid}/attachments/${attachmentId}`));
+  return (snap.val() as string) ?? null;
 }
 
 export function listenDM(a: string, b: string, cb: (msgs: DMMessage[]) => void) {

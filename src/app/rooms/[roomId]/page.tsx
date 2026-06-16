@@ -7,7 +7,7 @@ import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
   faComments, faArrowRight, faXmark, faHand,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
-  faExpand, faCompress, faChartBar, faShareNodes, faFaceSmile,
+  faExpand, faCompress, faChartBar, faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -20,7 +20,6 @@ import {
   listenPoll, type RoomPoll,
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
-import { RoomReactions } from "@/features/rooms/room-reactions";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
@@ -128,7 +127,6 @@ export default function RoomPage() {
   }, []);
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
-  const [showReactions, setShowReactions] = useState(true);
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
@@ -325,14 +323,6 @@ export default function RoomPage() {
 
           <div className="mr-auto" />
 
-          {/* ردود الطلاب */}
-          <button
-            onClick={() => setShowReactions((r) => !r)}
-            title={showReactions ? "إخفاء الردود" : "إظهار الردود"}
-            className={`bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl ${showReactions ? "on" : ""}`}
-          >
-            <FontAwesomeIcon icon={faFaceSmile} className="h-4 w-4" />
-          </button>
           {/* مشاركة الرابط */}
           <button
             onClick={() => {
@@ -428,11 +418,6 @@ export default function RoomPage() {
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
           {fullscreen && (
             <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} />
-          )}
-
-          {/* ردود أفعال الطلاب */}
-          {showReactions && !activePoll?.open && (
-            <RoomReactions roomId={roomId} isOwner={isOwner} />
           )}
 
           {/* إشعارات الأنشطة المباشرة */}

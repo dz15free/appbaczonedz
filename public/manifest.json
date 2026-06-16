@@ -19,7 +19,7 @@
   "screenshots": [],
   "shortcuts": [
     { "name": "غرف الدراسة", "url": "/rooms",       "description": "ادخل غرفة دراسة" },
-    { "name": "Bothelper",  "url": "/omibot",      "description": "اسأل Bothelper" },
+    { "name": "مروة",       "url": "/omibot",      "description": "اسأل مروة" },
     { "name": "المجتمع",    "url": "/community",   "description": "تصفّح المجتمع" }
   ]
 }

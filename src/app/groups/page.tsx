@@ -68,13 +68,15 @@ export default function GroupsPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-4">
-        <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-display text-xl font-extrabold">مجموعات المواد</h1>
           <button
             onClick={() => setCreating(true)}
             className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white"
           >
-            <FontAwesomeIcon icon={faPlus} className="h-4 w-4" /> إنشاء مجموعة
+            <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
+            <span className="hidden sm:inline">إنشاء مجموعة</span>
+            <span className="sm:hidden">إنشاء</span>
           </button>
         </div>
 

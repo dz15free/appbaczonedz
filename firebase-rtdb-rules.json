@@ -198,10 +198,6 @@
             }
           }
         },
-        "reactions": {
-          ".write": "auth != null",
-          ".read": "auth != null"
-        },
         "kicked": {
           "$uid": {
             ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"

@@ -70,7 +70,7 @@ export default function OmibotPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] max-w-2xl flex-col px-3 lg:h-[calc(100dvh-4rem)]">
+      <div className="mx-auto flex h-[calc(100dvh-9rem)] max-w-2xl flex-col px-3 lg:h-[calc(100dvh-4.5rem)]">
         {/* الرأس */}
         <div className="flex items-center gap-3 py-3">
           <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-primary text-white">

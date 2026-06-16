@@ -300,44 +300,6 @@ export function listenPoll(roomId: string, cb: (poll: RoomPoll | null) => void) 
 }
 
 /* ══════════════════════════════════════════
-   ردود أفعال الطلاب (Reactions) + مشاركة
-══════════════════════════════════════════ */
-
-export interface RoomReaction {
-  id: string;
-  uid: string;
-  name: string;
-  type: "got_it" | "question" | "confused" | "ready";
-  sentAt: number;
-}
-
-export async function sendReaction(
-  roomId: string,
-  uid: string,
-  name: string,
-  type: RoomReaction["type"]
-) {
-  const r = push(ref(rtdb, `roomLive/${roomId}/reactions`));
-  await set(r, { uid, name, type, sentAt: Date.now() });
-}
-
-export function listenReactions(
-  roomId: string,
-  cb: (reactions: RoomReaction[]) => void
-) {
-  return onValue(
-    query(ref(rtdb, `roomLive/${roomId}/reactions`), limitToLast(30)),
-    (snap) => {
-      const val = (snap.val() as Record<string, any>) ?? {};
-      const list = Object.entries(val)
-        .map(([id, r]) => ({ id, ...r }) as RoomReaction)
-        .filter((r) => Date.now() - r.sentAt < 15_000); // آخر 15 ثانية
-      cb(list);
-    }
-  );
-}
-
-/* ══════════════════════════════════════════
    جدول الجلسات الدراسية القادمة
 ══════════════════════════════════════════ */
 

@@ -81,7 +81,7 @@ export default function LeaderboardPage() {
 
         {/* ترتيبي */}
         {myRank && (
-          <div className="mb-5 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 sm:gap-3">
             <span className="font-bold text-primary">ترتيبي: #{myRank}</span>
             <span className="text-text-muted">·</span>
             <span className="text-sm text-text-muted">{profile?.points ?? 0} نقطة</span>
@@ -92,10 +92,10 @@ export default function LeaderboardPage() {
 
         {/* المتصدّرون الثلاثة الأوائل */}
         {top3.length > 0 && (
-          <div className="mb-5 flex items-end justify-center gap-3">
+          <div className="mb-5 flex items-end justify-center gap-1.5 sm:gap-3">
             {/* الثاني */}
             {top3[1] && (
-              <Link href={`/u/${top3[1].uid}?name=${encodeURIComponent(top3[1].name)}`} className="flex flex-col items-center gap-1 w-28">
+              <Link href={`/u/${top3[1].uid}?name=${encodeURIComponent(top3[1].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28">
                 <span className="text-slate-400 text-lg">🥈</span>
                 <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-xl font-extrabold text-white">
                   {top3[1].name.charAt(0)}
@@ -107,7 +107,7 @@ export default function LeaderboardPage() {
             )}
             {/* الأوّل */}
             {top3[0] && (
-              <Link href={`/u/${top3[0].uid}?name=${encodeURIComponent(top3[0].name)}`} className="flex flex-col items-center gap-1 w-28 -mb-1">
+              <Link href={`/u/${top3[0].uid}?name=${encodeURIComponent(top3[0].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28 -mb-1">
                 <FontAwesomeIcon icon={faCrown} className="h-7 w-7 text-warning animate-bounce" />
                 <div className="relative grid h-20 w-20 place-items-center rounded-full ring-4 ring-warning/50 bg-gradient-primary text-2xl font-extrabold text-white shadow-glow">
                   {top3[0].name.charAt(0)}
@@ -119,7 +119,7 @@ export default function LeaderboardPage() {
             )}
             {/* الثالث */}
             {top3[2] && (
-              <Link href={`/u/${top3[2].uid}?name=${encodeURIComponent(top3[2].name)}`} className="flex flex-col items-center gap-1 w-28">
+              <Link href={`/u/${top3[2].uid}?name=${encodeURIComponent(top3[2].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28">
                 <span className="text-amber-700 text-lg">🥉</span>
                 <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-xl font-extrabold text-white">
                   {top3[2].name.charAt(0)}

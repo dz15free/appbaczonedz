@@ -177,6 +177,17 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             {isOwner ? "ألصق رابط فيديو لبدء المشاهدة الجماعية" : "بانتظار مالك الغرفة لتشغيل فيديو..."}
           </div>
         )}
+        {/* حاجب تفاعل شفّاف — يمنع الطلاب نهائياً من التحكّم بالمشغّل (تشغيل/إيقاف/تقديم)
+            هذه طبقة أقوى من pointer-events لأنها تعمل بشكل موحّد مع iframes عبر كل المتصفحات */}
+        {!isOwner && (
+          <div
+            className="absolute inset-0 z-10"
+            style={{ touchAction: "none" }}
+            onClick={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        )}
       </div>
 
       {!isOwner && (

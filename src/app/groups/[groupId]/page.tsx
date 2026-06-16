@@ -116,7 +116,7 @@ export default function GroupPage() {
 
   return (
     <AppShell>
-      <div className="flex h-[calc(100dvh-4rem)] flex-col lg:h-[calc(100dvh-3.5rem)]">
+      <div className="flex h-[calc(100dvh-9rem)] flex-col lg:h-[calc(100dvh-4.5rem)]">
         {/* الرأس */}
         <div className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
           <button onClick={() => router.push("/groups")} aria-label="رجوع" className="text-text-muted hover:text-primary">

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
 import { recordDailyVisit } from "@/features/gamification/points";
 import { ensureNameInRTDB } from "@/lib/firebase/auth";
+import { useSiteBanner } from "@/features/settings/use-bac-date";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -29,6 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const initial = (profile?.name || user?.displayName || "ط").charAt(0);
   const [unread, setUnread] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const banner = useSiteBanner();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -57,9 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* الشريط العلوي (هاتف + حاسوب) */}
       <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
         <Link href="/home" className="flex items-center gap-2">
-          <span className="bz-studio-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white">
-            BZ
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="BacZoneDZ" className="bz-studio-glow h-9 w-9 shrink-0 rounded-xl" />
           <span className="hidden font-display text-lg font-extrabold sm:inline">
             BacZone <span className="bz-gradient-text">DZ</span>
           </span>
@@ -111,6 +113,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {!isOnline && (
           <div className="flex items-center justify-center gap-2 bg-danger px-4 py-2 text-center text-sm font-semibold text-white">
             ⚠️ أنت غير متصل بالإنترنت — بعض الميزات لن تعمل حتى يعود الاتصال.
+          </div>
+        )}
+        {banner?.active && banner.text && !bannerDismissed && (
+          <div className="flex items-center justify-between gap-3 bg-gradient-primary px-4 py-2 text-sm font-semibold text-white">
+            <span className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faBullhorn} className="h-4 w-4 shrink-0" />
+              <span>{banner.text}</span>
+            </span>
+            <button onClick={() => setBannerDismissed(true)} aria-label="إغلاق" className="shrink-0 opacity-80 hover:opacity-100">
+              <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+            </button>
           </div>
         )}
         {children}

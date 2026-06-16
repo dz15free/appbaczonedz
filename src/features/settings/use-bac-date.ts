@@ -24,6 +24,28 @@ export async function setBacExamDate(dateStr: string) {
   await set(ref(rtdb, "settings/bacExamDate"), dateStr);
 }
 
+/**
+ * بانر إعلاني يظهر لجميع المستخدمين أسفل الهيدر — يتحكّم به الأدمن
+ * (settings/siteBanner: { text, active })
+ */
+export interface SiteBanner { text: string; active: boolean }
+
+export function useSiteBanner() {
+  const [banner, setBanner] = useState<SiteBanner | null>(null);
+
+  useEffect(() => {
+    return onValue(ref(rtdb, "settings/siteBanner"), (snap) => {
+      setBanner((snap.val() as SiteBanner | null) ?? null);
+    });
+  }, []);
+
+  return banner;
+}
+
+export async function setSiteBanner(banner: SiteBanner) {
+  await set(ref(rtdb, "settings/siteBanner"), banner);
+}
+
 /** يحسب الأيام المتبقية حتى تاريخ الامتحان (أو الافتراضي 15 جوان) */
 export function useBacCountdown() {
   const dateStr = useBacExamDate();
