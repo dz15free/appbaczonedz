@@ -56,6 +56,7 @@ export default function LibraryPage() {
 
   async function addEntry() {
     if (!form.title.trim() || !form.fileUrl.trim()) { setFormErr("العنوان والرابط مطلوبان"); return; }
+    if (!user) return;
     setAdding(true); setFormErr("");
     try {
       await push(ref(rtdb, "library"), { ...form, fileType: guessType(form.fileUrl), uploaderId: user.uid, uploaderName: profile?.name || user.displayName || "طالب", createdAt: Date.now() });
