@@ -209,7 +209,7 @@ export default function RoomPage() {
             <h1 className="truncate text-sm font-bold leading-tight sm:text-base">{room?.name ?? "..."}</h1>
             <div className="mt-0.5 flex items-center gap-1.5">
               <span className="bz-live-dot" />
-              <span className="text-[11px] font-semibold" className="text-text-muted">
+              <span className="text-[11px] font-semibold text-text-muted">
                 {members.length} متصل الآن
               </span>
             </div>
@@ -275,7 +275,7 @@ export default function RoomPage() {
       {/* قائمة الأيدي المرفوعة (للمالك) */}
       {isOwner && handsOpen && hands.length > 0 && (
         <div className="bz-glass border-b px-4 py-2.5">
-          <span className="text-[11px] font-bold" className="text-text-muted">
+          <span className="text-[11px] font-bold text-text-muted">
             طلاب رفعوا أيديهم
           </span>
           <div className="mt-1.5 flex flex-wrap gap-2">
@@ -408,7 +408,7 @@ export default function RoomPage() {
                       </span>
                     </div>
                     <h2 className="font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-                    <p className="mt-2 text-sm leading-relaxed" className="text-text-muted">
+                    <p className="mt-2 text-sm leading-relaxed text-text-muted">
                       {isOwner
                         ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
                         : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}
