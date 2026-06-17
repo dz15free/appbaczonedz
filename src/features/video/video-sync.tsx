@@ -56,8 +56,11 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
 
   useEffect(() => {
     return onValue(ref(rtdb, statePath), (snap) => {
-      const s = snap.val() as VideoState | null;
-      if (!s) return;
+      const raw = snap.val() as any;
+      if (!raw) return;
+      // توافق مع النسخ القديمة (videoId فقط، بدون sourceType)
+      if (!raw.sourceType) raw.sourceType = raw.videoId ? "youtube" : "direct";
+      const s = raw as VideoState;
       const prev = stateRef.current;
       stateRef.current = s;
       setState(s);

@@ -122,6 +122,7 @@ export async function reportContent(
   await push(ref(rtdb, "reports"), {
     kind,
     id,
+    contentId: id,
     reporterId: reporter.uid,
     reporterName: reporter.name,
     reason,

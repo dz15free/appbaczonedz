@@ -47,11 +47,11 @@ export const viewport: Viewport = {
   themeColor: "#4f46e5",
 };
 
-// منع وميض الثيم: نطبّق الوضع الداكن قبل رسم الصفحة
+// منع وميض الثيم: نطبّق الوضع الداكن قبل رسم الصفحة (الافتراضي: فاتح)
 const noFlashScript = `
 (function(){try{var t=localStorage.getItem('bz-theme');
-if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
-if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();
+if(t==='dark'){document.documentElement.classList.add('dark');}
+else{document.documentElement.classList.remove('dark');}}catch(e){}})();
 `;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

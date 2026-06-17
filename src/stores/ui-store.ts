@@ -29,8 +29,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   initTheme: () => {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme: Theme = saved ?? (prefersDark ? "dark" : "light");
+    // الافتراضي: وضع فاتح (أبيض) حتى لو كان النظام داكناً
+    const theme: Theme = saved ?? "light";
     applyToDocument(theme);
     set({ theme });
   },

@@ -188,14 +188,14 @@ export default function RoomPage() {
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
 
   return (
-    <main className="bz-studio flex h-[100dvh] flex-col">
+    <main className="flex h-[100dvh] flex-col bg-background text-text-primary">
       {/* الشريط العلوي */}
-      <header className="bz-studio-bar relative z-20 flex items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
+      <header className="bz-glass relative z-20 flex items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => router.push("/rooms")}
             aria-label="رجوع"
-            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" />
           </button>
@@ -209,7 +209,7 @@ export default function RoomPage() {
             <h1 className="truncate text-sm font-bold leading-tight sm:text-base">{room?.name ?? "..."}</h1>
             <div className="mt-0.5 flex items-center gap-1.5">
               <span className="bz-live-dot" />
-              <span className="text-[11px] font-semibold" style={{ color: "var(--studio-dim)" }}>
+              <span className="text-[11px] font-semibold" className="text-text-muted">
                 {members.length} متصل الآن
               </span>
             </div>
@@ -274,8 +274,8 @@ export default function RoomPage() {
 
       {/* قائمة الأيدي المرفوعة (للمالك) */}
       {isOwner && handsOpen && hands.length > 0 && (
-        <div className="bz-studio-bar border-b px-4 py-2.5">
-          <span className="text-[11px] font-bold" style={{ color: "var(--studio-faint)" }}>
+        <div className="bz-glass border-b px-4 py-2.5">
+          <span className="text-[11px] font-bold" className="text-text-muted">
             طلاب رفعوا أيديهم
           </span>
           <div className="mt-1.5 flex flex-wrap gap-2">
@@ -297,13 +297,13 @@ export default function RoomPage() {
 
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
-        <nav className="bz-studio-bar flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
+        <nav className="bz-glass flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
           <div className="flex shrink-0 items-center gap-1 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.03)" }}>
             {TOOLS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTool(t.id)}
-                className={`bz-studio-tool flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                   tool === t.id ? "active" : ""
                 }`}
               >
@@ -321,7 +321,7 @@ export default function RoomPage() {
           <button
             onClick={() => setShowCreatePoll(true)}
             title="إنشاء استفتاء سريع"
-            className="bz-studio-icon flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold text-text-muted border border-border hover:text-primary hover:bg-primary/10 transition"
           >
             <FontAwesomeIcon icon={faChartBar} className="h-4 w-4" />
             <span className="hidden sm:inline">استفتاء</span>
@@ -336,7 +336,7 @@ export default function RoomPage() {
               navigator.clipboard?.writeText(url).then(() => alert("✅ تم نسخ رابط الغرفة!")).catch(() => prompt("انسخ الرابط:", url));
             }}
             title="مشاركة الغرفة"
-            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={faShareNodes} className="h-4 w-4" />
           </button>
@@ -344,23 +344,23 @@ export default function RoomPage() {
           <button
             onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
             title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
           </button>
         </nav>
       ) : (
-        <div className="bz-studio-bar flex items-center gap-2 border-b px-3 py-2 sm:px-4">
-          <div className="bz-studio-chip flex flex-1 items-center gap-2 rounded-xl px-3 py-1.5 text-sm">
+        <div className="bz-glass flex items-center gap-2 border-b px-3 py-2 sm:px-4">
+          <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm">
             <span className="bz-live-dot" />
-            <span style={{ color: "var(--studio-faint)" }}>يعرض المعلّم الآن</span>
-            <span className="font-bold" style={{ color: "var(--studio-text)" }}>{currentLabel}</span>
+            <span className="text-text-muted">يعرض المعلّم الآن</span>
+            <span className="font-bold" >{currentLabel}</span>
           </div>
           {/* شاشة كاملة للطالب أيضاً */}
           <button
             onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
             title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="bz-studio-icon grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
           </button>
@@ -408,7 +408,7 @@ export default function RoomPage() {
                       </span>
                     </div>
                     <h2 className="font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--studio-dim)" }}>
+                    <p className="mt-2 text-sm leading-relaxed" className="text-text-muted">
                       {isOwner
                         ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
                         : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}

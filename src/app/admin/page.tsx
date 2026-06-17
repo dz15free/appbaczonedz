@@ -20,8 +20,11 @@ import { createPost, deletePost, setPostLocked, type Post } from "@/features/com
 
 interface Report {
   id: string; kind: string;
+  contentId?: string;
+  id_content?: string;
   reporterId: string; reporterName: string;
   reason?: string; createdAt: number;
+  contentPreview?: string; // محتوى المنشور/التعليق (يُحمَّل بعد الاستلام)
 }
 
 function timeAgo(ts: number) {
@@ -151,11 +154,23 @@ export default function AdminPage() {
   // Load reports
   useEffect(() => {
     if (!user || profile?.role !== "admin") return;
-    return onValue(query(ref(rtdb, "reports"), limitToLast(100)), (snap) => {
+    return onValue(query(ref(rtdb, "reports"), limitToLast(100)), async (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, r]: [string, any]) => ({ id, ...r })) as Report[];
       list.sort((a, b) => b.createdAt - a.createdAt);
-      setReports(list);
+      // جلب محتوى المنشور/التعليق المُبلَّغ عنه
+      const withContent = await Promise.all(list.map(async (r) => {
+        try {
+          const contentId = r.contentId ?? r.id;
+          if (!contentId) return r;
+          const path = r.kind === "post"
+            ? `community/posts/${contentId}/text`
+            : `community/comments/${contentId}/text`;
+          const snap2 = await get(ref(rtdb, path));
+          return { ...r, contentPreview: snap2.val() as string ?? "" };
+        } catch { return r; }
+      }));
+      setReports(withContent);
     });
   }, [user, profile]);
 
@@ -331,6 +346,13 @@ export default function AdminPage() {
                 onClick={() => save("banner", () => saveSetting("siteBanner", { text: bannerText, active: bannerActive }))}
                 loading={!!saving.banner} />
             </Card>
+
+            <Card icon={faLink} title="رسالة ترحيب مخصّصة" hint="تظهر بجانب اسم المستخدم في صفحة الرئيسية">
+              <Field label="نص الرسالة">
+                <Input value={settings.heroTitle ?? ""} onChange={() => {}} placeholder="ادرس بذكاء. ونجح في البكالوريا." />
+              </Field>
+              <p className="text-xs text-text-muted">💡 لتغيير هذه النصوص، اذهب إلى تبويب «الرئيسية» ← «قسم الترحيب»</p>
+            </Card>
           </div>
         )}
 
@@ -498,6 +520,11 @@ export default function AdminPage() {
                       <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
                     </button>
                   </div>
+                  {r.contentPreview && (
+                    <p className="mt-2 line-clamp-3 rounded-lg border border-border bg-background p-2.5 text-sm text-text-primary italic">
+                      «{r.contentPreview}»
+                    </p>
+                  )}
                   <p className="mt-2 text-sm text-text-muted">
                     أبلغ عنه: <span className="font-semibold text-text-primary">{r.reporterName}</span>
                     {r.reason && <> · «{r.reason}»</>}

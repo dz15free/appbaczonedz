@@ -34,6 +34,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const banner = useSiteBanner();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { settings } = useSiteSettings();
+
+  // تطبيق لون التمييز المخصَّص من إعدادات الإدارة
+  useEffect(() => {
+    const color = settings.accentColor;
+    if (!color || color.length < 7) return;
+    // تحويل hex → قنوات RGB المطلوبة لـ Tailwind (--bz-primary)
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return;
+    document.documentElement.style.setProperty("--bz-primary", `${r} ${g} ${b}`);
+  }, [settings.accentColor]);
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
