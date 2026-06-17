@@ -370,3 +370,29 @@ export function listenUpcomingSessions(cb: (sessions: ScheduledSession[]) => voi
 export async function deleteScheduledSession(id: string) {
   await remove(ref(rtdb, `scheduledSessions/${id}`));
 }
+
+/* ══════════════════════════════════════════
+   مؤقّت الغرفة (Lesson Timer)
+══════════════════════════════════════════ */
+export interface RoomTimer {
+  duration: number; startedAt: number; active: boolean; label?: string;
+}
+export async function setRoomTimer(roomId: string, timer: RoomTimer | null) {
+  await set(ref(rtdb, `roomLive/${roomId}/timer`), timer);
+}
+export function listenRoomTimer(roomId: string, cb: (t: RoomTimer | null) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/timer`), (snap) => {
+    cb((snap.val() as RoomTimer | null) ?? null);
+  });
+}
+/* ══════════════════════════════════════════
+   الملاحظات المشتركة (Shared Notes)
+══════════════════════════════════════════ */
+export async function saveRoomNotes(roomId: string, text: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/notes`), text);
+}
+export function listenRoomNotes(roomId: string, cb: (text: string) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/notes`), (snap) => {
+    cb((snap.val() as string) ?? "");
+  });
+}

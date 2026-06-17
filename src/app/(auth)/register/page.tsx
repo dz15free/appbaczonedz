@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { registerUser, AuthError } from "@/lib/firebase/auth";
 import { Input, Button } from "@/components/ui/field";
+import { useSiteSettings } from "@/features/settings/use-site-settings";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -13,6 +14,18 @@ export default function RegisterPage() {
   const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const { settings } = useSiteSettings();
+
+  if (settings.allowRegistration === false) {
+    return (
+      <div className="rounded-xl border border-warning/30 bg-warning/5 p-6 text-center">
+        <p className="text-2xl mb-2">🔒</p>
+        <h2 className="font-bold text-lg mb-1">التسجيل مغلق حالياً</h2>
+        <p className="text-sm text-text-muted">التسجيل في المنصة موقوف مؤقتاً. تواصل مع الإدارة.</p>
+        <Link href="/login" className="mt-4 block text-sm text-primary hover:underline">تسجيل الدخول</Link>
+      </div>
+    );
+  }
 
   async function handleRegister() {
     setMsg(null);

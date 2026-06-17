@@ -19,12 +19,13 @@ export function usePresence(roomId: string, uid?: string, name?: string) {
     const myRef = ref(rtdb, `presence/${roomId}/${uid}`);
 
     // سجّل حضوري + احذفه تلقائياً عند قطع الاتصال
-    set(myRef, { name: name ?? "طالب", joinedAt: Date.now(), lastActive: serverTimestamp() });
+    const joined = Date.now();
+    set(myRef, { name: name ?? "طالب", joinedAt: joined, lastActive: serverTimestamp() });
     onDisconnect(myRef).remove();
 
-    // نبض كل 20 ثانية للإبقاء على النشاط
+    // نبض كل 20 ثانية — يُحدَّث lastActive فقط، لا joinedAt
     const beat = setInterval(() => {
-      set(myRef, { name: name ?? "طالب", joinedAt: Date.now(), lastActive: serverTimestamp() });
+      set(myRef, { name: name ?? "طالب", joinedAt: joined, lastActive: serverTimestamp() });
     }, 20000);
 
     // استمع لقائمة الحاضرين

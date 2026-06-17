@@ -8,6 +8,7 @@ import {
   faComments, faArrowRight, faXmark, faHand,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
+  faNoteSticky, faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -21,6 +22,8 @@ import {
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
+import { RoomTimer } from "@/features/rooms/room-timer";
+import { RoomNotes } from "@/features/rooms/room-notes";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
@@ -36,6 +39,7 @@ const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
   { id: "video", label: "فيديو", icon: faVideo },
   { id: "whiteboard", label: "سبورة", icon: faChalkboard },
   { id: "files", label: "ملفات", icon: faFolderOpen },
+  { id: "notes", label: "ملاحظات", icon: faNoteSticky },
 ];
 
 interface Hand {
@@ -311,6 +315,8 @@ export default function RoomPage() {
 
           <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--studio-border)" }} />
 
+          {/* مؤقّت الدرس */}
+          <RoomTimer roomId={roomId} isOwner={isOwner} />
           {/* استفتاء سريع */}
           <button
             onClick={() => setShowCreatePoll(true)}
@@ -413,6 +419,7 @@ export default function RoomPage() {
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
             </>
           )}
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}

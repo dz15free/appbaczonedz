@@ -111,7 +111,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
             placeholder="اكتب رسالة..."
-            className="flex-1 rounded-xl px-3 py-2 text-sm text-white outline-none"
+            className="flex-1 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none"
             style={{ background: "rgba(255,255,255,0.08)" }}
           />
           <button onClick={send} disabled={!text.trim()}

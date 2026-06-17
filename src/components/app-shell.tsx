@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
 import { recordDailyVisit } from "@/features/gamification/points";
 import { ensureNameInRTDB } from "@/lib/firebase/auth";
 import { useSiteBanner } from "@/features/settings/use-bac-date";
+import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const banner = useSiteBanner();
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const { settings } = useSiteSettings();
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -60,10 +62,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* الشريط العلوي (هاتف + حاسوب) */}
       <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
         <Link href="/home" className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt="BacZoneDZ" className="bz-studio-glow h-9 w-9 shrink-0 rounded-xl" />
+          {settings.logoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={settings.logoUrl} alt={settings.siteName ?? "BacZoneDZ"}
+              className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src="/icon.svg" alt="BacZoneDZ" className="bz-studio-glow h-9 w-9 shrink-0 rounded-xl" />
+          )}
           <span className="hidden font-display text-lg font-extrabold sm:inline">
-            BacZone <span className="bz-gradient-text">DZ</span>
+            {settings.siteName ?? "BacZone"} <span className="bz-gradient-text">DZ</span>
           </span>
         </Link>
 
@@ -110,24 +118,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <div>
-        {!isOnline && (
-          <div className="flex items-center justify-center gap-2 bg-danger px-4 py-2 text-center text-sm font-semibold text-white">
-            ⚠️ أنت غير متصل بالإنترنت — بعض الميزات لن تعمل حتى يعود الاتصال.
+        {/* وضع الصيانة — يحجب المحتوى لغير الأدمن */}
+        {settings.maintenanceMode && profile?.role !== "admin" ? (
+          <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 text-center">
+            <div className="text-5xl mb-4">🔧</div>
+            <h2 className="font-display text-2xl font-extrabold mb-2">الموقع تحت الصيانة</h2>
+            <p className="text-text-muted max-w-sm">{settings.maintenanceMsg || "نعمل على تحسين المنصة. نعود قريباً!"}</p>
           </div>
+        ) : (
+          <>
+            {!isOnline && (
+              <div className="flex items-center justify-center gap-2 bg-danger px-4 py-2 text-center text-sm font-semibold text-white">
+                ⚠️ أنت غير متصل بالإنترنت — بعض الميزات لن تعمل حتى يعود الاتصال.
+              </div>
+            )}
+            {banner?.active && banner.text && !bannerDismissed && (
+              <div className="flex items-center justify-between gap-3 bg-gradient-primary px-4 py-2 text-sm font-semibold text-white">
+                <span className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={faBullhorn} className="h-4 w-4 shrink-0" />
+                  <span>{banner.text}</span>
+                </span>
+                <button onClick={() => setBannerDismissed(true)} aria-label="إغلاق" className="shrink-0 opacity-80 hover:opacity-100">
+                  <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            {children}
+          </>
         )}
-        {banner?.active && banner.text && !bannerDismissed && (
-          <div className="flex items-center justify-between gap-3 bg-gradient-primary px-4 py-2 text-sm font-semibold text-white">
-            <span className="flex items-center gap-2">
-              <FontAwesomeIcon icon={faBullhorn} className="h-4 w-4 shrink-0" />
-              <span>{banner.text}</span>
-            </span>
-            <button onClick={() => setBannerDismissed(true)} aria-label="إغلاق" className="shrink-0 opacity-80 hover:opacity-100">
-              <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-        {children}
       </div>
+
+      {/* الفوتر */}
+      {settings.footerText && (
+        <footer className="border-t border-border bg-surface/50 px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4">
+          <p>{settings.footerText}</p>
+          {(settings.footerLinks?.length ?? 0) > 0 && (
+            <div className="mt-1.5 flex flex-wrap justify-center gap-3">
+              {settings.footerLinks?.map((l, i) => (
+                <a key={i} href={l.href} target="_blank" rel="noopener noreferrer"
+                  className="hover:text-primary hover:underline">{l.label}</a>
+              ))}
+            </div>
+          )}
+        </footer>
+      )}
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 

@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck,
   faUpRightFromSquare, faTrophy, faGraduationCap, faFire, faListCheck,
-  faLayerGroup, faArrowLeft, faChalkboardUser, faComments, faBolt,
+  faLayerGroup, faArrowLeft, faChalkboardUser, faComments, faBolt, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -21,6 +21,7 @@ const QUICK = [
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "amber" },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك موضوعاً بموضوع", icon: faListCheck, color: "sky" },
   { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy, color: "rose" },
+  { href: "/library", label: "مكتبة البكالوريا", desc: "ملخصات وملفات لكل المواد", icon: faBookOpen, color: "emerald" },
 ] as const;
 
 const COLOR_MAP: Record<string, string> = {
@@ -30,6 +31,7 @@ const COLOR_MAP: Record<string, string> = {
   amber: "bg-amber-500/10 text-amber-500",
   sky: "bg-sky-500/10 text-sky-500",
   rose: "bg-rose-500/10 text-rose-500",
+  emerald: "bg-emerald-500/10 text-emerald-500",
 };
 
 const EXTERNAL = [

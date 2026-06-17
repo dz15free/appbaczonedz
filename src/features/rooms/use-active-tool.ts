@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
-export type RoomTool = "welcome" | "video" | "whiteboard" | "files";
+export type RoomTool = "welcome" | "video" | "whiteboard" | "files" | "notes";
 
 // الأداة النشطة يتحكّم بها المالك، ويتابعها الجميع لحظياً
 export function useActiveTool(roomId: string, isOwner: boolean) {

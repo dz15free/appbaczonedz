@@ -265,12 +265,23 @@ export async function sendFriendRequest(from: Person, toUid: string) {
     name: from.name,
     createdAt: Date.now(),
   });
-  await set(ref(rtdb, `sentRequests/${from.uid}/${toUid}`), true);
-  await addNotification(toUid, {
-    type: "friend_request",
-    text: `${from.name} أرسل لك طلب صداقة`,
-    link: "/community",
-  });
+
+  // حفظ معرّف الإشعار لحذفه لاحقاً عند الإلغاء
+  let notifId = "";
+  try {
+    const notifRef = await push(ref(rtdb, `notifications/${toUid}`), {
+      type: "friend_request",
+      text: `${from.name} أرسل لك طلب صداقة`,
+      link: "/community",
+      read: false,
+      createdAt: Date.now(),
+    });
+    notifId = notifRef.key ?? "";
+  } catch { /* لا نُفشل العملية */ }
+
+  // خزّن معرّف الإشعار مع طلب الإرسال
+  await set(ref(rtdb, `sentRequests/${from.uid}/${toUid}`), { notifId });
+
   tryPushNotification(toUid, {
     title: "طلب صداقة جديد 👋",
     body: `${from.name} أرسل لك طلب صداقة`,
@@ -278,15 +289,23 @@ export async function sendFriendRequest(from: Person, toUid: string) {
   });
 }
 
-// إلغاء طلب صداقة مُرسَل
+// إلغاء طلب صداقة مُرسَل + حذف الإشعار
 export async function cancelFriendRequest(fromUid: string, toUid: string) {
+  // اقرأ معرّف الإشعار ثم احذفه
+  try {
+    const snap = await get(ref(rtdb, `sentRequests/${fromUid}/${toUid}`));
+    const val = snap.val();
+    if (val?.notifId) {
+      await remove(ref(rtdb, `notifications/${toUid}/${val.notifId}`));
+    }
+  } catch { /* تجاهل */ }
   await remove(ref(rtdb, `friendRequests/${toUid}/${fromUid}`));
   await remove(ref(rtdb, `sentRequests/${fromUid}/${toUid}`));
 }
 
 export function listenSentRequests(myUid: string, cb: (ids: Set<string>) => void) {
   return onValue(ref(rtdb, `sentRequests/${myUid}`), (snap) => {
-    const val = (snap.val() as Record<string, boolean>) ?? {};
+    const val = (snap.val() as Record<string, unknown>) ?? {};
     cb(new Set(Object.keys(val)));
   });
 }
