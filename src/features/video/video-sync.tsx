@@ -47,18 +47,25 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   const [urlInput, setUrlInput] = useState("");
   const [state, setState] = useState<VideoState | null>(null);
   const statePath = `roomLive/${roomId}/videoState`;
-  const ytHostRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * ─── نهج معزول للـ YouTube ───────────────────────────────────────────────
+   * نُنشئ حاوية ثابتة (stableWrapRef) لا يُعيد React رسمها أبداً.
+   * ثم نُلصق بداخلها <div> يُنشئه YouTube ويحوّله إلى <iframe>.
+   * هكذا تختفي أخطاء insertBefore لأن React لا يعرف بالـ <div> الداخلي.
+   */
+  const stableWrapRef = useRef<HTMLDivElement>(null); // حاوية React مستقرة
   const ytPlayerRef = useRef<any>(null);
   const ytReady = useRef(false);
   const applyingRemote = useRef(false);
-  const mp4Ref = useRef<HTMLVideoElement>(null);
   const stateRef = useRef<VideoState | null>(null);
+  const mp4Ref = useRef<HTMLVideoElement>(null);
 
+  /* ── استمع لتغيّرات الحالة ── */
   useEffect(() => {
     return onValue(ref(rtdb, statePath), (snap) => {
       const raw = snap.val() as any;
       if (!raw) return;
-      // توافق مع النسخ القديمة (videoId فقط، بدون sourceType)
       if (!raw.sourceType) raw.sourceType = raw.videoId ? "youtube" : "direct";
       const s = raw as VideoState;
       const prev = stateRef.current;
@@ -76,7 +83,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       applyingRemote.current = true;
       if (!prev || prev.videoId !== s.videoId) {
         p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
-        setTimeout(() => { if (s.isPlaying) p.playVideo?.(); }, 1000);
+        setTimeout(() => { if (s.isPlaying) p.playVideo?.(); }, 1200);
       } else {
         const local = p.getCurrentTime?.() ?? 0;
         if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
@@ -94,18 +101,32 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
     }
   }
 
+  /* ── تهيئة YouTube Player مرّة واحدة فقط ── */
   useEffect(() => {
-    function createYTPlayer() {
-      if (!ytHostRef.current || ytPlayerRef.current) return;
-      ytPlayerRef.current = new window.YT.Player(ytHostRef.current, {
-        height: "100%", width: "100%",
+    let destroyed = false;
+
+    function initPlayer() {
+      if (destroyed || !stableWrapRef.current || ytPlayerRef.current) return;
+
+      // أنشئ div داخلي خارج سيطرة React
+      const host = document.createElement("div");
+      host.style.cssText = "position:absolute;inset:0;width:100%;height:100%;";
+      stableWrapRef.current.appendChild(host);
+
+      ytPlayerRef.current = new window.YT.Player(host, {
+        height: "100%",
+        width: "100%",
         playerVars: {
-          controls: isOwner ? 1 : 0, disablekb: isOwner ? 0 : 1,
-          modestbranding: 1, rel: 0, playsinline: 1,
-          origin: typeof window !== "undefined" ? window.location.origin : undefined,
+          controls: isOwner ? 1 : 0,
+          disablekb: isOwner ? 0 : 1,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+          origin: window.location.origin,
         },
         events: {
           onReady: () => {
+            if (destroyed) return;
             ytReady.current = true;
             const s = stateRef.current;
             if (!s?.videoId) return;
@@ -113,7 +134,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             if (s.isPlaying) setTimeout(() => ytPlayerRef.current?.playVideo?.(), 800);
           },
           onStateChange: (e: any) => {
-            if (!isOwner || applyingRemote.current) return;
+            if (!isOwner || applyingRemote.current || destroyed) return;
             const YT = window.YT;
             if (e.data === YT.PlayerState.PLAYING) pushYTState(true);
             else if (e.data === YT.PlayerState.PAUSED) pushYTState(false);
@@ -121,36 +142,64 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         },
       });
     }
-    if (window.YT?.Player) { createYTPlayer(); }
-    else {
-      window.onYouTubeIframeAPIReady = createYTPlayer;
-      if (!document.getElementById("yt-api")) {
-        const t = document.createElement("script");
-        t.id = "yt-api"; t.src = "https://www.youtube.com/iframe_api";
-        document.body.appendChild(t);
+
+    function loadYTApi() {
+      if (window.YT?.Player) {
+        initPlayer();
+        return;
+      }
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        prev?.();
+        initPlayer();
+      };
+      if (!document.getElementById("yt-api-script")) {
+        const tag = document.createElement("script");
+        tag.id = "yt-api-script";
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
       }
     }
+
+    loadYTApi();
+
+    return () => {
+      destroyed = true;
+      ytReady.current = false;
+      try { ytPlayerRef.current?.destroy?.(); } catch { /* ignore */ }
+      ytPlayerRef.current = null;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwner]);
 
   function pushYTState(isPlaying: boolean) {
-    const vid = ytPlayerRef.current?.getVideoData?.()?.video_id ?? stateRef.current?.videoId;
+    const s = stateRef.current;
+    const vid = ytPlayerRef.current?.getVideoData?.()?.video_id ?? s?.videoId;
     if (!vid) return;
-    set(ref(rtdb, statePath), { sourceType: "youtube", videoId: vid, isPlaying, currentTime: ytPlayerRef.current?.getCurrentTime?.() ?? 0, updatedAt: Date.now() });
+    set(ref(rtdb, statePath), {
+      sourceType: "youtube", videoId: vid, isPlaying,
+      currentTime: ytPlayerRef.current?.getCurrentTime?.() ?? 0,
+      updatedAt: Date.now(),
+    });
   }
 
   function pushMP4State(isPlaying: boolean) {
     const v = mp4Ref.current;
     if (!stateRef.current?.videoUrl) return;
-    set(ref(rtdb, statePath), { sourceType: "direct", videoUrl: stateRef.current.videoUrl, isPlaying, currentTime: v?.currentTime ?? 0, updatedAt: Date.now() });
+    set(ref(rtdb, statePath), {
+      sourceType: "direct", videoUrl: stateRef.current.videoUrl,
+      isPlaying, currentTime: v?.currentTime ?? 0, updatedAt: Date.now(),
+    });
   }
 
+  /* دفع دوري لتصحيح انحراف الوقت */
   useEffect(() => {
     if (!isOwner) return;
     const t = setInterval(() => {
       const s = stateRef.current;
       if (s?.sourceType === "youtube" && ytReady.current) {
-        if (ytPlayerRef.current?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING) pushYTState(true);
+        if (ytPlayerRef.current?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING)
+          pushYTState(true);
       } else if (s?.sourceType === "direct" && mp4Ref.current && !mp4Ref.current.paused) {
         pushMP4State(true);
       }
@@ -160,7 +209,8 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   }, [isOwner]);
 
   function loadNewVideo() {
-    const url = urlInput.trim(); if (!url) return;
+    const url = urlInput.trim();
+    if (!url) return;
     const src = detectSource(url);
     if (src === "youtube") {
       const id = extractYouTubeId(url);
@@ -176,45 +226,78 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
 
   const src = state?.sourceType;
   const hasVideo = !!state;
+  const showYT = src === "youtube" || !hasVideo;
+  const showGD = src === "gdrive" && !!state?.videoUrl;
+  const showMP4 = src === "direct" && !!state?.videoUrl;
 
   return (
     <div className="flex h-full flex-col">
       {isOwner && (
         <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row">
-          <Input value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+          <Input
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && loadNewVideo()}
-            placeholder="YouTube / Google Drive / رابط MP4 مباشر..." className="flex-1" />
+            placeholder="YouTube / Google Drive / رابط MP4 مباشر..."
+            className="flex-1"
+          />
           <Button onClick={loadNewVideo} disabled={!urlInput.trim()}>تشغيل للجميع</Button>
         </div>
       )}
+
       <div className="relative flex-1 overflow-hidden bg-black">
         {hasVideo && (
           <span className="absolute right-2 top-2 z-20 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
             {src === "youtube" ? "▶ YouTube" : src === "gdrive" ? "🔗 Google Drive" : "🎬 مباشر"}
           </span>
         )}
-        <div ref={ytHostRef} className="absolute inset-0 h-full w-full"
-          style={{ display: src === "youtube" || !hasVideo ? "block" : "none" }} />
-        {src === "gdrive" && state?.videoUrl && (
-          <iframe src={state.videoUrl} className="absolute inset-0 h-full w-full border-0" allow="autoplay" title="Google Drive Video" />
+
+        {/* حاوية YouTube المستقرة — React لا يُعدَّل داخلها */}
+        <div
+          ref={stableWrapRef}
+          className="absolute inset-0 h-full w-full"
+          style={{ display: showYT ? "block" : "none" }}
+        />
+
+        {showGD && (
+          <iframe
+            src={state?.videoUrl}
+            className="absolute inset-0 h-full w-full border-0"
+            allow="autoplay"
+            title="Google Drive Video"
+          />
         )}
-        {src === "direct" && state?.videoUrl && (
-          <video ref={mp4Ref} src={state.videoUrl} className="absolute inset-0 h-full w-full"
-            controls={isOwner} playsInline
+
+        {showMP4 && (
+          <video
+            ref={mp4Ref}
+            src={state?.videoUrl}
+            className="absolute inset-0 h-full w-full"
+            controls={isOwner}
+            playsInline
             onPlay={() => isOwner && !applyingRemote.current && pushMP4State(true)}
             onPause={() => isOwner && !applyingRemote.current && pushMP4State(false)}
-            onSeeked={() => isOwner && !applyingRemote.current && pushMP4State(!mp4Ref.current?.paused)} />
+            onSeeked={() => isOwner && !applyingRemote.current && pushMP4State(!mp4Ref.current?.paused)}
+          />
         )}
+
         {!hasVideo && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center text-center text-sm text-white/70 p-4">
-            {isOwner ? "الصق رابط YouTube / Google Drive / MP4 لمشاركة الفيديو مع الجميع" : "في انتظار المعلّم لمشاركة فيديو..."}
+          <div className="pointer-events-none absolute inset-0 grid place-items-center p-4 text-center text-sm text-white/70">
+            {isOwner
+              ? "الصق رابط YouTube / Google Drive / MP4 لمشاركة الفيديو مع الجميع"
+              : "في انتظار المعلّم لمشاركة فيديو..."}
           </div>
         )}
+
+        {/* حاجب تفاعل الطلاب */}
         {!isOwner && (
-          <div className="absolute inset-0 z-10" style={{ touchAction: "none" }}
+          <div
+            className="absolute inset-0 z-10"
+            style={{ touchAction: "none" }}
             onClick={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
-            onContextMenu={(e) => e.preventDefault()} />
+            onContextMenu={(e) => e.preventDefault()}
+          />
         )}
       </div>
     </div>

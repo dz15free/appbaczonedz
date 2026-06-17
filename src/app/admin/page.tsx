@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ref, onValue, remove, query, orderByChild, limitToLast, get } from "firebase/database";
+import { ref, onValue, remove, query, orderByChild, limitToLast, get, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faShield, faFlag, faLayerGroup, faTrash,
-  faChartBar, faCircleExclamation, faCheckCircle, faGear,
-  faCalendarDays, faFloppyDisk, faLock, faLockOpen, faBullhorn,
-  faPaperPlane, faMessage, faImage, faLink, faFont, faPalette,
-  faWrench, faPlus, faXmark, faToggleOn, faToggleOff, faEye,
+  faShield, faFlag, faLayerGroup, faTrash, faChartBar,
+  faCircleExclamation, faCheckCircle, faGear, faCalendarDays,
+  faFloppyDisk, faLock, faLockOpen, faBullhorn, faPaperPlane,
+  faMessage, faImage, faLink, faFont, faPalette, faWrench,
+  faPlus, faXmark, faToggleOn, faToggleOff, faUsers,
+  faDoorOpen, faBan, faUnlock, faEye, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -19,17 +20,28 @@ import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink } from 
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
 
 interface Report {
-  id: string; kind: string;
-  contentId?: string;
-  id_content?: string;
+  firebaseKey: string;
+  kind: string;
+  contentRef?: string;
   reporterId: string; reporterName: string;
   reason?: string; createdAt: number;
-  contentPreview?: string; // محتوى المنشور/التعليق (يُحمَّل بعد الاستلام)
+  contentPreview?: string;
+}
+
+interface AppUser {
+  uid: string; name: string; email?: string;
+  role?: string; points?: number; level?: number;
+  banned?: boolean; createdAt?: number;
+}
+
+interface ActiveRoom {
+  id: string; name: string; ownerId: string; ownerName?: string;
+  subject?: string; memberCount: number;
 }
 
 function timeAgo(ts: number) {
   const d = Math.floor((Date.now() - ts) / 86400000);
-  return d === 0 ? "اليوم" : `منذ ${d} يوم`;
+  return d === 0 ? "اليوم" : d === 1 ? "أمس" : `منذ ${d} يوم`;
 }
 
 const TABS = [
@@ -38,45 +50,16 @@ const TABS = [
   { id: "home",      label: "الرئيسية",   icon: faFont },
   { id: "footer",    label: "الفوتر",     icon: faLink },
   { id: "control",   label: "التحكّم",    icon: faWrench },
+  { id: "users",     label: "المستخدمون", icon: faUsers },
+  { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
+  { id: "library",   label: "المكتبة",    icon: faBookOpen },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
 
-/* ─── مكوّن حقل إدخال مُصمَّم ─── */
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-bold">{label}</label>
-      {hint && <p className="mb-1.5 text-xs text-text-muted">{hint}</p>}
-      {children}
-    </div>
-  );
-}
-
-function Input({ value, onChange, placeholder, type = "text" }: {
-  value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
-  );
-}
-
-function SaveBtn({ onClick, loading }: { onClick: () => void; loading: boolean }) {
-  return (
-    <button onClick={onClick} disabled={loading}
-      className="flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
-      <FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />
-      {loading ? "جارٍ الحفظ..." : "حفظ التغييرات"}
-    </button>
-  );
-}
-
-function Card({ icon, title, hint, children }: {
-  icon: any; title: string; hint?: string; children: React.ReactNode;
-}) {
+function Card({ icon, title, hint, children }: { icon: any; title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -93,6 +76,16 @@ function Card({ icon, title, hint, children }: {
   );
 }
 
+function SaveBtn({ onClick, loading }: { onClick: () => void; loading: boolean }) {
+  return (
+    <button onClick={onClick} disabled={loading}
+      className="flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+      <FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />
+      {loading ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+    </button>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -101,31 +94,31 @@ export default function AdminPage() {
 
   const [reports, setReports] = useState<Report[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [stats, setStats] = useState({ groups: 0, posts: 0, users: 0 });
+  const [appUsers, setAppUsers] = useState<AppUser[]>([]);
+  const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
+  const [libraryEntries, setLibraryEntries] = useState<any[]>([]);
+  const [stats, setStats] = useState({ users: 0, groups: 0, posts: 0, rooms: 0, library: 0 });
   const [tab, setTab] = useState<Tab>("overview");
   const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [userSearch, setUserSearch] = useState("");
 
   // Identity
   const [logoUrl, setLogoUrl] = useState("");
   const [siteName, setSiteName] = useState("");
   const [accentColor, setAccentColor] = useState("#4f46e5");
-
   // Home
   const [heroTitle, setHeroTitle] = useState("");
   const [heroSubtitle, setHeroSubtitle] = useState("");
-
+  const [bannerText, setBannerText] = useState("");
+  const [bannerActive, setBannerActive] = useState(false);
   // Footer
   const [footerText, setFooterText] = useState("");
   const [footerLinks, setFooterLinks] = useState<FooterLink[]>([]);
-
   // Control
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
-  const [bannerText, setBannerText] = useState("");
-  const [bannerActive, setBannerActive] = useState(false);
   const [bacDate, setBacDate] = useState("");
   const [allowReg, setAllowReg] = useState(true);
-
   // Posts
   const [announceText, setAnnounceText] = useState("");
 
@@ -134,7 +127,6 @@ export default function AdminPage() {
     if (!loading && profile && profile.role !== "admin") router.replace("/home");
   }, [loading, user, profile, router]);
 
-  // Sync settings → local state
   useEffect(() => {
     setLogoUrl(settings.logoUrl ?? "");
     setSiteName(settings.siteName ?? "BacZoneDZ");
@@ -151,38 +143,73 @@ export default function AdminPage() {
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
 
-  // Load reports
+  // Reports
   useEffect(() => {
     if (!user || profile?.role !== "admin") return;
     return onValue(query(ref(rtdb, "reports"), limitToLast(100)), async (snap) => {
       const val = snap.val() ?? {};
-      const list = Object.entries(val).map(([id, r]: [string, any]) => ({ id, ...r })) as Report[];
+      const list = Object.entries(val).map(([key, r]: [string, any]) => ({ firebaseKey: key, ...r })) as Report[];
       list.sort((a, b) => b.createdAt - a.createdAt);
-      // جلب محتوى المنشور/التعليق المُبلَّغ عنه
       const withContent = await Promise.all(list.map(async (r) => {
         try {
-          const contentId = r.contentId ?? r.id;
-          if (!contentId) return r;
-          const path = r.kind === "post"
-            ? `community/posts/${contentId}/text`
-            : `community/comments/${contentId}/text`;
-          const snap2 = await get(ref(rtdb, path));
-          return { ...r, contentPreview: snap2.val() as string ?? "" };
+          const cid = r.contentRef;
+          if (!cid) return r;
+          const path = r.kind === "post" ? `community/posts/${cid}/text` : `community/comments/${cid}/text`;
+          const s2 = await get(ref(rtdb, path));
+          return { ...r, contentPreview: s2.val() as string ?? "" };
         } catch { return r; }
       }));
       setReports(withContent);
     });
   }, [user, profile]);
 
-  // Load stats
+  // Stats
   useEffect(() => {
     if (!user || profile?.role !== "admin") return;
+    get(ref(rtdb, "users")).then((s) => setStats((st) => ({ ...st, users: Object.keys(s.val() ?? {}).length })));
     get(ref(rtdb, "groups")).then((s) => setStats((st) => ({ ...st, groups: Object.keys(s.val() ?? {}).length })));
     get(query(ref(rtdb, "community/posts"), limitToLast(999))).then((s) => setStats((st) => ({ ...st, posts: Object.keys(s.val() ?? {}).length })));
-    get(ref(rtdb, "users")).then((s) => setStats((st) => ({ ...st, users: Object.keys(s.val() ?? {}).length })));
+    get(ref(rtdb, "rooms")).then((s) => setStats((st) => ({ ...st, rooms: Object.keys(s.val() ?? {}).length })));
+    get(ref(rtdb, "library")).then((s) => setStats((st) => ({ ...st, library: Object.keys(s.val() ?? {}).length })));
   }, [user, profile]);
 
-  // Load posts for posts tab
+  // Users tab
+  useEffect(() => {
+    if (!user || profile?.role !== "admin" || tab !== "users") return;
+    return onValue(ref(rtdb, "users"), (snap) => {
+      const val = snap.val() ?? {};
+      const list = Object.entries(val).map(([uid, u]: [string, any]) => ({ uid, ...u })) as AppUser[];
+      list.sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+      setAppUsers(list);
+    });
+  }, [user, profile, tab]);
+
+  // Active rooms tab
+  useEffect(() => {
+    if (!user || profile?.role !== "admin" || tab !== "rooms") return;
+    // Rooms list from /rooms
+    return onValue(ref(rtdb, "rooms"), (snap) => {
+      const val = snap.val() ?? {};
+      const list = Object.entries(val).map(([id, r]: [string, any]) => ({
+        id, name: r.name ?? id, ownerId: r.ownerId ?? "", ownerName: r.ownerName,
+        subject: r.subject, memberCount: 0,
+      })) as ActiveRoom[];
+      setActiveRooms(list);
+    });
+  }, [user, profile, tab]);
+
+  // Library tab
+  useEffect(() => {
+    if (!user || profile?.role !== "admin" || tab !== "library") return;
+    return onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(100)), (snap) => {
+      const val = snap.val() ?? {};
+      const list = Object.entries(val).map(([id, e]: [string, any]) => ({ id, ...e }));
+      list.sort((a: any, b: any) => b.createdAt - a.createdAt);
+      setLibraryEntries(list);
+    });
+  }, [user, profile, tab]);
+
+  // Posts tab
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "posts") return;
     return onValue(query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(40)), (snap) => {
@@ -210,29 +237,51 @@ export default function AdminPage() {
     await setPostLocked(p.id, !p.locked);
     setPosts((l) => l.map((x) => (x.id === p.id ? { ...x, locked: !p.locked } : x)));
   }
+  async function setUserRole(uid: string, role: string | null) {
+    await update(ref(rtdb, `users/${uid}`), { role: role ?? null });
+  }
+  async function banUser(uid: string, ban: boolean) {
+    await update(ref(rtdb, `users/${uid}`), { banned: ban });
+  }
+  async function closeRoom(roomId: string) {
+    if (!confirm("هل تريد إغلاق هذه الغرفة؟")) return;
+    await remove(ref(rtdb, `roomLive/${roomId}`));
+  }
+  async function deleteRoom(roomId: string) {
+    if (!confirm("حذف الغرفة نهائياً من القائمة؟")) return;
+    await remove(ref(rtdb, `rooms/${roomId}`));
+  }
+  async function deleteLibraryEntry(id: string) {
+    if (!confirm("حذف هذا المصدر؟")) return;
+    await remove(ref(rtdb, `library/${id}`));
+  }
+
+  const filteredUsers = appUsers.filter((u) =>
+    !userSearch || u.name?.includes(userSearch) || u.email?.includes(userSearch) || u.uid.includes(userSearch)
+  );
 
   const statCards = [
-    { label: "مستخدم مسجّل", val: stats.users, icon: faChartBar, c: "text-primary bg-primary/10" },
+    { label: "مستخدم", val: stats.users, icon: faUsers, c: "text-primary bg-primary/10" },
+    { label: "غرفة محفوظة", val: stats.rooms, icon: faDoorOpen, c: "text-violet-500 bg-violet-500/10" },
     { label: "مجموعة", val: stats.groups, icon: faLayerGroup, c: "text-secondary bg-secondary/10" },
-    { label: "منشور (آخر 1000)", val: stats.posts, icon: faMessage, c: "text-warning bg-warning/10" },
+    { label: "منشور", val: stats.posts, icon: faMessage, c: "text-warning bg-warning/10" },
+    { label: "مصدر في المكتبة", val: stats.library, icon: faBookOpen, c: "text-sky-500 bg-sky-500/10" },
     { label: "بلاغ نشط", val: reports.length, icon: faFlag, c: "text-danger bg-danger/10" },
   ];
 
   return (
     <AppShell>
       <section className="mx-auto max-w-3xl px-4 py-4">
-        {/* Header */}
         <div className="mb-5 flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-primary text-white">
             <FontAwesomeIcon icon={faShield} className="h-5 w-5" />
           </span>
           <div>
             <h1 className="font-display text-xl font-extrabold">لوحة إدارة BacZoneDZ</h1>
-            <p className="text-xs text-text-muted">تحكّم كامل في المنصة — مرئي لك فقط</p>
+            <p className="text-xs text-text-muted">صلاحيات كاملة — للمؤسّس فقط</p>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="mb-5 flex gap-1.5 overflow-x-auto pb-1">
           {TABS.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
@@ -242,9 +291,7 @@ export default function AdminPage() {
               <FontAwesomeIcon icon={t.icon} className="h-3 w-3" />
               {t.label}
               {t.id === "reports" && reports.length > 0 && (
-                <span className={`rounded-full px-1.5 ${tab === t.id ? "bg-white/20" : "bg-danger/10 text-danger"}`}>
-                  {reports.length}
-                </span>
+                <span className={`rounded-full px-1.5 ${tab === t.id ? "bg-white/20" : "bg-danger/10 text-danger"}`}>{reports.length}</span>
               )}
             </button>
           ))}
@@ -253,22 +300,19 @@ export default function AdminPage() {
         {/* ════ إحصائيات ════ */}
         {tab === "overview" && (
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               {statCards.map((s) => (
-                <div key={s.label} className="rounded-xl border border-border bg-surface p-4 flex items-center gap-3">
-                  <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${s.c}`}>
-                    <FontAwesomeIcon icon={s.icon} className="h-5 w-5" />
+                <div key={s.label} className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4">
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${s.c}`}>
+                    <FontAwesomeIcon icon={s.icon} className="h-4 w-4" />
                   </span>
-                  <div>
-                    <p className="text-3xl font-extrabold">{s.val}</p>
-                    <p className="text-sm text-text-muted">{s.label}</p>
-                  </div>
+                  <div><p className="text-2xl font-extrabold">{s.val}</p><p className="text-xs text-text-muted">{s.label}</p></div>
                 </div>
               ))}
             </div>
             <div className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-sm text-text-muted">
-              <FontAwesomeIcon icon={faCircleExclamation} className="h-4 w-4 text-warning ml-1" />
-              لإدارة المستخدمين (تعيين أدمن آخر، حذف حساب) → استخدم Firebase Console → Realtime Database.
+              <FontAwesomeIcon icon={faCircleExclamation} className="ml-1 h-4 w-4 text-warning" />
+              لإنشاء أدمن آخر أو حذف حساب نهائياً → Firebase Console → Realtime Database.
             </div>
           </div>
         )}
@@ -276,41 +320,35 @@ export default function AdminPage() {
         {/* ════ الهوية ════ */}
         {tab === "identity" && (
           <div className="space-y-4">
-            <Card icon={faImage} title="شعار الموقع" hint="ضع رابط URL لصورة الشعار (png/svg/webp). يُستبدل الشعار الافتراضي.">
-              <Field label="رابط الشعار">
-                <Input value={logoUrl} onChange={setLogoUrl} placeholder="https://example.com/logo.png" />
-              </Field>
+            <Card icon={faImage} title="شعار الموقع" hint="رابط URL لصورة الشعار (png/svg/webp)">
+              <div>
+                <label className="mb-1 block text-sm font-bold">رابط الشعار</label>
+                <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..."
+                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              </div>
               {logoUrl && (
-                <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <div className="flex items-center gap-3 rounded-lg border border-border p-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logoUrl} alt="معاينة" className="h-12 w-12 rounded-lg object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
-                  <p className="text-xs text-text-muted">معاينة الشعار</p>
+                  <img src={logoUrl} alt="معاينة" className="h-10 w-10 rounded object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+                  <span className="text-xs text-text-muted">معاينة</span>
                 </div>
               )}
-              <button onClick={() => save("logo", () => saveSetting("logoUrl", logoUrl || undefined))}
-                className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-                disabled={saving.logo}>
-                <FontAwesomeIcon icon={faFloppyDisk} className="h-3.5 w-3.5" />
-                {saving.logo ? "جارٍ الحفظ..." : "حفظ الشعار"}
-              </button>
+              <SaveBtn onClick={() => save("logo", () => saveSetting("logoUrl", logoUrl || undefined))} loading={!!saving.logo} />
             </Card>
 
-            <Card icon={faFont} title="اسم الموقع" hint="يظهر في الهيدر وعنوان المتصفح">
-              <Field label="اسم الموقع">
-                <Input value={siteName} onChange={setSiteName} placeholder="BacZoneDZ" />
-              </Field>
+            <Card icon={faFont} title="اسم الموقع">
+              <input value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="BacZoneDZ"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
               <SaveBtn onClick={() => save("name", () => saveSetting("siteName", siteName))} loading={!!saving.name} />
             </Card>
 
-            <Card icon={faPalette} title="لون التمييز الأساسي" hint="يُغيّر لون الأزرار والروابط في جميع أنحاء الموقع">
-              <Field label="اختر اللون">
-                <div className="flex items-center gap-3">
-                  <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)}
-                    className="h-10 w-16 cursor-pointer rounded-md border border-border" />
-                  <Input value={accentColor} onChange={setAccentColor} placeholder="#4f46e5" />
-                </div>
-              </Field>
-              <p className="text-xs text-text-muted">ملاحظة: يُطبَّق اللون فور تحديث الصفحة لدى المستخدمين.</p>
+            <Card icon={faPalette} title="لون التمييز الأساسي" hint="يُغيّر لون الأزرار والروابط فوراً">
+              <div className="flex items-center gap-3">
+                <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)}
+                  className="h-10 w-16 cursor-pointer rounded-md border border-border" />
+                <input value={accentColor} onChange={(e) => setAccentColor(e.target.value)}
+                  className="h-10 flex-1 rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              </div>
               <SaveBtn onClick={() => save("color", () => saveSetting("accentColor", accentColor))} loading={!!saving.color} />
             </Card>
           </div>
@@ -319,39 +357,27 @@ export default function AdminPage() {
         {/* ════ الرئيسية ════ */}
         {tab === "home" && (
           <div className="space-y-4">
-            <Card icon={faFont} title="قسم الترحيب (Hero)" hint="النص الذي يظهر في البطاقة الترحيبية لكل مستخدمين الرئيسية">
-              <Field label="العنوان الكبير">
-                <Input value={heroTitle} onChange={setHeroTitle} placeholder="ادرس بذكاء. ونجح في البكالوريا." />
-              </Field>
-              <Field label="وصف الهيرو">
+            <Card icon={faFont} title="قسم الترحيب (Hero)">
+              <div>
+                <label className="mb-1 block text-sm font-bold">العنوان الكبير</label>
+                <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="ادرس بذكاء..."
+                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-bold">الوصف</label>
                 <textarea value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} rows={3}
-                  placeholder="وصف مختصر يشرح المنصة..."
                   className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-              </Field>
-              <SaveBtn
-                onClick={() => save("hero", () => saveSiteSettings({ heroTitle, heroSubtitle }))}
-                loading={!!saving.hero} />
+              </div>
+              <SaveBtn onClick={() => save("hero", () => saveSiteSettings({ heroTitle, heroSubtitle }))} loading={!!saving.hero} />
             </Card>
-
-            <Card icon={faBullhorn} title="بانر إعلاني عالمي" hint="شريط يظهر أعلى الصفحة لجميع المستخدمين — للإعلانات المهمة">
-              <Field label="نص البانر">
-                <Input value={bannerText} onChange={setBannerText} placeholder="🎉 إعلان: ميزة جديدة متاحة الآن!" />
-              </Field>
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" checked={bannerActive} onChange={(e) => setBannerActive(e.target.checked)}
-                  className="h-4 w-4 accent-primary" />
-                تفعيل البانر الآن لكل المستخدمين
+            <Card icon={faBullhorn} title="بانر إعلاني عالمي">
+              <input value={bannerText} onChange={(e) => setBannerText(e.target.value)} placeholder="نص البانر..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                <input type="checkbox" checked={bannerActive} onChange={(e) => setBannerActive(e.target.checked)} className="h-4 w-4 accent-primary" />
+                إظهار البانر للجميع
               </label>
-              <SaveBtn
-                onClick={() => save("banner", () => saveSetting("siteBanner", { text: bannerText, active: bannerActive }))}
-                loading={!!saving.banner} />
-            </Card>
-
-            <Card icon={faLink} title="رسالة ترحيب مخصّصة" hint="تظهر بجانب اسم المستخدم في صفحة الرئيسية">
-              <Field label="نص الرسالة">
-                <Input value={settings.heroTitle ?? ""} onChange={() => {}} placeholder="ادرس بذكاء. ونجح في البكالوريا." />
-              </Field>
-              <p className="text-xs text-text-muted">💡 لتغيير هذه النصوص، اذهب إلى تبويب «الرئيسية» ← «قسم الترحيب»</p>
+              <SaveBtn onClick={() => save("banner", () => saveSetting("siteBanner", { text: bannerText, active: bannerActive }))} loading={!!saving.banner} />
             </Card>
           </div>
         )}
@@ -359,33 +385,25 @@ export default function AdminPage() {
         {/* ════ الفوتر ════ */}
         {tab === "footer" && (
           <div className="space-y-4">
-            <Card icon={faFont} title="نص حقوق النشر" hint="يظهر في أسفل كل صفحة">
-              <Field label="نص الفوتر">
-                <Input value={footerText} onChange={setFooterText} placeholder={`© ${new Date().getFullYear()} BacZoneDZ`} />
-              </Field>
+            <Card icon={faFont} title="نص الفوتر">
+              <input value={footerText} onChange={(e) => setFooterText(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
               <SaveBtn onClick={() => save("footerText", () => saveSetting("footerText", footerText))} loading={!!saving.footerText} />
             </Card>
-
-            <Card icon={faLink} title="روابط الفوتر" hint="تظهر بجانب حقوق النشر في الفوتر">
+            <Card icon={faLink} title="روابط الفوتر">
               <div className="space-y-2">
                 {footerLinks.map((lnk, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input value={lnk.label} onChange={(e) => {
-                      const copy = [...footerLinks]; copy[i] = { ...copy[i], label: e.target.value };
-                      setFooterLinks(copy);
-                    }} placeholder="الاسم" className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none focus:border-primary" />
-                    <input value={lnk.href} onChange={(e) => {
-                      const copy = [...footerLinks]; copy[i] = { ...copy[i], href: e.target.value };
-                      setFooterLinks(copy);
-                    }} placeholder="https://..." className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none focus:border-primary" />
-                    <button onClick={() => setFooterLinks(footerLinks.filter((_, j) => j !== i))}
-                      className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:text-danger">
+                    <input value={lnk.label} onChange={(e) => { const c = [...footerLinks]; c[i] = { ...c[i], label: e.target.value }; setFooterLinks(c); }}
+                      placeholder="الاسم" className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none" />
+                    <input value={lnk.href} onChange={(e) => { const c = [...footerLinks]; c[i] = { ...c[i], href: e.target.value }; setFooterLinks(c); }}
+                      placeholder="https://..." className="h-9 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none" />
+                    <button onClick={() => setFooterLinks(footerLinks.filter((_, j) => j !== i))} className="grid h-9 w-9 place-items-center text-text-muted hover:text-danger">
                       <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
-                <button onClick={() => setFooterLinks([...footerLinks, { label: "", href: "" }])}
-                  className="flex items-center gap-2 text-sm text-primary hover:underline">
+                <button onClick={() => setFooterLinks([...footerLinks, { label: "", href: "" }])} className="flex items-center gap-2 text-sm text-primary hover:underline">
                   <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" /> إضافة رابط
                 </button>
               </div>
@@ -398,47 +416,128 @@ export default function AdminPage() {
         {tab === "control" && (
           <div className="space-y-4">
             <Card icon={faCalendarDays} title="تاريخ امتحان البكالوريا" hint="يُحدَّث العدّ التنازلي للجميع فوراً">
-              <Field label="التاريخ" hint="صيغة YYYY-MM-DD">
-                <input type="date" value={bacDate} onChange={(e) => setBacDate(e.target.value)}
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
-              </Field>
-              {settings.bacExamDate && (
-                <p className="text-xs text-text-muted">الحالي: <span className="font-bold text-secondary">{settings.bacExamDate}</span></p>
-              )}
+              <input type="date" value={bacDate} onChange={(e) => setBacDate(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              {settings.bacExamDate && <p className="text-xs text-text-muted">الحالي: <span className="font-bold text-secondary">{settings.bacExamDate}</span></p>}
               <SaveBtn onClick={() => save("bacDate", () => saveSetting("bacExamDate", bacDate))} loading={!!saving.bacDate} />
             </Card>
-
-            <Card icon={faWrench} title="وضع الصيانة" hint="يُظهر صفحة صيانة لكل الزوار (الأدمن محصّن)">
-              <label className="flex items-center gap-3 cursor-pointer">
+            <Card icon={faWrench} title="وضع الصيانة">
+              <label className="flex cursor-pointer items-center gap-3">
                 <button onClick={() => setMaintenanceMode(!maintenanceMode)}>
-                  <FontAwesomeIcon icon={maintenanceMode ? faToggleOn : faToggleOff}
-                    className={`h-7 w-7 ${maintenanceMode ? "text-danger" : "text-text-muted"}`} />
+                  <FontAwesomeIcon icon={maintenanceMode ? faToggleOn : faToggleOff} className={`h-7 w-7 ${maintenanceMode ? "text-danger" : "text-text-muted"}`} />
                 </button>
-                <span className={`font-bold text-sm ${maintenanceMode ? "text-danger" : "text-text-muted"}`}>
-                  {maintenanceMode ? "⚠️ وضع الصيانة مفعّل" : "الموقع يعمل بشكل طبيعي"}
-                </span>
+                <span className={`text-sm font-bold ${maintenanceMode ? "text-danger" : "text-text-muted"}`}>{maintenanceMode ? "⚠️ وضع الصيانة مفعّل" : "الموقع يعمل بشكل طبيعي"}</span>
               </label>
-              <Field label="رسالة الصيانة">
-                <Input value={maintenanceMsg} onChange={setMaintenanceMsg}
-                  placeholder="الموقع تحت الصيانة. نعود قريباً! 🔧" />
-              </Field>
-              <SaveBtn
-                onClick={() => save("maint", () => saveSiteSettings({ maintenanceMode, maintenanceMsg }))}
-                loading={!!saving.maint} />
+              <input value={maintenanceMsg} onChange={(e) => setMaintenanceMsg(e.target.value)} placeholder="رسالة الصيانة..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              <SaveBtn onClick={() => save("maint", () => saveSiteSettings({ maintenanceMode, maintenanceMsg }))} loading={!!saving.maint} />
             </Card>
-
             <Card icon={faEye} title="التسجيل الجديد">
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex cursor-pointer items-center gap-3">
                 <button onClick={() => setAllowReg(!allowReg)}>
-                  <FontAwesomeIcon icon={allowReg ? faToggleOn : faToggleOff}
-                    className={`h-7 w-7 ${allowReg ? "text-secondary" : "text-danger"}`} />
+                  <FontAwesomeIcon icon={allowReg ? faToggleOn : faToggleOff} className={`h-7 w-7 ${allowReg ? "text-secondary" : "text-danger"}`} />
                 </button>
-                <span className="font-bold text-sm">
-                  {allowReg ? "التسجيل مفتوح للجميع" : "❌ التسجيل مغلق"}
-                </span>
+                <span className="text-sm font-bold">{allowReg ? "التسجيل مفتوح" : "❌ التسجيل مغلق"}</span>
               </label>
               <SaveBtn onClick={() => save("reg", () => saveSetting("allowRegistration", allowReg))} loading={!!saving.reg} />
             </Card>
+          </div>
+        )}
+
+        {/* ════ المستخدمون ════ */}
+        {tab === "users" && (
+          <div className="space-y-3">
+            <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="بحث بالاسم أو البريد..."
+              className="h-10 w-full rounded-xl border border-border bg-surface px-4 text-sm outline-none focus:border-primary" />
+            <p className="text-xs text-text-muted">{filteredUsers.length} مستخدم</p>
+            {filteredUsers.slice(0, 50).map((u) => (
+              <div key={u.uid} className={`rounded-xl border p-3 ${u.banned ? "border-danger/30 bg-danger/5" : "border-border bg-surface"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-bold text-sm">{u.name ?? "بدون اسم"}</span>
+                      {u.role === "admin" && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">أدمن</span>}
+                      {u.banned && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">محظور</span>}
+                    </div>
+                    {u.email && <p className="text-xs text-text-muted">{u.email}</p>}
+                    <p className="text-xs text-text-muted">{u.points ?? 0} نقطة · المستوى {u.level ?? 1}</p>
+                    <p className="mt-1 text-[10px] text-text-muted opacity-60 select-all">{u.uid}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    {u.role !== "admin" ? (
+                      <button onClick={() => setUserRole(u.uid, "admin")}
+                        className="rounded-md border border-primary/30 px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary/10">
+                        ترقية أدمن
+                      </button>
+                    ) : (
+                      <button onClick={() => setUserRole(u.uid, null)}
+                        className="rounded-md border border-border px-2 py-1 text-[11px] font-bold text-text-muted hover:bg-border">
+                        إلغاء الأدمن
+                      </button>
+                    )}
+                    <button onClick={() => banUser(u.uid, !u.banned)}
+                      className={`rounded-md px-2 py-1 text-[11px] font-bold ${u.banned ? "border border-secondary/30 text-secondary hover:bg-secondary/10" : "border border-danger/30 text-danger hover:bg-danger/10"}`}>
+                      {u.banned ? "رفع الحظر" : "حظر"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ════ الغرف ════ */}
+        {tab === "rooms" && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-muted">{activeRooms.length} غرفة محفوظة</p>
+            {activeRooms.map((r) => (
+              <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm truncate">{r.name}</p>
+                  {r.subject && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{r.subject}</span>}
+                  <p className="text-xs text-text-muted">المالك: {r.ownerName ?? r.ownerId.slice(0, 8)}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <button onClick={() => closeRoom(r.id)} title="إنهاء الجلسة المباشرة"
+                    className="rounded-md border border-warning/30 px-2 py-1 text-[11px] font-bold text-warning hover:bg-warning/10">
+                    إنهاء
+                  </button>
+                  <button onClick={() => deleteRoom(r.id)} title="حذف الغرفة نهائياً"
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {activeRooms.length === 0 && <p className="py-8 text-center text-sm text-text-muted">لا غرف محفوظة.</p>}
+          </div>
+        )}
+
+        {/* ════ المكتبة ════ */}
+        {tab === "library" && (
+          <div className="space-y-3">
+            <p className="text-xs text-text-muted">{libraryEntries.length} مصدر</p>
+            {libraryEntries.map((e: any) => (
+              <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-sm truncate">{e.title}</p>
+                  <div className="flex gap-1.5 mt-0.5">
+                    {e.subject && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{e.subject}</span>}
+                    {e.chapter && <span className="rounded-full bg-border px-2 py-0.5 text-[10px] text-text-muted">{e.chapter}</span>}
+                  </div>
+                  <p className="text-xs text-text-muted">{e.uploaderName} · {timeAgo(e.createdAt)}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <a href={e.fileUrl} target="_blank" rel="noopener noreferrer"
+                    className="rounded-md bg-primary/10 px-2 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20">فتح</a>
+                  <button onClick={() => deleteLibraryEntry(e.id)}
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {libraryEntries.length === 0 && <p className="py-8 text-center text-sm text-text-muted">لا مصادر.</p>}
           </div>
         )}
 
@@ -447,52 +546,42 @@ export default function AdminPage() {
           <div className="space-y-4">
             <Card icon={faBullhorn} title="نشر إعلان رسمي">
               <textarea value={announceText} onChange={(e) => setAnnounceText(e.target.value)} rows={3}
-                placeholder="اكتب إعلاناً يظهر باسم «📢 إدارة BacZoneDZ»..."
+                placeholder="اكتب إعلاناً باسم «📢 إدارة BacZoneDZ»..."
                 className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
               <button onClick={async () => {
-                if (!announceText.trim() || !user) return;
+                if (!announceText.trim()) return;
                 setSaving((s) => ({ ...s, announce: true }));
-                try {
-                  await createPost(user.uid, "📢 إدارة BacZoneDZ", announceText, undefined, "public");
-                  setAnnounceText("");
-                } finally { setSaving((s) => ({ ...s, announce: false })); }
+                try { await createPost(user.uid, "📢 إدارة BacZoneDZ", announceText, undefined, "public"); setAnnounceText(""); }
+                finally { setSaving((s) => ({ ...s, announce: false })); }
               }} disabled={!!saving.announce || !announceText.trim()}
                 className="flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white disabled:opacity-50">
                 <FontAwesomeIcon icon={faPaperPlane} className="h-3.5 w-3.5 -scale-x-100" />
-                {saving.announce ? "جارٍ النشر..." : "نشر الإعلان"}
+                {saving.announce ? "جارٍ النشر..." : "نشر"}
               </button>
             </Card>
-
-            <div>
-              <p className="mb-2 text-xs font-bold text-text-muted">آخر المنشورات (40)</p>
-              <div className="space-y-2">
-                {posts.map((p) => (
-                  <div key={p.id} className="rounded-xl border border-border bg-surface p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-                          {p.authorName}
-                          {p.locked && <FontAwesomeIcon icon={faLock} className="h-3 w-3 text-warning" />}
-                          {p.subject && <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">{p.subject}</span>}
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-sm text-text-muted">{p.text || "(بدون نص)"}</p>
-                        <p className="mt-1 text-[10px] text-text-muted">{timeAgo(p.createdAt)}</p>
+            <div className="space-y-2">
+              {posts.map((p) => (
+                <div key={p.id} className="rounded-xl border border-border bg-surface p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                        {p.authorName}
+                        {p.locked && <FontAwesomeIcon icon={faLock} className="h-3 w-3 text-warning" />}
                       </div>
-                      <div className="flex shrink-0 gap-1">
-                        <button onClick={() => toggleLock(p)} title={p.locked ? "فتح التعليقات" : "إغلاق التعليقات"}
-                          className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-warning/10 hover:text-warning">
-                          <FontAwesomeIcon icon={p.locked ? faLockOpen : faLock} className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => removePost(p)} title="حذف"
-                          className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
-                          <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                      <p className="mt-1 line-clamp-2 text-sm text-text-muted">{p.text || "(بدون نص)"}</p>
+                      <p className="mt-1 text-[10px] text-text-muted">{timeAgo(p.createdAt)}</p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <button onClick={() => toggleLock(p)} className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-warning/10 hover:text-warning">
+                        <FontAwesomeIcon icon={p.locked ? faLockOpen : faLock} className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => removePost(p)} className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
+                        <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
-                ))}
-                {posts.length === 0 && <p className="py-8 text-center text-sm text-text-muted">لا منشورات بعد.</p>}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -501,38 +590,32 @@ export default function AdminPage() {
         {tab === "reports" && (
           <div className="space-y-3">
             {reports.length === 0 ? (
-              <div className="grid place-items-center py-16 text-center text-text-muted">
+              <div className="grid place-items-center py-16 text-text-muted">
                 <FontAwesomeIcon icon={faCheckCircle} className="h-10 w-10 text-secondary" />
                 <p className="mt-3 text-sm">لا بلاغات — المجتمع نظيف! 🎉</p>
               </div>
-            ) : (
-              reports.map((r) => (
-                <div key={r.id} className="rounded-xl border border-border bg-surface p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <FontAwesomeIcon icon={faFlag} className="h-4 w-4 text-danger" />
-                      <span className="font-semibold text-sm">
-                        {r.kind === "post" ? "منشور" : r.kind === "comment" ? "تعليق" : r.kind} مُبلَّغ عنه
-                      </span>
-                    </div>
-                    <button onClick={() => remove(ref(rtdb, `reports/${r.id}`))}
-                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
-                      <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-                    </button>
+            ) : reports.map((r) => (
+              <div key={r.firebaseKey} className="rounded-xl border border-border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faFlag} className="h-4 w-4 text-danger" />
+                    <span className="font-semibold text-sm">{r.kind === "post" ? "منشور" : "تعليق"} مُبلَّغ عنه</span>
                   </div>
-                  {r.contentPreview && (
-                    <p className="mt-2 line-clamp-3 rounded-lg border border-border bg-background p-2.5 text-sm text-text-primary italic">
-                      «{r.contentPreview}»
-                    </p>
-                  )}
-                  <p className="mt-2 text-sm text-text-muted">
-                    أبلغ عنه: <span className="font-semibold text-text-primary">{r.reporterName}</span>
-                    {r.reason && <> · «{r.reason}»</>}
-                  </p>
-                  <p className="mt-1 text-xs text-text-muted">{timeAgo(r.createdAt)}</p>
+                  <button onClick={() => remove(ref(rtdb, `reports/${r.firebaseKey}`))}
+                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
+                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              ))
-            )}
+                {r.contentPreview && (
+                  <p className="mt-2 line-clamp-3 rounded-lg border border-border bg-background p-2.5 text-sm italic">«{r.contentPreview}»</p>
+                )}
+                <p className="mt-2 text-sm text-text-muted">
+                  أبلغ عنه: <span className="font-semibold text-text-primary">{r.reporterName}</span>
+                  {r.reason && <> · «{r.reason}»</>}
+                </p>
+                <p className="mt-1 text-xs text-text-muted">{timeAgo(r.createdAt)}</p>
+              </div>
+            ))}
           </div>
         )}
       </section>
