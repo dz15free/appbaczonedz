@@ -31,7 +31,6 @@ const COLOR_MAP: Record<string, string> = {
   amber: "bg-amber-500/10 text-amber-500",
   sky: "bg-sky-500/10 text-sky-500",
   rose: "bg-rose-500/10 text-rose-500",
-  emerald: "bg-emerald-500/10 text-emerald-500",
 };
 
 const EXTERNAL = [
