@@ -56,10 +56,12 @@ export default function LibraryPage() {
 
   async function addEntry() {
     if (!form.title.trim() || !form.fileUrl.trim()) { setFormErr("العنوان والرابط مطلوبان"); return; }
-    if (!user) return;
+    const uid = user?.uid;
+    const uname = profile?.name || user?.displayName || "طالب";
+    if (!uid) return;
     setAdding(true); setFormErr("");
     try {
-      await push(ref(rtdb, "library"), { ...form, fileType: guessType(form.fileUrl), uploaderId: user.uid, uploaderName: profile?.name || user.displayName || "طالب", createdAt: Date.now() });
+      await push(ref(rtdb, "library"), { ...form, fileType: guessType(form.fileUrl), uploaderId: uid, uploaderName: uname, createdAt: Date.now() });
       setForm({ title: "", subject: "math", chapter: "", description: "", fileUrl: "" }); setShowAdd(false);
     } catch { setFormErr("حدث خطأ."); } finally { setAdding(false); }
   }
