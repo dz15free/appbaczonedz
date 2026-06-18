@@ -2,9 +2,55 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faPaperPlane, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faPaperPlane, faXmark, faFile, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
-import { listenMessages, sendMessage, type ChatMessage } from "@/features/rooms/rooms";
+import { listenMessages, sendMessage, getAttachment, type ChatMessage } from "@/features/rooms/rooms";
+
+/* ─── مرفق داخل الدردشة (صورة/ملف) ─── */
+function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (msg.attachmentId) getAttachment(roomId, msg.attachmentId).then((d) => alive && setDataUrl(d));
+    return () => { alive = false; };
+  }, [roomId, msg.attachmentId]);
+
+  if (!dataUrl) {
+    return (
+      <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1 text-xs text-white/60">
+        <FontAwesomeIcon icon={faSpinner} className="h-3 w-3 animate-spin" /> تحميل...
+      </span>
+    );
+  }
+
+  if (msg.type === "image") {
+    return (
+      <>
+        <button onClick={() => setZoom(true)} className="overflow-hidden rounded-lg border border-white/15">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={dataUrl} alt="" className="max-h-40 max-w-[200px] object-cover" />
+        </button>
+        {zoom && (
+          <div className="fixed inset-0 z-[130] grid place-items-center bg-black/90 p-4" onClick={() => setZoom(false)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={dataUrl} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <a href={dataUrl} download={msg.fileName || "ملف"}
+      className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20">
+      <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-indigo-300" />
+      <span className="truncate max-w-[140px]">{msg.fileName || "ملف"}</span>
+      <span className="text-xs text-white/50">تنزيل</span>
+    </a>
+  );
+}
 
 /* ─── لوحة ألوان دراسية لكل مرسل ─── */
 const CHIPS = [
@@ -50,7 +96,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
     });
   }
 
-  const textMsgs = messages.filter((m) => m.type === "text");
+  const textMsgs = messages.filter((m) => m.type === "text" || m.type === "image" || m.type === "file");
   /* آخر 7 رسائل للعرض العائم على الجوال */
   const floating = textMsgs.slice(-7);
 
@@ -92,11 +138,16 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
                 <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
                   {m.userName}
                 </span>
-                <p className={`rounded-xl px-3 py-1.5 text-sm leading-snug text-white ${
-                  isMe ? "bg-indigo-600/70" : "bg-white/10"
-                }`}>
-                  {m.text}
-                </p>
+                {m.text && (
+                  <p className={`rounded-xl px-3 py-1.5 text-sm leading-snug text-white ${
+                    isMe ? "bg-indigo-600/70" : "bg-white/10"
+                  }`}>
+                    {m.text}
+                  </p>
+                )}
+                {(m.type === "image" || m.type === "file") && (
+                  <div className="mt-0.5"><FsAttachment roomId={roomId} msg={m} /></div>
+                )}
               </div>
             );
           })}
@@ -141,26 +192,29 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           const isMe = m.userId === user?.uid;
           /* الأقدم أكثر شفافية */
           const opacity = 0.45 + (idx / floating.length) * 0.55;
+          const hasAttachment = m.type === "image" || m.type === "file";
           return (
-            <div key={m.id} className="flex w-fit max-w-[85%] items-end gap-2 animate-msg-in"
+            <div key={m.id} className={`flex w-fit max-w-[85%] items-end gap-2 animate-msg-in ${hasAttachment ? "pointer-events-auto" : ""}`}
               style={{ opacity }}>
               {/* رقاقة الاسم */}
               <span className={`shrink-0 self-end rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
                 {m.userName.split(" ")[0]}
               </span>
-              {/* فقاعة الرسالة */}
-              <span
-                className="rounded-2xl px-3 py-1.5 text-sm font-medium text-white leading-snug"
-                style={{
-                  background: isMe
-                    ? "rgba(99,102,241,0.75)"
-                    : "rgba(0,0,0,0.55)",
-                  backdropFilter: "blur(8px)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                }}
-              >
-                {m.text}
-              </span>
+              {/* فقاعة الرسالة أو المرفق */}
+              {hasAttachment ? (
+                <FsAttachment roomId={roomId} msg={m} />
+              ) : (
+                <span
+                  className="rounded-2xl px-3 py-1.5 text-sm font-medium text-white leading-snug"
+                  style={{
+                    background: isMe ? "rgba(99,102,241,0.75)" : "rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(8px)",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  {m.text}
+                </span>
+              )}
             </div>
           );
         })}

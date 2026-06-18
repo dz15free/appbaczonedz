@@ -23,6 +23,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { TRACKS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import {
@@ -115,9 +116,7 @@ export default function UserProfilePage() {
 
         {/* بطاقة البروفايل */}
         <div className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-3xl font-extrabold text-white">
-            {name.charAt(0)}
-          </div>
+          <UserAvatar name={name} avatarUrl={theirProfile?.avatarUrl} size="xl" />
           <h1 className="mt-3 font-display text-xl font-extrabold">{name}</h1>
           <div className="mt-2 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
             <FontAwesomeIcon icon={faStar} className="h-4 w-4" />

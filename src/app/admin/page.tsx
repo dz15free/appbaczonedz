@@ -233,6 +233,19 @@ export default function AdminPage() {
     await deletePost(p);
     setPosts((l) => l.filter((x) => x.id !== p.id));
   }
+
+  async function handleDeleteReportedContent(r: Report) {
+    if (!r.contentRef) return;
+    if (!confirm("حذف المحتوى المُبلَّغ عنه نهائياً؟ سيُحذف البلاغ تلقائياً.")) return;
+    try {
+      if (r.kind === "post") {
+        await deletePost({ id: r.contentRef });
+      }
+      await remove(ref(rtdb, `reports/${r.firebaseKey}`));
+    } catch {
+      alert("تعذّر الحذف.");
+    }
+  }
   async function toggleLock(p: Post) {
     await setPostLocked(p.id, !p.locked);
     setPosts((l) => l.map((x) => (x.id === p.id ? { ...x, locked: !p.locked } : x)));
@@ -589,6 +602,19 @@ export default function AdminPage() {
         {/* ════ البلاغات ════ */}
         {tab === "reports" && (
           <div className="space-y-3">
+            {reports.length > 0 && (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
+                <span className="text-sm font-bold">{reports.length} بلاغ</span>
+                <button onClick={async () => {
+                  if (!confirm("حذف كل البلاغات؟")) return;
+                  await Promise.all(reports.map((r) => remove(ref(rtdb, `reports/${r.firebaseKey}`))));
+                }}
+                  className="flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-1.5 text-xs font-bold text-danger hover:bg-danger/10">
+                  <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                  حذف كل البلاغات
+                </button>
+              </div>
+            )}
             {reports.length === 0 ? (
               <div className="grid place-items-center py-16 text-text-muted">
                 <FontAwesomeIcon icon={faCheckCircle} className="h-10 w-10 text-secondary" />
@@ -601,19 +627,32 @@ export default function AdminPage() {
                     <FontAwesomeIcon icon={faFlag} className="h-4 w-4 text-danger" />
                     <span className="font-semibold text-sm">{r.kind === "post" ? "منشور" : "تعليق"} مُبلَّغ عنه</span>
                   </div>
-                  <button onClick={() => remove(ref(rtdb, `reports/${r.firebaseKey}`))}
-                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger">
-                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-                  </button>
                 </div>
-                {r.contentPreview && (
+                {r.contentPreview ? (
                   <p className="mt-2 line-clamp-3 rounded-lg border border-border bg-background p-2.5 text-sm italic">«{r.contentPreview}»</p>
+                ) : (
+                  <p className="mt-2 rounded-lg border border-border bg-background p-2.5 text-sm italic text-text-muted">(المحتوى محذوف أو غير متاح)</p>
                 )}
                 <p className="mt-2 text-sm text-text-muted">
                   أبلغ عنه: <span className="font-semibold text-text-primary">{r.reporterName}</span>
                   {r.reason && <> · «{r.reason}»</>}
                 </p>
                 <p className="mt-1 text-xs text-text-muted">{timeAgo(r.createdAt)}</p>
+
+                <div className="mt-3 flex gap-2 border-t border-border pt-3">
+                  {r.contentRef && r.kind === "post" && (
+                    <button onClick={() => handleDeleteReportedContent(r)}
+                      className="flex items-center gap-1.5 rounded-md bg-danger px-3 py-1.5 text-xs font-bold text-white hover:opacity-90">
+                      <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                      حذف المنشور
+                    </button>
+                  )}
+                  <button onClick={() => remove(ref(rtdb, `reports/${r.firebaseKey}`))}
+                    className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-text-muted hover:bg-border">
+                    <FontAwesomeIcon icon={faCheckCircle} className="h-3 w-3" />
+                    تجاهل البلاغ
+                  </button>
+                </div>
               </div>
             ))}
           </div>
