@@ -117,7 +117,7 @@ export function RoomTimer({ roomId, isOwner }: { roomId: string; isOwner: boolea
           )}
         </div>
       ) : isOwner ? (
-        <button onClick={() => setShowSetup(true)} className="bz-studio-icon flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold">
+        <button onClick={() => setShowSetup(true)} className="flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
           <FontAwesomeIcon icon={faClock} className="h-4 w-4" />
           <span className="hidden sm:inline">مؤقّت</span>
         </button>

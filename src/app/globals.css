@@ -83,6 +83,16 @@ body {
   border: 1px solid var(--bz-border);
 }
 
+
+/* ضمان لون نص واضح في كل الحقول (يمنع النص الأبيض على خلفية بيضاء) */
+input, textarea, select {
+  color: var(--bz-text);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--bz-text-muted);
+  opacity: 1;
+}
+
 .bz-gradient-text {
   background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 100%);
   -webkit-background-clip: text;

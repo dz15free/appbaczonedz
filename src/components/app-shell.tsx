@@ -20,6 +20,16 @@ const NAV = [
   { href: "/rooms", label: "الغرف", icon: faUsers },
   { href: "/groups", label: "المجموعات", icon: faLayerGroup },
   { href: "/community", label: "المجتمع", icon: faGlobe },
+  { href: "/library", label: "المكتبة", icon: faBookOpen },
+  { href: "/notifications", label: "الإشعارات", icon: faBell },
+  { href: "/profile", label: "حسابي", icon: faUser },
+];
+
+// شريط الهاتف السفلي — 5 عناصر أساسية فقط لتجربة نظيفة
+const MOBILE_NAV = [
+  { href: "/home", label: "الرئيسية", icon: faHouse },
+  { href: "/rooms", label: "الغرف", icon: faUsers },
+  { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/notifications", label: "الإشعارات", icon: faBell },
   { href: "/profile", label: "حسابي", icon: faUser },
 ];
@@ -194,7 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="bz-glass mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border px-1 py-1.5 shadow-glass">
-          {NAV.map((n) => {
+          {MOBILE_NAV.map((n) => {
             const active = pathname === n.href;
             return (
               <Link

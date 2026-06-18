@@ -175,18 +175,23 @@ function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-border bg-surface p-4">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="شارك سؤالاً أو فكرة أو ملخّصاً..."
-          rows={3}
-          className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-        />
+      <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4">
+        <div className="flex gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
+            {(me.name || "ط").charAt(0)}
+          </span>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="شارك سؤالاً أو فكرة أو ملخّصاً..."
+            rows={2}
+            className="min-h-[44px] flex-1 resize-none bg-transparent pt-2 text-sm outline-none placeholder:text-text-muted"
+          />
+        </div>
 
         {/* معاينة المرفق */}
         {(pending || preparing) && (
-          <div className="mt-2 flex items-center gap-2 rounded-md border border-border bg-background p-2 text-sm">
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background p-2 text-sm">
             {preparing ? (
               <span className="flex items-center gap-2 text-text-muted">
                 <FontAwesomeIcon icon={faSpinner} className="h-3 w-3 animate-spin" /> جارٍ التجهيز...
@@ -206,48 +211,42 @@ function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
           </div>
         )}
 
-        {/* صف الأدوات — متجاوب تماماً */}
-        <div className="mt-2 space-y-2">
-          {/* صف 1: أدوات الإرفاق + الخصوصية */}
-          <div className="flex flex-wrap items-center gap-1">
-            <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
-            <input ref={fileInput} type="file" hidden onChange={pick} />
-            <button onClick={() => imageInput.current?.click()} aria-label="صورة"
-              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
-              <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+        {/* صف الأدوات */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
+          <input ref={fileInput} type="file" hidden onChange={pick} />
+          <button onClick={() => imageInput.current?.click()} aria-label="صورة" title="إرفاق صورة"
+            className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
+            <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+          </button>
+          <button onClick={() => fileInput.current?.click()} aria-label="ملف" title="إرفاق ملف"
+            className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
+            <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
+          </button>
+          <div className="h-5 w-px bg-border" />
+          {([
+            { id: "public",  icon: faGlobe,     label: "عام" },
+            { id: "friends", icon: faUserGroup, label: "أصدقاء" },
+            { id: "private", icon: faLock,       label: "خاص" },
+          ] as const).map((v) => (
+            <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
+              className={`grid h-9 w-9 place-items-center rounded-lg transition ${visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10 hover:text-primary"}`}>
+              <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => fileInput.current?.click()} aria-label="ملف"
-              className="grid h-9 w-9 place-items-center rounded-md text-text-muted hover:bg-primary/10">
-              <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
-            </button>
-            <div className="mx-1 h-5 w-px bg-border" />
-            {([
-              { id: "public",  icon: faGlobe,     label: "عام" },
-              { id: "friends", icon: faUserGroup, label: "أصدقاء" },
-              { id: "private", icon: faLock,       label: "خاص" },
-            ] as const).map((v) => (
-              <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
-                className={`grid h-9 w-9 place-items-center rounded-md ${visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10"}`}>
-                <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
-              </button>
-            ))}
-          </div>
+          ))}
 
-          {/* صف 2: الفئة + زر النشر — تكديس عمودي على الهاتف، جنباً إلى جنب على الشاشات الأوسع */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
-              className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary sm:flex-1"
-              title="فئة المنشور">
-              <option value="">بدون فئة</option>
-              {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
-              className="h-10 w-full shrink-0 rounded-md bg-gradient-primary text-sm font-bold text-white disabled:opacity-50 sm:w-auto sm:px-6">
-              {posting ? "جارٍ النشر..." : "نشر"}
-            </button>
-          </div>
+          <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
+            className="ml-auto h-9 rounded-lg border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+            title="فئة المنشور">
+            <option value="">بدون فئة</option>
+            {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
+            className="h-9 shrink-0 rounded-lg bg-gradient-primary px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50">
+            {posting ? "..." : "نشر"}
+          </button>
         </div>
       </div>
 

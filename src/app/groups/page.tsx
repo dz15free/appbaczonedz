@@ -95,12 +95,12 @@ export default function GroupsPage() {
 
         {/* بحث */}
         <div className="relative mb-4">
-          <FontAwesomeIcon icon={faSearch} className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <FontAwesomeIcon icon={faSearch} className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث في المجموعات..."
-            className="w-full rounded-md border border-border bg-surface pe-10 ps-3 py-2 text-sm outline-none focus:border-primary"
+            className="h-11 w-full rounded-xl border border-border bg-surface pr-10 pl-4 text-sm outline-none focus:border-primary"
           />
         </div>
 

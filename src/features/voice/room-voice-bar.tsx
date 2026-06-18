@@ -96,14 +96,14 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   }, []);
 
   return (
-    <div className="bz-studio bz-studio-bar border-t">
+    <div className="border-t border-border bg-surface">
       {Object.entries(streams).map(([uid, stream]) => (
         <AudioSink key={uid} stream={stream} />
       ))}
 
       {/* اللوحة الموسّعة (المشاركون + أدوات المالك) */}
       {joined && expanded && (
-        <div className="max-h-48 overflow-y-auto p-3" style={{ borderBottom: "1px solid var(--studio-border)" }}>
+        <div className="max-h-48 overflow-y-auto p-3" style={{ borderBottom: "1px solid var(--bz-border)" }}>
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
             {participants.map((p) => {
               const isMe = p.uid === user?.uid;
@@ -123,7 +123,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
                       </span>
                     )}
                   </div>
-                  <span className="mt-1.5 max-w-[4rem] truncate text-[10px] font-medium" style={{ color: "var(--studio-dim)" }}>
+                  <span className="mt-1.5 max-w-[4rem] truncate text-[10px] font-medium" style={{ color: "var(--bz-text-muted)" }}>
                     {p.name}
                     {isMe && " (أنت)"}
                   </span>
@@ -131,7 +131,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
                     <div className="mt-1 flex gap-1">
                       <button
                         onClick={() => managerRef.current?.ownerToggleMute(p.uid, !isMuted)}
-                        className={`bz-studio-icon grid h-6 w-6 place-items-center rounded-md ${!isMuted ? "on" : ""}`}
+                        className={`grid h-6 w-6 place-items-center rounded-md transition ${!isMuted ? "bg-secondary/15 text-secondary" : "text-text-muted hover:bg-primary/10"}`}
                         aria-label={isMuted ? "فتح الميكروفون" : "كتم"}
                         title={isMuted ? "فتح الميكروفون" : "كتم"}
                       >
@@ -139,7 +139,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
                       </button>
                       <button
                         onClick={() => managerRef.current?.ownerKick(p.uid)}
-                        className="bz-studio-icon grid h-6 w-6 place-items-center rounded-md hover:!text-danger"
+                        className="grid h-6 w-6 place-items-center rounded-md text-text-muted transition hover:bg-danger/10 hover:text-danger"
                         aria-label="طرد"
                       >
                         <FontAwesomeIcon icon={faUserSlash} className="h-2.5 w-2.5" />
@@ -159,7 +159,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
           <button
             onClick={join}
             disabled={connecting}
-            className="bz-studio-glow flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+            className="shadow-glow flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
           >
             <FontAwesomeIcon icon={faPhone} className="h-4 w-4" />
             {connecting ? "جارٍ الاتصال..." : "انضمام صوتي"}
@@ -168,8 +168,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
           <>
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold transition hover:bg-white/5"
-              style={{ color: "var(--studio-dim)" }}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10"
             >
               <FontAwesomeIcon
                 icon={faChevronUp}
@@ -180,15 +179,15 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
             </button>
             <div className="flex items-center gap-2">
               {!isOwner && muted && (
-                <span className="text-[11px] hidden sm:inline" style={{ color: "var(--studio-faint)" }}>
+                <span className="text-[11px] hidden sm:inline" style={{ color: "var(--bz-text-muted)" }}>
                   المعلّم يفتح الميكروفون
                 </span>
               )}
               <button
                 onClick={toggleMute}
                 disabled={!isOwner && muted}
-                className={`bz-studio-icon grid h-10 w-10 place-items-center rounded-full ${
-                  muted ? "" : "on"
+                className={`grid h-10 w-10 place-items-center rounded-full transition ${
+                  muted ? "bg-danger/10 text-danger" : "bg-secondary/15 text-secondary"
                 } ${!isOwner && muted ? "opacity-70" : ""}`}
                 aria-label={muted ? "مكتوم" : "إغلاق الميكروفون"}
                 title={

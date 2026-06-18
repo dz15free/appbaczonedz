@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
-  faComments, faArrowRight, faXmark, faHand,
+  faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
   faNoteSticky, faClock,
@@ -201,7 +201,7 @@ export default function RoomPage() {
           </button>
 
           {/* شعار الغرفة */}
-          <span className="bz-studio-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white sm:h-10 sm:w-10">
+          <span className="shadow-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white sm:h-10 sm:w-10">
             {(room?.name ?? "").charAt(0) || "B"}
           </span>
 
@@ -223,7 +223,7 @@ export default function RoomPage() {
               onClick={toggleHand}
               aria-label="رفع اليد"
               title="رفع اليد"
-              className={`bz-studio-icon grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${myHand ? "warn" : ""}`}
+              className={`grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${myHand ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
             >
               <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
             </button>
@@ -235,11 +235,11 @@ export default function RoomPage() {
               onClick={() => setHandsOpen((o) => !o)}
               aria-label="الأيدي المرفوعة"
               title="الأيدي المرفوعة"
-              className={`bz-studio-icon relative grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${hands.length ? "warn" : ""}`}
+              className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${hands.length ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
             >
               <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
               {hands.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white ring-2 ring-[var(--studio-panel)]">
+                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white ring-2 ring-background">
                   {hands.length}
                 </span>
               )}
@@ -252,10 +252,10 @@ export default function RoomPage() {
               onClick={() => setShowParticipants((s) => !s)}
               aria-label="المشاركون"
               title="إدارة المشاركين"
-              className={`bz-studio-icon relative grid h-9 w-9 place-items-center rounded-xl sm:h-10 sm:w-10 ${showParticipants ? "on" : ""}`}
+              className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${showParticipants ? "border-secondary/40 bg-secondary/10 text-secondary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
             >
               <FontAwesomeIcon icon={faUsers} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-              <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-[var(--studio-panel)]">
+              <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
                 {members.length}
               </span>
             </button>
@@ -264,10 +264,20 @@ export default function RoomPage() {
           {/* الدردشة — جوال */}
           <button
             onClick={() => setChatOpen(true)}
-            className="bz-studio-icon grid h-9 w-9 place-items-center rounded-xl lg:hidden sm:h-10 sm:w-10"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary lg:hidden sm:h-10 sm:w-10"
             aria-label="الدردشة"
           >
             <FontAwesomeIcon icon={faComments} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+          </button>
+
+          {/* زر الخروج من الغرفة */}
+          <button
+            onClick={() => router.push("/rooms")}
+            className="flex h-9 items-center gap-1.5 rounded-xl bg-danger/10 px-2.5 text-sm font-bold text-danger transition hover:bg-danger/20 sm:h-10 sm:px-3"
+            aria-label="مغادرة الغرفة"
+          >
+            <FontAwesomeIcon icon={faRightFromBracket} className="h-4 w-4" />
+            <span className="hidden sm:inline">خروج</span>
           </button>
         </div>
       </header>
@@ -298,13 +308,13 @@ export default function RoomPage() {
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
         <nav className="bz-glass flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
-          <div className="flex shrink-0 items-center gap-1 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-background p-1">
             {TOOLS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTool(t.id)}
                 className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                  tool === t.id ? "active" : ""
+                  tool === t.id ? "bg-gradient-primary text-white shadow" : "text-text-muted hover:bg-primary/10 hover:text-primary"
                 }`}
               >
                 <FontAwesomeIcon icon={t.icon} className="h-4 w-4" />
@@ -313,7 +323,7 @@ export default function RoomPage() {
             ))}
           </div>
 
-          <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--studio-border)" }} />
+          <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--bz-border)" }} />
 
           {/* مؤقّت الدرس */}
           <RoomTimer roomId={roomId} isOwner={isOwner} />
@@ -370,14 +380,14 @@ export default function RoomPage() {
       {/* المحتوى + الدردشة */}
       <div className="flex flex-1 overflow-hidden">
         <section
-          className={`bz-studio-mesh relative flex flex-col overflow-hidden ${fullscreen ? "bz-fullscreen" : ""}`}
+          className={`relative flex flex-col overflow-hidden bg-background ${fullscreen ? "bz-fullscreen" : ""}`}
           style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
         >
           {/* زر الخروج من الشاشة الكاملة */}
           {fullscreen && (
             <button
               onClick={exitFullscreen}
-              className="bz-studio-icon absolute left-3 z-10 flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold"
+              className="absolute left-3 z-10 flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text-muted transition hover:text-primary"
               style={{ top: "max(12px, env(safe-area-inset-top, 12px))" }}
             >
               <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
@@ -403,7 +413,7 @@ export default function RoomPage() {
                         className="absolute inset-0 rounded-2xl blur-xl"
                         style={{ background: "linear-gradient(135deg, #4f46e5, #8b5cf6)", opacity: 0.45 }}
                       />
-                      <span className="bz-studio-glow relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
+                      <span className="shadow-glow relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
                         <FontAwesomeIcon icon={faHouse} className="h-7 w-7 text-white" />
                       </span>
                     </div>

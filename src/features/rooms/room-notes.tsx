@@ -40,10 +40,10 @@ h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px;font-size:1.
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5" style={{ background: "rgba(10,11,16,0.7)" }}>
+      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
         <div className="flex items-center gap-2">
           <FontAwesomeIcon icon={faNoteSticky} className="h-4 w-4 text-amber-400" />
-          <span className="text-sm font-bold" style={{ color: "var(--studio-text)" }}>ملاحظات مشتركة</span>
+          <span className="text-sm font-bold text-text-primary">ملاحظات مشتركة</span>
           {isOwner && saving && <span className="text-[10px] text-white/40">حفظ...</span>}
           {isOwner && !saving && localNotes && <span className="text-[10px] text-secondary/70">محفوظ ✓</span>}
         </div>
@@ -56,17 +56,16 @@ h1{color:#4f46e5;border-bottom:2px solid #4f46e5;padding-bottom:8px;font-size:1.
       {isOwner ? (
         <textarea value={localNotes} onChange={(e) => handleChange(e.target.value)}
           placeholder={"اكتب ملخّص الدرس هنا... يظهر للطلاب في الوقت الفعلي 📝\n\n- يمكنك كتابة المعادلات والنقاط المهمة\n- الطلاب يرونها مباشرة\n- اضغط 'تصدير PDF' لحفظها"}
-          className="flex-1 resize-none bg-transparent p-4 text-sm outline-none" dir="auto"
-          style={{ color: "var(--studio-text)", caretColor: "#6366f1" }} />
+          className="flex-1 resize-none bg-transparent p-4 text-sm text-text-primary outline-none" dir="auto" style={{ caretColor: "#6366f1" }} />
       ) : (
         <div className="flex-1 overflow-y-auto p-4">
           {localNotes ? (
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed" dir="auto" style={{ color: "var(--studio-text)", fontFamily: "inherit" }}>{localNotes}</pre>
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-text-primary" dir="auto" style={{ fontFamily: "inherit" }}>{localNotes}</pre>
           ) : (
             <div className="grid h-full place-items-center text-center">
               <div>
                 <FontAwesomeIcon icon={faNoteSticky} className="h-10 w-10 text-amber-400 opacity-20" />
-                <p className="mt-3 text-sm" style={{ color: "var(--studio-faint)" }}>سيكتب المعلّم ملاحظات الدرس هنا...</p>
+                <p className="mt-3 text-sm text-text-muted">سيكتب المعلّم ملاحظات الدرس هنا...</p>
               </div>
             </div>
           )}

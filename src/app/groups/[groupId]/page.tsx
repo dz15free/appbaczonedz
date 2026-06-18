@@ -183,7 +183,7 @@ export default function GroupPage() {
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
                   placeholder="اكتب رسالتك..."
-                  className="flex-1 rounded-xl border border-border bg-background px-4 py-2 text-sm outline-none focus:border-primary"
+                  className="flex-1 rounded-xl border border-border bg-background px-4 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-primary"
                 />
                 <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary text-white disabled:opacity-50">
                   <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
