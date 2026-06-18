@@ -134,20 +134,18 @@ input::placeholder, textarea::placeholder {
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  width: 100% !important;
+  width: 100vw !important;
+  width: 100dvw !important;
   height: 100vh !important;   /* احتياط للمتصفحات القديمة */
   height: 100dvh !important;  /* الارتفاع الديناميكي الحقيقي (iOS 15.4+) */
   height: -webkit-fill-available !important; /* احتياط إضافي لـ iOS Safari */
   height: var(--bz-vvh, 100dvh) !important; /* يتكيّف مع لوحة المفاتيح */
   max-height: var(--bz-vvh, 100dvh) !important;
   z-index: 9999 !important;
-  background: var(--color-background, #0f0f1a);
+  background: #0a0a14 !important;
   overflow: hidden !important;
-  /* يمنع أي "ارتداد" (bounce) من كشف ما تحته على iOS */
-  touch-action: none;
-}
-.bz-fullscreen > * {
-  touch-action: auto; /* يُعيد السماح بالتمرير داخل عناصر الأداة نفسها */
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* يُمنع تمرير الجسم بالكامل أثناء وضع الشاشة الكاملة */

@@ -19,10 +19,11 @@ import {
   kickUser, banUser, unbanUser,
   listenMods, listenKicked, listenBanned,
   listenPoll, type RoomPoll,
+  listenMessages,
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
-import { RoomTimer } from "@/features/rooms/room-timer";
+import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
@@ -58,6 +59,54 @@ export default function RoomPage() {
   const [hands, setHands] = useState<Hand[]>([]);
   const [myHand, setMyHand] = useState(false);
   const prevHands = useRef(0);
+
+  // عدّاد الرسائل غير المقروءة + صوت الإشعار
+  const [unreadChat, setUnreadChat] = useState(0);
+  const chatOpenRef = useRef(false);
+  const lastMsgCount = useRef(0);
+  const chatInit = useRef(false);
+  const isDesktop = useRef(false);
+
+  // على الحاسوب، الشريط الجانبي للدردشة ظاهر دائماً → لا عدّاد
+  useEffect(() => {
+    const check = () => { isDesktop.current = window.matchMedia("(min-width: 1024px)").matches; if (isDesktop.current) setUnreadChat(0); };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => { chatOpenRef.current = chatOpen; if (chatOpen) setUnreadChat(0); }, [chatOpen]);
+
+  useEffect(() => {
+    return listenMessages(roomId, (msgs) => {
+      const textMsgs = msgs.filter((m) => m.type === "text");
+      if (!chatInit.current) {
+        chatInit.current = true;
+        lastMsgCount.current = textMsgs.length;
+        return;
+      }
+      const newCount = textMsgs.length - lastMsgCount.current;
+      if (newCount > 0) {
+        const last = textMsgs[textMsgs.length - 1];
+        const fromOther = last && last.userId !== user?.uid;
+        if (fromOther && !chatOpenRef.current && !isDesktop.current) {
+          setUnreadChat((u) => u + newCount);
+          // صوت إشعار قصير
+          try {
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 660;
+            gain.gain.setValueAtTime(0.18, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+            osc.start(); osc.stop(ctx.currentTime + 0.25);
+          } catch { /* صامت */ }
+        }
+      }
+      lastMsgCount.current = textMsgs.length;
+    });
+  }, [roomId, user?.uid]);
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
   const isOwner = !!room && !!user && room.ownerId === user.uid;
@@ -264,10 +313,15 @@ export default function RoomPage() {
           {/* الدردشة — جوال */}
           <button
             onClick={() => setChatOpen(true)}
-            className="grid h-9 w-9 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary lg:hidden sm:h-10 sm:w-10"
+            className="relative grid h-9 w-9 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary lg:hidden sm:h-10 sm:w-10"
             aria-label="الدردشة"
           >
             <FontAwesomeIcon icon={faComments} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+            {unreadChat > 0 && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                {unreadChat > 9 ? "9+" : unreadChat}
+              </span>
+            )}
           </button>
 
           {/* زر الخروج من الغرفة */}
@@ -326,7 +380,7 @@ export default function RoomPage() {
           <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--bz-border)" }} />
 
           {/* مؤقّت الدرس */}
-          <RoomTimer roomId={roomId} isOwner={isOwner} />
+          <RoomTimerButton roomId={roomId} />
           {/* استفتاء سريع */}
           <button
             onClick={() => setShowCreatePoll(true)}
@@ -387,7 +441,7 @@ export default function RoomPage() {
           {fullscreen && (
             <button
               onClick={exitFullscreen}
-              className="absolute left-3 z-10 flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text-muted transition hover:text-primary"
+              className="pointer-events-auto absolute right-3 z-[110] flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-bold text-white shadow-xl backdrop-blur-md transition active:scale-95 hover:bg-black/90"
               style={{ top: "max(12px, env(safe-area-inset-top, 12px))" }}
             >
               <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
@@ -432,6 +486,9 @@ export default function RoomPage() {
               {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
             </>
           )}
+          {/* مؤقّت الدرس — يظهر للجميع */}
+          <RoomTimerDisplay roomId={roomId} isOwner={isOwner} />
+
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
           {fullscreen && (
             <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} />

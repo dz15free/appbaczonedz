@@ -60,7 +60,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           الحاسوب — شريط جانبي شفاف
       ══════════════════════════════════════ */}
       <div
-        className={`absolute inset-y-0 right-0 hidden flex-col transition-all duration-300 lg:flex ${
+        className={`pointer-events-auto absolute inset-y-0 right-0 z-[100] hidden flex-col transition-all duration-300 lg:flex ${
           sidebarOpen ? "w-72" : "w-0 overflow-hidden"
         }`}
         style={{ background: "rgba(10,10,20,0.72)", backdropFilter: "blur(12px)", borderLeft: "1px solid rgba(255,255,255,0.08)" }}
@@ -111,8 +111,8 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
             placeholder="اكتب رسالة..."
-            className="flex-1 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none"
-            style={{ background: "rgba(255,255,255,0.08)" }}
+            className="flex-1 rounded-xl px-3 py-2 text-sm outline-none placeholder:text-white/40"
+            style={{ background: "rgba(255,255,255,0.08)", color: "white", WebkitTextFillColor: "white" }}
           />
           <button onClick={send} disabled={!text.trim()}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-500 text-white disabled:opacity-30 hover:bg-indigo-400 transition">
@@ -124,7 +124,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
       {/* زر إعادة فتح الشريط — حاسوب */}
       {!sidebarOpen && (
         <button onClick={() => setSidebarOpen(true)}
-          className="absolute bottom-20 right-3 z-10 hidden lg:flex items-center gap-2 rounded-full bg-indigo-500/80 px-3 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-sm hover:bg-indigo-500">
+          className="pointer-events-auto absolute bottom-20 right-3 z-[100] hidden lg:flex items-center gap-2 rounded-full bg-indigo-500/80 px-3 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-sm hover:bg-indigo-500">
           <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
           الدردشة
         </button>
@@ -167,7 +167,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
       </div>
 
       {/* شريط الإدخال — جوال */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 px-3 py-2 lg:hidden"
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[100] flex items-center gap-2 px-3 py-2 lg:hidden"
         style={{
           background: "linear-gradient(to top, rgba(0,0,0,0.85) 70%, transparent)",
           paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
@@ -178,14 +178,15 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="💬 شارك برأيك..."
-          className="flex-1 rounded-full py-2.5 px-4 text-sm text-white outline-none"
-          style={{ background: "rgba(255,255,255,0.12)", color: "white" }}
+          enterKeyHint="send"
+          className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"
+          style={{ background: "rgba(255,255,255,0.15)", color: "white", WebkitTextFillColor: "white" }}
         />
         <button
           onClick={send}
           disabled={!text.trim()}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition"
-          style={{ background: "rgba(99,102,241,0.9)" }}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+          style={{ background: "rgba(99,102,241,0.95)" }}
         >
           <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
         </button>

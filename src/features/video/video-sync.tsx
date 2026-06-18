@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay } from "@fortawesome/free-solid-svg-icons";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -46,6 +48,7 @@ function gdriveEmbed(url: string): string {
 export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
   const [urlInput, setUrlInput] = useState("");
   const [state, setState] = useState<VideoState | null>(null);
+  const [needsTap, setNeedsTap] = useState(false);
   const statePath = `roomLive/${roomId}/videoState`;
 
   /*
@@ -83,7 +86,21 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       applyingRemote.current = true;
       if (!prev || prev.videoId !== s.videoId) {
         p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
-        setTimeout(() => { if (s.isPlaying) p.playVideo?.(); }, 1200);
+        setTimeout(() => {
+          if (s.isPlaying) {
+            p.playVideo?.();
+            // للطلاب: تحقّق إن نجح التشغيل التلقائي، وإلا اعرض زر اللمس (iOS)
+            if (!isOwner) {
+              setTimeout(() => {
+                try {
+                  const st = p.getPlayerState?.();
+                  // 1 = playing, 3 = buffering. غير ذلك يعني أن iOS منع التشغيل
+                  if (st !== 1 && st !== 3) setNeedsTap(true);
+                } catch { setNeedsTap(true); }
+              }, 1500);
+            }
+          }
+        }, 1200);
       } else {
         const local = p.getCurrentTime?.() ?? 0;
         if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
@@ -96,7 +113,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       if (!prev || prev.videoUrl !== s.videoUrl) v.src = s.videoUrl ?? "";
       const local = v.currentTime ?? 0;
       if (Math.abs(local - s.currentTime) > 2) v.currentTime = s.currentTime;
-      if (s.isPlaying && v.paused) v.play().catch(() => {});
+      if (s.isPlaying && v.paused) v.play().catch(() => { if (!isOwner) setNeedsTap(true); });
       else if (!s.isPlaying && !v.paused) v.pause();
     }
   }
@@ -289,15 +306,38 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
           </div>
         )}
 
-        {/* حاجب تفاعل الطلاب */}
+        {/* حاجب تفاعل الطلاب — مع زر "اضغط للتشغيل" لأجهزة iPhone */}
         {!isOwner && (
           <div
             className="absolute inset-0 z-10"
             style={{ touchAction: "none" }}
-            onClick={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
+            onClick={() => {
+              // iOS يتطلّب لمسة المستخدم لبدء التشغيل بالصوت
+              if (needsTap) {
+                const s = stateRef.current;
+                if (s?.sourceType === "youtube") {
+                  ytPlayerRef.current?.playVideo?.();
+                  try { ytPlayerRef.current?.unMute?.(); } catch { /* ignore */ }
+                } else if (s?.sourceType === "direct") {
+                  mp4Ref.current?.play?.().catch(() => {});
+                }
+                setNeedsTap(false);
+              }
+            }}
             onContextMenu={(e) => e.preventDefault()}
-          />
+          >
+            {needsTap && hasVideo && (
+              <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <span className="grid h-16 w-16 place-items-center rounded-full bg-white/20 backdrop-blur-md">
+                    <FontAwesomeIcon icon={faPlay} className="h-7 w-7 text-white" />
+                  </span>
+                  <p className="text-sm font-bold text-white">اضغط لتشغيل الفيديو 🎬</p>
+                  <p className="text-xs text-white/60">(مطلوب لمرّة واحدة على أجهزة iPhone)</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
