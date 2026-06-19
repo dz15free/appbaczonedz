@@ -261,6 +261,9 @@ export default function RoomPage() {
               <span className="text-[11px] font-semibold text-text-muted">
                 {members.length} متصل الآن
               </span>
+              {room?.ownerRole === "teacher" && (
+                <span className="rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
+              )}
             </div>
           </div>
         </div>

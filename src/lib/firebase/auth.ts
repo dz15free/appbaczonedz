@@ -28,7 +28,7 @@ function arabicError(code: string): string {
 
 export class AuthError extends Error {}
 
-export async function registerUser(name: string, email: string, password: string) {
+export async function registerUser(name: string, email: string, password: string, role: "student" | "teacher" = "student") {
   if (!name || !email || !password) throw new AuthError("الرجاء تعبئة جميع الحقول.");
   if (password.length < 6) throw new AuthError("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
 
@@ -43,7 +43,7 @@ export async function registerUser(name: string, email: string, password: string
       avatarUrl: null,
       track: null,
       wilaya: null,
-      role: "student",
+      role: role === "teacher" ? "teacher" : "student",
       points: 0,
       level: 1,
       platformBan: false,

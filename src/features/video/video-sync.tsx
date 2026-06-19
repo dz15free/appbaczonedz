@@ -5,7 +5,7 @@ import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -49,6 +49,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   const [urlInput, setUrlInput] = useState("");
   const [state, setState] = useState<VideoState | null>(null);
   const [needsTap, setNeedsTap] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const statePath = `roomLive/${roomId}/videoState`;
 
   /*
@@ -111,8 +112,10 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       const v = mp4Ref.current;
       if (!v) return;
       if (!prev || prev.videoUrl !== s.videoUrl) v.src = s.videoUrl ?? "";
+      // المالك مصدر الحقيقة — لا يُعيد تطبيق حالته على نفسه (يمنع التقطيع)
+      if (isOwner) return;
       const local = v.currentTime ?? 0;
-      if (Math.abs(local - s.currentTime) > 2) v.currentTime = s.currentTime;
+      if (Math.abs(local - s.currentTime) > 3) v.currentTime = s.currentTime;
       if (s.isPlaying && v.paused) v.play().catch(() => { if (!isOwner) setNeedsTap(true); });
       else if (!s.isPlaying && !v.paused) v.pause();
     }
@@ -250,15 +253,20 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   return (
     <div className="flex h-full flex-col">
       {isOwner && (
-        <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row">
-          <Input
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && loadNewVideo()}
-            placeholder="YouTube / Google Drive / رابط MP4 مباشر..."
-            className="flex-1"
-          />
-          <Button onClick={loadNewVideo} disabled={!urlInput.trim()}>تشغيل للجميع</Button>
+        <div className="border-b border-border p-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && loadNewVideo()}
+              placeholder="YouTube / Google Drive / رابط MP4 مباشر..."
+              className="flex-1"
+            />
+            <Button onClick={loadNewVideo} disabled={!urlInput.trim()}>تشغيل للجميع</Button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-text-muted">
+            💡 للأداء الأفضل استخدم <span className="font-bold">YouTube</span>. روابط MP4 المباشرة قد تكون بطيئة حسب سرعة الاستضافة.
+          </p>
         </div>
       )}
 
@@ -292,10 +300,22 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             className="absolute inset-0 h-full w-full"
             controls={isOwner}
             playsInline
+            preload="metadata"
+            onWaiting={() => setBuffering(true)}
+            onPlaying={() => setBuffering(false)}
+            onCanPlay={() => setBuffering(false)}
             onPlay={() => isOwner && !applyingRemote.current && pushMP4State(true)}
             onPause={() => isOwner && !applyingRemote.current && pushMP4State(false)}
             onSeeked={() => isOwner && !applyingRemote.current && pushMP4State(!mp4Ref.current?.paused)}
           />
+        )}
+        {showMP4 && buffering && (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/30">
+            <div className="flex flex-col items-center gap-2">
+              <FontAwesomeIcon icon={faSpinner} className="h-8 w-8 animate-spin text-white" />
+              <span className="text-xs text-white/70">جارٍ التحميل...</span>
+            </div>
+          </div>
         )}
 
         {!hasVideo && (

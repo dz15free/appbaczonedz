@@ -44,20 +44,22 @@ export const GROUP_SUBJECTS = [
   { id: "general", name: "عامة" },
   { id: "sciences", name: "علوم تجريبية" },
   { id: "math", name: "رياضيات" },
-  { id: "tech", name: "تقني رياضي" },
+  { id: "tech-math", name: "تقني رياضي" },
+  { id: "economics", name: "تسيير واقتصاد" },
   { id: "literature", name: "آداب وفلسفة" },
   { id: "languages", name: "لغات أجنبية" },
-  { id: "management", name: "تسيير واقتصاد" },
+  { id: "arts", name: "فنون" },
 ];
 
 export const SUBJECT_COLOR: Record<string, string> = {
   general: "bg-primary/10 text-primary",
   sciences: "bg-secondary/10 text-secondary",
   math: "bg-warning/10 text-warning",
-  tech: "bg-danger/10 text-danger",
+  "tech-math": "bg-danger/10 text-danger",
+  economics: "bg-warning/20 text-warning",
   literature: "bg-primary/20 text-primary",
   languages: "bg-secondary/20 text-secondary",
-  management: "bg-warning/20 text-warning",
+  arts: "bg-rose-500/10 text-rose-500",
 };
 
 /* ───────── عمليات المجموعات ───────── */

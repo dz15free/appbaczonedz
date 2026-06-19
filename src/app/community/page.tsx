@@ -239,7 +239,7 @@ function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
             className="ml-auto h-9 rounded-lg border border-border bg-background px-2 text-xs outline-none focus:border-primary"
             title="فئة المنشور">
             <option value="">بدون فئة</option>
-            {["رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة","تاريخ","إنجليزية"].map((s) => (
+            {["اللغة العربية","العلوم الإسلامية","الرياضيات","علوم الطبيعة والحياة","العلوم الفيزيائية","التكنولوجيا","الفلسفة","التاريخ والجغرافيا","اللغة الفرنسية","اللغة الإنجليزية","القانون","التسيير المحاسبي","الاقتصاد والمناجمنت"].map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>

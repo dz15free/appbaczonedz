@@ -10,9 +10,22 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 
 const SUBJECTS = [
-  { id: "all", label: "الكل" }, { id: "math", label: "الرياضيات" }, { id: "sciences", label: "العلوم" },
-  { id: "physics", label: "الفيزياء" }, { id: "arabic", label: "العربية" }, { id: "french", label: "الفرنسية" },
-  { id: "philosophy", label: "الفلسفة" }, { id: "history", label: "التاريخ" }, { id: "english", label: "الإنجليزية" }, { id: "other", label: "أخرى" },
+  { id: "all", label: "الكل" },
+  { id: "arabic", label: "اللغة العربية" },
+  { id: "islamic", label: "العلوم الإسلامية" },
+  { id: "math", label: "الرياضيات" },
+  { id: "science", label: "علوم الطبيعة والحياة" },
+  { id: "physics", label: "العلوم الفيزيائية" },
+  { id: "technology", label: "التكنولوجيا" },
+  { id: "philosophy", label: "الفلسفة" },
+  { id: "history-geo", label: "التاريخ والجغرافيا" },
+  { id: "french", label: "اللغة الفرنسية" },
+  { id: "english", label: "اللغة الإنجليزية" },
+  { id: "amazigh", label: "اللغة الأمازيغية" },
+  { id: "law", label: "القانون" },
+  { id: "accounting", label: "التسيير المحاسبي" },
+  { id: "economics", label: "الاقتصاد والمناجمنت" },
+  { id: "other", label: "أخرى" },
 ];
 
 interface LibEntry { id: string; subject: string; chapter: string; title: string; description?: string; fileUrl: string; fileType: string; uploaderId: string; uploaderName: string; createdAt: number; }

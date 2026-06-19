@@ -12,7 +12,7 @@
         "points"
       ],
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid && (!data.exists() || !newData.hasChild('role') || newData.child('role').val() === data.child('role').val())"
+        ".write": "auth != null && ((auth.uid === $uid && (!newData.hasChild('role') || newData.child('role').val() === data.child('role').val())) || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "community": {

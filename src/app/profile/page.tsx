@@ -105,6 +105,18 @@ export default function ProfilePage() {
           <h1 className="mt-4 font-display text-xl font-extrabold">{profile?.name || user.displayName || "طالب"}</h1>
           <span className="mt-0.5 text-sm text-text-muted">{user.email}</span>
 
+          {/* شارة الدور */}
+          {profile?.role === "teacher" && (
+            <span className="mt-2 flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1 text-sm font-bold text-secondary">
+              👨‍🏫 أستاذ
+            </span>
+          )}
+          {profile?.role === "admin" && (
+            <span className="mt-2 flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+              🛡️ إدارة
+            </span>
+          )}
+
           {/* Streak */}
           {(profile?.streak ?? 0) >= 2 && (
             <div className={`mt-2 flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${

@@ -4,33 +4,45 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createRoom, type RoomType } from "@/features/rooms/rooms";
 import { useAuth } from "@/features/auth/auth-provider";
+import { useProfile } from "@/features/auth/use-profile";
 import { Input, Button } from "@/components/ui/field";
 
 const TYPES: { id: RoomType; label: string }[] = [
   { id: "public", label: "عامة" },
   { id: "private", label: "خاصة" },
-  { id: "teacher", label: "أستاذ" },
+  { id: "teacher", label: "👨‍🏫 أستاذ" },
 ];
 
 export const ROOM_SUBJECTS = [
   { id: "", label: "عام (بدون مادة)" },
-  { id: "math", label: "رياضيات" },
-  { id: "sciences", label: "علوم طبيعية" },
-  { id: "physics", label: "فيزياء وكيمياء" },
-  { id: "arabic", label: "لغة عربية" },
-  { id: "french", label: "لغة فرنسية" },
-  { id: "philosophy", label: "فلسفة" },
-  { id: "history", label: "تاريخ وجغرافيا" },
-  { id: "english", label: "إنجليزية" },
+  { id: "arabic", label: "اللغة العربية" },
+  { id: "islamic", label: "العلوم الإسلامية" },
+  { id: "math", label: "الرياضيات" },
+  { id: "science", label: "علوم الطبيعة والحياة" },
+  { id: "physics", label: "العلوم الفيزيائية" },
+  { id: "technology", label: "التكنولوجيا" },
+  { id: "philosophy", label: "الفلسفة" },
+  { id: "history-geo", label: "التاريخ والجغرافيا" },
+  { id: "french", label: "اللغة الفرنسية" },
+  { id: "english", label: "اللغة الإنجليزية" },
+  { id: "amazigh", label: "اللغة الأمازيغية" },
+  { id: "law", label: "القانون" },
+  { id: "accounting", label: "التسيير المحاسبي والمالي" },
+  { id: "economics", label: "الاقتصاد والمناجمنت" },
 ];
 
 export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { user } = useAuth();
+  const profile = useProfile(user?.uid);
   const [name, setName] = useState("");
   const [type, setType] = useState<RoomType>("public");
   const [subject, setSubject] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isTeacher = profile?.role === "teacher" || profile?.role === "admin";
+  // الأساتذة/الأدمن فقط يرون خيار "غرفة أستاذ"
+  const availableTypes = TYPES.filter((t) => t.id !== "teacher" || isTeacher);
 
   async function handleCreate() {
     if (!name.trim() || !user) return;
@@ -40,7 +52,8 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
       type,
       subject: subject || undefined,
       ownerId: user.uid,
-      ownerName: user.displayName || "طالب",
+      ownerName: user.displayName || profile?.name || "طالب",
+      ownerRole: profile?.role === "teacher" || profile?.role === "admin" ? "teacher" : undefined,
     });
     router.push(`/rooms/${id}`);
   }
@@ -71,7 +84,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
           <div>
             <span className="mb-2 block text-sm font-semibold">نوع الغرفة</span>
             <div className="grid grid-cols-3 gap-2">
-              {TYPES.map((t) => (
+              {availableTypes.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setType(t.id)}

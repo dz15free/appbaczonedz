@@ -216,30 +216,7 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
       </div>
 
       {lightbox && (
-        <div className="fixed inset-0 z-[70] flex flex-col bg-black/90" onClick={() => setLightbox(null)}>
-          <div className="flex items-center justify-end gap-2 p-3">
-            <a
-              href={lightbox.url}
-              download={lightbox.name}
-              onClick={(e) => e.stopPropagation()}
-              className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white"
-              aria-label="تحميل"
-            >
-              <FontAwesomeIcon icon={faDownload} className="h-5 w-5" />
-            </a>
-            <button
-              onClick={() => setLightbox(null)}
-              aria-label="إغلاق"
-              className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white"
-            >
-              <FontAwesomeIcon icon={faXmark} className="pointer-events-none h-5 w-5" />
-            </button>
-          </div>
-          <div className="flex flex-1 items-center justify-center overflow-auto p-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={lightbox.url} alt={lightbox.name} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full object-contain" />
-          </div>
-        </div>
+        <ImageZoom src={lightbox.url} alt={lightbox.name} onClose={() => setLightbox(null)} />
       )}
     </div>
   );

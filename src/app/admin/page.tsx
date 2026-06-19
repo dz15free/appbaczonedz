@@ -470,6 +470,7 @@ export default function AdminPage() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-bold text-sm">{u.name ?? "بدون اسم"}</span>
                       {u.role === "admin" && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">أدمن</span>}
+                      {u.role === "teacher" && <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-bold text-secondary">👨‍🏫 أستاذ</span>}
                       {u.banned && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">محظور</span>}
                     </div>
                     {u.email && <p className="text-xs text-text-muted">{u.email}</p>}
@@ -477,6 +478,21 @@ export default function AdminPage() {
                     <p className="mt-1 text-[10px] text-text-muted opacity-60 select-all">{u.uid}</p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-1">
+                    {/* تعيين/إلغاء أستاذ */}
+                    {u.role !== "admin" && (
+                      u.role === "teacher" ? (
+                        <button onClick={() => setUserRole(u.uid, null)}
+                          className="rounded-md border border-border px-2 py-1 text-[11px] font-bold text-text-muted hover:bg-border">
+                          إلغاء الأستاذية
+                        </button>
+                      ) : (
+                        <button onClick={() => setUserRole(u.uid, "teacher")}
+                          className="rounded-md border border-secondary/30 px-2 py-1 text-[11px] font-bold text-secondary hover:bg-secondary/10">
+                          👨‍🏫 تعيين أستاذ
+                        </button>
+                      )
+                    )}
+                    {/* ترقية/إلغاء أدمن */}
                     {u.role !== "admin" ? (
                       <button onClick={() => setUserRole(u.uid, "admin")}
                         className="rounded-md border border-primary/30 px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary/10">
@@ -502,7 +518,22 @@ export default function AdminPage() {
         {/* ════ الغرف ════ */}
         {tab === "rooms" && (
           <div className="space-y-3">
-            <p className="text-xs text-text-muted">{activeRooms.length} غرفة محفوظة</p>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5">
+              <span className="text-sm font-bold">{activeRooms.length} غرفة</span>
+              {activeRooms.length > 0 && (
+                <button onClick={async () => {
+                  if (!confirm("حذف كل الغرف نهائياً؟ لا يمكن التراجع.")) return;
+                  await Promise.all(activeRooms.flatMap((r) => [
+                    remove(ref(rtdb, `rooms/${r.id}`)),
+                    remove(ref(rtdb, `roomLive/${r.id}`)),
+                  ]));
+                }}
+                  className="flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-1.5 text-xs font-bold text-danger hover:bg-danger/10">
+                  <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                  حذف كل الغرف
+                </button>
+              )}
+            </div>
             {activeRooms.map((r) => (
               <div key={r.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3">
                 <div className="min-w-0 flex-1">

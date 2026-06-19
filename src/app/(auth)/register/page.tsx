@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [accountType, setAccountType] = useState<"student" | "teacher">("student");
   const { settings } = useSiteSettings();
 
   if (settings.allowRegistration === false) {
@@ -32,7 +33,7 @@ export default function RegisterPage() {
     if (password !== confirm) return setMsg({ type: "error", text: "كلمتا المرور غير متطابقتين." });
     setLoading(true);
     try {
-      await registerUser(name, email, password);
+      await registerUser(name, email, password, accountType);
       setDone(true);
     } catch (err) {
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });
@@ -61,6 +62,26 @@ export default function RegisterPage() {
       <h1 className="font-display text-2xl font-extrabold">إنشاء حساب</h1>
 
       {msg && <div className="rounded-md bg-danger/10 px-4 py-2.5 text-sm text-danger">{msg.text}</div>}
+
+      {/* نوع الحساب */}
+      <div>
+        <label className="mb-1.5 block text-sm font-bold">نوع الحساب</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setAccountType("student")}
+            className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 transition ${accountType === "student" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
+            <span className="text-2xl">🎓</span>
+            <span className="text-sm font-bold">طالب</span>
+          </button>
+          <button type="button" onClick={() => setAccountType("teacher")}
+            className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 transition ${accountType === "teacher" ? "border-secondary bg-secondary/5" : "border-border hover:border-secondary/40"}`}>
+            <span className="text-2xl">👨‍🏫</span>
+            <span className="text-sm font-bold">أستاذ</span>
+          </button>
+        </div>
+        {accountType === "teacher" && (
+          <p className="mt-1.5 text-[11px] text-text-muted">سيتمكّن الأساتذة من إنشاء غرف تدريس بشارة مميّزة.</p>
+        )}
+      </div>
 
       <Input label="الاسم الكامل" value={name} onChange={(e) => setName(e.target.value)} />
       <Input

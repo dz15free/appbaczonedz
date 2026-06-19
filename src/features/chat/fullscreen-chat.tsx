@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faPaperPlane, faXmark, faFile, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listenMessages, sendMessage, getAttachment, type ChatMessage } from "@/features/rooms/rooms";
+import { ImageZoom } from "@/components/ui/image-zoom";
 
 /* ─── مرفق داخل الدردشة (صورة/ملف) ─── */
 function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
@@ -32,12 +33,7 @@ function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={dataUrl} alt="" className="max-h-40 max-w-[200px] object-cover" />
         </button>
-        {zoom && (
-          <div className="fixed inset-0 z-[130] grid place-items-center bg-black/90 p-4" onClick={() => setZoom(false)}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={dataUrl} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
-          </div>
-        )}
+        {zoom && <ImageZoom src={dataUrl} onClose={() => setZoom(false)} />}
       </>
     );
   }

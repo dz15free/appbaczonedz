@@ -22,6 +22,7 @@ export interface Room {
   type: RoomType;
   ownerId: string;
   ownerName: string;
+  ownerRole?: "teacher";
   subject: string | null;
   createdAt: number | null;
 }
@@ -48,6 +49,7 @@ export async function createRoom(input: {
   subject?: string;
   ownerId: string;
   ownerName: string;
+  ownerRole?: "teacher";
 }): Promise<string> {
   const id = generateRoomId();
   await set(ref(rtdb, `rooms/${id}`), {
@@ -56,6 +58,7 @@ export async function createRoom(input: {
     subject: input.subject ?? null,
     ownerId: input.ownerId,
     ownerName: input.ownerName,
+    ownerRole: input.ownerRole ?? null,
     createdAt: Date.now(),
   });
   return id;
