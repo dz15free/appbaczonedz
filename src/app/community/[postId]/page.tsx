@@ -106,7 +106,7 @@ export default function PostPage() {
         <div className="flex items-center justify-between">
           <Link href={`/u/${c.authorId}?name=${encodeURIComponent(c.authorName)}`} className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
             {c.authorName}
-            <RoleBadge role={c.authorRole} />
+            <RoleBadge uid={c.authorId} role={c.authorRole} />
           </Link>
           <div className="flex items-center gap-1.5">
             {c.authorId !== user.uid && showAdd && (
@@ -183,7 +183,7 @@ export default function PostPage() {
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                     {post.authorName.charAt(0)}
                   </span>
-                  <span className="flex items-center gap-1.5"><span className="font-bold">{post.authorName}</span><RoleBadge role={post.authorRole} /></span>
+                  <span className="flex items-center gap-1.5"><span className="font-bold">{post.authorName}</span><RoleBadge uid={post.authorId} role={post.authorRole} /></span>
                 </Link>
                 <div className="flex items-center gap-1">
                   {post.locked && (

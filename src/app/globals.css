@@ -252,3 +252,46 @@ body.bz-fullscreen-active {
 .bz-studio-glow {
   box-shadow: 0 8px 28px -8px rgba(99, 102, 241, 0.55);
 }
+
+/* ═══════════════════════════════════════════
+   تنسيق رسائل مروة (Markdown + LaTeX)
+═══════════════════════════════════════════ */
+.bz-marwa-content { font-size: 0.875rem; line-height: 1.7; }
+.bz-marwa-content .bz-p { margin: 0; }
+.bz-marwa-content .bz-p + .bz-p { margin-top: 0.5rem; }
+.bz-marwa-content .bz-gap { height: 0.5rem; }
+.bz-marwa-content .bz-h1 { font-size: 1.15rem; font-weight: 800; margin: 0.6rem 0 0.4rem; color: var(--bz-text); }
+.bz-marwa-content .bz-h2 { font-size: 1.05rem; font-weight: 800; margin: 0.6rem 0 0.35rem; color: var(--bz-text); }
+.bz-marwa-content .bz-h3 { font-size: 0.95rem; font-weight: 700; margin: 0.5rem 0 0.3rem; color: rgb(var(--bz-primary)); }
+.bz-marwa-content .bz-h4 { font-size: 0.9rem; font-weight: 700; margin: 0.4rem 0 0.25rem; }
+.bz-marwa-content .bz-ul,
+.bz-marwa-content .bz-ol { margin: 0.4rem 0; padding-inline-start: 1.4rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.bz-marwa-content .bz-ul { list-style: disc; }
+.bz-marwa-content .bz-ol { list-style: decimal; }
+.bz-marwa-content .bz-ul li,
+.bz-marwa-content .bz-ol li { padding-inline-start: 0.2rem; }
+.bz-marwa-content .bz-ul li::marker { color: rgb(var(--bz-primary)); }
+.bz-marwa-content .bz-ol li::marker { color: rgb(var(--bz-primary)); font-weight: 700; }
+.bz-marwa-content .bz-code {
+  background: rgba(99,102,241,0.12); color: rgb(var(--bz-primary));
+  padding: 0.1rem 0.35rem; border-radius: 0.35rem; font-size: 0.82em;
+  font-family: ui-monospace, monospace; direction: ltr; display: inline-block;
+}
+.bz-marwa-content .bz-pre {
+  background: var(--bz-bg); border: 1px solid var(--bz-border);
+  border-radius: 0.6rem; padding: 0.75rem; margin: 0.5rem 0; overflow-x: auto;
+  direction: ltr; text-align: left;
+}
+.bz-marwa-content .bz-pre code { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--bz-text); }
+.bz-marwa-content .bz-quote {
+  border-inline-start: 3px solid rgb(var(--bz-primary));
+  padding-inline-start: 0.75rem; margin: 0.5rem 0; color: var(--bz-text-muted); font-style: italic;
+}
+.bz-marwa-content .bz-hr { border: none; border-top: 1px solid var(--bz-border); margin: 0.75rem 0; }
+.bz-marwa-content .bz-math-block {
+  display: block; text-align: center; margin: 0.75rem 0; overflow-x: auto; overflow-y: hidden;
+  padding: 0.5rem 0; direction: ltr;
+}
+.bz-marwa-content .bz-math-inline { direction: ltr; display: inline-block; }
+.bz-marwa-content strong { font-weight: 800; color: var(--bz-text); }
+.bz-marwa-content em { font-style: italic; }

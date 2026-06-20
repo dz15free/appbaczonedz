@@ -21,9 +21,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { TRACKS } from "@/lib/constants";
+import { TRACKS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { RoleBadge } from "@/components/ui/role-badge";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import {
@@ -118,13 +119,17 @@ export default function UserProfilePage() {
         <div className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
           <UserAvatar name={name} avatarUrl={theirProfile?.avatarUrl} size="xl" />
           <h1 className="mt-3 font-display text-xl font-extrabold">{name}</h1>
+          {(theirProfile?.role === "teacher" || theirProfile?.role === "admin") && (
+            <div className="mt-1.5"><RoleBadge uid={uid} role={theirProfile?.role} /></div>
+          )}
           <div className="mt-2 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
             <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
             المستوى {theirProfile?.level ?? 1} · {theirProfile?.points ?? 0} نقطة
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-text-muted">
             <span className="flex items-center gap-1.5">
-              <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4 text-primary" /> {trackName}
+              <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4 text-primary" />
+              {theirProfile?.role === "teacher" ? subjectName(theirProfile?.teachSubject) : trackName}
             </span>
             <span className="flex items-center gap-1.5">
               <FontAwesomeIcon icon={faLocationDot} className="h-4 w-4 text-primary" /> {theirProfile?.wilaya ?? "—"}

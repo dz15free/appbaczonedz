@@ -89,11 +89,17 @@ export async function needsOnboarding(user: User): Promise<boolean> {
   const snap = await get(ref(rtdb, `users/${user.uid}`));
   if (!snap.exists()) return true;
   const data = snap.val();
-  return !data.track || !data.wilaya;
+  if (!data.wilaya) return true;
+  // الأستاذ يحتاج مادة، الطالب يحتاج شعبة
+  if (data.role === "teacher") return !data.teachSubject;
+  return !data.track;
 }
 
-export async function saveProfile(uid: string, track: string, wilaya: string) {
-  await update(ref(rtdb, `users/${uid}`), { track, wilaya });
+export async function saveProfile(uid: string, data: { track?: string; teachSubject?: string; wilaya: string }) {
+  const updates: Record<string, string | null> = { wilaya: data.wilaya };
+  if (data.track !== undefined) updates.track = data.track || null;
+  if (data.teachSubject !== undefined) updates.teachSubject = data.teachSubject || null;
+  await update(ref(rtdb, `users/${uid}`), updates);
 }
 
 // يضمن وجود الاسم في RTDB — يُستدعى عند تحميل التطبيق لإصلاح الحسابات القديمة

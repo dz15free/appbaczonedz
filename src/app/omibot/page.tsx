@@ -3,25 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRobot, faPaperPlane, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faSpinner, faRobot, faGraduationCap, faListCheck, faFlask, faClock } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { TRACKS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
+import { MarwaMessage } from "@/components/ui/marwa-message";
 
-interface Msg {
-  role: "user" | "assistant";
-  text: string;
-}
+interface Msg { role: "user" | "assistant"; text: string }
 
 const GREETING =
-  "أهلاً! أنا مروة 🌟 طالبة تحصّلت على 18+ في الباك، وهنا لأساعدك. اسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك!";
+  "أهلاً! أنا **مروة** 🌟 طالبة تحصّلت على 18+ في الباك، وهنا لأساعدك.\n\nاسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك! يمكنني أيضاً شرح المعادلات الرياضية خطوة بخطوة.";
 
 const SUGGESTIONS = [
-  "اشرح لي مبرهنة فيثاغورس",
-  "ضع لي خطة مراجعة لأسبوع",
-  "اختبرني في الرياضيات",
-  "كيف أنظّم وقتي قبل الباك؟",
+  { icon: faFlask, text: "اشرح لي مبرهنة فيثاغورس" },
+  { icon: faListCheck, text: "ضع لي خطة مراجعة لأسبوع" },
+  { icon: faGraduationCap, text: "اختبرني في الرياضيات" },
+  { icon: faClock, text: "كيف أنظّم وقتي قبل الباك؟" },
 ];
 
 export default function OmibotPage() {
@@ -33,6 +31,7 @@ export default function OmibotPage() {
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -40,25 +39,30 @@ export default function OmibotPage() {
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, thinking]);
 
+  // ضبط ارتفاع حقل الإدخال تلقائياً
+  function autoGrow() {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
+
   async function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || thinking) return;
     const next = [...messages, { role: "user" as const, text: trimmed }];
     setMessages(next);
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     setThinking(true);
     try {
       const res = await fetch("/api/omibot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // نرسل آخر 12 رسالة فقط لتوفير الحصة
         body: JSON.stringify({ messages: next.slice(-12), track: trackName }),
       });
       const data = await res.json();
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", text: res.ok ? data.text : `⚠️ ${data.error || "تعذّر الرد."}` },
-      ]);
+      setMessages((m) => [...m, { role: "assistant", text: res.ok ? data.text : `⚠️ ${data.error || "تعذّر الرد."}` }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "⚠️ تعذّر الاتصال. تحقّق من الإنترنت." }]);
     } finally {
@@ -72,35 +76,54 @@ export default function OmibotPage() {
     <AppShell>
       <div className="mx-auto flex h-[calc(100dvh-9rem)] max-w-2xl flex-col px-3 lg:h-[calc(100dvh-4.5rem)]">
         {/* الرأس */}
-        <div className="flex items-center gap-3 py-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-primary text-white">
+        <div className="flex items-center gap-3 border-b border-border py-3">
+          <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-primary text-white shadow-glow">
             <FontAwesomeIcon icon={faRobot} className="h-5 w-5" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-secondary" />
           </span>
-          <div>
-            <h1 className="font-display font-extrabold leading-tight">مروة</h1>
-            <span className="text-xs text-text-muted">مساعدتك الدراسية الذكية</span>
+          <div className="flex-1">
+            <h1 className="font-display text-lg font-extrabold leading-tight">مروة</h1>
+            <span className="flex items-center gap-1 text-xs text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> متّصلة الآن · مساعدتك الذكية
+            </span>
           </div>
         </div>
 
         {/* الرسائل */}
-        <div className="flex-1 space-y-3 overflow-y-auto py-2">
+        <div className="flex-1 space-y-4 overflow-y-auto py-4">
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-start"}`}>
+            <div key={i} className={`flex items-end gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+              {/* أفاتار مروة */}
+              {m.role === "assistant" && (
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-white">
+                  <FontAwesomeIcon icon={faRobot} className="h-3.5 w-3.5" />
+                </span>
+              )}
               <div
-                className={`max-w-[88%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed ${
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                   m.role === "user"
-                    ? "bg-gradient-primary text-white"
-                    : "border border-border bg-surface text-text-primary"
+                    ? "rounded-br-sm bg-gradient-primary text-white"
+                    : "rounded-bl-sm border border-border bg-surface text-text-primary shadow-sm"
                 }`}
               >
-                {m.text}
+                {m.role === "assistant"
+                  ? <MarwaMessage text={m.text} />
+                  : <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</p>}
               </div>
             </div>
           ))}
           {thinking && (
-            <div className="flex items-center gap-2 text-sm text-text-muted">
-              <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 animate-spin" />
-              مروة تكتب...
+            <div className="flex items-end gap-2">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-white">
+                <FontAwesomeIcon icon={faRobot} className="h-3.5 w-3.5" />
+              </span>
+              <div className="rounded-2xl rounded-bl-sm border border-border bg-surface px-4 py-3">
+                <span className="flex gap-1">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-text-muted" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-text-muted" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-text-muted" style={{ animationDelay: "300ms" }} />
+                </span>
+              </div>
             </div>
           )}
           <div ref={bottomRef} />
@@ -108,36 +131,41 @@ export default function OmibotPage() {
 
         {/* اقتراحات */}
         {messages.length <= 1 && (
-          <div className="flex flex-wrap gap-2 py-2">
+          <div className="grid grid-cols-2 gap-2 py-2">
             {SUGGESTIONS.map((s) => (
               <button
-                key={s}
-                onClick={() => send(s)}
-                className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs hover:border-primary"
+                key={s.text}
+                onClick={() => send(s.text)}
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 text-right text-xs font-medium transition hover:border-primary hover:bg-primary/5"
               >
-                {s}
+                <FontAwesomeIcon icon={s.icon} className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="line-clamp-1">{s.text}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* الإدخال */}
-        <div className="flex items-center gap-2 py-3">
-          <input
+        <div className="flex items-end gap-2 border-t border-border py-3">
+          <textarea
+            ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send(input)}
-            placeholder="اسأل مروة..."
+            onChange={(e) => { setInput(e.target.value); autoGrow(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
+            }}
+            placeholder="اسأل مروة... (Shift+Enter لسطر جديد)"
             disabled={thinking}
-            className="flex-1 rounded-md border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-50"
+            rows={1}
+            className="flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-text-primary outline-none focus:border-primary disabled:opacity-50"
           />
           <button
             onClick={() => send(input)}
             disabled={thinking || !input.trim()}
             aria-label="إرسال"
-            className="grid h-11 w-11 place-items-center rounded-md bg-gradient-primary text-white disabled:opacity-50"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-primary text-white transition hover:opacity-90 disabled:opacity-50"
           >
-            <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
+            <FontAwesomeIcon icon={thinking ? faSpinner : faPaperPlane} className={`h-4 w-4 ${thinking ? "animate-spin" : "-scale-x-100"}`} />
           </button>
         </div>
       </div>

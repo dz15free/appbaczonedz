@@ -284,7 +284,7 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
                 <div>
                   <span className="flex items-center gap-1.5">
                     <span className="text-sm font-bold hover:underline">{p.authorName}</span>
-                    <RoleBadge role={p.authorRole} />
+                    <RoleBadge uid={p.authorId} role={p.authorRole} />
                   </span>
                   <span className="flex items-center gap-1 text-xs text-text-muted">
                     {timeAgo(p.createdAt)}
