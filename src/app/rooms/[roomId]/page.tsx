@@ -25,6 +25,10 @@ import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
+import { ParticipantsPanel } from "@/features/rooms/participants-panel";
+import { WaitingScreen } from "@/features/rooms/waiting-screen";
+import { useTypingIndicator } from "@/features/rooms/typing-indicator";
+import type { RaisedHand } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
@@ -116,6 +120,7 @@ export default function RoomPage() {
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   // شاشة كاملة حقيقية (Fullscreen API) للحاسوب + CSS لـ iOS
   async function enterFullscreen() {
@@ -207,12 +212,18 @@ export default function RoomPage() {
   }, [roomId]);
 
   // رفع اليد + إشعار صوتي للمالك
+  const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
   useEffect(() => {
     const r = ref(rtdb, `roomLive/${roomId}/hands`);
     const unsub = onValue(r, (snap) => {
-      const val = (snap.val() as Record<string, { name: string }>) ?? {};
+      const val = (snap.val() as Record<string, { name: string; ts?: number; at?: number }>) ?? {};
       const list = Object.entries(val).map(([uid, v]) => ({ uid, name: v.name }));
       setHands(list);
+      // طابور مرتّب حسب وقت الرفع
+      const queue = Object.entries(val)
+        .map(([uid, v]) => ({ uid, name: v.name, at: v.at ?? v.ts ?? 0 }))
+        .sort((a, b) => a.at - b.at);
+      setHandsQueue(queue);
       setMyHand(!!(user && val[user.uid]));
       if (isOwner && list.length > prevHands.current) playHandRaiseSound();
       prevHands.current = list.length;
@@ -224,7 +235,7 @@ export default function RoomPage() {
     if (!user) return;
     const r = ref(rtdb, `roomLive/${roomId}/hands/${user.uid}`);
     if (myHand) remove(r);
-    else set(r, { name: user.displayName || "طالب", ts: Date.now() });
+    else set(r, { name: user.displayName || "طالب", at: Date.now() });
   }
 
   function lowerHand(uid: string) {
@@ -298,20 +309,18 @@ export default function RoomPage() {
             </button>
           )}
 
-          {/* المشاركون: للمالك والمشرف */}
-          {isPrivileged && (
-            <button
-              onClick={() => setShowParticipants((s) => !s)}
-              aria-label="المشاركون"
-              title="إدارة المشاركين"
-              className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${showParticipants ? "border-secondary/40 bg-secondary/10 text-secondary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-            >
-              <FontAwesomeIcon icon={faUsers} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-              <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
-                {members.length}
-              </span>
-            </button>
-          )}
+          {/* المشاركون: للجميع (إدارة للمالك/المشرف) */}
+          <button
+            onClick={() => setShowParticipants((s) => !s)}
+            aria-label="المشاركون"
+            title="المشاركون"
+            className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 xl:hidden ${showParticipants ? "border-secondary/40 bg-secondary/10 text-secondary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
+          >
+            <FontAwesomeIcon icon={faUsers} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+            <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
+              {members.length}
+            </span>
+          </button>
 
           {/* الدردشة — جوال */}
           <button
@@ -407,6 +416,14 @@ export default function RoomPage() {
           >
             <FontAwesomeIcon icon={faShareNodes} className="h-4 w-4" />
           </button>
+          {/* وضع التركيز */}
+          <button
+            onClick={() => setFocusMode((f) => !f)}
+            title={focusMode ? "إظهار اللوحات الجانبية" : "وضع التركيز (إخفاء الجانبين)"}
+            className={`hidden h-9 w-9 shrink-0 place-items-center rounded-xl border transition lg:grid ${focusMode ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
+          >
+            <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
+          </button>
           {/* شاشة كاملة */}
           <button
             onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
@@ -434,8 +451,24 @@ export default function RoomPage() {
         </div>
       )}
 
-      {/* المحتوى + الدردشة */}
+      {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}
       <div className="flex flex-1 overflow-hidden">
+        {/* عمود المشاركون — حاسوب فقط، غير ظاهر في الشاشة الكاملة أو وضع التركيز */}
+        {!fullscreen && !focusMode && (
+          <aside className="hidden w-64 shrink-0 border-l border-border bg-surface/40 xl:block">
+            <ParticipantsPanel
+              members={members}
+              hands={handsQueue}
+              mods={mods}
+              ownerId={room?.ownerId ?? ""}
+              myUid={user?.uid}
+              isOwner={isOwner}
+              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+            />
+          </aside>
+        )}
+
         <section
           className={`relative flex flex-col overflow-hidden bg-background ${fullscreen ? "bz-fullscreen" : ""}`}
           style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
@@ -463,25 +496,7 @@ export default function RoomPage() {
           ) : (
             <>
               {tool === "welcome" && (
-                <div className="flex flex-1 items-center justify-center p-6 text-center">
-                  <div className="max-w-sm">
-                    <div className="relative mx-auto mb-5 grid h-16 w-16 place-items-center">
-                      <span
-                        className="absolute inset-0 rounded-2xl blur-xl"
-                        style={{ background: "linear-gradient(135deg, #4f46e5, #8b5cf6)", opacity: 0.45 }}
-                      />
-                      <span className="shadow-glow relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500">
-                        <FontAwesomeIcon icon={faHouse} className="h-7 w-7 text-white" />
-                      </span>
-                    </div>
-                    <h2 className="font-display text-xl font-extrabold">أهلاً بك في الغرفة</h2>
-                    <p className="mt-2 text-sm leading-relaxed text-text-muted">
-                      {isOwner
-                        ? "اختر أداة من الأعلى (فيديو/سبورة) لتظهر لكل الطلاب. والصوت متاح دائماً في الأسفل."
-                        : "ينتظر الجميع أن يبدأ المعلّم. الصوت والدردشة متاحان الآن."}
-                    </p>
-                  </div>
-                </div>
+                <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} />
               )}
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
@@ -509,9 +524,11 @@ export default function RoomPage() {
           />
         </section>
 
-        <aside className="hidden w-96 border-r border-border lg:block">
-          <ChatPanel roomId={roomId} isOwner={isOwner} />
-        </aside>
+        {!fullscreen && !focusMode && (
+          <aside className="hidden w-96 border-r border-border lg:block">
+            <ChatPanel roomId={roomId} isOwner={isOwner} />
+          </aside>
+        )}
       </div>
 
       {/* الشريط الصوتي الدائم (يبقى في كل الأدوات) */}
@@ -540,95 +557,36 @@ export default function RoomPage() {
         </div>
       )}
 
-      {/* نافذة إنشاء استفتاء */}
-      {showCreatePoll && isOwner && (
-        <CreatePollModal roomId={roomId} onClose={() => setShowCreatePoll(false)} />
-      )}
-
-      {/* لوحة إدارة المشاركين */}
-      {showParticipants && isPrivileged && (
-        <div className="fixed inset-0 z-[70] bg-black/50" onClick={() => setShowParticipants(false)}>
+      {/* درج المشاركين على الجوال */}
+      {showParticipants && (
+        <div className="fixed inset-0 z-[70] bg-black/50 xl:hidden" onClick={() => setShowParticipants(false)}>
           <div
-            className="absolute inset-y-0 left-0 flex w-80 max-w-full flex-col rounded-l-none rounded-r-2xl border-r border-border bg-surface shadow-2xl"
+            className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-surface shadow-2xl animate-fade-slide"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* رأس اللوحة */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <span className="font-bold">إدارة المشاركين ({members.length})</span>
-              <button onClick={() => setShowParticipants(false)} className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger">
-                <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* قائمة المشاركين الحاليين */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {members.map((m) => {
-                const isMe = m.uid === user?.uid;
-                const memberIsOwner = m.uid === room?.ownerId;
-                const memberIsMod = mods.has(m.uid);
-                return (
-                  <div key={m.uid} className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                      {(m.name || "ط").charAt(0)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{m.name || "طالب"} {isMe && <span className="text-xs text-text-muted">(أنا)</span>}</p>
-                      <p className={`text-xs font-bold ${memberIsOwner ? "text-warning" : memberIsMod ? "text-primary" : "text-text-muted"}`}>
-                        {memberIsOwner ? "👑 مالك" : memberIsMod ? "🛡️ مشرف" : "طالب"}
-                      </p>
-                    </div>
-                    {/* أزرار الإجراء — لا تظهر على النفس أو المالك */}
-                    {!isMe && !memberIsOwner && (
-                      <div className="flex items-center gap-1">
-                        {/* ترقية / إلغاء ترقية — المالك فقط */}
-                        {isOwner && (
-                          <button
-                            title={memberIsMod ? "إلغاء ترقية" : "ترقية إلى مشرف"}
-                            onClick={() => memberIsMod ? demoteMod(roomId, m.uid) : promoteToMod(roomId, m.uid)}
-                            className={`grid h-8 w-8 place-items-center rounded-md ${memberIsMod ? "bg-primary/15 text-primary" : "text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-                          >
-                            <FontAwesomeIcon icon={memberIsMod ? faCircleCheck : faUserShield} className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                        {/* طرد مؤقّت — المالك والمشرف */}
-                        <button
-                          title="طرد مؤقّت"
-                          onClick={() => kickUser(roomId, m.uid)}
-                          className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-warning/10 hover:text-warning"
-                        >
-                          <FontAwesomeIcon icon={faUserSlash} className="h-3.5 w-3.5" />
-                        </button>
-                        {/* حظر دائم — المالك فقط */}
-                        {isOwner && (
-                          <button
-                            title="حظر دائم"
-                            onClick={() => { if (confirm(`حظر ${m.name} نهائياً من الغرفة؟`)) banUser(roomId, m.uid); }}
-                            className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-danger/10 hover:text-danger"
-                          >
-                            <FontAwesomeIcon icon={faBan} className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* قائمة المحظورين (للمالك) */}
+            <ParticipantsPanel
+              members={members}
+              hands={handsQueue}
+              mods={mods}
+              ownerId={room?.ownerId ?? ""}
+              myUid={user?.uid}
+              isOwner={isOwner}
+              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+            />
+            {/* قائمة المحظورين للمالك */}
             {isOwner && banned.size > 0 && (
               <div className="border-t border-border p-3">
                 <p className="mb-2 text-xs font-bold text-danger">🚫 المحظورون ({banned.size})</p>
                 <div className="space-y-1.5">
                   {[...banned].map((uid) => (
                     <div key={uid} className="flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2">
-                      <span className="truncate text-xs text-text-muted font-mono">{uid.slice(0, 14)}…</span>
+                      <span className="truncate font-mono text-xs text-text-muted">{uid.slice(0, 14)}…</span>
                       <button
                         onClick={() => unbanUser(roomId, uid)}
                         className="flex shrink-0 items-center gap-1 rounded-md bg-secondary/10 px-2.5 py-1 text-xs font-bold text-secondary hover:bg-secondary/20"
                       >
-                        <FontAwesomeIcon icon={faUnlock} className="h-3 w-3" />
-                        فك الحظر
+                        <FontAwesomeIcon icon={faUnlock} className="h-3 w-3" /> فك
                       </button>
                     </div>
                   ))}
@@ -638,6 +596,12 @@ export default function RoomPage() {
           </div>
         </div>
       )}
+
+      {/* نافذة إنشاء استفتاء */}
+      {showCreatePoll && isOwner && (
+        <CreatePollModal roomId={roomId} onClose={() => setShowCreatePoll(false)} />
+      )}
+
     </main>
   );
 }

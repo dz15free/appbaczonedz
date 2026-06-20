@@ -8,6 +8,7 @@ export interface PresenceMember {
   uid: string;
   name: string;
   joinedAt: number;
+  lastActive?: number;
 }
 
 // حضور لحظي عبر RTDB (نفس فكرة الكود القديم: onDisconnect + نبض)

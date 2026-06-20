@@ -295,3 +295,23 @@ body.bz-fullscreen-active {
 .bz-marwa-content .bz-math-inline { direction: ltr; display: inline-block; }
 .bz-marwa-content strong { font-weight: 800; color: var(--bz-text); }
 .bz-marwa-content em { font-style: italic; }
+
+/* ═══ حركات شاشة الانتظار والغرفة ═══ */
+@keyframes bz-pulse-slow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+.animate-pulse-slow { animation: bz-pulse-slow 4s ease-in-out infinite; }
+
+@keyframes bz-ping-slow {
+  0% { transform: scale(1); opacity: 0.6; }
+  75%, 100% { transform: scale(1.4); opacity: 0; }
+}
+.animate-ping-slow { animation: bz-ping-slow 2.5s cubic-bezier(0,0,0.2,1) infinite; }
+
+/* دخول عناصر القائمة بسلاسة */
+@keyframes bz-fade-slide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide { animation: bz-fade-slide 0.3s ease-out; }

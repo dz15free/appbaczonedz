@@ -25,6 +25,7 @@ import { playMessageSound } from "@/lib/sound";
 import { prepareFile } from "@/lib/upload";
 import { FileViewer } from "@/features/files/file-viewer";
 import { ImageZoom } from "@/components/ui/image-zoom";
+import { useTypingIndicator, TypingIndicator } from "@/features/rooms/typing-indicator";
 
 // مرفق يُحمَّل عند العرض فقط (يبقي الدردشة خفيفة)
 function Attachment({
@@ -92,6 +93,7 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
   const fileInput = useRef<HTMLInputElement>(null);
   const initialized = useRef(false);
   const lastCount = useRef(0);
+  const { othersTyping, notifyTyping, stopTyping } = useTypingIndicator(roomId, user?.uid, user?.displayName ?? undefined);
 
   useEffect(
     () =>
@@ -113,6 +115,7 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
     const trimmed = text.trim();
     if (!trimmed || !user) return;
     setText("");
+    stopTyping();
     await sendMessage(roomId, { userId: user.uid, userName: user.displayName || "طالب", text: trimmed });
   }
 
@@ -177,6 +180,8 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
         <div ref={bottomRef} />
       </div>
 
+      <TypingIndicator typers={othersTyping} />
+
       <div className="flex items-center gap-2 border-t border-border p-3">
         <input ref={imageInput} type="file" accept="image/*" hidden onChange={handleUpload} />
         <input ref={fileInput} type="file" hidden onChange={handleUpload} />
@@ -198,7 +203,7 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
         </button>
         <input
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); notifyTyping(); }}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder={uploading ? "جارٍ الرفع..." : "اكتب رسالتك..."}
           disabled={uploading}

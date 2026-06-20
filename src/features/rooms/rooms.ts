@@ -11,6 +11,7 @@ import {
   limitToLast,
   onValue,
   update,
+  onDisconnect,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
@@ -397,5 +398,55 @@ export async function saveRoomNotes(roomId: string, text: string) {
 export function listenRoomNotes(roomId: string, cb: (text: string) => void) {
   return onValue(ref(rtdb, `roomLive/${roomId}/notes`), (snap) => {
     cb((snap.val() as string) ?? "");
+  });
+}
+
+/* ══════════════════════════════════════════
+   مؤشّر "يكتب الآن..." في الدردشة
+══════════════════════════════════════════ */
+export async function setTyping(roomId: string, uid: string, name: string, typing: boolean) {
+  const r = ref(rtdb, `roomLive/${roomId}/typing/${uid}`);
+  if (typing) {
+    await set(r, { name, at: Date.now() });
+    onDisconnect(r).remove();
+  } else {
+    await remove(r);
+  }
+}
+
+export function listenTyping(roomId: string, cb: (typers: { uid: string; name: string }[]) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/typing`), (snap) => {
+    const val = (snap.val() as Record<string, { name: string; at: number }>) ?? {};
+    const now = Date.now();
+    // نتجاهل المؤشرات الأقدم من 6 ثوانٍ (في حال لم تُحذف)
+    const list = Object.entries(val)
+      .filter(([, v]) => now - v.at < 6000)
+      .map(([uid, v]) => ({ uid, name: v.name }));
+    cb(list);
+  });
+}
+
+/* ══════════════════════════════════════════
+   رفع اليد (مع طابور حسب الأسبقية)
+══════════════════════════════════════════ */
+export interface RaisedHand { uid: string; name: string; at: number }
+
+export async function raiseHand(roomId: string, uid: string, name: string) {
+  const r = ref(rtdb, `roomLive/${roomId}/hands/${uid}`);
+  await set(r, { name, at: Date.now() });
+  onDisconnect(r).remove();
+}
+
+export async function lowerHand(roomId: string, uid: string) {
+  await remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
+}
+
+export function listenHands(roomId: string, cb: (hands: RaisedHand[]) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/hands`), (snap) => {
+    const val = (snap.val() as Record<string, { name: string; at: number }>) ?? {};
+    const list = Object.entries(val)
+      .map(([uid, v]) => ({ uid, name: v.name, at: v.at }))
+      .sort((a, b) => a.at - b.at); // الأقدم أولاً (طابور)
+    cb(list);
   });
 }

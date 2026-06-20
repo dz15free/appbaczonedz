@@ -224,6 +224,11 @@
         "notes": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
           ".read": "auth != null"
+        },
+        "typing": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
         }
       }
     },

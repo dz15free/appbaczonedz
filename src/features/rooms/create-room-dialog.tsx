@@ -16,11 +16,11 @@ const TYPES: { id: RoomType; label: string }[] = [
 export const ROOM_SUBJECTS = [
   { id: "", label: "عام (بدون مادة)" },
   { id: "arabic", label: "اللغة العربية" },
+  { id: "arabic-lit", label: "اللغة العربية وآدابها" },
   { id: "islamic", label: "العلوم الإسلامية" },
   { id: "math", label: "الرياضيات" },
   { id: "science", label: "علوم الطبيعة والحياة" },
   { id: "physics", label: "العلوم الفيزيائية" },
-  { id: "technology", label: "التكنولوجيا" },
   { id: "philosophy", label: "الفلسفة" },
   { id: "history-geo", label: "التاريخ والجغرافيا" },
   { id: "french", label: "اللغة الفرنسية" },
@@ -29,6 +29,14 @@ export const ROOM_SUBJECTS = [
   { id: "law", label: "القانون" },
   { id: "accounting", label: "التسيير المحاسبي والمالي" },
   { id: "economics", label: "الاقتصاد والمناجمنت" },
+  { id: "spanish", label: "اللغة الإسبانية" },
+  { id: "german", label: "اللغة الألمانية" },
+  { id: "italian", label: "اللغة الإيطالية" },
+  { id: "elec-eng", label: "الهندسة الكهربائية" },
+  { id: "mech-eng", label: "الهندسة الميكانيكية" },
+  { id: "process-eng", label: "هندسة الطرائق" },
+  { id: "civil-eng", label: "الهندسة المدنية" },
+  { id: "art-major", label: "مادة التخصص الفني" },
 ];
 
 export function CreateRoomDialog({ onClose }: { onClose: () => void }) {

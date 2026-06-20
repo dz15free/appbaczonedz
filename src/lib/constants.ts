@@ -30,16 +30,21 @@ export const ALL_SUBJECTS: Subject[] = [
   { id: "math", name: "الرياضيات" },
   { id: "science", name: "علوم الطبيعة والحياة" },
   { id: "physics", name: "العلوم الفيزيائية" },
-  { id: "technology", name: "التكنولوجيا" },
   { id: "philosophy", name: "الفلسفة" },
   { id: "history-geo", name: "التاريخ والجغرافيا" },
   { id: "french", name: "اللغة الفرنسية" },
   { id: "english", name: "اللغة الإنجليزية" },
   { id: "amazigh", name: "اللغة الأمازيغية" },
-  { id: "third-lang", name: "اللغة الأجنبية الثالثة" },
   { id: "law", name: "القانون" },
   { id: "accounting", name: "التسيير المحاسبي والمالي" },
   { id: "economics", name: "الاقتصاد والمناجمنت" },
+  { id: "spanish", name: "اللغة الإسبانية" },
+  { id: "german", name: "اللغة الألمانية" },
+  { id: "italian", name: "اللغة الإيطالية" },
+  { id: "elec-eng", name: "الهندسة الكهربائية" },
+  { id: "mech-eng", name: "الهندسة الميكانيكية" },
+  { id: "process-eng", name: "هندسة الطرائق" },
+  { id: "civil-eng", name: "الهندسة المدنية" },
   { id: "art-major", name: "مادة التخصص الفني" },
 ];
 
@@ -47,10 +52,10 @@ export const ALL_SUBJECTS: Subject[] = [
 export const TRACK_SUBJECTS: Record<string, string[]> = {
   sciences: ["arabic", "islamic", "math", "science", "physics", "philosophy", "history-geo", "french", "english", "amazigh"],
   math: ["arabic", "islamic", "math", "science", "physics", "philosophy", "history-geo", "french", "english", "amazigh"],
-  "tech-math": ["arabic", "islamic", "math", "technology", "physics", "philosophy", "history-geo", "french", "english", "amazigh"],
+  "tech-math": ["arabic", "islamic", "math", "physics", "elec-eng", "mech-eng", "process-eng", "civil-eng", "philosophy", "history-geo", "french", "english", "amazigh"],
   economics: ["arabic", "islamic", "law", "math", "accounting", "economics", "philosophy", "history-geo", "french", "english", "amazigh"],
-  literature: ["arabic-lit", "islamic", "philosophy", "history-geo", "math", "french", "english", "third-lang", "amazigh"],
-  languages: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "third-lang", "amazigh"],
+  literature: ["arabic-lit", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
+  languages: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
   arts: ["arabic", "islamic", "philosophy", "history-geo", "french", "english", "art-major"],
 };
 
