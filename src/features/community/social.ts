@@ -24,6 +24,7 @@ export interface Post {
   id: string;
   authorId: string;
   authorName: string;
+  authorRole?: string; // student | teacher | admin
   text: string;
   createdAt: number;
   score: number;
@@ -40,6 +41,7 @@ export interface Comment {
   id: string;
   authorId: string;
   authorName: string;
+  authorRole?: string;
   text: string;
   createdAt: number;
   parentId?: string;
@@ -71,7 +73,8 @@ export async function createPost(
   text: string,
   attachment?: { kind: "image" | "file"; dataUrl: string; name: string },
   visibility: "public" | "friends" | "private" = "public",
-  subject?: string
+  subject?: string,
+  authorRole?: string
 ) {
   const post: Record<string, unknown> = {
     authorId,
@@ -80,6 +83,7 @@ export async function createPost(
     createdAt: Date.now(),
     visibility,
   };
+  if (authorRole) post.authorRole = authorRole;
   if (subject) post.subject = subject;
   if (attachment) {
     const aRef = push(ref(rtdb, "community/postAttachments"));
@@ -218,7 +222,8 @@ export async function addComment(
   authorId: string,
   authorName: string,
   text: string,
-  parentId?: string
+  parentId?: string,
+  authorRole?: string
 ) {
   const data: Record<string, unknown> = {
     authorId,
@@ -226,6 +231,7 @@ export async function addComment(
     text: text.trim(),
     createdAt: Date.now(),
   };
+  if (authorRole) data.authorRole = authorRole;
   if (parentId) data.parentId = parentId;
   await push(ref(rtdb, `community/comments/${postId}`), data);
   await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(1) });

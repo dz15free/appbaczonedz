@@ -11,7 +11,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
 import { compressAvatar } from "@/lib/avatar";
-import { TRACKS, WILAYAS } from "@/lib/constants";
+import { TRACKS, WILAYAS, ALL_SUBJECTS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/field";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -27,12 +27,14 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [track, setTrack] = useState("");
+  const [teachSubject, setTeachSubject] = useState("");
   const [wilaya, setWilaya] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [avatarLoading, setAvatarLoading] = useState(false);
   const avatarInput = useRef<HTMLInputElement>(null);
   const rank = useLeaderboardRank(user?.uid, profile?.points);
+  const isTeacher = profile?.role === "teacher";
 
   async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -58,6 +60,7 @@ export default function ProfilePage() {
   function openEdit() {
     setName(profile?.name || user?.displayName || "");
     setTrack(profile?.track || "");
+    setTeachSubject(profile?.teachSubject || "");
     setWilaya(profile?.wilaya || "");
     setErr("");
     setEditing(true);
@@ -68,7 +71,12 @@ export default function ProfilePage() {
     setSaving(true);
     setErr("");
     try {
-      await updateAccount(user, { name, track, wilaya });
+      // الأستاذ يحفظ المادة التي يدرّسها، الطالب يحفظ الشعبة
+      if (isTeacher) {
+        await updateAccount(user, { name, teachSubject, wilaya });
+      } else {
+        await updateAccount(user, { name, track, wilaya });
+      }
       setEditing(false);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "تعذّر الحفظ.");
@@ -159,8 +167,8 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4">
             <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5 text-primary" />
             <div>
-              <span className="block text-xs text-text-muted">الشعبة</span>
-              <span className="font-bold">{trackName}</span>
+              <span className="block text-xs text-text-muted">{isTeacher ? "المادة التي يدرّسها" : "الشعبة"}</span>
+              <span className="font-bold">{isTeacher ? subjectName(profile?.teachSubject) : trackName}</span>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4">
@@ -216,17 +224,35 @@ export default function ProfilePage() {
               className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
 
-            <label className="mb-1 block text-sm font-semibold">الشعبة</label>
-            <select
-              value={track}
-              onChange={(e) => setTrack(e.target.value)}
-              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            >
-              <option value="">اختر الشعبة</option>
-              {TRACKS.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
+            {isTeacher ? (
+              <>
+                <label className="mb-1 block text-sm font-semibold">المادة التي تدرّسها</label>
+                <select
+                  value={teachSubject}
+                  onChange={(e) => setTeachSubject(e.target.value)}
+                  className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">اختر المادة</option>
+                  {ALL_SUBJECTS.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <>
+                <label className="mb-1 block text-sm font-semibold">الشعبة</label>
+                <select
+                  value={track}
+                  onChange={(e) => setTrack(e.target.value)}
+                  className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">اختر الشعبة</option>
+                  {TRACKS.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </>
+            )}
 
             <label className="mb-1 block text-sm font-semibold">الولاية</label>
             <select

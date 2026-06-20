@@ -112,11 +112,15 @@ export async function ensureNameInRTDB(user: User) {
 // تعديل بيانات الحساب (الاسم/الشعبة/الولاية)
 export async function updateAccount(
   user: User,
-  data: { name: string; track: string; wilaya: string }
+  data: { name: string; track?: string; teachSubject?: string; wilaya?: string }
 ) {
   const name = data.name.trim();
   if (!name) throw new AuthError("الرجاء إدخال الاسم.");
-  await update(ref(rtdb, `users/${user.uid}`), { name, track: data.track, wilaya: data.wilaya });
+  const updates: Record<string, string | null> = { name };
+  if (data.track !== undefined) updates.track = data.track || null;
+  if (data.teachSubject !== undefined) updates.teachSubject = data.teachSubject || null;
+  if (data.wilaya !== undefined) updates.wilaya = data.wilaya || null;
+  await update(ref(rtdb, `users/${user.uid}`), updates);
   if (user.displayName !== name) await updateProfile(user, { displayName: name });
 }
 

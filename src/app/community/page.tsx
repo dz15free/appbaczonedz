@@ -29,6 +29,7 @@ import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { prepareFile } from "@/lib/upload";
 import { PostAttachment } from "@/features/community/post-attachment";
+import { RoleBadge } from "@/components/ui/role-badge";
 import {
   createPost,
   listenPosts,
@@ -89,7 +90,7 @@ export default function CommunityPage() {
           ))}
         </div>
 
-        {tab === "feed" && <Feed me={me} isAdmin={profile?.role === "admin"} />}
+        {tab === "feed" && <Feed me={me} isAdmin={profile?.role === "admin"} myRole={profile?.role} />}
         {tab === "people" && <People me={me} />}
         {tab === "messages" && <Messages me={me} />}
       </section>
@@ -105,7 +106,7 @@ function timeAgo(ts: number) {
   return `${Math.floor(s / 86400)} يوم`;
 }
 
-function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
+function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: string }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -145,7 +146,7 @@ function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
   async function publish() {
     if (!text.trim() && !pending) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined);
+    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole);
     setText("");
     setPending(null);
     setVisibility("public");
@@ -281,7 +282,10 @@ function Feed({ me, isAdmin }: { me: Person; isAdmin: boolean }) {
                   {p.authorName.charAt(0)}
                 </span>
                 <div>
-                  <span className="block text-sm font-bold hover:underline">{p.authorName}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold hover:underline">{p.authorName}</span>
+                    <RoleBadge role={p.authorRole} />
+                  </span>
                   <span className="flex items-center gap-1 text-xs text-text-muted">
                     {timeAgo(p.createdAt)}
                     <FontAwesomeIcon

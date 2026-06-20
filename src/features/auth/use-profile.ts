@@ -8,6 +8,7 @@ export interface Profile {
   name?: string;
   email?: string;
   track?: string | null;
+  teachSubject?: string | null; // المادة التي يدرّسها الأستاذ
   wilaya?: string | null;
   role?: string;
   points?: number;

@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag, faReply, faXmark, faSpinner, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
+import { RoleBadge } from "@/components/ui/role-badge";
 import { AppShell } from "@/components/app-shell";
 import { PostAttachment } from "@/features/community/post-attachment";
 import {
@@ -88,7 +89,7 @@ export default function PostPage() {
     setText("");
     const parent = replyTo?.id;
     setReplyTo(null);
-    await addComment(postId, user.uid, myName, t, parent);
+    await addComment(postId, user.uid, myName, t, parent, profile?.role);
   }
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
@@ -103,8 +104,9 @@ export default function PostPage() {
     return (
       <div className={`rounded-lg border border-border bg-surface p-3 ${isReply ? "ms-6 mt-2 border-r-2 border-r-primary/40" : ""}`}>
         <div className="flex items-center justify-between">
-          <Link href={`/u/${c.authorId}?name=${encodeURIComponent(c.authorName)}`} className="text-xs font-bold text-primary hover:underline">
+          <Link href={`/u/${c.authorId}?name=${encodeURIComponent(c.authorName)}`} className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
             {c.authorName}
+            <RoleBadge role={c.authorRole} />
           </Link>
           <div className="flex items-center gap-1.5">
             {c.authorId !== user.uid && showAdd && (
@@ -181,7 +183,7 @@ export default function PostPage() {
                   <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                     {post.authorName.charAt(0)}
                   </span>
-                  <span className="font-bold">{post.authorName}</span>
+                  <span className="flex items-center gap-1.5"><span className="font-bold">{post.authorName}</span><RoleBadge role={post.authorRole} /></span>
                 </Link>
                 <div className="flex items-center gap-1">
                   {post.locked && (
