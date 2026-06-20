@@ -24,6 +24,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { playMessageSound } from "@/lib/sound";
 import { prepareFile } from "@/lib/upload";
 import { FileViewer } from "@/features/files/file-viewer";
+import { ImageZoom } from "@/components/ui/image-zoom";
 
 // مرفق يُحمَّل عند العرض فقط (يبقي الدردشة خفيفة)
 function Attachment({
