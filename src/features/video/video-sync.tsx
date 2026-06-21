@@ -65,6 +65,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   const applyingRemote = useRef(false);
   const stateRef = useRef<VideoState | null>(null);
   const mp4Ref = useRef<HTMLVideoElement>(null);
+  const studentUnmuted = useRef(false); // هل فعّل الطالب الصوت يدوياً؟
 
   /* ── استمع لتغيّرات الحالة ── */
   useEffect(() => {
@@ -102,25 +103,37 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
         if (s.isPlaying) p.playVideo?.(); else p.pauseVideo?.();
       }
-      // تطبيق كتم الصوت الذي يتحكّم به المالك على الجميع
-      if (s.muted) { try { p.mute?.(); } catch { /* ignore */ } }
-      else if (isOwner) { try { p.unMute?.(); } catch { /* ignore */ } }
+      // تطبيق الكتم: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الطالب الصوت بعد
+      applyMute(s.muted ?? false);
       setTimeout(() => { applyingRemote.current = false; }, 700);
     } else if (s.sourceType === "direct") {
       const v = mp4Ref.current;
       if (!v) return;
       if (!prev || prev.videoUrl !== s.videoUrl) v.src = s.videoUrl ?? "";
-      // تطبيق الكتم على الجميع
-      if (typeof s.muted === "boolean") v.muted = s.muted || (!isOwner && needsTap);
       // المالك مصدر الحقيقة — لا يُعيد تطبيق حالته على نفسه (يمنع التقطيع)
-      if (isOwner) return;
-      // الطلاب: ابدأ مكتوماً للتشغيل التلقائي على iOS
-      if (!prev) v.muted = true;
+      if (isOwner) { v.muted = s.muted ?? false; return; }
+      // الطلاب: مكتوم إذا كتم المالك أو لم يفعّل الطالب الصوت
+      v.muted = (s.muted ?? false) || !studentUnmuted.current;
       const local = v.currentTime ?? 0;
       if (Math.abs(local - s.currentTime) > 3) v.currentTime = s.currentTime;
-      if (s.isPlaying && v.paused) v.play().then(() => setNeedsTap(true)).catch(() => { if (!isOwner) setNeedsTap(true); });
+      if (s.isPlaying && v.paused) v.play().then(() => { if (!studentUnmuted.current) setNeedsTap(true); }).catch(() => setNeedsTap(true));
       else if (!s.isPlaying && !v.paused) v.pause();
     }
+  }
+
+  // تطبيق حالة الكتم على مشغّل YouTube حسب الدور وحالة الطالب
+  function applyMute(ownerMuted: boolean) {
+    const p = ytPlayerRef.current;
+    if (!p) return;
+    try {
+      if (isOwner) {
+        if (ownerMuted) p.mute?.(); else p.unMute?.();
+      } else {
+        // الطالب: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الصوت بعد
+        if (ownerMuted || !studentUnmuted.current) p.mute?.();
+        else p.unMute?.();
+      }
+    } catch { /* ignore */ }
   }
 
   /* ── تهيئة YouTube Player مرّة واحدة فقط ── */
@@ -335,7 +348,6 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             className="absolute inset-0 h-full w-full"
             controls={isOwner}
             playsInline
-            muted={!isOwner && needsTap}
             preload="metadata"
             onWaiting={() => setBuffering(true)}
             onPlaying={() => setBuffering(false)}
@@ -370,12 +382,15 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             onClick={() => {
               // الفيديو يعمل مكتوماً تلقائياً — اللمسة تفعّل الصوت فقط
               if (needsTap) {
+                studentUnmuted.current = true; // الطالب فعّل الصوت يدوياً
                 const s = stateRef.current;
+                // لا نفكّ الكتم إذا كان المالك كاتماً للجميع
+                const ownerMuted = s?.muted ?? false;
                 if (s?.sourceType === "youtube") {
                   ytPlayerRef.current?.playVideo?.();
-                  try { ytPlayerRef.current?.unMute?.(); } catch { /* ignore */ }
+                  if (!ownerMuted) { try { ytPlayerRef.current?.unMute?.(); } catch { /* ignore */ } }
                 } else if (s?.sourceType === "direct" && mp4Ref.current) {
-                  mp4Ref.current.muted = false;
+                  mp4Ref.current.muted = ownerMuted;
                   mp4Ref.current.play?.().catch(() => {});
                 }
                 setNeedsTap(false);

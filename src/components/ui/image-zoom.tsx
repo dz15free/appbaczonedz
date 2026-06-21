@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faMagnifyingGlassPlus, faMagnifyingGlassMinus } from "@fortawesome/free-solid-svg-icons";
 
@@ -78,24 +79,30 @@ export function ImageZoom({ src, alt = "", onClose }: Props) {
 
   function reset() { setScale(1); setPos({ x: 0, y: 0 }); }
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
       onClick={onClose}
       style={{ touchAction: "none" }}
     >
       {/* أزرار التحكّم */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute right-4 z-10 flex gap-2"
+        style={{ top: "max(16px, env(safe-area-inset-top, 16px))" }}
+        onClick={(e) => e.stopPropagation()}>
         <button onClick={() => setScale((s) => clampScale(s + 0.5))}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
+          className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
           <FontAwesomeIcon icon={faMagnifyingGlassPlus} className="h-4 w-4" />
         </button>
         <button onClick={() => { setScale((s) => { const n = clampScale(s - 0.5); if (n === 1) setPos({ x: 0, y: 0 }); return n; }); }}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
+          className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
           <FontAwesomeIcon icon={faMagnifyingGlassMinus} className="h-4 w-4" />
         </button>
         <button onClick={onClose}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
+          className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md hover:bg-white/25">
           <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
         </button>
       </div>
@@ -129,6 +136,7 @@ export function ImageZoom({ src, alt = "", onClose }: Props) {
           transition: dragging.current ? "none" : "transform 0.15s ease-out",
         }}
       />
-    </div>
+    </div>,
+    document.body
   );
 }
