@@ -16,7 +16,6 @@ const TYPES: { id: RoomType; label: string }[] = [
 export const ROOM_SUBJECTS = [
   { id: "", label: "عام (بدون مادة)" },
   { id: "arabic", label: "اللغة العربية" },
-  { id: "arabic-lit", label: "اللغة العربية وآدابها" },
   { id: "islamic", label: "العلوم الإسلامية" },
   { id: "math", label: "الرياضيات" },
   { id: "science", label: "علوم الطبيعة والحياة" },

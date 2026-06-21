@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faPaperPlane, faXmark, faFile, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faPaperPlane, faXmark, faFile, faSpinner, faImage, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
-import { listenMessages, sendMessage, getAttachment, type ChatMessage } from "@/features/rooms/rooms";
+import { listenMessages, sendMessage, sendAttachment, getAttachment, type ChatMessage } from "@/features/rooms/rooms";
+import { prepareFile } from "@/lib/upload";
 import { ImageZoom } from "@/components/ui/image-zoom";
 
 /* ─── مرفق داخل الدردشة (صورة/ملف) ─── */
@@ -65,9 +66,12 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); // desktop sidebar toggle
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const initRef   = useRef(false);
   const lastRef   = useRef(0);
 
@@ -90,6 +94,27 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
       userName: user.displayName || "طالب",
       text: t,
     });
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    setUploading(true);
+    try {
+      const prepared = await prepareFile(file);
+      await sendAttachment(roomId, {
+        userId: user.uid,
+        userName: user.displayName || "طالب",
+        kind: prepared.kind,
+        dataUrl: prepared.dataUrl,
+        fileName: prepared.name,
+      });
+    } catch {
+      alert("تعذّر رفع الملف.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const textMsgs = messages.filter((m) => m.type === "text" || m.type === "image" || m.type === "file");
@@ -151,8 +176,18 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
         </div>
 
         {/* حقل الإدخال */}
-        <div className="flex shrink-0 items-center gap-2 border-t px-3 py-3"
+        <div className="flex shrink-0 items-center gap-1.5 border-t px-3 py-3"
           style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+          <input ref={imageInput} type="file" accept="image/*" hidden onChange={handleUpload} />
+          <input ref={fileInput} type="file" hidden onChange={handleUpload} />
+          <button onClick={() => imageInput.current?.click()} disabled={uploading} aria-label="صورة"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30">
+            <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-3.5 w-3.5 ${uploading ? "animate-spin" : ""}`} />
+          </button>
+          <button onClick={() => fileInput.current?.click()} disabled={uploading} aria-label="ملف"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30">
+            <FontAwesomeIcon icon={faPaperclip} className="h-3.5 w-3.5" />
+          </button>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -217,11 +252,21 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
       </div>
 
       {/* شريط الإدخال — جوال */}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[100] flex items-center gap-2 px-3 py-2 lg:hidden"
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[100] flex items-center gap-1.5 px-3 py-2 lg:hidden"
         style={{
           background: "linear-gradient(to top, rgba(0,0,0,0.85) 70%, transparent)",
           paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
         }}>
+        <button onClick={() => imageInput.current?.click()} disabled={uploading} aria-label="صورة"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+          style={{ background: "rgba(255,255,255,0.15)" }}>
+          <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
+        </button>
+        <button onClick={() => fileInput.current?.click()} disabled={uploading} aria-label="ملف"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+          style={{ background: "rgba(255,255,255,0.15)" }}>
+          <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
+        </button>
         <input
           ref={inputRef}
           value={text}

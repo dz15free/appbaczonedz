@@ -3,7 +3,6 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile,
   signOut,
@@ -35,8 +34,7 @@ export async function registerUser(name: string, email: string, password: string
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: name });
-    await sendEmailVerification(cred.user);
-    // مستند المستخدم في RTDB (مع خطّاف الإشراف للمستقبل)
+    // مستند المستخدم في RTDB
     await set(ref(rtdb, `users/${cred.user.uid}`), {
       name,
       email,
@@ -49,7 +47,7 @@ export async function registerUser(name: string, email: string, password: string
       platformBan: false,
       createdAt: Date.now(),
     });
-    await signOut(auth);
+    // يبقى المستخدم مسجّلاً دخوله مباشرة دون الحاجة لتأكيد البريد
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
     throw new AuthError(arabicError(code));
@@ -59,11 +57,8 @@ export async function registerUser(name: string, email: string, password: string
 export async function loginUser(email: string, password: string) {
   if (!email || !password) throw new AuthError("الرجاء إدخال البريد وكلمة المرور.");
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    if (!cred.user.emailVerified) {
-      await signOut(auth);
-      throw new AuthError("يجب تفعيل حسابك أولاً. تحقّق من الرابط في بريدك.");
-    }
+    await signInWithEmailAndPassword(auth, email, password);
+    // لا حاجة لتأكيد البريد — الدخول مباشر
   } catch (err: unknown) {
     if (err instanceof AuthError) throw err;
     const code = (err as { code?: string })?.code ?? "";

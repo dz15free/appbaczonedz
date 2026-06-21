@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { registerUser, AuthError } from "@/lib/firebase/auth";
 import { Input, Button } from "@/components/ui/field";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
   const [accountType, setAccountType] = useState<"student" | "teacher">("student");
   const { settings } = useSiteSettings();
 
@@ -34,27 +35,12 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await registerUser(name, email, password, accountType);
-      setDone(true);
+      // الدخول مباشر دون تأكيد البريد → إلى صفحة إكمال الملف
+      router.push("/onboarding");
     } catch (err) {
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });
-    } finally {
       setLoading(false);
     }
-  }
-
-  if (done) {
-    return (
-      <div className="space-y-4 text-center">
-        <h1 className="font-display text-2xl font-extrabold">تحقّق من بريدك ✉️</h1>
-        <p className="text-text-muted">
-          أرسلنا رابط تفعيل إلى <span className="font-bold text-text-primary">{email}</span>.
-          فعّل حسابك ثم عُد لتسجيل الدخول.
-        </p>
-        <Link href="/login">
-          <Button className="w-full">العودة لتسجيل الدخول</Button>
-        </Link>
-      </div>
-    );
   }
 
   return (

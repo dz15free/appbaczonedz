@@ -12,7 +12,6 @@ import { AppShell } from "@/components/app-shell";
 const SUBJECTS = [
   { id: "all", label: "الكل" },
   { id: "arabic", label: "اللغة العربية" },
-  { id: "arabic-lit", label: "اللغة العربية وآدابها" },
   { id: "islamic", label: "العلوم الإسلامية" },
   { id: "math", label: "الرياضيات" },
   { id: "science", label: "علوم الطبيعة والحياة" },

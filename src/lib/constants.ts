@@ -25,7 +25,6 @@ export interface Subject {
 // كل المواد الممكنة في النظام (قائمة موحّدة)
 export const ALL_SUBJECTS: Subject[] = [
   { id: "arabic", name: "اللغة العربية" },
-  { id: "arabic-lit", name: "اللغة العربية وآدابها" },
   { id: "islamic", name: "العلوم الإسلامية" },
   { id: "math", name: "الرياضيات" },
   { id: "science", name: "علوم الطبيعة والحياة" },
@@ -54,7 +53,7 @@ export const TRACK_SUBJECTS: Record<string, string[]> = {
   math: ["arabic", "islamic", "math", "science", "physics", "philosophy", "history-geo", "french", "english", "amazigh"],
   "tech-math": ["arabic", "islamic", "math", "physics", "elec-eng", "mech-eng", "process-eng", "civil-eng", "philosophy", "history-geo", "french", "english", "amazigh"],
   economics: ["arabic", "islamic", "law", "math", "accounting", "economics", "philosophy", "history-geo", "french", "english", "amazigh"],
-  literature: ["arabic-lit", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
+  literature: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
   languages: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
   arts: ["arabic", "islamic", "philosophy", "history-geo", "french", "english", "art-major"],
 };
