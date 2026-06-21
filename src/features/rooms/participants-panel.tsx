@@ -81,17 +81,21 @@ export function ParticipantsPanel({
                 </div>
                 <div className="flex items-center gap-1">
                   {isRoomOwner ? (
-                    <span className="text-[10px] font-bold text-warning">👑 المضيف</span>
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-1.5 py-0.5 text-[9px] font-bold text-warning">
+                      👑 المضيف
+                    </span>
                   ) : isMod ? (
-                    <span className="text-[10px] font-bold text-primary">مشرف</span>
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                      <FontAwesomeIcon icon={faUserShield} className="h-2.5 w-2.5" /> مشرف
+                    </span>
                   ) : (
                     <RoleBadge uid={m.uid} />
                   )}
                 </div>
               </div>
 
-              {/* أدوات المالك */}
-              {isOwner && !isRoomOwner && (
+              {/* أدوات الإشراف (المالك: ترقية+طرد | المشرف: طرد فقط) */}
+              {!isRoomOwner && (onPromote || onKick) && (
                 <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
                   {onPromote && (
                     <button
@@ -102,7 +106,7 @@ export function ParticipantsPanel({
                       <FontAwesomeIcon icon={faUserShield} className="h-3 w-3" />
                     </button>
                   )}
-                  {onKick && (
+                  {onKick && !isMod && (
                     <button
                       onClick={() => onKick(m.uid)}
                       title="طرد"

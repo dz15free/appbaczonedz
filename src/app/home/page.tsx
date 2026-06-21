@@ -11,6 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
+import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { useBacCountdown } from "@/features/settings/use-bac-date";
 
@@ -49,6 +50,7 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
+  const { settings: siteSettings } = useSiteSettings();
   const days = useBacCountdown();
 
   useEffect(() => {
@@ -71,15 +73,15 @@ export default function HomePage() {
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-sm font-bold text-primary">
                 <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4" />
-                مرحباً بعودتك
+                {siteSettings.homeWelcomeTitle || "مرحباً بعودتك"}
               </p>
               <h1 className="mt-1.5 font-display text-2xl font-extrabold leading-tight sm:text-3xl">
                 أهلاً، <span className="bz-gradient-text">{name}</span> 👋
               </h1>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
-                <span className="font-bold text-text-primary">BacZoneDZ</span> منصّتك الشاملة لمراجعة البكالوريا:
-                غرف دراسة مباشرة بالصوت والسبورة الذكية، مساعدتك الخباشة، بطاقات مراجعة،
-                ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.
+                {siteSettings.homeWelcomeSubtitle
+                  ? siteSettings.homeWelcomeSubtitle
+                  : <><span className="font-bold text-text-primary">BacZoneDZ</span> منصّتك الشاملة لمراجعة البكالوريا: غرف دراسة مباشرة بالصوت والسبورة الذكية، مساعدتك الخباشة، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.</>}
               </p>
 
               {/* رقاقات الميزات */}

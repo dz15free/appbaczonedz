@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faPaperPlane, faXmark, faFile, faSpinner, faImage, faPaperclip } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faPaperPlane, faXmark, faFile, faSpinner, faImage, faPaperclip, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
-import { listenMessages, sendMessage, sendAttachment, getAttachment, type ChatMessage } from "@/features/rooms/rooms";
+import { listenMessages, sendMessage, sendAttachment, getAttachment, deleteRoomMessage, type ChatMessage } from "@/features/rooms/rooms";
 import { prepareFile } from "@/lib/upload";
 import { ImageZoom } from "@/components/ui/image-zoom";
 
@@ -60,9 +60,9 @@ function chipColor(uid: string) {
   return CHIPS[h % CHIPS.length];
 }
 
-interface Props { roomId: string; isOwner: boolean; }
+interface Props { roomId: string; isOwner: boolean; canModerate?: boolean; }
 
-export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
+export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: Props) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
@@ -164,10 +164,19 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           )}
           {textMsgs.map((m) => {
             const isMe = m.userId === user?.uid;
+            const canDelete = canModerate || isOwner || isMe;
             return (
-              <div key={m.id} className="flex flex-col gap-0.5 animate-msg-in">
-                <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
-                  {m.userName}
+              <div key={m.id} className="group flex flex-col gap-0.5 animate-msg-in">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
+                    {m.userName}
+                  </span>
+                  {canDelete && (
+                    <button onClick={() => deleteRoomMessage(roomId, m.id)} aria-label="حذف"
+                      className="hidden h-5 w-5 place-items-center rounded text-white/40 hover:text-red-400 group-hover:grid">
+                      <FontAwesomeIcon icon={faTrash} className="h-2.5 w-2.5" />
+                    </button>
+                  )}
                 </span>
                 {m.text && (
                   <p className={`rounded-xl px-3 py-1.5 text-sm leading-snug text-white ${
@@ -238,8 +247,9 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           {textMsgs.map((m) => {
             const isMe = m.userId === user?.uid;
             const hasAttachment = m.type === "image" || m.type === "file";
+            const canDelete = canModerate || isOwner || isMe;
             return (
-              <div key={m.id} className={`flex w-fit max-w-[85%] items-end gap-2 ${isMe ? "ms-auto flex-row-reverse" : ""}`}>
+              <div key={m.id} className={`flex w-fit max-w-[85%] items-end gap-1.5 ${isMe ? "ms-auto flex-row-reverse" : ""}`}>
                 <span className={`shrink-0 self-end rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
                   {m.userName.split(" ")[0]}
                 </span>
@@ -255,6 +265,12 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
                   >
                     {m.text}
                   </span>
+                )}
+                {canDelete && (
+                  <button onClick={() => deleteRoomMessage(roomId, m.id)} aria-label="حذف"
+                    className="grid h-6 w-6 shrink-0 self-end place-items-center rounded-full text-white/40 active:text-red-400">
+                    <FontAwesomeIcon icon={faTrash} className="h-2.5 w-2.5" />
+                  </button>
                 )}
               </div>
             );

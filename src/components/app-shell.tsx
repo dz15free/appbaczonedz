@@ -57,6 +57,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (isNaN(r) || isNaN(g) || isNaN(b)) return;
     document.documentElement.style.setProperty("--bz-primary", `${r} ${g} ${b}`);
   }, [settings.accentColor]);
+
+  // تطبيق favicon المخصّص على تبويب المتصفّح
+  useEffect(() => {
+    if (!settings.faviconUrl) return;
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = settings.faviconUrl;
+  }, [settings.faviconUrl]);
+
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {

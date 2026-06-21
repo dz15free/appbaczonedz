@@ -17,6 +17,8 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink } from "@/features/settings/use-site-settings";
+import { LandingEditor } from "@/features/admin/landing-editor";
+import { WelcomeEditor } from "@/features/admin/welcome-editor";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
 
 interface Report {
@@ -47,7 +49,8 @@ function timeAgo(ts: number) {
 const TABS = [
   { id: "overview",  label: "إحصائيات",  icon: faChartBar },
   { id: "identity",  label: "الهوية",     icon: faImage },
-  { id: "home",      label: "الرئيسية",   icon: faFont },
+  { id: "landing",   label: "الرئيسية (قبل الدخول)", icon: faFont },
+  { id: "welcome",   label: "مرحباً بعودتك", icon: faFont },
   { id: "footer",    label: "الفوتر",     icon: faLink },
   { id: "control",   label: "التحكّم",    icon: faWrench },
   { id: "users",     label: "المستخدمون", icon: faUsers },
@@ -104,11 +107,9 @@ export default function AdminPage() {
 
   // Identity
   const [logoUrl, setLogoUrl] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
   const [siteName, setSiteName] = useState("");
   const [accentColor, setAccentColor] = useState("#4f46e5");
-  // Home
-  const [heroTitle, setHeroTitle] = useState("");
-  const [heroSubtitle, setHeroSubtitle] = useState("");
   const [bannerText, setBannerText] = useState("");
   const [bannerActive, setBannerActive] = useState(false);
   // Footer
@@ -129,10 +130,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     setLogoUrl(settings.logoUrl ?? "");
+    setFaviconUrl(settings.faviconUrl ?? "");
     setSiteName(settings.siteName ?? "BacZoneDZ");
     setAccentColor(settings.accentColor ?? "#4f46e5");
-    setHeroTitle(settings.heroTitle ?? "");
-    setHeroSubtitle(settings.heroSubtitle ?? "");
     setFooterText(settings.footerText ?? "");
     setFooterLinks(settings.footerLinks ?? []);
     setMaintenanceMode(!!settings.maintenanceMode);
@@ -226,6 +226,20 @@ export default function AdminPage() {
   async function save(key: string, fn: () => Promise<void>) {
     setSaving((s) => ({ ...s, [key]: true }));
     try { await fn(); } finally { setSaving((s) => ({ ...s, [key]: false })); }
+  }
+
+  // رفع صورة من الجهاز وتحويلها إلى base64 (للشعار/الأيقونة)
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, setUrl: (v: string) => void) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      alert("حجم الصورة كبير. الرجاء اختيار صورة أصغر من 500 كيلوبايت.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setUrl(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
   async function removePost(p: Post) {
@@ -333,20 +347,46 @@ export default function AdminPage() {
         {/* ════ الهوية ════ */}
         {tab === "identity" && (
           <div className="space-y-4">
-            <Card icon={faImage} title="شعار الموقع" hint="رابط URL لصورة الشعار (png/svg/webp)">
+            <Card icon={faImage} title="شعار الموقع" hint="ارفع صورة أو الصق رابطاً (png/svg/webp)">
               <div>
                 <label className="mb-1 block text-sm font-bold">رابط الشعار</label>
                 <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..."
                   className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
               </div>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-2.5 text-sm font-bold text-text-muted transition hover:border-primary hover:text-primary">
+                <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+                رفع صورة من الجهاز
+                <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, setLogoUrl)} />
+              </label>
               {logoUrl && (
                 <div className="flex items-center gap-3 rounded-lg border border-border p-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={logoUrl} alt="معاينة" className="h-10 w-10 rounded object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
-                  <span className="text-xs text-text-muted">معاينة</span>
+                  <span className="text-xs text-text-muted">معاينة الشعار</span>
                 </div>
               )}
               <SaveBtn onClick={() => save("logo", () => saveSetting("logoUrl", logoUrl || undefined))} loading={!!saving.logo} />
+            </Card>
+
+            <Card icon={faImage} title="أيقونة المتصفّح (Favicon)" hint="الأيقونة الصغيرة في تبويب المتصفّح">
+              <div>
+                <label className="mb-1 block text-sm font-bold">رابط الأيقونة</label>
+                <input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://..."
+                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              </div>
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-2.5 text-sm font-bold text-text-muted transition hover:border-primary hover:text-primary">
+                <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+                رفع صورة من الجهاز
+                <input type="file" accept="image/*" hidden onChange={(e) => handleImageUpload(e, setFaviconUrl)} />
+              </label>
+              {faviconUrl && (
+                <div className="flex items-center gap-3 rounded-lg border border-border p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={faviconUrl} alt="معاينة" className="h-8 w-8 rounded object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+                  <span className="text-xs text-text-muted">معاينة الأيقونة</span>
+                </div>
+              )}
+              <SaveBtn onClick={() => save("favicon", () => saveSetting("faviconUrl", faviconUrl || undefined))} loading={!!saving.favicon} />
             </Card>
 
             <Card icon={faFont} title="اسم الموقع">
@@ -368,21 +408,8 @@ export default function AdminPage() {
         )}
 
         {/* ════ الرئيسية ════ */}
-        {tab === "home" && (
+        {tab === "landing" && (
           <div className="space-y-4">
-            <Card icon={faFont} title="قسم الترحيب (Hero)">
-              <div>
-                <label className="mb-1 block text-sm font-bold">العنوان الكبير</label>
-                <input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} placeholder="ادرس بذكاء..."
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-bold">الوصف</label>
-                <textarea value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} rows={3}
-                  className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary" />
-              </div>
-              <SaveBtn onClick={() => save("hero", () => saveSiteSettings({ heroTitle, heroSubtitle }))} loading={!!saving.hero} />
-            </Card>
             <Card icon={faBullhorn} title="بانر إعلاني عالمي">
               <input value={bannerText} onChange={(e) => setBannerText(e.target.value)} placeholder="نص البانر..."
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
@@ -392,8 +419,11 @@ export default function AdminPage() {
               </label>
               <SaveBtn onClick={() => save("banner", () => saveSetting("siteBanner", { text: bannerText, active: bannerActive }))} loading={!!saving.banner} />
             </Card>
+            <LandingEditor />
           </div>
         )}
+
+        {tab === "welcome" && <WelcomeEditor />}
 
         {/* ════ الفوتر ════ */}
         {tab === "footer" && (

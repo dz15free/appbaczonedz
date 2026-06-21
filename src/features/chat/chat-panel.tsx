@@ -82,7 +82,7 @@ function Attachment({
   );
 }
 
-export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner?: boolean }) {
+export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { roomId: string; isOwner?: boolean; canModerate?: boolean }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
@@ -152,7 +152,7 @@ export function ChatPanel({ roomId, isOwner = false }: { roomId: string; isOwner
             <div key={m.id} className="group flex flex-col items-start">
               <div className="flex w-full items-center justify-between gap-1">
                 <span className="text-xs font-bold text-primary">{m.userName}</span>
-                {isOwner && (
+                {(canModerate || isOwner || mine) && (
                   <button
                     onClick={() => deleteRoomMessage(roomId, m.id)}
                     aria-label="حذف الرسالة"

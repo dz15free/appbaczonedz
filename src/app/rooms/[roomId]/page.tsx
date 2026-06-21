@@ -516,7 +516,7 @@ export default function RoomPage() {
 
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
           {fullscreen && (
-            <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} />
+            <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
           )}
 
           {/* إشعارات الأنشطة المباشرة */}
@@ -533,7 +533,7 @@ export default function RoomPage() {
 
         {!fullscreen && !focusMode && (
           <aside className="hidden w-96 border-r border-border lg:block">
-            <ChatPanel roomId={roomId} isOwner={isOwner} />
+            <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
           </aside>
         )}
       </div>
@@ -559,7 +559,7 @@ export default function RoomPage() {
             </button>
           </div>
           <div className="flex-1 overflow-hidden">
-            <ChatPanel roomId={roomId} isOwner={isOwner} />
+            <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
           </div>
         </div>
       )}
