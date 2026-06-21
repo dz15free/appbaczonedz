@@ -533,9 +533,7 @@ function Messages({ me }: { me: Person }) {
     <div className="space-y-2">
       {threads.map((t) => (
         <Link key={t.uid} href={`/messages/${t.uid}?name=${encodeURIComponent(displayName(t))}`} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 hover:border-primary">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary font-bold text-white">
-            {displayName(t).charAt(0)}
-          </span>
+          <LiveAvatar uid={t.uid} name={displayName(t)} size="md" className="h-11 w-11" />
           <div className="min-w-0 flex-1">
             <span className="block font-bold">{displayName(t)}</span>
             <span className="block truncate text-sm text-text-muted">{t.lastText}</span>

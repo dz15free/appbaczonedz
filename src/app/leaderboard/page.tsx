@@ -10,6 +10,7 @@ import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import { BADGES, earnedBadges } from "@/features/gamification/points";
 
 interface Player {
@@ -98,8 +99,8 @@ export default function LeaderboardPage() {
             {top3[1] && (
               <Link href={`/u/${top3[1].uid}?name=${encodeURIComponent(top3[1].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28">
                 <span className="text-slate-400 text-lg">🥈</span>
-                <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-xl font-extrabold text-white">
-                  {top3[1].name.charAt(0)}
+                <div className="relative">
+                  <LiveAvatar uid={top3[1].uid} name={top3[1].name} size="lg" className="h-14 w-14 text-xl" />
                   <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[10px] font-bold text-slate-400">#2</span>
                 </div>
                 <span className="text-center text-xs font-semibold truncate w-full">{top3[1].name}</span>
@@ -110,8 +111,8 @@ export default function LeaderboardPage() {
             {top3[0] && (
               <Link href={`/u/${top3[0].uid}?name=${encodeURIComponent(top3[0].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28 -mb-1">
                 <FontAwesomeIcon icon={faCrown} className="h-7 w-7 text-warning animate-bounce" />
-                <div className="relative grid h-20 w-20 place-items-center rounded-full ring-4 ring-warning/50 bg-gradient-primary text-2xl font-extrabold text-white shadow-glow">
-                  {top3[0].name.charAt(0)}
+                <div className="relative">
+                  <LiveAvatar uid={top3[0].uid} name={top3[0].name} size="xl" className="h-20 w-20 text-2xl ring-4 ring-warning/50 shadow-glow" />
                   <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-warning text-[11px] font-bold text-white">#1</span>
                 </div>
                 <span className="text-center text-sm font-bold truncate w-full">{top3[0].name}</span>
@@ -122,8 +123,8 @@ export default function LeaderboardPage() {
             {top3[2] && (
               <Link href={`/u/${top3[2].uid}?name=${encodeURIComponent(top3[2].name)}`} className="flex flex-col items-center gap-1 w-20 sm:w-28">
                 <span className="text-amber-700 text-lg">🥉</span>
-                <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-xl font-extrabold text-white">
-                  {top3[2].name.charAt(0)}
+                <div className="relative">
+                  <LiveAvatar uid={top3[2].uid} name={top3[2].name} size="lg" className="h-14 w-14 text-xl" />
                   <span className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[10px] font-bold text-amber-700">#3</span>
                 </div>
                 <span className="text-center text-xs font-semibold truncate w-full">{top3[2].name}</span>
@@ -148,9 +149,7 @@ export default function LeaderboardPage() {
                 <div className="flex w-7 justify-center">
                   <RankIcon rank={rank} />
                 </div>
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-primary text-sm font-extrabold text-white">
-                  {p.name.charAt(0)}
-                </div>
+                <LiveAvatar uid={p.uid} name={p.name} size="md" />
                 <div className="flex-1 min-w-0">
                   <span className="block truncate font-semibold">{p.name}{isMe && " (أنا)"}</span>
                   <span className="text-xs text-text-muted">المستوى {p.level}</span>

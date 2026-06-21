@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import { playMessageSound } from "@/lib/sound";
 import { GroupFiles } from "@/features/groups/group-files";
 import {
@@ -163,9 +164,7 @@ export default function GroupPage() {
                 const isMe = m.senderId === user.uid;
                 return (
                   <div key={m.id} className={`flex ${isMe ? "justify-start flex-row-reverse" : "justify-start"} gap-2`}>
-                    <span className="grid h-8 w-8 shrink-0 place-items-center self-end rounded-full bg-gradient-primary text-xs font-bold text-white">
-                      {m.senderName.charAt(0)}
-                    </span>
+                    <LiveAvatar uid={m.senderId} name={m.senderName} size="sm" className="h-8 w-8 self-end" />
                     <div className={`max-w-[75%] rounded-xl px-3 py-2 ${isMe ? "bg-primary text-white" : "bg-surface border border-border"}`}>
                       {!isMe && <span className="mb-0.5 block text-[11px] font-bold text-primary">{m.senderName}</span>}
                       <p className="whitespace-pre-wrap text-sm">{m.text}</p>
@@ -199,9 +198,7 @@ export default function GroupPage() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
             {members.map((m) => (
               <div key={m.uid} className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                  {m.name.charAt(0)}
-                </span>
+                <LiveAvatar uid={m.uid} name={m.name} size="md" />
                 <div className="flex-1">
                   <span className="font-semibold">{m.name}</span>
                 </div>
