@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHand, faUserShield, faUserSlash, faCrown } from "@fortawesome/free-solid-svg-icons";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import type { PresenceMember } from "@/features/rooms/use-presence";
 import type { RaisedHand } from "@/features/rooms/rooms";
@@ -58,7 +58,7 @@ export function ParticipantsPanel({
               }`}
             >
               <div className="relative shrink-0">
-                <UserAvatar name={m.name} size="sm" className={speaking ? "ring-2 ring-secondary" : ""} />
+                <LiveAvatar uid={m.uid} name={m.name} size="sm" className={speaking ? "ring-2 ring-secondary" : ""} />
                 {handPos && (
                   <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-warning text-[8px] font-bold text-white ring-2 ring-background">
                     {handPos}

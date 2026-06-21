@@ -30,6 +30,7 @@ import { AppShell } from "@/components/app-shell";
 import { prepareFile } from "@/lib/upload";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import {
   createPost,
   listenPosts,
@@ -178,9 +179,7 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4">
         <div className="flex gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-            {(me.name || "ط").charAt(0)}
-          </span>
+          <LiveAvatar uid={me.uid} name={me.name || "ط"} size="md" className="shrink-0" />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -278,9 +277,7 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
           <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-2">
               <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                  {p.authorName.charAt(0)}
-                </span>
+                <LiveAvatar uid={p.authorId} name={p.authorName} size="sm" className="shrink-0" />
                 <div className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     <span className="truncate text-sm font-bold hover:underline">{p.authorName}</span>
@@ -423,9 +420,7 @@ function People({ me }: { me: Person }) {
             {requests.map((r) => (
               <div key={r.uid} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
                 <span className="flex items-center gap-2 font-semibold">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                    {r.name.charAt(0)}
-                  </span>
+                  <LiveAvatar uid={r.uid} name={r.name} size="sm" />
                   {r.name}
                 </span>
                 <div className="flex gap-2">
@@ -462,9 +457,7 @@ function People({ me }: { me: Person }) {
             return (
               <div key={p.uid} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
                 <Link href={`/u/${p.uid}?name=${encodeURIComponent(p.name)}`} className="flex items-center gap-2 font-semibold hover:opacity-80">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                    {p.name.charAt(0)}
-                  </span>
+                  <LiveAvatar uid={p.uid} name={p.name} size="sm" />
                   {p.name}
                 </Link>
                 {isFriend ? (
@@ -494,9 +487,7 @@ function People({ me }: { me: Person }) {
             {friends.map((f) => (
               <div key={f.uid} className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
                 <Link href={`/u/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-2 font-semibold hover:opacity-80">
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                    {f.name.charAt(0)}
-                  </span>
+                  <LiveAvatar uid={f.uid} name={f.name} size="sm" />
                   {f.name}
                 </Link>
                 <Link href={`/messages/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">

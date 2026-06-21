@@ -45,6 +45,7 @@ export default function LeaderboardPage() {
     return onValue(q, (snap) => {
       const val = (snap.val() as Record<string, any>) ?? {};
       const list = Object.entries(val)
+        .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin") // الطلاب فقط
         .map(([uid, u]: [string, any]) => ({
           uid, name: u.name ?? "طالب", points: u.points ?? 0,
           level: u.level ?? 1, postCount: u.postCount, commentCount: u.commentCount, track: u.track,

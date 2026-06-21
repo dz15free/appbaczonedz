@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import {
   faMicrophone,
   faMicrophoneSlash,
@@ -111,12 +112,8 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
               const isSpeaking = speaking[p.uid] && !isMuted;
               return (
                 <div key={p.uid} className="flex flex-col items-center text-center">
-                  <div
-                    className={`relative grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-lg font-extrabold text-white transition-shadow ${
-                      isSpeaking ? "ring-2 ring-emerald-400" : ""
-                    }`}
-                  >
-                    {(p.name || "ط").charAt(0)}
+                  <div className={`relative rounded-full ${isSpeaking ? "ring-2 ring-emerald-400" : ""}`}>
+                    <LiveAvatar uid={p.uid} name={p.name || "ط"} size="md" className="h-12 w-12" />
                     {isMuted && (
                       <span className="absolute -bottom-1 -left-1 grid h-5 w-5 place-items-center rounded-full bg-[#13151f]">
                         <FontAwesomeIcon icon={faMicrophoneSlash} className="h-2.5 w-2.5 text-danger" />

@@ -8,6 +8,7 @@ import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { RoleBadge } from "@/components/ui/role-badge";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 import { AppShell } from "@/components/app-shell";
 import { PostAttachment } from "@/features/community/post-attachment";
 import {
@@ -180,9 +181,7 @@ export default function PostPage() {
             <div className="rounded-lg border border-border bg-surface p-4">
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/u/${post.authorId}?name=${encodeURIComponent(post.authorName)}`} className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-80">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
-                    {post.authorName.charAt(0)}
-                  </span>
+                  <LiveAvatar uid={post.authorId} name={post.authorName} size="sm" className="shrink-0" />
                   <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5"><span className="truncate font-bold">{post.authorName}</span><RoleBadge uid={post.authorId} role={post.authorRole} /></span>
                 </Link>
                 <div className="flex shrink-0 items-center gap-1">
