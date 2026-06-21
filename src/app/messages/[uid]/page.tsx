@@ -136,7 +136,7 @@ export default function DMPage() {
           <button onClick={() => router.back()} aria-label="رجوع" className="text-text-muted hover:text-primary">
             <FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" />
           </button>
-          <LiveAvatar uid={uid} name={otherName} size="md" className="shrink-0" />
+          <LiveAvatar uid={otherUid} name={otherName} size="md" className="shrink-0" />
           <span className="truncate font-bold">{otherName}</span>
         </div>
 
