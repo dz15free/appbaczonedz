@@ -33,12 +33,36 @@ export function KhabbashaFloatingButton() {
   }, [dismissed]);
 
   return (
-    <div className="fixed bottom-24 left-4 z-30 flex items-end gap-2 lg:bottom-6">
+    <div className="fixed bottom-24 left-4 z-30 lg:bottom-6">
+      {/* فقاعة الكلام — تظهر فوق الأيقونة على اليمين */}
+      {visible && !dismissed && (
+        <div
+          key={animKey}
+          className="animate-bubble-in absolute bottom-full left-0 mb-2 w-max max-w-[180px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass sm:max-w-[210px]"
+        >
+          {/* زر إغلاق */}
+          <button
+            onClick={(e) => { e.preventDefault(); setDismissed(true); }}
+            aria-label="إغلاق"
+            className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full border border-border bg-background text-text-muted transition hover:text-danger"
+          >
+            <FontAwesomeIcon icon={faXmark} className="h-2 w-2" />
+          </button>
+
+          <p className={`text-[11px] font-bold leading-snug text-text-primary sm:text-xs ${showSecondary ? "" : "whitespace-nowrap"}`}>
+            {showSecondary ? MSG_SECONDARY : MSG_PRIMARY}
+          </p>
+
+          {/* ذيل الفقاعة باتجاه الأيقونة (أسفل اليسار) */}
+          <span className="absolute -bottom-1.5 left-4 h-3 w-3 rotate-45 border-b border-l border-border bg-surface" />
+        </div>
+      )}
+
       {/* الزر */}
       <Link
         href="/omibot"
         aria-label="الخباشة"
-        className="group relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105"
+        className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105"
       >
         {/* حلقة نبض */}
         <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping-slow" />
@@ -46,30 +70,6 @@ export function KhabbashaFloatingButton() {
         {/* نقطة "متّصلة" */}
         <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-secondary" />
       </Link>
-
-      {/* فقاعة الكلام */}
-      {visible && !dismissed && (
-        <div
-          key={animKey}
-          className="animate-bubble-in relative mb-1 max-w-[200px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-2 shadow-glass sm:max-w-[240px]"
-        >
-          {/* زر إغلاق */}
-          <button
-            onClick={(e) => { e.preventDefault(); setDismissed(true); }}
-            aria-label="إغلاق"
-            className="absolute -left-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-text-muted transition hover:text-danger"
-          >
-            <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
-          </button>
-
-          <p className="text-xs font-bold leading-snug text-text-primary sm:text-sm">
-            {showSecondary ? MSG_SECONDARY : MSG_PRIMARY}
-          </p>
-
-          {/* ذيل الفقاعة باتجاه الزر */}
-          <span className="absolute -bottom-1.5 right-3 h-3 w-3 rotate-45 border-b border-l border-border bg-surface" />
-        </div>
-      )}
     </div>
   );
 }
