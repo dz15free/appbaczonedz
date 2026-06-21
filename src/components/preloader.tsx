@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png";
+
 export function Preloader() {
   const [hide, setHide] = useState(false);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    const minTime = setTimeout(() => setHide(true), 1100);
-    const onLoad = () => setTimeout(() => setHide(true), 600);
+    const minTime = setTimeout(() => setHide(true), 1000);
+    const onLoad = () => setTimeout(() => setHide(true), 500);
     if (document.readyState === "complete") onLoad();
     else window.addEventListener("load", onLoad);
     return () => {
@@ -19,7 +21,7 @@ export function Preloader() {
 
   useEffect(() => {
     if (!hide) return;
-    const t = setTimeout(() => setGone(true), 500);
+    const t = setTimeout(() => setGone(true), 450);
     return () => clearTimeout(t);
   }, [hide]);
 
@@ -31,21 +33,22 @@ export function Preloader() {
         hide ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >
+      {/* الشعار مع توهّج ناعم */}
       <div className="relative">
-        <div className="absolute inset-0 animate-pulse rounded-3xl bg-gradient-primary opacity-40 blur-2xl" />
-        <div className="absolute -inset-3 animate-spin rounded-3xl border-2 border-primary/20 border-t-primary" />
-        <div className="relative grid h-24 w-24 place-items-center rounded-3xl bg-gradient-primary text-4xl font-extrabold text-white shadow-glow">
-          BZ
-        </div>
+        <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-2xl" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={LOGO_URL}
+          alt="BacZoneDZ"
+          className="relative h-20 w-20 animate-bz-logo-in rounded-2xl object-contain"
+        />
       </div>
 
-      <h1 className="mt-7 font-display text-2xl font-extrabold">
-        BacZone <span className="bz-gradient-text">DZ</span>
-      </h1>
-      <p className="mt-1 text-sm text-text-muted">منصّتك للنجاح في البكالوريا</p>
-
-      <div className="mt-6 h-1.5 w-44 overflow-hidden rounded-full bg-surface">
-        <div className="bz-loadbar h-full w-1/3 rounded-full bg-gradient-primary" />
+      {/* مؤشّر تحميل بسيط: ثلاث نقاط */}
+      <div className="mt-8 flex gap-1.5">
+        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "0ms" }} />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "150ms" }} />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "300ms" }} />
       </div>
     </div>
   );

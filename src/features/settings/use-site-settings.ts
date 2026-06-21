@@ -66,8 +66,12 @@ export interface SiteSettings {
 
 export interface FooterLink { label: string; href: string }
 
+const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png";
+
 const DEFAULTS: SiteSettings = {
   siteName: "BacZoneDZ",
+  logoUrl: LOGO_URL,
+  faviconUrl: LOGO_URL,
   heroTitle: "ادرس بذكاء. ونجح في البكالوريا.",
   heroSubtitle: "غرف دراسة مباشرة، مساعدة ذكية، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.",
   footerText: `© ${new Date().getFullYear()} BacZoneDZ. جميع الحقوق محفوظة.`,
