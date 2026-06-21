@@ -13,7 +13,7 @@ import { MarwaMessage } from "@/components/ui/marwa-message";
 interface Msg { role: "user" | "assistant"; text: string }
 
 const GREETING =
-  "أهلاً! أنا **مروة** 🌟 طالبة تحصّلت على 18+ في الباك، وهنا لأساعدك.\n\nاسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك! يمكنني أيضاً شرح المعادلات الرياضية خطوة بخطوة.";
+  "أهلاً! أنا **الخباشة** 🌟 مساعدتك الآلية، وهنا لأساعدك في دراستك.\n\nاسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك! يمكنني أيضاً شرح المعادلات الرياضية خطوة بخطوة.";
 
 const SUGGESTIONS = [
   { icon: faFlask, text: "اشرح لي مبرهنة فيثاغورس" },
@@ -82,9 +82,9 @@ export default function OmibotPage() {
             <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-secondary" />
           </span>
           <div className="flex-1">
-            <h1 className="font-display text-lg font-extrabold leading-tight">مروة</h1>
+            <h1 className="font-display text-lg font-extrabold leading-tight">الخباشة</h1>
             <span className="flex items-center gap-1 text-xs text-secondary">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> متّصلة الآن · مساعدتك الذكية
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> متّصلة الآن · مساعدتك الآلية
             </span>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function OmibotPage() {
         <div className="flex-1 space-y-4 overflow-y-auto py-4">
           {messages.map((m, i) => (
             <div key={i} className={`flex items-end gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-              {/* أفاتار مروة */}
+              {/* أفاتار الخباشة */}
               {m.role === "assistant" && (
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-white">
                   <FontAwesomeIcon icon={faRobot} className="h-3.5 w-3.5" />
@@ -154,7 +154,7 @@ export default function OmibotPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
             }}
-            placeholder="اسأل مروة... (Shift+Enter لسطر جديد)"
+            placeholder="اسأل الخباشة... (Shift+Enter لسطر جديد)"
             disabled={thinking}
             rows={1}
             className="flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-text-primary outline-none focus:border-primary disabled:opacity-50"

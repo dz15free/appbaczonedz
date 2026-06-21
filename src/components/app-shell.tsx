@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser, faRobot, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faUser, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -14,6 +14,7 @@ import { useSiteBanner } from "@/features/settings/use-bac-date";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { KhabbashaFloatingButton } from "@/components/ui/khabbasha-floating-button";
 
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
@@ -187,16 +188,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
-      {/* زر مروة العائم (كل الصفحات) */}
-      {pathname !== "/omibot" && (
-        <Link
-          href="/omibot"
-          aria-label="مروة"
-          className="fixed bottom-24 left-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105 lg:bottom-6"
-        >
-          <FontAwesomeIcon icon={faRobot} className="h-6 w-6" />
-        </Link>
-      )}
+      {/* زر الخباشة العائم مع نص منبثق (كل الصفحات) */}
+      {pathname !== "/omibot" && <KhabbashaFloatingButton />}
 
       {/* شريط التنقّل السفلي (هاتف فقط) */}
       <nav

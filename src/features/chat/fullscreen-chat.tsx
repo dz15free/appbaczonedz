@@ -89,6 +89,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
   async function send() {
     if (!text.trim() || !user) return;
     const t = text; setText("");
+    inputRef.current?.blur(); // إخفاء لوحة المفاتيح بعد الإرسال
     await sendMessage(roomId, {
       userId: user.uid,
       userName: user.displayName || "طالب",
@@ -96,9 +97,18 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
     });
   }
 
+  function openPicker(ref: React.RefObject<HTMLInputElement>) {
+    // امنع إلغاء وضع الشاشة الكاملة أثناء فتح المنتقي
+    (window as any).__bzIgnoreFSExit = true;
+    ref.current?.click();
+    // أزل العلامة بعد فترة كافية لاختيار الملف
+    setTimeout(() => { (window as any).__bzIgnoreFSExit = false; }, 1500);
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
+    (window as any).__bzIgnoreFSExit = false;
     if (!file || !user) return;
     setUploading(true);
     try {
@@ -118,8 +128,6 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
   }
 
   const textMsgs = messages.filter((m) => m.type === "text" || m.type === "image" || m.type === "file");
-  /* آخر 7 رسائل للعرض العائم على الجوال */
-  const floating = textMsgs.slice(-7);
 
   return (
     <>
@@ -180,11 +188,11 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <input ref={imageInput} type="file" accept="image/*" hidden onChange={handleUpload} />
           <input ref={fileInput} type="file" hidden onChange={handleUpload} />
-          <button onClick={() => imageInput.current?.click()} disabled={uploading} aria-label="صورة"
+          <button onClick={() => openPicker(imageInput)} disabled={uploading} aria-label="صورة"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30">
             <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-3.5 w-3.5 ${uploading ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => fileInput.current?.click()} disabled={uploading} aria-label="ملف"
+          <button onClick={() => openPicker(fileInput)} disabled={uploading} aria-label="ملف"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-30">
             <FontAwesomeIcon icon={faPaperclip} className="h-3.5 w-3.5" />
           </button>
@@ -213,56 +221,57 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
       )}
 
       {/* ══════════════════════════════════════
-          الجوال — نمط Rave Watch Party
+          الجوال — دردشة سفلية قابلة للتمرير
       ══════════════════════════════════════ */}
 
-      {/* الرسائل العائمة */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-14 flex flex-col gap-1.5 px-3 pb-1 lg:hidden"
-        style={{ maxHeight: "55vh", justifyContent: "flex-end" }}>
-        {floating.map((m, idx) => {
-          const isMe = m.userId === user?.uid;
-          /* الأقدم أكثر شفافية */
-          const opacity = 0.45 + (idx / floating.length) * 0.55;
-          const hasAttachment = m.type === "image" || m.type === "file";
-          return (
-            <div key={m.id} className={`flex w-fit max-w-[85%] items-end gap-2 animate-msg-in ${hasAttachment ? "pointer-events-auto" : ""}`}
-              style={{ opacity }}>
-              {/* رقاقة الاسم */}
-              <span className={`shrink-0 self-end rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
-                {m.userName.split(" ")[0]}
-              </span>
-              {/* فقاعة الرسالة أو المرفق */}
-              {hasAttachment ? (
-                <FsAttachment roomId={roomId} msg={m} />
-              ) : (
-                <span
-                  className="rounded-2xl px-3 py-1.5 text-sm font-medium text-white leading-snug"
-                  style={{
-                    background: isMe ? "rgba(99,102,241,0.75)" : "rgba(0,0,0,0.55)",
-                    backdropFilter: "blur(8px)",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                  }}
-                >
-                  {m.text}
+      {/* لوحة الدردشة السفلية (نصف الشاشة السفلي) */}
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[90] flex flex-col lg:hidden"
+        style={{
+          height: "42vh",
+          background: "linear-gradient(to top, rgba(0,0,0,0.92) 60%, rgba(0,0,0,0.6) 85%, transparent)",
+        }}>
+        {/* الرسائل — قابلة للتمرير */}
+        <div className="flex-1 space-y-1.5 overflow-y-auto px-3 pt-6 pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
+          {textMsgs.map((m) => {
+            const isMe = m.userId === user?.uid;
+            const hasAttachment = m.type === "image" || m.type === "file";
+            return (
+              <div key={m.id} className={`flex w-fit max-w-[85%] items-end gap-2 ${isMe ? "ms-auto flex-row-reverse" : ""}`}>
+                <span className={`shrink-0 self-end rounded-full px-2 py-0.5 text-[10px] font-extrabold text-white ${chipColor(m.userId)}`}>
+                  {m.userName.split(" ")[0]}
                 </span>
-              )}
-            </div>
-          );
-        })}
+                {hasAttachment ? (
+                  <FsAttachment roomId={roomId} msg={m} />
+                ) : (
+                  <span
+                    className="rounded-2xl px-3 py-1.5 text-sm font-medium leading-snug text-white"
+                    style={{
+                      background: isMe ? "rgba(99,102,241,0.85)" : "rgba(255,255,255,0.12)",
+                      backdropFilter: "blur(8px)",
+                    }}
+                  >
+                    {m.text}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* شريط الإدخال — جوال */}
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[100] flex items-center gap-1.5 px-3 py-2 lg:hidden"
         style={{
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 70%, transparent)",
+          background: "rgba(0,0,0,0.92)",
           paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
         }}>
-        <button onClick={() => imageInput.current?.click()} disabled={uploading} aria-label="صورة"
+        <button onClick={() => openPicker(imageInput)} disabled={uploading} aria-label="صورة"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
           style={{ background: "rgba(255,255,255,0.15)" }}>
           <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
         </button>
-        <button onClick={() => fileInput.current?.click()} disabled={uploading} aria-label="ملف"
+        <button onClick={() => openPicker(fileInput)} disabled={uploading} aria-label="ملف"
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
           style={{ background: "rgba(255,255,255,0.15)" }}>
           <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
@@ -271,7 +280,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           ref={inputRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
           placeholder="💬 شارك برأيك..."
           enterKeyHint="send"
           className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"

@@ -254,7 +254,7 @@ body.bz-fullscreen-active {
 }
 
 /* ═══════════════════════════════════════════
-   تنسيق رسائل مروة (Markdown + LaTeX)
+   تنسيق رسائل الخباشة (Markdown + LaTeX)
 ═══════════════════════════════════════════ */
 .bz-marwa-content { font-size: 0.875rem; line-height: 1.7; }
 .bz-marwa-content .bz-p { margin: 0; }
@@ -315,3 +315,11 @@ body.bz-fullscreen-active {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-slide { animation: bz-fade-slide 0.3s ease-out; }
+
+/* ═══ فقاعة كلام الخباشة ═══ */
+@keyframes bz-bubble-in {
+  0% { opacity: 0; transform: translateX(8px) scale(0.85); }
+  60% { transform: translateX(-2px) scale(1.02); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.animate-bubble-in { animation: bz-bubble-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }

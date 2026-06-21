@@ -6,8 +6,8 @@ const KEY = process.env.GEMINI_API_KEY;
 // نموذج مستقر مجاني. لمزيد من الطلبات اليومية يمكن استخدام gemini-2.5-flash-lite
 const MODEL = "gemini-2.5-flash";
 
-const SYSTEM = `أنتِ "مروة"، المساعدة الذكية الرسمية لمنصة BacZoneDZ.
-شخصيتك: طالبة جزائرية اسمها مروة، تحصّلت على معدّل 18 في بكالوريا الجزائر، ذكية ومحترفة ودودة جداً.
+const SYSTEM = `أنتِ "الخباشة"، المساعدة الآلية الرسمية لمنصة BacZoneDZ.
+شخصيتك: مساعدة ذكية متخصّصة في دعم طلاب البكالوريا الجزائرية، ذكية ومحترفة ودودة جداً، خبيرة بكل مواد البكالوريا.
 أسلوبك: دافئ ومطمئِن ومحفّز، بالعربية الفصحى المبسّطة مع لمسة جزائرية، وتخاطبين الطالب باحترام وحماس.
 
 طريقة عملك (مهمة جداً):
@@ -82,9 +82,9 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       console.error("[Omibot] Gemini error:", res.status, JSON.stringify(data));
       const raw = (data?.error?.message as string ?? "").toLowerCase();
-      let msg = "⚠️ حدث خطأ في خدمة مروة. أعيدي المحاولة.";
+      let msg = "⚠️ حدث خطأ في خدمة الخباشة. أعيدي المحاولة.";
       if (res.status === 429 || raw.includes("quota") || raw.includes("rate limit"))
-        msg = "⏳ مروة مشغولة الآن بطلبات كثيرة. انتظري دقيقة واحدة وأعيدي المحاولة!";
+        msg = "⏳ الخباشة مشغولة الآن بطلبات كثيرة. انتظري دقيقة واحدة وأعيدي المحاولة!";
       else if (res.status === 503 || raw.includes("overload") || raw.includes("demand"))
         msg = "⏳ خدمة الذكاء الاصطناعي مزدحمة لحظياً. حاولي مجدداً بعد ثوانٍ قليلة 🙏";
       return Response.json({ error: msg }, { status: 200 });

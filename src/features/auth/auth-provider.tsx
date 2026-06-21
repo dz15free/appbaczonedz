@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
-      // نعتبر المستخدم مسجّلاً فقط إذا فعّل بريده
-      setUser(u && u.emailVerified ? u : null);
+      // التسجيل مباشر دون تأكيد البريد
+      setUser(u ?? null);
       setLoading(false);
     });
     return () => unsub();

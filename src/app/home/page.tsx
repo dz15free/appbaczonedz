@@ -17,7 +17,7 @@ import { useBacCountdown } from "@/features/settings/use-bac-date";
 const QUICK = [
   { href: "/rooms", label: "غرف الدراسة", desc: "بثّ مباشر بالصوت والسبورة", icon: faUsers, color: "indigo" },
   { href: "/groups", label: "المجموعات", desc: "تعاون مع زملائك في شعبتك", icon: faGlobe, color: "emerald" },
-  { href: "/omibot", label: "مروة", desc: "رفيقتك الذكية — معدّل 18 ✨", icon: faRobot, color: "violet" },
+  { href: "/omibot", label: "الخباشة", desc: "مساعدتك الآلية الذكية ✨", icon: faRobot, color: "violet" },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "amber" },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك موضوعاً بموضوع", icon: faListCheck, color: "sky" },
   { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy, color: "rose" },
@@ -78,7 +78,7 @@ export default function HomePage() {
               </h1>
               <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
                 <span className="font-bold text-text-primary">BacZoneDZ</span> منصّتك الشاملة لمراجعة البكالوريا:
-                غرف دراسة مباشرة بالصوت والسبورة الذكية، مساعدتك مروة، بطاقات مراجعة،
+                غرف دراسة مباشرة بالصوت والسبورة الذكية، مساعدتك الخباشة، بطاقات مراجعة،
                 ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.
               </p>
 

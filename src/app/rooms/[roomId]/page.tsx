@@ -174,6 +174,8 @@ export default function RoomPage() {
     const onFSChange = () => {
       const doc = document as any;
       const active = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
+      // تجاهل الخروج المؤقّت بسبب فتح منتقي الملفات (الرفع داخل الشاشة الكاملة)
+      if ((window as any).__bzIgnoreFSExit) return;
       if (!active) setFullscreen(false);
     };
     document.addEventListener("fullscreenchange", onFSChange);
