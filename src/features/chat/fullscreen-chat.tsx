@@ -97,7 +97,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
     });
   }
 
-  function openPicker(ref: React.RefObject<HTMLInputElement>) {
+  function openPicker(ref: React.RefObject<HTMLInputElement | null>) {
     // امنع إلغاء وضع الشاشة الكاملة أثناء فتح المنتقي
     (window as any).__bzIgnoreFSExit = true;
     ref.current?.click();
