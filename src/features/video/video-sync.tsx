@@ -5,7 +5,7 @@ import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner, faVolumeHigh, faVolumeXmark } from "@fortawesome/free-solid-svg-icons";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
@@ -20,6 +20,7 @@ interface VideoState {
   videoUrl?: string;
   isPlaying: boolean;
   currentTime: number;
+  muted?: boolean; // كتم الصوت — يتحكّم به المالك ويُطبَّق على الجميع
   updatedAt: number;
 }
 
@@ -86,20 +87,14 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       if (!p || !ytReady.current) return;
       applyingRemote.current = true;
       if (!prev || prev.videoId !== s.videoId) {
+        // الطلاب: ابدأ مكتوماً ليسمح iOS بالتشغيل التلقائي
+        if (!isOwner) { try { p.mute?.(); } catch { /* ignore */ } }
         p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
         setTimeout(() => {
           if (s.isPlaying) {
             p.playVideo?.();
-            // للطلاب: تحقّق إن نجح التشغيل التلقائي، وإلا اعرض زر اللمس (iOS)
-            if (!isOwner) {
-              setTimeout(() => {
-                try {
-                  const st = p.getPlayerState?.();
-                  // 1 = playing, 3 = buffering. غير ذلك يعني أن iOS منع التشغيل
-                  if (st !== 1 && st !== 3) setNeedsTap(true);
-                } catch { setNeedsTap(true); }
-              }, 1500);
-            }
+            // للطلاب: نعرض زر فك الكتم (التشغيل نجح مكتوماً)
+            if (!isOwner) setTimeout(() => setNeedsTap(true), 1200);
           }
         }, 1200);
       } else {
@@ -107,16 +102,23 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
         if (s.isPlaying) p.playVideo?.(); else p.pauseVideo?.();
       }
+      // تطبيق كتم الصوت الذي يتحكّم به المالك على الجميع
+      if (s.muted) { try { p.mute?.(); } catch { /* ignore */ } }
+      else if (isOwner) { try { p.unMute?.(); } catch { /* ignore */ } }
       setTimeout(() => { applyingRemote.current = false; }, 700);
     } else if (s.sourceType === "direct") {
       const v = mp4Ref.current;
       if (!v) return;
       if (!prev || prev.videoUrl !== s.videoUrl) v.src = s.videoUrl ?? "";
+      // تطبيق الكتم على الجميع
+      if (typeof s.muted === "boolean") v.muted = s.muted || (!isOwner && needsTap);
       // المالك مصدر الحقيقة — لا يُعيد تطبيق حالته على نفسه (يمنع التقطيع)
       if (isOwner) return;
+      // الطلاب: ابدأ مكتوماً للتشغيل التلقائي على iOS
+      if (!prev) v.muted = true;
       const local = v.currentTime ?? 0;
       if (Math.abs(local - s.currentTime) > 3) v.currentTime = s.currentTime;
-      if (s.isPlaying && v.paused) v.play().catch(() => { if (!isOwner) setNeedsTap(true); });
+      if (s.isPlaying && v.paused) v.play().then(() => setNeedsTap(true)).catch(() => { if (!isOwner) setNeedsTap(true); });
       else if (!s.isPlaying && !v.paused) v.pause();
     }
   }
@@ -149,9 +151,19 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             if (destroyed) return;
             ytReady.current = true;
             const s = stateRef.current;
+            // الطلاب: نبدأ مكتومين ليسمح iOS بالتشغيل التلقائي، ثم زر لفك الكتم
+            if (!isOwner) {
+              try { ytPlayerRef.current?.mute?.(); } catch { /* ignore */ }
+            }
             if (!s?.videoId) return;
             ytPlayerRef.current?.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
-            if (s.isPlaying) setTimeout(() => ytPlayerRef.current?.playVideo?.(), 800);
+            if (s.isPlaying) {
+              setTimeout(() => {
+                ytPlayerRef.current?.playVideo?.();
+                // للطلاب: إن نجح التشغيل (مكتوماً) نعرض زر فك الكتم
+                if (!isOwner) setTimeout(() => setNeedsTap(true), 1200);
+              }, 800);
+            }
           },
           onStateChange: (e: any) => {
             if (!isOwner || applyingRemote.current || destroyed) return;
@@ -199,17 +211,28 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
     set(ref(rtdb, statePath), {
       sourceType: "youtube", videoId: vid, isPlaying,
       currentTime: ytPlayerRef.current?.getCurrentTime?.() ?? 0,
+      muted: s?.muted ?? false,
       updatedAt: Date.now(),
     });
   }
 
   function pushMP4State(isPlaying: boolean) {
     const v = mp4Ref.current;
-    if (!stateRef.current?.videoUrl) return;
+    const s = stateRef.current;
+    if (!s?.videoUrl) return;
     set(ref(rtdb, statePath), {
-      sourceType: "direct", videoUrl: stateRef.current.videoUrl,
-      isPlaying, currentTime: v?.currentTime ?? 0, updatedAt: Date.now(),
+      sourceType: "direct", videoUrl: s.videoUrl,
+      isPlaying, currentTime: v?.currentTime ?? 0,
+      muted: s.muted ?? false,
+      updatedAt: Date.now(),
     });
+  }
+
+  // المالك يكتم/يفعّل الصوت للجميع
+  function toggleMuteForAll() {
+    const s = stateRef.current;
+    if (!s) return;
+    set(ref(rtdb, statePath), { ...s, muted: !s.muted, updatedAt: Date.now() });
   }
 
   /* دفع دوري لتصحيح انحراف الوقت */
@@ -263,6 +286,18 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
               className="flex-1"
             />
             <Button onClick={loadNewVideo} disabled={!urlInput.trim()}>تشغيل للجميع</Button>
+            {hasVideo && (
+              <button
+                onClick={toggleMuteForAll}
+                title={state?.muted ? "تفعيل الصوت للجميع" : "كتم الصوت للجميع"}
+                className={`flex shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+                  state?.muted ? "border-danger/40 bg-danger/10 text-danger" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                <FontAwesomeIcon icon={state?.muted ? faVolumeXmark : faVolumeHigh} className="h-4 w-4" />
+                <span className="hidden sm:inline">{state?.muted ? "مكتوم" : "كتم للكل"}</span>
+              </button>
+            )}
           </div>
           <p className="mt-1.5 text-[11px] text-text-muted">
             💡 للأداء الأفضل استخدم <span className="font-bold">YouTube</span>. روابط MP4 المباشرة قد تكون بطيئة حسب سرعة الاستضافة.
@@ -300,6 +335,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             className="absolute inset-0 h-full w-full"
             controls={isOwner}
             playsInline
+            muted={!isOwner && needsTap}
             preload="metadata"
             onWaiting={() => setBuffering(true)}
             onPlaying={() => setBuffering(false)}
@@ -326,20 +362,21 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
           </div>
         )}
 
-        {/* حاجب تفاعل الطلاب — مع زر "اضغط للتشغيل" لأجهزة iPhone */}
+        {/* حاجب تفاعل الطلاب — مع زر "اضغط لتفعيل الصوت" (الفيديو يعمل مكتوماً تلقائياً) */}
         {!isOwner && (
           <div
             className="absolute inset-0 z-10"
             style={{ touchAction: "none" }}
             onClick={() => {
-              // iOS يتطلّب لمسة المستخدم لبدء التشغيل بالصوت
+              // الفيديو يعمل مكتوماً تلقائياً — اللمسة تفعّل الصوت فقط
               if (needsTap) {
                 const s = stateRef.current;
                 if (s?.sourceType === "youtube") {
                   ytPlayerRef.current?.playVideo?.();
                   try { ytPlayerRef.current?.unMute?.(); } catch { /* ignore */ }
-                } else if (s?.sourceType === "direct") {
-                  mp4Ref.current?.play?.().catch(() => {});
+                } else if (s?.sourceType === "direct" && mp4Ref.current) {
+                  mp4Ref.current.muted = false;
+                  mp4Ref.current.play?.().catch(() => {});
                 }
                 setNeedsTap(false);
               }
@@ -347,14 +384,11 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             onContextMenu={(e) => e.preventDefault()}
           >
             {needsTap && hasVideo && (
-              <div className="absolute inset-0 grid place-items-center bg-black/55 backdrop-blur-sm">
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <span className="grid h-16 w-16 place-items-center rounded-full bg-white/20 backdrop-blur-md">
-                    <FontAwesomeIcon icon={faPlay} className="h-7 w-7 text-white" />
-                  </span>
-                  <p className="text-sm font-bold text-white">اضغط لتشغيل الفيديو 🎬</p>
-                  <p className="text-xs text-white/60">(مطلوب لمرّة واحدة على أجهزة iPhone)</p>
-                </div>
+              <div className="absolute inset-x-0 bottom-4 grid place-items-center">
+                <button className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 text-sm font-bold text-gray-900 shadow-xl backdrop-blur-md animate-pulse">
+                  <FontAwesomeIcon icon={faVolumeHigh} className="h-4 w-4" />
+                  اضغط لتفعيل الصوت 🔊
+                </button>
               </div>
             )}
           </div>

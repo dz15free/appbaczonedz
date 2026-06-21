@@ -323,3 +323,24 @@ body.bz-fullscreen-active {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 .animate-bubble-in { animation: bz-bubble-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* ═══ تخطيط الشاشة الكاملة بالهاتف: فيديو علوي + شات سفلي ═══ */
+/* على الهاتف فقط: منطقة المحتوى تترك 42% سفلية للدردشة */
+@media (max-width: 1023px) {
+  .bz-fullscreen .bz-fs-content {
+    height: 58%;
+    max-height: 58%;
+    flex: none;
+  }
+}
+
+/* ═══ إخفاء شريط التمرير مع إبقاء التمرير باللمس ═══ */
+.bz-hide-scrollbar {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.bz-hide-scrollbar::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari */
+  width: 0;
+  height: 0;
+}

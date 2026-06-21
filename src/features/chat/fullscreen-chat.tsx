@@ -69,6 +69,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
   const [uploading, setUploading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); // desktop sidebar toggle
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mobileBottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -84,6 +85,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
   // تمرير للأسفل عند رسائل جديدة (desktop فقط)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    mobileBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   async function send() {
@@ -224,14 +226,15 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
           الجوال — دردشة سفلية قابلة للتمرير
       ══════════════════════════════════════ */}
 
-      {/* لوحة الدردشة السفلية (نصف الشاشة السفلي) */}
+      {/* لوحة الدردشة السفلية (الجزء السفلي من الشاشة) */}
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[90] flex flex-col lg:hidden"
         style={{
-          height: "42vh",
-          background: "linear-gradient(to top, rgba(0,0,0,0.92) 60%, rgba(0,0,0,0.6) 85%, transparent)",
+          height: "42%",
+          background: "linear-gradient(to top, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0.7) 100%)",
         }}>
-        {/* الرسائل — قابلة للتمرير */}
-        <div className="flex-1 space-y-1.5 overflow-y-auto px-3 pt-6 pb-1" style={{ WebkitOverflowScrolling: "touch" }}>
+        {/* الرسائل — قابلة للتمرير بالإصبع دون بانر */}
+        <div className="bz-hide-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 pt-4 pb-2"
+          style={{ WebkitOverflowScrolling: "touch", overscrollBehavior: "contain" }}>
           {textMsgs.map((m) => {
             const isMe = m.userId === user?.uid;
             const hasAttachment = m.type === "image" || m.type === "file";
@@ -246,7 +249,7 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
                   <span
                     className="rounded-2xl px-3 py-1.5 text-sm font-medium leading-snug text-white"
                     style={{
-                      background: isMe ? "rgba(99,102,241,0.85)" : "rgba(255,255,255,0.12)",
+                      background: isMe ? "rgba(99,102,241,0.9)" : "rgba(255,255,255,0.14)",
                       backdropFilter: "blur(8px)",
                     }}
                   >
@@ -256,44 +259,41 @@ export function FullscreenChatOverlay({ roomId, isOwner }: Props) {
               </div>
             );
           })}
-          <div ref={bottomRef} />
+          <div ref={mobileBottomRef} />
         </div>
-      </div>
 
-      {/* شريط الإدخال — جوال */}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[100] flex items-center gap-1.5 px-3 py-2 lg:hidden"
-        style={{
-          background: "rgba(0,0,0,0.92)",
-          paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))",
-        }}>
-        <button onClick={() => openPicker(imageInput)} disabled={uploading} aria-label="صورة"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
-          style={{ background: "rgba(255,255,255,0.15)" }}>
-          <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
-        </button>
-        <button onClick={() => openPicker(fileInput)} disabled={uploading} aria-label="ملف"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
-          style={{ background: "rgba(255,255,255,0.15)" }}>
-          <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
-        </button>
-        <input
-          ref={inputRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
-          placeholder="💬 شارك برأيك..."
-          enterKeyHint="send"
-          className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"
-          style={{ background: "rgba(255,255,255,0.15)", color: "white", WebkitTextFillColor: "white" }}
-        />
-        <button
-          onClick={send}
-          disabled={!text.trim()}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
-          style={{ background: "rgba(99,102,241,0.95)" }}
-        >
-          <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
-        </button>
+        {/* شريط الإدخال — ضمن نفس العمود فلا يغطّي الرسائل */}
+        <div className="flex shrink-0 items-center gap-1.5 px-3 pt-2"
+          style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}>
+          <button onClick={() => openPicker(imageInput)} disabled={uploading} aria-label="صورة"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+            style={{ background: "rgba(255,255,255,0.15)" }}>
+            <FontAwesomeIcon icon={uploading ? faSpinner : faImage} className={`h-4 w-4 ${uploading ? "animate-spin" : ""}`} />
+          </button>
+          <button onClick={() => openPicker(fileInput)} disabled={uploading} aria-label="ملف"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+            style={{ background: "rgba(255,255,255,0.15)" }}>
+            <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
+          </button>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
+            placeholder="💬 شارك برأيك..."
+            enterKeyHint="send"
+            className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"
+            style={{ background: "rgba(255,255,255,0.15)", color: "white", WebkitTextFillColor: "white" }}
+          />
+          <button
+            onClick={send}
+            disabled={!text.trim()}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white transition disabled:opacity-40"
+            style={{ background: "rgba(99,102,241,0.95)" }}
+          >
+            <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
+          </button>
+        </div>
       </div>
     </>
   );

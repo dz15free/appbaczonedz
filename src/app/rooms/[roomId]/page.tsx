@@ -487,27 +487,30 @@ export default function RoomPage() {
             </button>
           )}
 
-          {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
-          {activePoll?.open ? (
-            <RoomPollPanel
-              roomId={roomId}
-              poll={activePoll}
-              isOwner={isOwner}
-              myUid={user?.uid ?? ""}
-            />
-          ) : (
-            <>
-              {tool === "welcome" && (
-                <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} />
-              )}
-              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
-              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
-            </>
-          )}
-          {/* مؤقّت الدرس — يظهر للجميع */}
-          <RoomTimerDisplay roomId={roomId} isOwner={isOwner} />
+          {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
+          <div className={fullscreen ? "bz-fs-content relative flex flex-1 flex-col overflow-hidden" : "relative flex flex-1 flex-col overflow-hidden"}>
+            {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
+            {activePoll?.open ? (
+              <RoomPollPanel
+                roomId={roomId}
+                poll={activePoll}
+                isOwner={isOwner}
+                myUid={user?.uid ?? ""}
+              />
+            ) : (
+              <>
+                {tool === "welcome" && (
+                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} />
+                )}
+                {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
+                {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+                {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+              </>
+            )}
+            {/* مؤقّت الدرس — يظهر للجميع */}
+            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} />
+          </div>
 
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
           {fullscreen && (
