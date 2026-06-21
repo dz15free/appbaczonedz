@@ -276,14 +276,14 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
         const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId);
         return (
           <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
-            <div className="flex items-center justify-between">
-              <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="flex items-center gap-2">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
+            <div className="flex items-start justify-between gap-2">
+              <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">
                   {p.authorName.charAt(0)}
                 </span>
-                <div>
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold hover:underline">{p.authorName}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                    <span className="truncate text-sm font-bold hover:underline">{p.authorName}</span>
                     <RoleBadge uid={p.authorId} role={p.authorRole} />
                   </span>
                   <span className="flex items-center gap-1 text-xs text-text-muted">
@@ -296,7 +296,7 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
                   </span>
                 </div>
               </Link>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 {(p.authorId === me.uid || isAdmin) ? (
                   <button
                     onClick={() => {

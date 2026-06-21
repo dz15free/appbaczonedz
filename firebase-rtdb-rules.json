@@ -229,6 +229,9 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid"
           }
+        },
+        "activeFile": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     },

@@ -450,3 +450,18 @@ export function listenHands(roomId: string, cb: (hands: RaisedHand[]) => void) {
     cb(list);
   });
 }
+
+/* ══════════════════════════════════════════
+   الملف المعروض حالياً (يتحكّم به المالك ويظهر للجميع)
+══════════════════════════════════════════ */
+export async function setActiveFile(roomId: string, fileId: string | null) {
+  const r = ref(rtdb, `roomLive/${roomId}/activeFile`);
+  if (fileId) await set(r, fileId);
+  else await remove(r);
+}
+
+export function listenActiveFile(roomId: string, cb: (fileId: string | null) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/activeFile`), (snap) => {
+    cb((snap.val() as string) ?? null);
+  });
+}

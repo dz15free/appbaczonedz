@@ -5,11 +5,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFileArrowUp, faFile, faSpinner, faTrash,
   faLink, faArrowRight, faFileLines, faImage,
-  faFilePdf, faTableCells,
+  faFilePdf, faTableCells, faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import {
-  addRoomFile, listenRoomFiles, getAttachment, deleteRoomFile, type RoomFile,
+  addRoomFile, listenRoomFiles, getAttachment, deleteRoomFile,
+  setActiveFile, listenActiveFile, type RoomFile,
 } from "@/features/rooms/rooms";
 import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
 
@@ -78,6 +79,27 @@ function InlinePreview({
           <span className="hidden sm:inline">القائمة</span>
         </button>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{file.name}</span>
+        {/* زر التحميل — متاح للجميع */}
+        {file.driveId ? (
+          <a
+            href={`https://drive.google.com/uc?export=download&id=${file.driveId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-bold text-primary transition hover:bg-primary/20"
+          >
+            <FontAwesomeIcon icon={faDownload} className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">تحميل</span>
+          </a>
+        ) : b64 ? (
+          <a
+            href={b64}
+            download={file.name}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-bold text-primary transition hover:bg-primary/20"
+          >
+            <FontAwesomeIcon icon={faDownload} className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">تحميل</span>
+          </a>
+        ) : null}
       </div>
 
       {/* محتوى المعاينة */}
@@ -131,6 +153,18 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
 
   useEffect(() => listenRoomFiles(roomId, setFiles), [roomId]);
 
+  // مزامنة الملف المعروض للطلاب: المالك يختار، الطلاب يتابعون
+  const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  useEffect(() => listenActiveFile(roomId, setActiveFileId), [roomId]);
+
+  // عند تغيّر الملف النشط أو قائمة الملفات، طابق العرض عند الطلاب
+  useEffect(() => {
+    if (isOwner) return; // المالك يتحكّم محلياً
+    if (!activeFileId) { setSelected(null); setMobileShowPreview(false); return; }
+    const f = files.find((x) => x.id === activeFileId);
+    if (f) { setSelected(f); setMobileShowPreview(true); }
+  }, [activeFileId, files, isOwner]);
+
   useEffect(() => {
     if (!isDriveConfigured()) return;
     initDrive().then((ok) => { setReady(ok); setConnected(hasDriveToken()); });
@@ -139,11 +173,14 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   function selectFile(f: RoomFile) {
     setSelected(f);
     setMobileShowPreview(true);
+    // المالك يبثّ اختياره لكل الطلاب
+    if (isOwner) setActiveFile(roomId, f.id);
   }
 
   function backToList() {
     setMobileShowPreview(false);
     setTimeout(() => setSelected(null), 300);
+    if (isOwner) setActiveFile(roomId, null);
   }
 
   async function connect() {

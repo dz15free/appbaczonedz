@@ -267,21 +267,23 @@ export default function RoomPage() {
             {(room?.name ?? "").charAt(0) || "B"}
           </span>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-sm font-bold leading-tight sm:text-base">{room?.name ?? "..."}</h1>
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <span className="bz-live-dot" />
-              <span className="text-[11px] font-semibold text-text-muted">
-                {members.length} متصل الآن
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <span className="flex items-center gap-1">
+                <span className="bz-live-dot" />
+                <span className="whitespace-nowrap text-[11px] font-semibold text-text-muted">
+                  {members.length} متصل
+                </span>
               </span>
               {room?.ownerRole === "teacher" && (
-                <span className="rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
+                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* رفع اليد: للطلاب */}
           {!isOwner && (
             <button

@@ -40,20 +40,20 @@ export function RoleBadge({ uid, role }: { uid?: string; role?: string }) {
 
   if (r === "teacher") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">
+      <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">
         👨‍🏫 أستاذ
       </span>
     );
   }
   if (r === "admin") {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+      <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
         🛡️ إدارة BacZoneDZ
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-0.5 rounded-full bg-border px-1.5 py-0.5 text-[9px] font-bold text-text-muted">
+    <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-border px-1.5 py-0.5 text-[9px] font-bold text-text-muted">
       🎓 طالب
     </span>
   );
