@@ -7,7 +7,7 @@ import { faGraduationCap, faVideo, faChalkboard, faBookOpen } from "@fortawesome
  * شاشة انتظار أنيقة تظهر للطلاب قبل أن يبدأ الأستاذ بعرض محتوى.
  * فيها حركات لطيفة + نصائح + حالة الانتظار.
  */
-export function WaitingScreen({ isOwner, roomName, memberCount }: { isOwner: boolean; roomName: string; memberCount: number }) {
+export function WaitingScreen({ isOwner, roomName, memberCount, welcomeMsg, ownerStatus }: { isOwner: boolean; roomName: string; memberCount: number; welcomeMsg?: string; ownerStatus?: "available" | "busy" | "brb" }) {
   return (
     <div className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
       {/* خلفية متوهّجة متحرّكة */}
@@ -56,6 +56,11 @@ export function WaitingScreen({ isOwner, roomName, memberCount }: { isOwner: boo
               </span>
               <span className="text-sm font-semibold text-text-muted">في انتظار أن يبدأ المعلّم...</span>
             </div>
+            {welcomeMsg && (
+              <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4">
+                <p className="text-sm font-semibold leading-relaxed text-text-primary">💬 {welcomeMsg}</p>
+              </div>
+            )}
             <p className="mt-5 text-sm leading-relaxed text-text-muted">
               الصوت والدردشة متاحان الآن. يمكنك رفع يدك ✋ متى أردت المشاركة.
             </p>

@@ -10,7 +10,7 @@ import {
   faExpand, faCompress, faChartBar, faShareNodes,
   faNoteSticky, faClock,
 } from "@fortawesome/free-solid-svg-icons";
-import { ref, onValue, set, remove } from "firebase/database";
+import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import {
@@ -20,6 +20,8 @@ import {
   listenMods, listenKicked, listenBanned,
   listenPoll, type RoomPoll,
   listenMessages,
+  setOwnerStatus, listenOwnerStatus, type OwnerStatus,
+  setWelcomeMessage, listenWelcomeMessage,
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
@@ -215,6 +217,10 @@ export default function RoomPage() {
 
   // رفع اليد + إشعار صوتي للمالك
   const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
+  const [ownerStatus, setOwnerStatusState] = useState<OwnerStatus>("available");
+  const [welcomeMsg, setWelcomeMsgState] = useState("");
+  useEffect(() => listenOwnerStatus(roomId, setOwnerStatusState), [roomId]);
+  useEffect(() => listenWelcomeMessage(roomId, setWelcomeMsgState), [roomId]);
   useEffect(() => {
     const r = ref(rtdb, `roomLive/${roomId}/hands`);
     const unsub = onValue(r, (snap) => {
@@ -242,6 +248,13 @@ export default function RoomPage() {
 
   function lowerHand(uid: string) {
     remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
+  }
+
+  // إعطاء الإذن بالتحدّث: يخفض اليد ويفتح ميكروفون الطالب
+  function grantMic(uid: string) {
+    remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
+    // فتح الميكروفون عبر إزالة الكتم في عقدة الصوت
+    update(ref(rtdb, `roomLive/${roomId}/voice/${uid}`), { muted: false });
   }
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
@@ -278,6 +291,13 @@ export default function RoomPage() {
               </span>
               {room?.ownerRole === "teacher" && (
                 <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
+              )}
+              {ownerStatus !== "available" && (
+                <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                  ownerStatus === "busy" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
+                }`}>
+                  {ownerStatus === "busy" ? "🔴 المعلّم مشغول" : "🟡 سيعود قريباً"}
+                </span>
               )}
             </div>
           </div>
@@ -407,6 +427,35 @@ export default function RoomPage() {
             <span className="hidden sm:inline">استفتاء</span>
           </button>
 
+          {/* حالة المعلّم */}
+          <button
+            onClick={() => {
+              const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
+              setOwnerStatus(roomId, next);
+            }}
+            title="تغيير حالتك"
+            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
+              ownerStatus === "available" ? "border-border text-secondary hover:bg-secondary/10"
+                : ownerStatus === "busy" ? "border-danger/40 bg-danger/10 text-danger"
+                : "border-warning/40 bg-warning/10 text-warning"
+            }`}
+          >
+            <span className="text-base leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
+            <span className="hidden sm:inline">{ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}</span>
+          </button>
+
+          {/* رسالة ترحيب */}
+          <button
+            onClick={() => {
+              const msg = prompt("رسالة الترحيب التي يراها الطلاب:", welcomeMsg);
+              if (msg !== null) setWelcomeMessage(roomId, msg.trim());
+            }}
+            title="رسالة ترحيب للطلاب"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
+          >
+            <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
+          </button>
+
           <div className="mr-auto" />
 
           {/* مشاركة الرابط */}
@@ -469,6 +518,7 @@ export default function RoomPage() {
               isOwner={isOwner}
               onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
               onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+              onGrantMic={isOwner ? grantMic : undefined}
             />
           </aside>
         )}
@@ -502,7 +552,7 @@ export default function RoomPage() {
             ) : (
               <>
                 {tool === "welcome" && (
-                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} />
+                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} welcomeMsg={welcomeMsg} ownerStatus={ownerStatus} />
                 )}
                 {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
                 {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
@@ -580,6 +630,7 @@ export default function RoomPage() {
               isOwner={isOwner}
               onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
               onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+              onGrantMic={isOwner ? grantMic : undefined}
             />
             {/* قائمة المحظورين للمالك */}
             {isOwner && banned.size > 0 && (

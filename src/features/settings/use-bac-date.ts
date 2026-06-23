@@ -72,3 +72,33 @@ export function useBacCountdown() {
 
   return days;
 }
+
+/** عدّ تنازلي كامل حيّ: أيام/ساعات/دقائق/ثوانٍ (يتحدّث كل ثانية) */
+export function useBacCountdownFull() {
+  const dateStr = useBacExamDate();
+  const [t, setT] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    function calc() {
+      const now = new Date();
+      let exam: Date;
+      if (dateStr) {
+        exam = new Date(dateStr + "T00:00:00");
+        if (exam <= now) exam = new Date(exam.getFullYear() + 1, exam.getMonth(), exam.getDate());
+      } else {
+        exam = new Date(now.getFullYear(), 5, 15);
+        if (exam <= now) exam = new Date(now.getFullYear() + 1, 5, 15);
+      }
+      let diff = Math.max(0, Math.floor((exam.getTime() - now.getTime()) / 1000));
+      const days = Math.floor(diff / 86400); diff -= days * 86400;
+      const hours = Math.floor(diff / 3600); diff -= hours * 3600;
+      const minutes = Math.floor(diff / 60); diff -= minutes * 60;
+      setT({ days, hours, minutes, seconds: diff });
+    }
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [dateStr]);
+
+  return t;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHand, faUserShield, faUserSlash, faCrown } from "@fortawesome/free-solid-svg-icons";
+import { faHand, faUserShield, faUserSlash, faCrown, faMicrophone } from "@fortawesome/free-solid-svg-icons";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import type { PresenceMember } from "@/features/rooms/use-presence";
@@ -17,10 +17,11 @@ interface Props {
   speakingUid?: string | null;
   onPromote?: (uid: string) => void;
   onKick?: (uid: string) => void;
+  onGrantMic?: (uid: string) => void;
 }
 
 export function ParticipantsPanel({
-  members, hands, mods, ownerId, myUid, isOwner, speakingUid, onPromote, onKick,
+  members, hands, mods, ownerId, myUid, isOwner, speakingUid, onPromote, onKick, onGrantMic,
 }: Props) {
   const handMap = new Map(hands.map((h, i) => [h.uid, i + 1]));
 
@@ -93,6 +94,18 @@ export function ParticipantsPanel({
                   )}
                 </div>
               </div>
+
+              {/* زر إعطاء الإذن بالتحدّث (للمالك، يظهر دائماً لمن رفع يده) */}
+              {isOwner && !isRoomOwner && handPos && onGrantMic && (
+                <button
+                  onClick={() => onGrantMic(m.uid)}
+                  title="إعطاء الإذن بالتحدّث (فتح الميكروفون)"
+                  className="flex shrink-0 items-center gap-1 rounded-lg bg-secondary/15 px-2 py-1.5 text-[10px] font-bold text-secondary transition hover:bg-secondary/25"
+                >
+                  <FontAwesomeIcon icon={faMicrophone} className="h-3 w-3" />
+                  إذن
+                </button>
+              )}
 
               {/* أدوات الإشراف (المالك: ترقية+طرد | المشرف: طرد فقط) */}
               {!isRoomOwner && (onPromote || onKick) && (

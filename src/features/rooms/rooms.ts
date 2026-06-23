@@ -465,3 +465,28 @@ export function listenActiveFile(roomId: string, cb: (fileId: string | null) => 
     cb((snap.val() as string) ?? null);
   });
 }
+
+/* ══════════════════════════════════════════
+   حالة المضيف + رسالة الترحيب (تظهر للطلاب)
+══════════════════════════════════════════ */
+export type OwnerStatus = "available" | "busy" | "brb"; // متفرّغ / مشغول / سأعود
+
+export async function setOwnerStatus(roomId: string, status: OwnerStatus) {
+  await set(ref(rtdb, `roomLive/${roomId}/ownerStatus`), status);
+}
+
+export function listenOwnerStatus(roomId: string, cb: (status: OwnerStatus) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/ownerStatus`), (snap) => {
+    cb((snap.val() as OwnerStatus) ?? "available");
+  });
+}
+
+export async function setWelcomeMessage(roomId: string, msg: string) {
+  await set(ref(rtdb, `roomLive/${roomId}/welcomeMsg`), msg || null);
+}
+
+export function listenWelcomeMessage(roomId: string, cb: (msg: string) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/welcomeMsg`), (snap) => {
+    cb((snap.val() as string) ?? "");
+  });
+}

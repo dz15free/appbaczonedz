@@ -1,177 +1,194 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUsers, faGlobe, faRobot, faClipboardCheck, faCalendarCheck,
-  faUpRightFromSquare, faTrophy, faGraduationCap, faFire, faListCheck,
-  faLayerGroup, faArrowLeft, faChalkboardUser, faComments, faBolt, faBookOpen,
+  faUsers, faRobot, faFire, faChalkboardUser, faComments,
+  faThumbsUp, faBookmark, faClipboardCheck, faEllipsis,
+  faBookOpen, faTrophy,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
-import { useBacCountdown } from "@/features/settings/use-bac-date";
+import { useBacCountdownFull } from "@/features/settings/use-bac-date";
+import { listenPosts, type Post } from "@/features/community/social";
+import { LiveAvatar } from "@/components/ui/live-avatar";
+import { RoleBadge } from "@/components/ui/role-badge";
 
-const QUICK = [
-  { href: "/rooms", label: "غرف الدراسة", desc: "بثّ مباشر بالصوت والسبورة", icon: faUsers, color: "indigo" },
-  { href: "/groups", label: "المجموعات", desc: "تعاون مع زملائك في شعبتك", icon: faGlobe, color: "emerald" },
-  { href: "/omibot", label: "الخباشة", desc: "مساعدتك الآلية الذكية ✨", icon: faRobot, color: "violet" },
-  { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "amber" },
-  { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك موضوعاً بموضوع", icon: faListCheck, color: "sky" },
-  { href: "/leaderboard", label: "لوحة الترتيب", desc: "نافس زملاءك على القمّة", icon: faTrophy, color: "rose" },
-  { href: "/library", label: "مكتبة البكالوريا", desc: "ملخصات وملفات لكل المواد", icon: faBookOpen, color: "emerald" },
-] as const;
-
-const COLOR_MAP: Record<string, string> = {
-  indigo: "bg-indigo-500/10 text-indigo-500",
-  emerald: "bg-emerald-500/10 text-emerald-500",
-  violet: "bg-violet-500/10 text-violet-500",
-  amber: "bg-amber-500/10 text-amber-500",
-  sky: "bg-sky-500/10 text-sky-500",
-  rose: "bg-rose-500/10 text-rose-500",
-};
-
-const EXTERNAL = [
-  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", desc: "عِش تجربة الامتحان الحقيقي", icon: faClipboardCheck },
-  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", desc: "خطّة مراجعة منظّمة لك", icon: faCalendarCheck },
+/* أقسام الموقع (صف الأيقونات) */
+const SECTIONS = [
+  { href: "/rooms", label: "غرف الدراسة", icon: faChalkboardUser, color: "bg-indigo-500/10 text-indigo-500" },
+  { href: "/library", label: "المكتبة", icon: faBookOpen, color: "bg-emerald-500/10 text-emerald-500" },
+  { href: "/omibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
+  { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
+  { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
 ];
 
-const FEATURES = [
-  { icon: faChalkboardUser, label: "غرف بصوت وسبورة مباشرة" },
-  { icon: faRobot, label: "مساعدة ذكية بالعربية" },
-  { icon: faComments, label: "مجتمع طلابي نشط" },
-  { icon: faBolt, label: "نقاط ومستويات وإنجازات" },
-];
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "الآن";
+  const m = Math.floor(s / 60); if (m < 60) return `منذ ${m} دقيقة`;
+  const h = Math.floor(m / 60); if (h < 24) return `منذ ${h} ساعة`;
+  const d = Math.floor(h / 24); return `منذ ${d} يوم`;
+}
+
+function CounterCell({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="font-display text-2xl font-extrabold tabular-nums text-white sm:text-3xl">
+        {String(value).padStart(2, "0")}
+      </div>
+      <div className="text-[11px] font-semibold text-white/60">{label}</div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
   const { settings: siteSettings } = useSiteSettings();
-  const days = useBacCountdown();
+  const { days, hours, minutes, seconds } = useBacCountdownFull();
+  const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
+  useEffect(() => {
+    if (!user) return;
+    return listenPosts(user.uid, (all) => setPosts(all.slice(0, 5)));
+  }, [user]);
+
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   const name = profile?.name || user.displayName || "طالب";
-  const urgency = days <= 30 ? "text-danger" : days <= 90 ? "text-warning" : "text-secondary";
-  const urgencyBg = days <= 30 ? "bg-danger" : days <= 90 ? "bg-warning" : "bg-secondary";
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-4xl px-4 py-5 sm:px-5 sm:py-8">
+      <section className="mx-auto max-w-2xl px-4 py-4 sm:px-5 sm:py-6">
 
-        {/* ═══════ هيرو ترحيبي ═══════ */}
-        <div className="bz-cosmic-bg relative overflow-hidden rounded-2xl border border-border p-5 sm:rounded-3xl sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-sm font-bold text-primary">
-                <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4" />
-                {siteSettings.homeWelcomeTitle || "مرحباً بعودتك"}
-              </p>
-              <h1 className="mt-1.5 font-display text-2xl font-extrabold leading-tight sm:text-3xl">
-                أهلاً، <span className="bz-gradient-text">{name}</span> 👋
-              </h1>
-              <p className="mt-3 max-w-md text-sm leading-relaxed text-text-muted">
-                {siteSettings.homeWelcomeSubtitle
-                  ? siteSettings.homeWelcomeSubtitle
-                  : <><span className="font-bold text-text-primary">BacZoneDZ</span> منصّتك الشاملة لمراجعة البكالوريا: غرف دراسة مباشرة بالصوت والسبورة الذكية، مساعدتك الخباشة، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.</>}
-              </p>
+        {/* ═══════ عدّاد البكالوريا ═══════ */}
+        <div className="relative overflow-hidden rounded-3xl border border-border p-5 sm:p-7"
+          style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #3730a3 100%)" }}>
+          {/* توهّج خلفي */}
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+          <div className="relative">
+            <p className="text-sm font-bold text-white/70">{siteSettings.homeWelcomeTitle || "مرحباً"}، {name} 👋</p>
+            <h1 className="mt-1 font-display text-3xl font-extrabold text-white sm:text-4xl">عدّاد البكالوريا</h1>
+            <p className="mt-1 text-sm text-white/60">باقي على الامتحان</p>
 
-              {/* رقاقات الميزات */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {FEATURES.map((f) => (
-                  <span key={f.label} className="flex items-center gap-1.5 rounded-full border border-border bg-surface/70 px-3 py-1.5 text-xs font-semibold text-text-muted backdrop-blur-sm">
-                    <FontAwesomeIcon icon={f.icon} className="h-3 w-3 text-primary" />
-                    {f.label}
-                  </span>
-                ))}
-              </div>
+            {/* الرقم الكبير للأيام */}
+            <div className="mt-3 flex items-end gap-2">
+              <span className="font-display text-6xl font-extrabold tabular-nums text-white sm:text-7xl">{days}</span>
+              <span className="mb-2 text-lg font-bold text-white/80">يوم</span>
+            </div>
 
-              {/* سلسلة الأيام المتتالية */}
-              {(profile?.streak ?? 0) >= 2 && (
-                <div className="mt-4">
-                  <span className={`flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-                    (profile?.streak ?? 0) >= 7 ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
-                  }`}>
-                    <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5" />
-                    {profile?.streak} أيام متتالية من النشاط 🔥
-                  </span>
-                </div>
+            {/* خط فاصل */}
+            <div className="my-4 h-px w-full bg-white/15" />
+
+            {/* ساعات/دقائق/ثوانٍ */}
+            <div className="flex items-center gap-5">
+              <CounterCell value={hours} label="ساعة" />
+              <div className="h-8 w-px bg-white/15" />
+              <CounterCell value={minutes} label="دقيقة" />
+              <div className="h-8 w-px bg-white/15" />
+              <CounterCell value={seconds} label="ثانية" />
+              {days <= 30 && (
+                <span className="ms-auto flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-300">
+                  <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5 animate-pulse" />
+                  لا تضيّع الوقت!
+                </span>
               )}
             </div>
 
-            {/* عدّاد البكالوريا */}
-            <div className="shrink-0 rounded-2xl border border-border bg-surface/80 p-5 text-center backdrop-blur-sm sm:w-48">
-              <p className="text-xs font-semibold text-text-muted">العدّ التنازلي للبكالوريا</p>
-              <div className="mt-2 flex items-center justify-center gap-1.5">
-                <span className={`font-display text-5xl font-extrabold tabular-nums ${urgency}`}>{days}</span>
-                {days <= 30 && <FontAwesomeIcon icon={faFire} className="h-5 w-5 text-danger animate-pulse" />}
+            {/* سلسلة الأيام */}
+            {(profile?.streak ?? 0) >= 2 && (
+              <div className="mt-4">
+                <span className="flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-amber-300">
+                  <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5" />
+                  {profile?.streak} أيام متتالية 🔥
+                </span>
               </div>
-              <p className="mt-0.5 text-sm font-bold text-text-muted">يوم متبقّي</p>
-              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border">
-                <div
-                  className={`h-full transition-all ${urgencyBg}`}
-                  style={{ width: `${Math.max(2, Math.min(100, 100 - (days / 365) * 100))}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] text-text-muted">
-                {days <= 30 ? "⚡ لا تضيّع الوقت!" : days <= 90 ? "💪 تسارع المراجعة" : "📚 وقت كافٍ، ابدأ الآن"}
-              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ═══════ أقسام الموقع ═══════ */}
+        <div className="mt-6 grid grid-cols-5 gap-2 sm:gap-3">
+          {SECTIONS.map((s) => (
+            <Link key={s.href} href={s.href} className="group flex flex-col items-center gap-2">
+              <span className={`grid h-14 w-14 place-items-center rounded-2xl transition group-hover:scale-105 sm:h-16 sm:w-16 ${s.color}`}>
+                <FontAwesomeIcon icon={s.icon} className="h-6 w-6 sm:h-7 sm:w-7" />
+              </span>
+              <span className="text-center text-[11px] font-semibold leading-tight text-text-muted sm:text-xs">{s.label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* ═══════ نشاط المجتمع ═══════ */}
+        <div className="mt-7">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-extrabold">نشاط المجتمع</h2>
+            <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
+          </div>
+
+          {posts.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-surface py-10 text-center text-text-muted">
+              <FontAwesomeIcon icon={faComments} className="h-8 w-8 opacity-40" />
+              <p className="mt-3 text-sm">لا منشورات بعد. كن أوّل من يشارك في المجتمع!</p>
+              <Link href="/community" className="mt-3 inline-block rounded-lg bg-primary/10 px-4 py-2 text-sm font-bold text-primary">اذهب للمجتمع</Link>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {posts.map((p) => (
+                <Link key={p.id} href={`/community/${p.id}`}
+                  className="block rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
+                  {/* رأس المنشور */}
+                  <div className="flex items-center gap-2.5">
+                    <LiveAvatar uid={p.authorId} name={p.authorName} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <span className="truncate font-bold">{p.authorName}</span>
+                        <RoleBadge uid={p.authorId} role={p.authorRole} />
+                      </span>
+                      <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
+                    </div>
+                    <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4 text-text-muted" />
+                  </div>
+
+                  {/* نص المنشور */}
+                  {p.text && <p className="mt-3 line-clamp-3 text-sm leading-relaxed">{p.text}</p>}
+
+                  {/* مؤشّر مرفق */}
+                  {p.attachmentKind === "file" && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-muted">
+                      <FontAwesomeIcon icon={faClipboardCheck} className="h-4 w-4 text-primary" />
+                      {p.fileName || "ملف مرفق"}
+                    </div>
+                  )}
+
+                  {/* شريط التفاعل */}
+                  <div className="mt-3 flex items-center gap-5 border-t border-border pt-3 text-sm text-text-muted">
+                    <span className="flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faThumbsUp} className="h-4 w-4 text-secondary" />
+                      {p.score}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
+                      {p.commentCount}
+                    </span>
+                    <FontAwesomeIcon icon={faBookmark} className="ms-auto h-4 w-4" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* ═══════ أدواتك ═══════ */}
-        <div className="mt-7">
-          <h2 className="mb-3 font-display text-base font-extrabold">أدواتك</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {QUICK.map((q) => (
-              <Link
-                key={q.href}
-                href={q.href}
-                className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-glass sm:p-5"
-              >
-                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg ${COLOR_MAP[q.color]}`}>
-                  <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <span className="block font-bold">{q.label}</span>
-                  <span className="text-sm text-text-muted">{q.desc}</span>
-                </div>
-                <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted opacity-0 transition group-hover:opacity-100 group-hover:text-primary" />
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ═══════ مصادر خارجية ═══════ */}
-        <div className="mt-7">
-          <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {EXTERNAL.map((q) => (
-              <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer"
-                className="group flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-4 transition hover:-translate-y-0.5 hover:shadow-glass sm:p-5">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
-                  <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 font-bold">
-                    {q.label}
-                    <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />
-                  </span>
-                  <span className="text-sm text-text-muted">{q.desc}</span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
       </section>
     </AppShell>
   );

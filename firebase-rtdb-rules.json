@@ -232,6 +232,12 @@
         },
         "activeFile": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "ownerStatus": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "welcomeMsg": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     },
