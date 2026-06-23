@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faUser, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -15,6 +15,7 @@ import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { KhabbashaFloatingButton } from "@/components/ui/khabbasha-floating-button";
+import { LiveAvatar } from "@/components/ui/live-avatar";
 
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
@@ -22,26 +23,41 @@ const NAV = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup },
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/library", label: "المكتبة", icon: faBookOpen },
+  { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
   { href: "/notifications", label: "الإشعارات", icon: faBell },
-  { href: "/profile", label: "حسابي", icon: faUser },
 ];
 
-// شريط الهاتف السفلي — 5 عناصر أساسية فقط لتجربة نظيفة
-const MOBILE_NAV = [
+// شريط الهاتف السفلي — مع زر إضافة مركزي بارز
+const MOBILE_NAV_LEFT = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
-  { href: "/rooms", label: "الغرف", icon: faUsers },
+  { href: "/rooms", label: "غرف", icon: faUsers },
+];
+const MOBILE_NAV_RIGHT = [
+  { href: "/library", label: "المكتبة", icon: faBookOpen },
   { href: "/community", label: "المجتمع", icon: faGlobe },
-  { href: "/notifications", label: "الإشعارات", icon: faBell },
-  { href: "/profile", label: "حسابي", icon: faUser },
+];
+
+// عناصر قائمة المزيد (الدرج الجانبي) — كل الأقسام بما فيها الخارجية
+const MENU_ITEMS = [
+  { href: "/rooms", label: "غرف الدراسة", icon: faUsers, external: false },
+  { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
+  { href: "/omibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
+  { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
+  { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
+  { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
+  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
+  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
-  const initial = (profile?.name || user?.displayName || "ط").charAt(0);
   const [unread, setUnread] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const banner = useSiteBanner();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { settings } = useSiteSettings();
@@ -95,18 +111,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] pb-24 lg:pb-0">
-      {/* الشريط العلوي (هاتف + حاسوب) */}
+      {/* ═══════ الشريط العلوي ═══════ */}
       <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
-        <Link href="/home" className="flex items-center gap-2">
-          {settings.logoUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={settings.logoUrl} alt={settings.siteName ?? "BacZoneDZ"}
-              className="h-9 w-9 shrink-0 rounded-xl object-contain" />
-          ) : (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src="/icon.svg" alt="BacZoneDZ" className="bz-studio-glow h-9 w-9 shrink-0 rounded-xl" />
-          )}
-          <span className="hidden font-display text-lg font-extrabold sm:inline">
+        {/* يسار: زر القائمة (هاتف) + شعار (حاسوب) */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMenuOpen(true)}
+            aria-label="القائمة"
+            className="grid h-10 w-10 place-items-center rounded-xl text-text-primary transition hover:bg-primary/10 lg:hidden"
+          >
+            <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
+          </button>
+          <Link href="/home" className="hidden items-center gap-2 lg:flex">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+            <span className="font-display text-lg font-extrabold">
+              {settings.siteName ?? "BacZone"} <span className="bz-gradient-text">DZ</span>
+            </span>
+          </Link>
+        </div>
+
+        {/* وسط: الشعار (هاتف فقط) */}
+        <Link href="/home" className="flex items-center gap-2 lg:hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+          <span className="font-display text-lg font-extrabold">
             {settings.siteName ?? "BacZone"} <span className="bz-gradient-text">DZ</span>
           </span>
         </Link>
@@ -134,24 +163,85 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
+        {/* يمين: بحث + إشعارات + صورة الحساب */}
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="grid h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary"
+            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary lg:grid"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
           </button>
-          <ThemeToggle />
-          <Link
-            href="/profile"
-            aria-label="حسابي"
-            className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white ring-2 ring-primary/15 transition hover:ring-primary/30"
-          >
-            {initial}
+          <div className="hidden lg:block"><ThemeToggle /></div>
+          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text-primary transition hover:bg-primary/10">
+            <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
+            {unread > 0 && (
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </Link>
+          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/15 transition hover:ring-primary/30">
+            <LiveAvatar uid={user?.uid} name={profile?.name || user?.displayName || "ط"} size="sm" className="h-9 w-9" />
           </Link>
         </div>
       </header>
+
+      {/* ═══════ درج القائمة الجانبي (هاتف) ═══════ */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className="absolute inset-y-0 right-0 flex w-80 max-w-[85%] flex-col bg-surface shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: "bz-fade-slide 0.25s ease-out" }}
+          >
+            {/* رأس الدرج */}
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <div className="flex items-center gap-3">
+                <LiveAvatar uid={user?.uid} name={profile?.name || "ط"} size="md" />
+                <div className="min-w-0">
+                  <p className="truncate font-bold">{profile?.name || "طالب"}</p>
+                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="text-xs text-primary hover:underline">عرض الملف الشخصي</Link>
+                </div>
+              </div>
+              <button onClick={() => setMenuOpen(false)} aria-label="إغلاق" className="grid h-8 w-8 place-items-center rounded-lg text-text-muted hover:text-danger">
+                <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* عناصر القائمة */}
+            <nav className="flex-1 overflow-y-auto p-3">
+              {MENU_ITEMS.map((m) =>
+                m.external ? (
+                  <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                    <FontAwesomeIcon icon={m.icon} className="h-5 w-5 text-primary" />
+                    {m.label}
+                  </a>
+                ) : (
+                  <Link key={m.href} href={m.href} onClick={() => setMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                      pathname === m.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/10 hover:text-primary"
+                    }`}>
+                    <FontAwesomeIcon icon={m.icon} className="h-5 w-5 text-primary" />
+                    {m.label}
+                  </Link>
+                )
+              )}
+            </nav>
+
+            {/* تذييل الدرج */}
+            <div className="flex items-center justify-between border-t border-border p-4">
+              <ThemeToggle />
+              <button onClick={() => { setMenuOpen(false); setSearchOpen(true); }}
+                className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" /> بحث
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         {/* وضع الصيانة — يحجب المحتوى لغير الأدمن */}
@@ -204,37 +294,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* زر الخباشة العائم مع نص منبثق (كل الصفحات) */}
       {pathname !== "/omibot" && <KhabbashaFloatingButton />}
 
-      {/* شريط التنقّل السفلي (هاتف فقط) */}
+      {/* ═══════ شريط التنقّل السفلي (هاتف) ═══════ */}
       <nav
-        className="fixed inset-x-3 bottom-3 z-40 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="bz-glass mx-auto flex max-w-md items-center justify-around rounded-2xl border border-border px-1 py-1.5 shadow-glass">
-          {MOBILE_NAV.map((n) => {
+        <div className="bz-glass flex items-center justify-around border-t border-border px-2 pb-1 pt-2">
+          {MOBILE_NAV_LEFT.map((n) => {
             const active = pathname === n.href;
             return (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition ${
-                  active ? "text-primary" : "text-text-muted"
-                }`}
-              >
-                {active && (
-                  <span className="absolute inset-x-2 top-0.5 h-7 rounded-lg bg-primary/10" />
-                )}
-                <span className="relative z-10">
-                  <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
-                  {n.href === "/notifications" && unread > 0 && (
-                    <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-                      {unread > 9 ? "9+" : unread}
-                    </span>
-                  )}
-                </span>
-                <span className="relative z-10">{n.label}</span>
+              <Link key={n.href} href={n.href}
+                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "text-primary" : "text-text-muted"}`}>
+                <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
+                <span>{n.label}</span>
               </Link>
             );
           })}
+
+          {/* زر الإضافة المركزي البارز */}
+          <Link href="/rooms" aria-label="إنشاء"
+            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105">
+            <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
+          </Link>
+
+          {MOBILE_NAV_RIGHT.map((n) => {
+            const active = pathname === n.href;
+            return (
+              <Link key={n.href} href={n.href}
+                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "text-primary" : "text-text-muted"}`}>
+                <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
+                <span>{n.label}</span>
+              </Link>
+            );
+          })}
+
+          {/* المزيد → يفتح الدرج */}
+          <button onClick={() => setMenuOpen(true)}
+            className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold text-text-muted transition">
+            <FontAwesomeIcon icon={faEllipsis} className="h-5 w-5" />
+            <span>المزيد</span>
+          </button>
         </div>
       </nav>
     </div>

@@ -7,7 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers, faRobot, faFire, faChalkboardUser, faComments,
   faThumbsUp, faBookmark, faClipboardCheck, faEllipsis,
-  faBookOpen, faTrophy,
+  faBookOpen, faTrophy, faCalendarCheck, faUpRightFromSquare,
+  faLayerGroup, faListCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -25,6 +26,18 @@ const SECTIONS = [
   { href: "/omibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
+];
+
+/* أدوات إضافية */
+const TOOLS = [
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "bg-amber-500/10 text-amber-500" },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك", icon: faListCheck, color: "bg-sky-500/10 text-sky-500" },
+];
+
+/* مصادر خارجية */
+const EXTERNAL = [
+  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", desc: "عِش تجربة الامتحان الحقيقي", icon: faClipboardCheck },
+  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", desc: "خطّة مراجعة منظّمة لك", icon: faCalendarCheck },
 ];
 
 function timeAgo(ts: number) {
@@ -71,49 +84,28 @@ export default function HomePage() {
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-4 sm:px-5 sm:py-6">
 
-        {/* ═══════ عدّاد البكالوريا ═══════ */}
-        <div className="relative overflow-hidden rounded-3xl border border-border p-5 sm:p-7"
+        {/* ═══════ عدّاد البكالوريا (مدمج) ═══════ */}
+        <div className="relative overflow-hidden rounded-2xl border border-border p-4 sm:p-5"
           style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #3730a3 100%)" }}>
-          {/* توهّج خلفي */}
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
-          <div className="relative">
-            <p className="text-sm font-bold text-white/70">{siteSettings.homeWelcomeTitle || "مرحباً"}، {name} 👋</p>
-            <h1 className="mt-1 font-display text-3xl font-extrabold text-white sm:text-4xl">عدّاد البكالوريا</h1>
-            <p className="mt-1 text-sm text-white/60">باقي على الامتحان</p>
-
-            {/* الرقم الكبير للأيام */}
-            <div className="mt-3 flex items-end gap-2">
-              <span className="font-display text-6xl font-extrabold tabular-nums text-white sm:text-7xl">{days}</span>
-              <span className="mb-2 text-lg font-bold text-white/80">يوم</span>
-            </div>
-
-            {/* خط فاصل */}
-            <div className="my-4 h-px w-full bg-white/15" />
-
-            {/* ساعات/دقائق/ثوانٍ */}
-            <div className="flex items-center gap-5">
-              <CounterCell value={hours} label="ساعة" />
-              <div className="h-8 w-px bg-white/15" />
-              <CounterCell value={minutes} label="دقيقة" />
-              <div className="h-8 w-px bg-white/15" />
-              <CounterCell value={seconds} label="ثانية" />
-              {days <= 30 && (
-                <span className="ms-auto flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-300">
-                  <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5 animate-pulse" />
-                  لا تضيّع الوقت!
-                </span>
-              )}
-            </div>
-
-            {/* سلسلة الأيام */}
-            {(profile?.streak ?? 0) >= 2 && (
-              <div className="mt-4">
-                <span className="flex w-fit items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-amber-300">
-                  <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5" />
-                  {profile?.streak} أيام متتالية 🔥
-                </span>
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/5 blur-2xl" />
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white/70">{siteSettings.homeWelcomeTitle || "مرحباً"}، {name} 👋</p>
+              <h1 className="mt-0.5 font-display text-xl font-extrabold text-white sm:text-2xl">عدّاد البكالوريا</h1>
+              <div className="mt-1 flex items-end gap-1.5">
+                <span className="font-display text-4xl font-extrabold tabular-nums text-white sm:text-5xl">{days}</span>
+                <span className="mb-1 text-sm font-bold text-white/70">يوم متبقّي</span>
+                {days <= 30 && <FontAwesomeIcon icon={faFire} className="mb-1.5 h-4 w-4 text-red-400 animate-pulse" />}
               </div>
-            )}
+            </div>
+            {/* ساعات/دقائق/ثوانٍ مدمجة */}
+            <div className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
+              <CounterCell value={hours} label="ساعة" />
+              <div className="h-7 w-px bg-white/15" />
+              <CounterCell value={minutes} label="دقيقة" />
+              <div className="h-7 w-px bg-white/15" />
+              <CounterCell value={seconds} label="ثانية" />
+            </div>
           </div>
         </div>
 
@@ -187,6 +179,47 @@ export default function HomePage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ═══════ أدوات إضافية ═══════ */}
+        <div className="mt-7">
+          <h2 className="mb-3 font-display text-base font-extrabold">أدوات الدراسة</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TOOLS.map((t) => (
+              <Link key={t.href} href={t.href}
+                className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-glass">
+                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${t.color}`}>
+                  <FontAwesomeIcon icon={t.icon} className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="block font-bold">{t.label}</span>
+                  <span className="text-sm text-text-muted">{t.desc}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ═══════ مصادر إضافية ═══════ */}
+        <div className="mt-7">
+          <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {EXTERNAL.map((q) => (
+              <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer"
+                className="group flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-4 transition hover:-translate-y-0.5 hover:shadow-glass">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
+                  <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 font-bold">
+                    {q.label}
+                    <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />
+                  </span>
+                  <span className="text-sm text-text-muted">{q.desc}</span>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
 
       </section>
