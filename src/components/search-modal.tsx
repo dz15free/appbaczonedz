@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMagnifyingGlass, faXmark, faUsers, faLayerGroup, faUser, faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import { ref, query, orderByChild, startAt, endAt, limitToFirst, get } from "firebase/database";
+import { ref, query, orderByChild, limitToFirst, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
 interface Result {
@@ -22,37 +22,38 @@ const ICON = { room: faUsers, group: faLayerGroup, user: faUser };
 const LABEL = { room: "غرفة", group: "مجموعة", user: "مستخدم" };
 
 async function searchRooms(q: string): Promise<Result[]> {
-  const snap = await get(
-    query(ref(rtdb, "rooms"), orderByChild("name"),
-      startAt(q), endAt(q + "\uf8ff"), limitToFirst(6))
-  );
+  const lower = q.toLowerCase();
+  const snap = await get(query(ref(rtdb, "rooms"), orderByChild("name"), limitToFirst(200)));
   const val = snap.val() ?? {};
-  return Object.entries(val).map(([id, r]: any) => ({
-    id, name: r.name, sub: r.subject ?? undefined,
-    href: `/rooms/${id}`, kind: "room" as const,
-  }));
+  return Object.entries(val)
+    .filter(([, r]: any) => r.name && String(r.name).toLowerCase().includes(lower))
+    .slice(0, 6)
+    .map(([id, r]: any) => ({
+      id, name: r.name, sub: r.subject ?? undefined,
+      href: `/rooms/${id}`, kind: "room" as const,
+    }));
 }
 
 async function searchGroups(q: string): Promise<Result[]> {
-  const snap = await get(
-    query(ref(rtdb, "groups"), orderByChild("name"),
-      startAt(q), endAt(q + "\uf8ff"), limitToFirst(6))
-  );
+  const lower = q.toLowerCase();
+  const snap = await get(query(ref(rtdb, "groups"), orderByChild("name"), limitToFirst(200)));
   const val = snap.val() ?? {};
-  return Object.entries(val).map(([id, g]: any) => ({
-    id, name: g.name, sub: g.subject ?? undefined,
-    href: `/groups/${id}`, kind: "group" as const,
-  }));
+  return Object.entries(val)
+    .filter(([, g]: any) => g.name && String(g.name).toLowerCase().includes(lower))
+    .slice(0, 6)
+    .map(([id, g]: any) => ({
+      id, name: g.name, sub: g.subject ?? undefined,
+      href: `/groups/${id}`, kind: "group" as const,
+    }));
 }
 
 async function searchUsers(q: string): Promise<Result[]> {
-  const snap = await get(
-    query(ref(rtdb, "users"), orderByChild("name"),
-      startAt(q), endAt(q + "\uf8ff"), limitToFirst(6))
-  );
+  const lower = q.toLowerCase();
+  const snap = await get(query(ref(rtdb, "users"), orderByChild("name"), limitToFirst(400)));
   const val = snap.val() ?? {};
   return Object.entries(val)
-    .filter(([, u]: any) => u.name)
+    .filter(([, u]: any) => u.name && String(u.name).toLowerCase().includes(lower))
+    .slice(0, 8)
     .map(([id, u]: any) => ({
       id, name: u.name, sub: u.track ?? undefined,
       href: `/u/${id}?name=${encodeURIComponent(u.name)}`, kind: "user" as const,

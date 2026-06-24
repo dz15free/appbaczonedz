@@ -24,7 +24,6 @@ const NAV = [
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/library", label: "المكتبة", icon: faBookOpen },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
-  { href: "/notifications", label: "الإشعارات", icon: faBell },
 ];
 
 // شريط الهاتف السفلي — مع زر إضافة مركزي بارز
@@ -126,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
             <span className="font-display text-lg font-extrabold">
-              {settings.siteName ?? "BacZone"} <span className="bz-gradient-text">DZ</span>
+              {settings.siteName ?? "BacZoneDZ"}
             </span>
           </Link>
         </div>
@@ -136,7 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
           <span className="font-display text-lg font-extrabold">
-            {settings.siteName ?? "BacZone"} <span className="bz-gradient-text">DZ</span>
+            {settings.siteName ?? "BacZoneDZ"}
           </span>
         </Link>
 

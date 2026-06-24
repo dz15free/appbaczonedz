@@ -6,16 +6,16 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUsers, faRobot, faFire, faChalkboardUser, faComments,
-  faThumbsUp, faBookmark, faClipboardCheck, faEllipsis,
-  faBookOpen, faTrophy, faCalendarCheck, faUpRightFromSquare,
-  faLayerGroup, faListCheck,
+  faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
+  faUpRightFromSquare, faLayerGroup, faListCheck,
+  faArrowUp, faArrowDown, faComment, faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { useBacCountdownFull } from "@/features/settings/use-bac-date";
-import { listenPosts, type Post } from "@/features/community/social";
+import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 
@@ -88,24 +88,44 @@ export default function HomePage() {
         <div className="relative overflow-hidden rounded-2xl border border-border p-4 sm:p-5"
           style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #3730a3 100%)" }}>
           <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/5 blur-2xl" />
+          <div className="pointer-events-none absolute -left-6 -bottom-10 h-32 w-32 rounded-full bg-secondary/10 blur-2xl" />
           <div className="relative flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs font-bold text-white/70">{siteSettings.homeWelcomeTitle || "مرحباً"}، {name} 👋</p>
               <h1 className="mt-0.5 font-display text-xl font-extrabold text-white sm:text-2xl">عدّاد البكالوريا</h1>
-              <div className="mt-1 flex items-end gap-1.5">
-                <span className="font-display text-4xl font-extrabold tabular-nums text-white sm:text-5xl">{days}</span>
-                <span className="mb-1 text-sm font-bold text-white/70">يوم متبقّي</span>
-                {days <= 30 && <FontAwesomeIcon icon={faFire} className="mb-1.5 h-4 w-4 text-red-400 animate-pulse" />}
+
+              {days > 0 ? (
+                <div className="mt-1 flex items-end gap-1.5">
+                  <span className="font-display text-5xl font-extrabold tabular-nums text-white sm:text-6xl">{days}</span>
+                  <span className="mb-1.5 text-sm font-bold text-white/70">يوم متبقّي</span>
+                  {days <= 30 && <FontAwesomeIcon icon={faFire} className="mb-2 h-4 w-4 text-red-400 animate-pulse" />}
+                </div>
+              ) : (
+                /* اليوم الأخير: عدّ تنازلي بالساعات/الدقائق/الثواني */
+                <div className="mt-2 flex items-center gap-2.5">
+                  <CounterCell value={hours} label="ساعة" />
+                  <span className="mb-3 text-xl font-bold text-white/40">:</span>
+                  <CounterCell value={minutes} label="دقيقة" />
+                  <span className="mb-3 text-xl font-bold text-white/40">:</span>
+                  <CounterCell value={seconds} label="ثانية" />
+                  <span className="ms-2 flex items-center gap-1 self-end rounded-full bg-red-500/20 px-2.5 py-1 text-[11px] font-bold text-red-300">
+                    <FontAwesomeIcon icon={faFire} className="h-3 w-3 animate-pulse" /> اليوم الأخير!
+                  </span>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-white/50">
+                {days > 30 ? "📚 وقت كافٍ — نظّم مراجعتك من الآن" : days > 0 ? "💪 المراجعة تتسارع، ركّز!" : "🎯 بالتوفيق في امتحانك!"}
+              </p>
+            </div>
+
+            {/* عنصر بصري احترافي: شارة تخرّج */}
+            {days > 0 && (
+              <div className="hidden shrink-0 sm:block">
+                <div className="grid h-24 w-24 place-items-center rounded-2xl bg-white/10 backdrop-blur-sm">
+                  <FontAwesomeIcon icon={faGraduationCap} className="h-12 w-12 text-white/80" />
+                </div>
               </div>
-            </div>
-            {/* ساعات/دقائق/ثوانٍ مدمجة */}
-            <div className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-white/10 px-3 py-2.5 backdrop-blur-sm">
-              <CounterCell value={hours} label="ساعة" />
-              <div className="h-7 w-px bg-white/15" />
-              <CounterCell value={minutes} label="دقيقة" />
-              <div className="h-7 w-px bg-white/15" />
-              <CounterCell value={seconds} label="ثانية" />
-            </div>
+            )}
           </div>
         </div>
 
@@ -121,10 +141,10 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* ═══════ نشاط المجتمع ═══════ */}
+        {/* ═══════ آخر المنشورات ═══════ */}
         <div className="mt-7">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-lg font-extrabold">نشاط المجتمع</h2>
+            <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
             <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
           </div>
 
@@ -137,10 +157,10 @@ export default function HomePage() {
           ) : (
             <div className="space-y-3">
               {posts.map((p) => (
-                <Link key={p.id} href={`/community/${p.id}`}
-                  className="block rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
+                <div key={p.id}
+                  className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
                   {/* رأس المنشور */}
-                  <div className="flex items-center gap-2.5">
+                  <Link href={`/community/${p.id}`} className="flex items-center gap-2.5">
                     <LiveAvatar uid={p.authorId} name={p.authorName} size="md" />
                     <div className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -149,11 +169,14 @@ export default function HomePage() {
                       </span>
                       <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
                     </div>
-                    <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4 text-text-muted" />
-                  </div>
+                  </Link>
 
                   {/* نص المنشور */}
-                  {p.text && <p className="mt-3 line-clamp-3 text-sm leading-relaxed">{p.text}</p>}
+                  {p.text && (
+                    <Link href={`/community/${p.id}`} className="mt-3 block line-clamp-3 text-sm leading-relaxed">
+                      {p.text}
+                    </Link>
+                  )}
 
                   {/* مؤشّر مرفق */}
                   {p.attachmentKind === "file" && (
@@ -163,19 +186,33 @@ export default function HomePage() {
                     </div>
                   )}
 
-                  {/* شريط التفاعل */}
-                  <div className="mt-3 flex items-center gap-5 border-t border-border pt-3 text-sm text-text-muted">
-                    <span className="flex items-center gap-1.5">
-                      <FontAwesomeIcon icon={faThumbsUp} className="h-4 w-4 text-secondary" />
-                      {p.score}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
-                      {p.commentCount}
-                    </span>
-                    <FontAwesomeIcon icon={faBookmark} className="ms-auto h-4 w-4" />
+                  {/* شريط التفاعل — نظام تصويت مثل المجتمع */}
+                  <div className="mt-3 flex items-center gap-4 border-t border-border pt-3 text-sm">
+                    <div className="flex items-center gap-1 rounded-full bg-background px-1">
+                      <button
+                        onClick={() => votePost(p.id, user.uid, 1, p.myVote)}
+                        className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"}`}
+                        aria-label="رفع"
+                      >
+                        <FontAwesomeIcon icon={faArrowUp} className="h-4 w-4" />
+                      </button>
+                      <span className={`min-w-4 text-center text-sm font-bold ${p.score > 0 ? "text-secondary" : p.score < 0 ? "text-danger" : "text-text-muted"}`}>
+                        {p.score}
+                      </span>
+                      <button
+                        onClick={() => votePost(p.id, user.uid, -1, p.myVote)}
+                        className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"}`}
+                        aria-label="خفض"
+                      >
+                        <FontAwesomeIcon icon={faArrowDown} className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <Link href={`/community/${p.id}`} className="flex items-center gap-1.5 text-text-muted hover:text-primary">
+                      <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
+                      {p.commentCount > 0 ? `${p.commentCount} تعليق` : "تعليق"}
+                    </Link>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

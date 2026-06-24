@@ -166,51 +166,60 @@ export function MarwaMessage({ text }: { text: string }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const { html, math } = markdownToHtml(text);
-    el.innerHTML = html;
+    try {
+      const { html, math } = markdownToHtml(text);
+      el.innerHTML = html;
 
-    if (math.length === 0) return;
+      if (math.length === 0) return;
 
-    // استبدل علامات المعادلات النائبة بعد تحميل KaTeX
-    loadKatex().then(() => {
-      const katex = (window as any).katex;
-      math.forEach((m) => {
-        // ابحث عن النص النائب في كل العقد
-        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-        const nodes: Text[] = [];
-        let n: Node | null;
-        while ((n = walker.nextNode())) {
-          if (n.nodeValue?.includes(m.id)) nodes.push(n as Text);
-        }
-        nodes.forEach((node) => {
-          const parts = node.nodeValue!.split(m.id);
-          if (parts.length < 2) return;
-          const frag = document.createDocumentFragment();
-          parts.forEach((part, i) => {
-            if (part) frag.appendChild(document.createTextNode(part));
-            if (i < parts.length - 1) {
-              const span = document.createElement("span");
-              span.className = m.display ? "bz-math-block" : "bz-math-inline";
-              try {
-                if (katex) {
-                  katex.render(m.tex, span, {
-                    displayMode: m.display,
-                    throwOnError: false,
-                    output: "html",
-                  });
-                } else {
-                  span.textContent = m.display ? `$$${m.tex}$$` : `$${m.tex}$`;
-                }
-              } catch {
-                span.textContent = m.tex;
-              }
-              frag.appendChild(span);
+      // استبدل علامات المعادلات النائبة بعد تحميل KaTeX
+      loadKatex().then(() => {
+        try {
+          const katex = (window as any).katex;
+          math.forEach((m) => {
+            // ابحث عن النص النائب في كل العقد
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            const nodes: Text[] = [];
+            let n: Node | null;
+            while ((n = walker.nextNode())) {
+              if (n.nodeValue?.includes(m.id)) nodes.push(n as Text);
             }
+            nodes.forEach((node) => {
+              const parts = node.nodeValue!.split(m.id);
+              if (parts.length < 2) return;
+              const frag = document.createDocumentFragment();
+              parts.forEach((part, i) => {
+                if (part) frag.appendChild(document.createTextNode(part));
+                if (i < parts.length - 1) {
+                  const span = document.createElement("span");
+                  span.className = m.display ? "bz-math-block" : "bz-math-inline";
+                  try {
+                    if (katex) {
+                      katex.render(m.tex, span, {
+                        displayMode: m.display,
+                        throwOnError: false,
+                        output: "html",
+                      });
+                    } else {
+                      span.textContent = m.display ? `$$${m.tex}$$` : `$${m.tex}$`;
+                    }
+                  } catch {
+                    span.textContent = m.tex;
+                  }
+                  frag.appendChild(span);
+                }
+              });
+              node.parentNode?.replaceChild(frag, node);
+            });
           });
-          node.parentNode?.replaceChild(frag, node);
-        });
-      });
-    });
+        } catch {
+          /* تجاهل أخطاء معالجة المعادلات */
+        }
+      }).catch(() => { /* تجاهل فشل تحميل KaTeX */ });
+    } catch {
+      // في حال فشل التحويل، اعرض النص الخام بأمان
+      if (el) el.textContent = text;
+    }
   }, [text]);
 
   return <div ref={ref} className="bz-marwa-content" dir="auto" />;

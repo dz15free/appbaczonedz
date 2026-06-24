@@ -21,7 +21,6 @@ import {
   listenPoll, type RoomPoll,
   listenMessages,
   setOwnerStatus, listenOwnerStatus, type OwnerStatus,
-  setWelcomeMessage, listenWelcomeMessage,
 } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
@@ -218,9 +217,7 @@ export default function RoomPage() {
   // رفع اليد + إشعار صوتي للمالك
   const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
   const [ownerStatus, setOwnerStatusState] = useState<OwnerStatus>("available");
-  const [welcomeMsg, setWelcomeMsgState] = useState("");
   useEffect(() => listenOwnerStatus(roomId, setOwnerStatusState), [roomId]);
-  useEffect(() => listenWelcomeMessage(roomId, setWelcomeMsgState), [roomId]);
   useEffect(() => {
     const r = ref(rtdb, `roomLive/${roomId}/hands`);
     const unsub = onValue(r, (snap) => {
@@ -444,17 +441,6 @@ export default function RoomPage() {
             <span className="hidden sm:inline">{ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}</span>
           </button>
 
-          {/* رسالة ترحيب */}
-          <button
-            onClick={() => {
-              const msg = prompt("رسالة الترحيب التي يراها الطلاب:", welcomeMsg);
-              if (msg !== null) setWelcomeMessage(roomId, msg.trim());
-            }}
-            title="رسالة ترحيب للطلاب"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
-          >
-            <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
-          </button>
 
           <div className="mr-auto" />
 
@@ -552,7 +538,7 @@ export default function RoomPage() {
             ) : (
               <>
                 {tool === "welcome" && (
-                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} welcomeMsg={welcomeMsg} ownerStatus={ownerStatus} />
+                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />
                 )}
                 {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
                 {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}

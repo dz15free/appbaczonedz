@@ -132,7 +132,7 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
   async function reset() { await setRoomTimer(roomId, null); }
 
   return (
-    <div className={`pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-3 py-2 shadow-xl backdrop-blur-md ${
+    <div className={`pointer-events-auto fixed left-1/2 top-16 z-[60] flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-2xl border px-3 py-2 shadow-xl backdrop-blur-md sm:top-20 ${
       done ? "border-secondary bg-secondary/20" : danger ? "border-danger bg-danger/15" : "border-white/10 bg-black/60"}`}>
       <svg width="56" height="56" viewBox="0 0 64 64" className="shrink-0">
         <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
