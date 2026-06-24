@@ -267,7 +267,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
       {/* منطقة المعاينة */}
       <div className="flex-1 overflow-hidden">
         {selected ? (
-          <InlinePreview file={selected} roomId={roomId} onClose={() => setSelected(null)} />
+          <InlinePreview file={selected} roomId={roomId} isOwner={isOwner} onClose={() => setSelected(null)} />
         ) : (
           <div className="grid h-full place-items-center text-center text-sm text-text-muted p-8">
             <div>
