@@ -166,6 +166,10 @@ export function MarwaMessage({ text }: { text: string }) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (!text || !text.trim()) {
+      el.textContent = "…";
+      return;
+    }
     try {
       const { html, math } = markdownToHtml(text);
       el.innerHTML = html;

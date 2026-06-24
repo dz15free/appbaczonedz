@@ -62,7 +62,10 @@ export default function OmibotPage() {
         body: JSON.stringify({ messages: next.slice(-12), track: trackName }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", text: res.ok ? data.text : `⚠️ ${data.error || "تعذّر الرد."}` }]);
+      const replyText = res.ok
+        ? (data.text && String(data.text).trim() ? data.text : "عذراً، لم أتمكّن من الإجابة. أعد المحاولة 🙏")
+        : `⚠️ ${data.error || "تعذّر الرد."}`;
+      setMessages((m) => [...m, { role: "assistant", text: replyText }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "⚠️ تعذّر الاتصال. تحقّق من الإنترنت." }]);
     } finally {

@@ -351,3 +351,10 @@ body.bz-fullscreen-active {
   100% { opacity: 1; transform: scale(1); }
 }
 .animate-bz-logo-in { animation: bz-logo-in 0.5s ease-out; }
+
+/* ═══ حركة شرائح الواجهة الرئيسية ═══ */
+@keyframes bz-slide-in {
+  0% { opacity: 0; transform: translateX(12px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.bz-slide-in { animation: bz-slide-in 0.4s ease-out; }

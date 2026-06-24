@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -20,10 +20,23 @@ import { LiveAvatar } from "@/components/ui/live-avatar";
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
   { href: "/rooms", label: "الغرف", icon: faUsers },
-  { href: "/groups", label: "المجموعات", icon: faLayerGroup },
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/library", label: "المكتبة", icon: faBookOpen },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
+];
+
+// قائمة "أدوات الدراسة" المنسدلة (حاسوب)
+const TOOLS_DROPDOWN = [
+  { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
+  { href: "/omibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
+];
+
+// قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية
+const MORE_DROPDOWN = [
+  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
+  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
 
 // شريط الهاتف السفلي — مع زر إضافة مركزي بارز
@@ -149,17 +162,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 pathname === n.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/5 hover:text-text-primary"
               }`}
             >
-              <span className="relative">
-                <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
-                {n.href === "/notifications" && unread > 0 && (
-                  <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-                    {unread > 9 ? "9+" : unread}
-                  </span>
-                )}
-              </span>
+              <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
               {n.label}
             </Link>
           ))}
+
+          {/* أدوات الدراسة (منسدلة) */}
+          <div className="group relative">
+            <button className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/5 hover:text-text-primary">
+              <FontAwesomeIcon icon={faLayerGroup} className="h-4 w-4" />
+              أدوات الدراسة
+              <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
+            </button>
+            <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
+              {TOOLS_DROPDOWN.map((m) => (
+                <Link key={m.href} href={m.href}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                  <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
+                  {m.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* المزيد (منسدلة) */}
+          <div className="group relative">
+            <button className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/5 hover:text-text-primary">
+              <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
+              المزيد
+              <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
+            </button>
+            <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
+              {MORE_DROPDOWN.map((m) => (
+                <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                  <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
+                  {m.label}
+                  <FontAwesomeIcon icon={faUpRightFromSquare} className="ms-auto h-2.5 w-2.5 opacity-50" />
+                </a>
+              ))}
+            </div>
+          </div>
         </nav>
 
         {/* يمين: بحث + إشعارات + صورة الحساب */}

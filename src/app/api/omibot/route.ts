@@ -90,8 +90,15 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: msg }, { status: 200 });
     }
     const text =
-      data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join("") ??
-      "عذراً، لم أتمكّن من الإجابة. أعد المحاولة.";
+      data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("") ?? "";
+    if (!text.trim()) {
+      // قد يحدث عند حظر المحتوى أو رد فارغ من Gemini
+      const finishReason = data?.candidates?.[0]?.finishReason;
+      let msg = "عذراً، لم أتمكّن من توليد ردّ. حاول إعادة صياغة سؤالك 🙏";
+      if (finishReason === "SAFETY" || finishReason === "RECITATION")
+        msg = "عذراً، لا أستطيع الإجابة عن هذا الطلب. جرّب سؤالاً آخر متعلّقاً بدراستك 📚";
+      return Response.json({ text: msg });
+    }
     return Response.json({ text });
   } catch (e) {
     console.error("[Omibot] fetch error:", e);

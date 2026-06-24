@@ -39,6 +39,7 @@ export interface SiteSettings {
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
+  bacResultsDate?: string;    // تاريخ نتائج البكالوريا
   siteBanner?: { text: string; active: boolean }; // البانر
   allowRegistration?: boolean; // السماح بالتسجيل الجديد
 

@@ -24,6 +24,49 @@ export async function setBacExamDate(dateStr: string) {
   await set(ref(rtdb, "settings/bacExamDate"), dateStr);
 }
 
+/** تاريخ نتائج البكالوريا (settings/bacResultsDate) */
+export function useBacResultsDate() {
+  const [dateStr, setDateStr] = useState<string | null>(null);
+  useEffect(() => {
+    return onValue(ref(rtdb, "settings/bacResultsDate"), (snap) => {
+      setDateStr((snap.val() as string | null) ?? null);
+    });
+  }, []);
+  return dateStr;
+}
+
+export async function setBacResultsDate(dateStr: string) {
+  await set(ref(rtdb, "settings/bacResultsDate"), dateStr);
+}
+
+/** عدّ تنازلي كامل لأي تاريخ (أيام/ساعات/دقائق/ثوانٍ) يتحدّث كل ثانية */
+export function useCountdownTo(dateStr: string | null, fallbackMonth = 5, fallbackDay = 15) {
+  const [t, setT] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
+  useEffect(() => {
+    function calc() {
+      const now = new Date();
+      let target: Date;
+      if (dateStr) {
+        target = new Date(dateStr + "T00:00:00");
+        if (target <= now) target = new Date(target.getFullYear() + 1, target.getMonth(), target.getDate());
+      } else {
+        target = new Date(now.getFullYear(), fallbackMonth, fallbackDay);
+        if (target <= now) target = new Date(now.getFullYear() + 1, fallbackMonth, fallbackDay);
+      }
+      let diff = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+      const total = diff;
+      const days = Math.floor(diff / 86400); diff -= days * 86400;
+      const hours = Math.floor(diff / 3600); diff -= hours * 3600;
+      const minutes = Math.floor(diff / 60); diff -= minutes * 60;
+      setT({ days, hours, minutes, seconds: diff, total });
+    }
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [dateStr, fallbackMonth, fallbackDay]);
+  return t;
+}
+
 /**
  * بانر إعلاني يظهر لجميع المستخدمين أسفل الهيدر — يتحكّم به الأدمن
  * (settings/siteBanner: { text, active })

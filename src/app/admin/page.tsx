@@ -119,6 +119,7 @@ export default function AdminPage() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
   const [bacDate, setBacDate] = useState("");
+  const [resultsDate, setResultsDate] = useState("");
   const [allowReg, setAllowReg] = useState(true);
   // Posts
   const [announceText, setAnnounceText] = useState("");
@@ -140,6 +141,7 @@ export default function AdminPage() {
     setBannerText(settings.siteBanner?.text ?? "");
     setBannerActive(!!settings.siteBanner?.active);
     setBacDate(settings.bacExamDate ?? "");
+    setResultsDate(settings.bacResultsDate ?? "");
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
 
@@ -463,6 +465,12 @@ export default function AdminPage() {
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
               {settings.bacExamDate && <p className="text-xs text-text-muted">الحالي: <span className="font-bold text-secondary">{settings.bacExamDate}</span></p>}
               <SaveBtn onClick={() => save("bacDate", () => saveSetting("bacExamDate", bacDate))} loading={!!saving.bacDate} />
+            </Card>
+            <Card icon={faCalendarDays} title="تاريخ نتائج البكالوريا" hint="عدّاد النتائج في الشريحة الترحيبية">
+              <input type="date" value={resultsDate} onChange={(e) => setResultsDate(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              {settings.bacResultsDate && <p className="text-xs text-text-muted">الحالي: <span className="font-bold text-secondary">{settings.bacResultsDate}</span></p>}
+              <SaveBtn onClick={() => save("resultsDate", () => saveSetting("bacResultsDate", resultsDate))} loading={!!saving.resultsDate} />
             </Card>
             <Card icon={faWrench} title="وضع الصيانة">
               <label className="flex cursor-pointer items-center gap-3">
