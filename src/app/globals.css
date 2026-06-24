@@ -358,3 +358,15 @@ body.bz-fullscreen-active {
   100% { opacity: 1; transform: translateX(0); }
 }
 .bz-slide-in { animation: bz-slide-in 0.4s ease-out; }
+
+/* ═══ اسم الموقع — هوية احترافية ═══ */
+.bz-brand {
+  font-family: var(--font-display, system-ui), "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--bz-text) 0%, var(--bz-text) 55%, rgb(var(--bz-primary)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}

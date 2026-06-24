@@ -239,6 +239,9 @@
         },
         "welcomeMsg": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "pdfSync": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     },
@@ -246,6 +249,15 @@
       ".read": "auth != null",
       "$id": {
         ".write": "auth != null && (!data.exists() && newData.child('uploaderId').val() === auth.uid || data.exists() && !newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'))"
+      },
+      ".indexOn": [
+        "createdAt"
+      ]
+    },
+    "studyTasks": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
       }
     }
   }

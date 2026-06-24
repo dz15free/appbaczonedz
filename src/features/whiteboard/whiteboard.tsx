@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ref, onValue, set, remove } from "firebase/database";
+import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,6 +17,9 @@ import {
   faRotateRight,
   faTrash,
   faBorderAll,
+  faChevronLeft,
+  faChevronRight,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 
@@ -70,6 +73,10 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   const [grid, setGrid] = useState(true);
   const [stamp, setStamp] = useState<string | null>(null);
 
+  // الصفحات: صفحة نشطة متزامنة + عدد الصفحات
+  const [activePage, setActivePage] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
   const sizeRef = useRef(size);
@@ -79,7 +86,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   sizeRef.current = size;
   stampRef.current = stamp;
 
-  const strokesPath = `roomLive/${roomId}/whiteboard/strokes`;
+  // مسار الأشكال للصفحة النشطة
+  const strokesPath = `roomLive/${roomId}/whiteboard/pages/${activePage}/strokes`;
   const dpr = () => window.devicePixelRatio || 1;
 
   // يزيل أي قيمة undefined قبل الكتابة (Firebase يرفض undefined)
@@ -204,8 +212,14 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     return () => ro.disconnect();
   }, [fullRedraw]);
 
-  // ── مزامنة RTDB (onValue: متين، يصل للجميع) ──
+  // ── مزامنة RTDB (onValue: متين، يصل للجميع) — لكل صفحة ──
   useEffect(() => {
+    // عند تبديل الصفحة، أعد ضبط الحالة المحلية وامسح اللوحة
+    shapes.current = [];
+    drawnIds.current = new Set();
+    redoStack.current = [];
+    scheduleRedraw();
+
     const sref = ref(rtdb, strokesPath);
     const unsub = onValue(sref, (snap) => {
       const val = (snap.val() as Record<string, Omit<Shape, "id">>) ?? {};
@@ -232,6 +246,17 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     });
     return () => unsub();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, activePage]);
+
+  // ── مزامنة الصفحة النشطة وعدد الصفحات ──
+  useEffect(() => {
+    const metaRef = ref(rtdb, `roomLive/${roomId}/whiteboard/meta`);
+    const unsub = onValue(metaRef, (snap) => {
+      const m = (snap.val() as { activePage?: number; pageCount?: number }) ?? {};
+      if (typeof m.pageCount === "number") setPageCount(Math.max(1, m.pageCount));
+      if (typeof m.activePage === "number") setActivePage(m.activePage);
+    });
+    return () => unsub();
   }, [roomId]);
 
   function getPoint(e: React.PointerEvent): Point {
@@ -344,8 +369,26 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     set(ref(rtdb, `${strokesPath}/${id}`), clean(data));
   }
   function clearAll() {
-    if (!confirm("مسح السبورة بالكامل للجميع؟")) return;
+    if (!confirm("مسح هذه الصفحة بالكامل للجميع؟")) return;
     remove(ref(rtdb, strokesPath));
+  }
+
+  // ── إدارة الصفحات ──
+  function gotoPage(idx: number) {
+    if (idx < 0 || idx >= pageCount) return;
+    update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { activePage: idx, pageCount });
+  }
+  function addPage() {
+    const newCount = pageCount + 1;
+    update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { pageCount: newCount, activePage: newCount - 1 });
+  }
+  function deletePage() {
+    if (pageCount <= 1) { clearAll(); return; }
+    if (!confirm("حذف هذه الصفحة؟")) return;
+    // امسح أشكال الصفحة الحالية وأزل الصفحة بإعادة فهرسة الصفحات اللاحقة
+    remove(ref(rtdb, strokesPath));
+    const target = Math.max(0, activePage - 1);
+    update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { pageCount: pageCount - 1, activePage: target });
   }
 
   function pickTool(k: Kind) {
@@ -433,6 +476,56 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
           onPointerLeave={canDraw ? onPointerUp : undefined}
           onPointerCancel={canDraw ? onPointerUp : undefined}
         />
+      </div>
+
+      {/* ── شريط الصفحات ── */}
+      <div className="flex items-center justify-center gap-2 border-t border-border bg-surface px-2 py-1.5">
+        <button
+          onClick={() => gotoPage(activePage - 1)}
+          disabled={activePage === 0}
+          className="grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+          aria-label="الصفحة السابقة"
+        >
+          <FontAwesomeIcon icon={faChevronRight} className="h-3.5 w-3.5" />
+        </button>
+
+        <div className="flex items-center gap-1">
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => gotoPage(i)}
+              className={`grid h-8 min-w-8 place-items-center rounded-lg px-2 text-xs font-bold transition ${
+                i === activePage ? "bg-gradient-primary text-white" : "bg-background text-text-muted hover:bg-primary/10"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => gotoPage(activePage + 1)}
+          disabled={activePage >= pageCount - 1}
+          className="grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary disabled:opacity-30"
+          aria-label="الصفحة التالية"
+        >
+          <FontAwesomeIcon icon={faChevronLeft} className="h-3.5 w-3.5" />
+        </button>
+
+        {canDraw && (
+          <>
+            <div className="mx-1 h-5 w-px bg-border" />
+            <button onClick={addPage} title="إضافة صفحة"
+              className="grid h-8 w-8 place-items-center rounded-lg text-secondary transition hover:bg-secondary/10">
+              <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={deletePage} title="حذف الصفحة"
+              className="grid h-8 w-8 place-items-center rounded-lg text-danger transition hover:bg-danger/10">
+              <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
+            </button>
+          </>
+        )}
+        <span className="ms-1 text-[11px] font-semibold text-text-muted">صفحة {activePage + 1}/{pageCount}</span>
       </div>
     </div>
   );

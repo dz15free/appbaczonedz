@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faSpinner, faRobot, faGraduationCap, faListCheck, faFlask, faClock } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faSpinner, faRobot, faGraduationCap, faListCheck, faFlask, faClock, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { TRACKS } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { MarwaMessage } from "@/components/ui/marwa-message";
+import { extractTasksFromPlan, addStudyTasksBatch } from "@/features/study/study-tasks";
+import Link from "next/link";
 
 interface Msg { role: "user" | "assistant"; text: string }
 
@@ -21,6 +23,45 @@ const SUGGESTIONS = [
   { icon: faGraduationCap, text: "اختبرني في الرياضيات" },
   { icon: faClock, text: "كيف أنظّم وقتي قبل الباك؟" },
 ];
+
+/* زر حفظ خطة الخباشة كمهام قابلة للتتبّع */
+function SavePlanButton({ text }: { text: string }) {
+  const { user } = useAuth();
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const count = extractTasksFromPlan(text).length;
+
+  async function save() {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await addStudyTasksBatch(user.uid, extractTasksFromPlan(text));
+      setSaved(true);
+    } finally { setSaving(false); }
+  }
+
+  if (saved) {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border pt-2">
+        <span className="flex items-center gap-1.5 text-xs font-bold text-secondary">
+          <FontAwesomeIcon icon={faCheck} className="h-3.5 w-3.5" /> أُضيفت {count} مهمة لقائمتك
+        </span>
+        <Link href="/tools/tasks" className="text-xs font-bold text-primary hover:underline">عرض مهامي ←</Link>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={save}
+      disabled={saving}
+      className="mt-2 flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+    >
+      <FontAwesomeIcon icon={saving ? faSpinner : faListCheck} className={`h-3.5 w-3.5 ${saving ? "animate-spin" : ""}`} />
+      احفظ كمهام ({count})
+    </button>
+  );
+}
 
 export default function OmibotPage() {
   const router = useRouter();
@@ -112,6 +153,9 @@ export default function OmibotPage() {
                 {m.role === "assistant"
                   ? <MarwaMessage text={m.text} />
                   : <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</p>}
+                {m.role === "assistant" && extractTasksFromPlan(m.text).length >= 3 && (
+                  <SavePlanButton text={m.text} />
+                )}
               </div>
             </div>
           ))}

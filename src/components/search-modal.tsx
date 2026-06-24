@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faMagnifyingGlass, faXmark, faUsers, faLayerGroup, faUser, faSpinner,
+  faMagnifyingGlass, faXmark, faUsers, faLayerGroup, faUser, faSpinner, faComment, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, query, orderByChild, limitToFirst, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -15,11 +15,11 @@ interface Result {
   name: string;
   sub?: string;
   href: string;
-  kind: "room" | "group" | "user";
+  kind: "room" | "group" | "user" | "post" | "library";
 }
 
-const ICON = { room: faUsers, group: faLayerGroup, user: faUser };
-const LABEL = { room: "غرفة", group: "مجموعة", user: "مستخدم" };
+const ICON = { room: faUsers, group: faLayerGroup, user: faUser, post: faComment, library: faBookOpen };
+const LABEL = { room: "غرفة", group: "مجموعة", user: "مستخدم", post: "منشور", library: "مكتبة" };
 
 async function searchRooms(q: string): Promise<Result[]> {
   const lower = q.toLowerCase();
@@ -60,6 +60,39 @@ async function searchUsers(q: string): Promise<Result[]> {
     }));
 }
 
+async function searchPosts(q: string): Promise<Result[]> {
+  const lower = q.toLowerCase();
+  const snap = await get(query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(300)));
+  const val = snap.val() ?? {};
+  return Object.entries(val)
+    .filter(([, p]: any) => p.text && String(p.text).toLowerCase().includes(lower))
+    .reverse()
+    .slice(0, 6)
+    .map(([id, p]: any) => ({
+      id,
+      name: String(p.text).slice(0, 80),
+      sub: p.authorName ? `بقلم ${p.authorName}` : undefined,
+      href: `/community/${id}`, kind: "post" as const,
+    }));
+}
+
+async function searchLibrary(q: string): Promise<Result[]> {
+  const lower = q.toLowerCase();
+  const snap = await get(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(300)));
+  const val = snap.val() ?? {};
+  return Object.entries(val)
+    .filter(([, e]: any) =>
+      (e.title && String(e.title).toLowerCase().includes(lower)) ||
+      (e.description && String(e.description).toLowerCase().includes(lower)) ||
+      (e.chapter && String(e.chapter).toLowerCase().includes(lower)))
+    .reverse()
+    .slice(0, 6)
+    .map(([id, e]: any) => ({
+      id, name: e.title ?? "ملف", sub: e.chapter ?? undefined,
+      href: `/library`, kind: "library" as const,
+    }));
+}
+
 interface Props { onClose: () => void; }
 
 export function SearchModal({ onClose }: Props) {
@@ -78,14 +111,16 @@ export function SearchModal({ onClose }: Props) {
     debounce.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const [rooms, groups, users] = await Promise.all([
+        const [rooms, groups, users, posts, library] = await Promise.all([
           searchRooms(q.trim()),
           searchGroups(q.trim()),
           searchUsers(q.trim()),
+          searchPosts(q.trim()),
+          searchLibrary(q.trim()),
         ]);
-        setResults([...rooms, ...groups, ...users]);
+        setResults([...users, ...rooms, ...groups, ...posts, ...library]);
       } finally { setLoading(false); }
-    }, 350);
+    }, 300);
     return () => { if (debounce.current) clearTimeout(debounce.current); };
   }, [q]);
 
@@ -99,6 +134,8 @@ export function SearchModal({ onClose }: Props) {
   const rooms = results.filter((r) => r.kind === "room");
   const groups = results.filter((r) => r.kind === "group");
   const users = results.filter((r) => r.kind === "user");
+  const posts = results.filter((r) => r.kind === "post");
+  const library = results.filter((r) => r.kind === "library");
 
   function Section({ title, items }: { title: string; items: Result[] }) {
     if (!items.length) return null;
@@ -161,9 +198,11 @@ export function SearchModal({ onClose }: Props) {
             </p>
           ) : (
             <>
+              <Section title="المستخدمون" items={users} />
               <Section title="الغرف" items={rooms} />
               <Section title="المجموعات" items={groups} />
-              <Section title="المستخدمون" items={users} />
+              <Section title="المنشورات" items={posts} />
+              <Section title="المكتبة" items={library} />
             </>
           )}
         </div>

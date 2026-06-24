@@ -29,6 +29,7 @@ const NAV = [
 const TOOLS_DROPDOWN = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/omibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
+  { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
 ];
@@ -55,6 +56,7 @@ const MENU_ITEMS = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/omibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
+  { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
   { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
@@ -124,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] pb-24 lg:pb-0">
       {/* ═══════ الشريط العلوي ═══════ */}
-      <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+      <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 relative">
         {/* يسار: زر القائمة (هاتف) + شعار (حاسوب) */}
         <div className="flex items-center gap-2">
           <button
@@ -137,19 +139,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/home" className="hidden items-center gap-2 lg:flex">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
-            <span className="font-display text-lg font-extrabold">
-              {settings.siteName ?? "BacZoneDZ"}
-            </span>
+            <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
           </Link>
         </div>
 
-        {/* وسط: الشعار (هاتف فقط) */}
-        <Link href="/home" className="flex items-center gap-2 lg:hidden">
+        {/* وسط: الشعار (هاتف فقط) — مُوسَّط تماماً */}
+        <Link href="/home" className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2 lg:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-          <span className="font-display text-lg font-extrabold">
-            {settings.siteName ?? "BacZoneDZ"}
-          </span>
+          <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
         </Link>
 
         {/* تنقّل الحاسوب */}

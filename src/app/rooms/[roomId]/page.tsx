@@ -8,7 +8,7 @@ import {
   faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faClock,
+  faNoteSticky, faClock, faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -34,11 +34,20 @@ import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { FullscreenChatOverlay } from "@/features/chat/fullscreen-chat";
-import { VideoSync } from "@/features/video/video-sync";
-import { Whiteboard } from "@/features/whiteboard/whiteboard";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
-import { RoomFiles } from "@/features/rooms/room-files";
 import { playHandRaiseSound } from "@/lib/sound";
+import dynamic from "next/dynamic";
+
+// تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
+const loadingTool = () => (
+  <div className="grid h-full place-items-center text-text-muted">
+    <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin" />
+  </div>
+);
+const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
+const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
+const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
+
 
 const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
   { id: "welcome", label: "مرحباً", icon: faHouse },

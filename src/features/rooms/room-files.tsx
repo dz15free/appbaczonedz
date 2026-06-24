@@ -13,6 +13,7 @@ import {
   setActiveFile, listenActiveFile, type RoomFile,
 } from "@/features/rooms/rooms";
 import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
+import { SyncedPdfViewer } from "@/features/rooms/synced-pdf-viewer";
 
 /* ─── مساعد: أيقونة ولون حسب امتداد الملف ─── */
 function fileIcon(name: string) {
@@ -44,10 +45,12 @@ function UploadBar({ progress }: { progress: number }) {
 function InlinePreview({
   file,
   roomId,
+  isOwner,
   onClose,
 }: {
   file: RoomFile;
   roomId: string;
+  isOwner: boolean;
   onClose: () => void;
 }) {
   const [b64, setB64] = useState<string | null>(null);
@@ -66,6 +69,7 @@ function InlinePreview({
 
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   const isImage = ["jpg","jpeg","png","gif","webp","svg","bmp"].includes(ext);
+  const isPdf = ext === "pdf";
 
   return (
     <div className="flex h-full flex-col">
@@ -130,8 +134,13 @@ function InlinePreview({
           />
         )}
 
-        {/* ملف قديم base64 — PDF أو غيره */}
-        {!file.driveId && b64 && !isImage && (
+        {/* ملف قديم base64 — PDF بعارض متزامن */}
+        {!file.driveId && b64 && !isImage && isPdf && (
+          <SyncedPdfViewer roomId={roomId} fileId={file.id} src={b64} isOwner={isOwner} />
+        )}
+
+        {/* ملف قديم base64 — غير PDF */}
+        {!file.driveId && b64 && !isImage && !isPdf && (
           <iframe src={b64} className="h-full w-full border-0" title={file.name} />
         )}
       </div>
@@ -212,7 +221,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   const mobileView = (
     <div className="flex h-full flex-col lg:hidden">
       {mobileShowPreview && selected ? (
-        <InlinePreview file={selected} roomId={roomId} onClose={backToList} />
+        <InlinePreview file={selected} roomId={roomId} isOwner={isOwner} onClose={backToList} />
       ) : (
         <FileListPane
           files={files}

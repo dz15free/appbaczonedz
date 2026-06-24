@@ -31,6 +31,7 @@ const SECTIONS = [
 ];
 
 const TOOLS = [
+  { href: "/tools/tasks", label: "مهامي الدراسية", desc: "خطط الخباشة كمهام", icon: faListCheck, color: "bg-violet-500/10 text-violet-500" },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "bg-amber-500/10 text-amber-500" },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك", icon: faListCheck, color: "bg-sky-500/10 text-sky-500" },
 ];
