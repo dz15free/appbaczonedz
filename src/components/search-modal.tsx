@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMagnifyingGlass, faXmark, faUsers, faLayerGroup, faUser, faSpinner, faComment, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
-import { ref, query, orderByChild, limitToFirst, get } from "firebase/database";
+import { ref, query, orderByChild, limitToFirst, limitToLast, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 
 interface Result {
