@@ -143,12 +143,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {/* وسط: الشعار (هاتف فقط) — مُوسَّط بصرياً */}
-        <Link href="/home" className="pointer-events-auto absolute right-1/2 flex translate-x-1/2 items-center gap-2 lg:hidden" style={{ marginRight: "10px" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-          <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
-        </Link>
+        {/* وسط: الشعار (هاتف فقط) — مُوسَّط تماماً عبر طبقة بعرض كامل */}
+        <div className="pointer-events-none absolute inset-x-0 flex justify-center lg:hidden">
+          <Link href="/home" className="pointer-events-auto flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+            <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
+          </Link>
+        </div>
 
         {/* تنقّل الحاسوب */}
         <nav className="hidden items-center gap-1 lg:flex">
@@ -352,8 +354,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* زر الإضافة المركزي البارز */}
           <Link href="/rooms" aria-label="إنشاء"
-            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105">
-            <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
+            className="bz-fab relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition hover:scale-105">
+            <FontAwesomeIcon icon={faPlus} className="h-6 w-6" style={{ color: "#ffffff" }} />
           </Link>
 
           {MOBILE_NAV_RIGHT.map((n) => {
