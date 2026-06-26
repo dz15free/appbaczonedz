@@ -40,18 +40,26 @@ function useTimerState(roomId: string) {
 
   useEffect(() => listenRoomTimer(roomId, setTimer), [roomId]);
 
+  // نعتمد على القيم الأوّلية (primitives) لا على هوية الكائن — يمنع إعادة التشغيل المتكرّرة
+  const active = timer?.active ?? false;
+  const duration = timer?.duration ?? 0;
+  const startedAt = timer?.startedAt ?? 0;
+
   useEffect(() => {
-    if (!timer?.active) { setRemaining(timer ? Math.max(0, timer.duration) : 0); return; }
+    if (!timer) { setRemaining(0); return; }
+    if (!active) { setRemaining(Math.max(0, duration)); return; }
+
     alarmFired.current = false;
     const tick = () => {
-      const rem = Math.max(0, timer.duration - (Date.now() - timer.startedAt) / 1000);
+      const rem = Math.max(0, duration - (Date.now() - startedAt) / 1000);
       setRemaining(Math.ceil(rem));
       if (rem <= 0 && !alarmFired.current) { alarmFired.current = true; playAlarm(); }
     };
     tick();
-    const t = setInterval(tick, 500);
+    const t = setInterval(tick, 250);
     return () => clearInterval(t);
-  }, [timer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, duration, startedAt]);
 
   return { timer, remaining };
 }
@@ -67,7 +75,9 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
   const { timer } = useTimerState(roomId);
 
   async function start(seconds: number) {
-    await setRoomTimer(roomId, { duration: seconds, startedAt: Date.now(), active: true, label: label || undefined });
+    const t: RTimer = { duration: seconds, startedAt: Date.now(), active: true };
+    if (label.trim()) t.label = label.trim();
+    await setRoomTimer(roomId, t);
     setShowSetup(false); setLabel("");
   }
 
@@ -124,10 +134,19 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
 ═══════════════════════════════════════════════ */
 export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
   const { timer, remaining } = useTimerState(roomId);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
 
-  if (!timer || !mounted) return null;
+  // حاوية العرض: مسرح الغرفة (ليظهر داخل الشاشة الكاملة) وإلا body
+  useEffect(() => {
+    const pick = () => setPortalEl(document.getElementById("bz-room-stage") ?? document.body);
+    pick();
+    const stage = document.getElementById("bz-room-stage");
+    const obs = new MutationObserver(pick);
+    if (stage) obs.observe(stage, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
+  if (!timer || !portalEl) return null;
 
   const pct = Math.min(100, (remaining / timer.duration) * 100);
   const danger = remaining > 0 && remaining <= 60;
@@ -143,7 +162,7 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
       done ? "border-secondary bg-secondary/20" : danger ? "border-danger bg-danger/15" : "border-white/10 bg-black/70"}`}>
       <svg width="56" height="56" viewBox="0 0 64 64" className="shrink-0">
         <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
-        <circle cx="32" cy="32" r={R} fill="none" stroke={done ? "#10b981" : danger ? "#ef4444" : "#6366f1"}
+        <circle cx="32" cy="32" r={R} fill="none" stroke={done ? "#10b981" : danger ? "#ef4444" : "#3b82f6"}
           strokeWidth="5" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct / 100)}
           style={{ transition: "stroke-dashoffset 0.5s linear", transform: "rotate(-90deg)", transformOrigin: "center" }} />
         <text x="32" y="38" textAnchor="middle" fontSize="15" fontWeight="bold" fill="white">{done ? "✓" : fmt(remaining)}</text>
@@ -162,6 +181,6 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
         )}
       </div>
     </div>,
-    document.body
+    portalEl
   );
 }

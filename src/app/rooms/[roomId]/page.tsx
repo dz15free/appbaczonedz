@@ -519,6 +519,7 @@ export default function RoomPage() {
         )}
 
         <section
+          id="bz-room-stage"
           className={`relative flex flex-col overflow-hidden bg-background ${fullscreen ? "bz-fullscreen" : ""}`}
           style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
         >
