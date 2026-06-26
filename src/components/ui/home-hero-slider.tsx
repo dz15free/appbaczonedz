@@ -49,7 +49,7 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/10 p-5 sm:p-7"
-      style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4338ca 100%)", minHeight: "190px" }}>
+      style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #0ea5e9 100%)", minHeight: "190px" }}>
       {/* توهّجات */}
       <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5 blur-3xl" />
       <div className="pointer-events-none absolute -left-8 -bottom-12 h-44 w-44 rounded-full bg-fuchsia-500/10 blur-3xl" />

@@ -132,13 +132,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="القائمة"
-            className="grid h-10 w-10 place-items-center rounded-xl transition hover:bg-white/15 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/8 lg:hidden"
           >
             <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
           </button>
           <Link href="/home" className="hidden items-center gap-2 lg:flex">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl bg-white/15 object-contain p-0.5" />
+            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
             <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
           </Link>
         </div>
@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* وسط: الشعار (هاتف فقط) — مُوسَّط بصرياً */}
         <Link href="/home" className="pointer-events-auto absolute left-1/2 flex -translate-x-1/2 items-center gap-2 lg:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg bg-white/15 object-contain p-0.5" />
+          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
           <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
         </Link>
 
@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={n.href}
               href={n.href}
               className={`bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                pathname === n.href ? "bz-nav-active" : "hover:bg-white/12"
+                pathname === n.href ? "bz-nav-active" : "hover:bg-primary/8"
               }`}
             >
               <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* أدوات الدراسة (منسدلة) */}
           <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-white/12">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/8">
               <FontAwesomeIcon icon={faLayerGroup} className="h-4 w-4" />
               أدوات الدراسة
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -185,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* المزيد (منسدلة) */}
           <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-white/12">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/8">
               <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
               المزيد
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -208,19 +208,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="hidden h-9 w-9 place-items-center rounded-xl transition hover:bg-white/15 lg:grid"
+            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/8 hover:text-primary lg:grid"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
           </button>
-          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl transition hover:bg-white/15">
+          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/8">
             <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-indigo-900">
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
           </Link>
-          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-white/30 transition hover:ring-white/50">
+          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/15 transition hover:ring-primary/30">
             <LiveAvatar uid={user?.uid} name={profile?.name || user?.displayName || "ط"} size="sm" className="h-9 w-9" />
           </Link>
         </div>
@@ -352,7 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* زر الإضافة المركزي البارز */}
           <Link href="/rooms" aria-label="إنشاء"
-            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-indigo-600 shadow-glow ring-4 ring-white/30 transition hover:scale-105">
+            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105">
             <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
           </Link>
 

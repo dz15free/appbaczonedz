@@ -7,19 +7,20 @@
    ======================================================================== */
 :root {
   /* الهوية اللونية (قنوات RGB لتعمل شفافية Tailwind مثل bg-primary/10) */
-  --bz-primary: 79 70 229;
-  --bz-primary-hover: 67 56 202;
-  --bz-secondary: 16 185 129;
-  --bz-accent: 139 92 246;
-  --bz-danger: 239 68 68;
-  --bz-warning: 245 158 11;
+  /* أزرق احترافي واقعي (Royal Blue) بدل البنفسجي الصارخ */
+  --bz-primary: 37 99 235;        /* blue-600 */
+  --bz-primary-hover: 29 78 216;  /* blue-700 */
+  --bz-secondary: 5 150 105;      /* emerald-600 — أخضر هادئ */
+  --bz-accent: 234 88 12;         /* orange-600 — لمسة دافئة متوازنة */
+  --bz-danger: 220 38 38;         /* red-600 */
+  --bz-warning: 217 119 6;        /* amber-600 */
 
-  /* الوضع الفاتح */
-  --bz-bg: #f3f4f6;
+  /* الوضع الفاتح — خلفية أنظف */
+  --bz-bg: #f8fafc;               /* slate-50 */
   --bz-surface: #ffffff;
-  --bz-text: #111827;
-  --bz-text-muted: #6b7280;
-  --bz-border: #e5e7eb;
+  --bz-text: #0f172a;             /* slate-900 */
+  --bz-text-muted: #64748b;       /* slate-500 */
+  --bz-border: #e2e8f0;           /* slate-200 */
 
   /* مساحة العمل (غرفة الدراسة) */
   --bz-workspace: #0a0a0f;
@@ -364,43 +365,39 @@ body.bz-fullscreen-active {
   font-family: var(--font-display, system-ui), "Segoe UI", sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(120deg, var(--bz-text) 0%, var(--bz-text) 55%, rgb(var(--bz-primary)) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--bz-text);
   white-space: nowrap;
 }
+.bz-brand .bz-dz { color: rgb(var(--bz-primary)); }
 
-/* ═══ هوية الهيدر والبانر السفلي — Clean & Energetic ═══ */
-:root {
-  /* تدرّج نظيف ونشيط: بنفسجي → أزرق سماوي */
-  --bz-header-grad: linear-gradient(100deg, #4f46e5 0%, #6366f1 45%, #0ea5e9 100%);
-  --bz-header-text: #ffffff;
-}
+/* ═══ هيدر أبيض نظيف بألوان واقعية ═══ */
 .bz-header-bar {
-  background: var(--bz-header-grad);
-  color: var(--bz-header-text);
-  border: none !important;
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.18);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  color: var(--bz-text);
+  border-bottom: 1px solid var(--bz-border);
 }
-.bz-header-bar .bz-brand {
-  background: none;
-  -webkit-text-fill-color: #ffffff;
-  color: #ffffff;
+:root.dark .bz-header-bar, .dark .bz-header-bar {
+  background: rgba(17, 24, 39, 0.85);
 }
-/* عناصر الهيدر فوق التدرّج تصبح بيضاء */
-.bz-header-bar a, .bz-header-bar button { color: rgba(255,255,255,0.92); }
-.bz-header-bar .bz-nav-active { background: rgba(255,255,255,0.18) !important; color: #fff !important; }
-.bz-header-bar .bz-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.bz-header-bar .bz-brand { color: var(--bz-text); }
+.bz-header-bar .bz-nav-link { color: var(--bz-text-muted); }
+.bz-header-bar .bz-nav-link:hover { background: rgba(var(--bz-primary), 0.07); color: var(--bz-text); }
+.bz-header-bar .bz-nav-active { background: rgba(var(--bz-primary), 0.1) !important; color: rgb(var(--bz-primary)) !important; }
 
-/* البانر السفلي (هاتف) */
+/* البانر السفلي (هاتف) — أبيض نظيف */
 .bz-bottom-bar {
-  background: var(--bz-header-grad);
-  border: none !important;
-  box-shadow: 0 -2px 12px rgba(79, 70, 229, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-top: 1px solid var(--bz-border);
 }
-.bz-bottom-bar a, .bz-bottom-bar button { color: rgba(255,255,255,0.75); }
-.bz-bottom-bar a.bz-bottom-active, .bz-bottom-bar .bz-bottom-active { color: #ffffff; }
+:root.dark .bz-bottom-bar, .dark .bz-bottom-bar {
+  background: rgba(17, 24, 39, 0.92);
+}
+.bz-bottom-bar a, .bz-bottom-bar button { color: var(--bz-text-muted); }
+.bz-bottom-bar a.bz-bottom-active, .bz-bottom-bar .bz-bottom-active { color: rgb(var(--bz-primary)); }
 
 /* ═══ تحسينات تجربة المستخدم العامة ═══ */
 html { scroll-behavior: smooth; }

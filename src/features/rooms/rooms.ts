@@ -382,7 +382,18 @@ export interface RoomTimer {
   duration: number; startedAt: number; active: boolean; label?: string;
 }
 export async function setRoomTimer(roomId: string, timer: RoomTimer | null) {
-  await set(ref(rtdb, `roomLive/${roomId}/timer`), timer);
+  if (timer === null) {
+    await set(ref(rtdb, `roomLive/${roomId}/timer`), null);
+    return;
+  }
+  // Firebase يرفض الكائن إن احتوى undefined — نبني كائناً نظيفاً
+  const clean: RoomTimer = {
+    duration: timer.duration,
+    startedAt: timer.startedAt,
+    active: timer.active,
+  };
+  if (timer.label) clean.label = timer.label;
+  await set(ref(rtdb, `roomLive/${roomId}/timer`), clean);
 }
 export function listenRoomTimer(roomId: string, cb: (t: RoomTimer | null) => void) {
   return onValue(ref(rtdb, `roomLive/${roomId}/timer`), (snap) => {
