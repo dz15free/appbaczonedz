@@ -403,7 +403,7 @@ export default function RoomPage() {
 
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
-        <nav className="bz-glass flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
+        <nav className="bz-glass bz-hide-scrollbar flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
           <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-background p-1">
             {TOOLS.map((t) => (
               <button

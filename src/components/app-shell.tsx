@@ -126,27 +126,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] pb-24 lg:pb-0">
       {/* ═══════ الشريط العلوي ═══════ */}
-      <header className="bz-glass sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 relative">
+      <header className="bz-header-bar sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 relative">
         {/* يسار: زر القائمة (هاتف) + شعار (حاسوب) */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="القائمة"
-            className="grid h-10 w-10 place-items-center rounded-xl text-text-primary transition hover:bg-primary/10 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl transition hover:bg-white/15 lg:hidden"
           >
             <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
           </button>
           <Link href="/home" className="hidden items-center gap-2 lg:flex">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-9 w-9 shrink-0 rounded-xl bg-white/15 object-contain p-0.5" />
             <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
           </Link>
         </div>
 
-        {/* وسط: الشعار (هاتف فقط) — مُوسَّط تماماً */}
-        <Link href="/home" className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2 lg:hidden">
+        {/* وسط: الشعار (هاتف فقط) — مُوسَّط بصرياً */}
+        <Link href="/home" className="pointer-events-auto absolute left-1/2 flex -translate-x-1/2 items-center gap-2 lg:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+          <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg bg-white/15 object-contain p-0.5" />
           <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>
         </Link>
 
@@ -156,8 +156,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               key={n.href}
               href={n.href}
-              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                pathname === n.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/5 hover:text-text-primary"
+              className={`bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                pathname === n.href ? "bz-nav-active" : "hover:bg-white/12"
               }`}
             >
               <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* أدوات الدراسة (منسدلة) */}
           <div className="group relative">
-            <button className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/5 hover:text-text-primary">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-white/12">
               <FontAwesomeIcon icon={faLayerGroup} className="h-4 w-4" />
               أدوات الدراسة
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -185,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* المزيد (منسدلة) */}
           <div className="group relative">
-            <button className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/5 hover:text-text-primary">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-white/12">
               <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
               المزيد
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -208,20 +208,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary lg:grid"
+            className="hidden h-9 w-9 place-items-center rounded-xl transition hover:bg-white/15 lg:grid"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
           </button>
-          <div className="hidden lg:block"><ThemeToggle /></div>
-          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text-primary transition hover:bg-primary/10">
+          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl transition hover:bg-white/15">
             <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-indigo-900">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
           </Link>
-          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/15 transition hover:ring-primary/30">
+          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-white/30 transition hover:ring-white/50">
             <LiveAvatar uid={user?.uid} name={profile?.name || user?.displayName || "ط"} size="sm" className="h-9 w-9" />
           </Link>
         </div>
@@ -339,12 +338,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="bz-glass flex items-center justify-around border-t border-border px-2 pb-1 pt-2">
+        <div className="bz-bottom-bar flex items-center justify-around px-2 pb-1 pt-2">
           {MOBILE_NAV_LEFT.map((n) => {
             const active = pathname === n.href;
             return (
               <Link key={n.href} href={n.href}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "text-primary" : "text-text-muted"}`}>
+                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "bz-bottom-active" : ""}`}>
                 <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
                 <span>{n.label}</span>
               </Link>
@@ -353,7 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* زر الإضافة المركزي البارز */}
           <Link href="/rooms" aria-label="إنشاء"
-            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105">
+            className="relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-indigo-600 shadow-glow ring-4 ring-white/30 transition hover:scale-105">
             <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
           </Link>
 
@@ -361,7 +360,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active = pathname === n.href;
             return (
               <Link key={n.href} href={n.href}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "text-primary" : "text-text-muted"}`}>
+                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "bz-bottom-active" : ""}`}>
                 <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
                 <span>{n.label}</span>
               </Link>
@@ -370,7 +369,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* المزيد → يفتح الدرج */}
           <button onClick={() => setMenuOpen(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold text-text-muted transition">
+            className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition">
             <FontAwesomeIcon icon={faEllipsis} className="h-5 w-5" />
             <span>المزيد</span>
           </button>

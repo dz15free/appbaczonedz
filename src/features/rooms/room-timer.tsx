@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClock, faPlay, faPause, faRotateLeft, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { setRoomTimer, listenRoomTimer, type RoomTimer as RTimer } from "@/features/rooms/rooms";
@@ -24,7 +25,11 @@ function playAlarm() {
 }
 
 function fmt(secs: number) {
-  return `${Math.floor(secs / 60).toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}`;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 /* ─── Hook مشترك لحالة المؤقّت ─── */
@@ -119,8 +124,10 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
 ═══════════════════════════════════════════════ */
 export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
   const { timer, remaining } = useTimerState(roomId);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  if (!timer) return null;
+  if (!timer || !mounted) return null;
 
   const pct = Math.min(100, (remaining / timer.duration) * 100);
   const danger = remaining > 0 && remaining <= 60;
@@ -131,9 +138,9 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
   async function resume() { if (timer) await setRoomTimer(roomId, { ...timer, active: true, startedAt: Date.now() }); }
   async function reset() { await setRoomTimer(roomId, null); }
 
-  return (
-    <div className={`pointer-events-auto fixed left-1/2 top-16 z-[60] flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-2xl border px-3 py-2 shadow-xl backdrop-blur-md sm:top-20 ${
-      done ? "border-secondary bg-secondary/20" : danger ? "border-danger bg-danger/15" : "border-white/10 bg-black/60"}`}>
+  return createPortal(
+    <div className={`pointer-events-auto fixed left-1/2 top-16 z-[140] flex max-w-[calc(100vw-24px)] -translate-x-1/2 items-center gap-3 rounded-2xl border px-3 py-2 shadow-xl backdrop-blur-md sm:top-20 ${
+      done ? "border-secondary bg-secondary/20" : danger ? "border-danger bg-danger/15" : "border-white/10 bg-black/70"}`}>
       <svg width="56" height="56" viewBox="0 0 64 64" className="shrink-0">
         <circle cx="32" cy="32" r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
         <circle cx="32" cy="32" r={R} fill="none" stroke={done ? "#10b981" : danger ? "#ef4444" : "#6366f1"}
@@ -154,6 +161,7 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

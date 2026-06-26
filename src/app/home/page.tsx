@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -50,7 +50,7 @@ function timeAgo(ts: number) {
 }
 
 /* بطاقة منشور */
-function PostCard({ p, uid }: { p: Post; uid: string }) {
+const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
       <Link href={`/community/${p.id}`} className="flex items-center gap-2.5">
@@ -91,10 +91,10 @@ function PostCard({ p, uid }: { p: Post; uid: string }) {
       </div>
     </div>
   );
-}
+});
 
 /* قسم الأقسام */
-function SectionsRow() {
+const SectionsRow = memo(function SectionsRow() {
   return (
     <div className="grid grid-cols-5 gap-2 sm:gap-3">
       {SECTIONS.map((s) => (
@@ -107,10 +107,10 @@ function SectionsRow() {
       ))}
     </div>
   );
-}
+});
 
 /* بطاقات الأدوات */
-function ToolsGrid() {
+const ToolsGrid = memo(function ToolsGrid() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {TOOLS.map((t) => (
@@ -127,10 +127,10 @@ function ToolsGrid() {
       ))}
     </div>
   );
-}
+});
 
 /* مصادر خارجية */
-function ExternalGrid() {
+const ExternalGrid = memo(function ExternalGrid() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {EXTERNAL.map((q) => (
@@ -150,7 +150,7 @@ function ExternalGrid() {
       ))}
     </div>
   );
-}
+});
 
 /* لوحة الترتيب المصغّرة */
 interface MiniPlayer { uid: string; name: string; points: number }
@@ -311,9 +311,6 @@ export default function HomePage() {
           <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
           <ExternalGrid />
         </div>
-
-        {/* الترتيب */}
-        <MiniLeaderboard />
       </section>
     </AppShell>
   );

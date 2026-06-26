@@ -22,6 +22,8 @@ export function UserAvatar({ name, avatarUrl, size = "md", className = "" }: Pro
       <img
         src={avatarUrl}
         alt={name}
+        loading="lazy"
+        decoding="async"
         className={`${dim} shrink-0 rounded-full object-cover ${className}`}
       />
     );

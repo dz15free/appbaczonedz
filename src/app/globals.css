@@ -370,3 +370,72 @@ body.bz-fullscreen-active {
   -webkit-text-fill-color: transparent;
   white-space: nowrap;
 }
+
+/* ═══ هوية الهيدر والبانر السفلي — Clean & Energetic ═══ */
+:root {
+  /* تدرّج نظيف ونشيط: بنفسجي → أزرق سماوي */
+  --bz-header-grad: linear-gradient(100deg, #4f46e5 0%, #6366f1 45%, #0ea5e9 100%);
+  --bz-header-text: #ffffff;
+}
+.bz-header-bar {
+  background: var(--bz-header-grad);
+  color: var(--bz-header-text);
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.18);
+}
+.bz-header-bar .bz-brand {
+  background: none;
+  -webkit-text-fill-color: #ffffff;
+  color: #ffffff;
+}
+/* عناصر الهيدر فوق التدرّج تصبح بيضاء */
+.bz-header-bar a, .bz-header-bar button { color: rgba(255,255,255,0.92); }
+.bz-header-bar .bz-nav-active { background: rgba(255,255,255,0.18) !important; color: #fff !important; }
+.bz-header-bar .bz-nav-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+/* البانر السفلي (هاتف) */
+.bz-bottom-bar {
+  background: var(--bz-header-grad);
+  border: none !important;
+  box-shadow: 0 -2px 12px rgba(79, 70, 229, 0.18);
+}
+.bz-bottom-bar a, .bz-bottom-bar button { color: rgba(255,255,255,0.75); }
+.bz-bottom-bar a.bz-bottom-active, .bz-bottom-bar .bz-bottom-active { color: #ffffff; }
+
+/* ═══ تحسينات تجربة المستخدم العامة ═══ */
+html { scroll-behavior: smooth; }
+
+/* إزالة وميض اللمس الأزرق على الهاتف */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* تمرير سلس بقوة الدفع على iOS */
+.bz-scroll, .overflow-y-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* أهداف لمس أكبر للأزرار الصغيرة على الهاتف */
+@media (max-width: 1024px) {
+  button, a { touch-action: manipulation; }
+}
+
+/* تحسين عرض الصور أثناء التحميل */
+img { content-visibility: auto; }
+
+/* انتقالات ناعمة افتراضية للعناصر التفاعلية */
+button, a { transition-property: background-color, color, border-color, transform, opacity, box-shadow; transition-duration: 0.15s; }
+
+/* منع القفز عند ظهور شريط التمرير */
+html { scrollbar-gutter: stable; }
+
+/* تحسين أداء الرسوم المتحركة */
+.bz-slide-in, .animate-pulse, .animate-spin { will-change: transform, opacity; }
+
+/* تقليل الحركة لمن يفضّل ذلك (إتاحة) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

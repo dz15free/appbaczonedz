@@ -54,17 +54,17 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
       <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5 blur-3xl" />
       <div className="pointer-events-none absolute -left-8 -bottom-12 h-44 w-44 rounded-full bg-fuchsia-500/10 blur-3xl" />
 
-      {/* أزرار التنقّل */}
+      {/* أزرار التنقّل — في الأسفل لتجنّب حجب الأرقام */}
       <button onClick={() => go(-1)} aria-label="السابق"
-        className="absolute right-3 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white/70 backdrop-blur-sm transition hover:bg-white/20">
-        <FontAwesomeIcon icon={faChevronRight} className="h-3.5 w-3.5" />
+        className="absolute bottom-2.5 right-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white">
+        <FontAwesomeIcon icon={faChevronRight} className="h-3 w-3" />
       </button>
       <button onClick={() => go(1)} aria-label="التالي"
-        className="absolute left-3 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white/70 backdrop-blur-sm transition hover:bg-white/20">
-        <FontAwesomeIcon icon={faChevronLeft} className="h-3.5 w-3.5" />
+        className="absolute bottom-2.5 left-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white">
+        <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" />
       </button>
 
-      <div className="relative min-h-[130px]">
+      <div className="relative min-h-[130px] pb-2">
         {/* الشريحة 0: ترحيب */}
         {idx === 0 && (
           <div className="bz-slide-in">
@@ -130,8 +130,8 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
               <FontAwesomeIcon icon={faBolt} className="h-3.5 w-3.5 text-yellow-400" />
               نصيحة اليوم
             </p>
-            <h2 className="mt-1 font-display text-2xl font-extrabold leading-snug text-white sm:text-3xl">
-              النجاح مجموع<br />جهود صغيرة تتكرّر كل يوم
+            <h2 className="mt-1.5 max-w-md font-display text-xl font-extrabold leading-relaxed text-white sm:text-2xl">
+              النجاح هو مجموع جهودٍ صغيرة تتكرّر كل يوم
             </h2>
             <p className="mt-2 text-xs text-white/50">ابدأ بمراجعة 25 دقيقة الآن — خطوة صغيرة تصنع الفرق.</p>
           </div>

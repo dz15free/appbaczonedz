@@ -61,47 +61,70 @@ export async function POST(req: NextRequest) {
 
   if (contents.length === 0) return Response.json({ error: "لا رسالة." }, { status: 400 });
 
-  try {
+  // نماذج بالترتيب: الأساسي ثم بديل أخف عند الازدحام
+  const MODELS = [MODEL, "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: systemText }] },
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  });
+
+  async function callGemini(model: string) {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": KEY },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemText }] },
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
+        headers: { "Content-Type": "application/json", "x-goog-api-key": KEY! },
+        body,
       }
     );
     const data: any = await res.json();
-    if (!res.ok) {
-      console.error("[Omibot] Gemini error:", res.status, JSON.stringify(data));
-      const raw = (data?.error?.message as string ?? "").toLowerCase();
-      let msg = "⚠️ حدث خطأ في خدمة الخباشة. أعيدي المحاولة.";
-      if (res.status === 429 || raw.includes("quota") || raw.includes("rate limit"))
-        msg = "⏳ الخباشة مشغولة الآن بطلبات كثيرة. انتظري دقيقة واحدة وأعيدي المحاولة!";
-      else if (res.status === 503 || raw.includes("overload") || raw.includes("demand"))
-        msg = "⏳ خدمة الذكاء الاصطناعي مزدحمة لحظياً. حاولي مجدداً بعد ثوانٍ قليلة 🙏";
-      return Response.json({ error: msg }, { status: 200 });
+    return { res, data };
+  }
+
+  try {
+    let lastErr = "";
+    // حتى 3 محاولات عبر نماذج متعدّدة مع مهلة قصيرة بينها
+    for (let attempt = 0; attempt < MODELS.length; attempt++) {
+      const model = MODELS[attempt];
+      const { res, data } = await callGemini(model);
+
+      if (res.ok) {
+        const text =
+          data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("") ?? "";
+        if (text.trim()) return Response.json({ text });
+
+        // رد فارغ: إن كان بسبب الحظر لا نعيد المحاولة
+        const finishReason = data?.candidates?.[0]?.finishReason;
+        if (finishReason === "SAFETY" || finishReason === "RECITATION")
+          return Response.json({ text: "عذراً، لا أستطيع الإجابة عن هذا الطلب. جرّب سؤالاً آخر متعلّقاً بدراستك 📚" });
+        // رد فارغ لسبب آخر: جرّب النموذج التالي
+        lastErr = "empty";
+      } else {
+        const raw = (data?.error?.message as string ?? "").toLowerCase();
+        const transient = res.status === 429 || res.status === 503 ||
+          raw.includes("quota") || raw.includes("rate limit") ||
+          raw.includes("overload") || raw.includes("demand") || raw.includes("unavailable");
+        console.error("[Omibot] Gemini error:", model, res.status, raw.slice(0, 120));
+        lastErr = res.status === 429 ? "quota" : "transient";
+        if (!transient) break; // خطأ غير عابر: لا فائدة من إعادة المحاولة
+      }
+
+      // مهلة قصيرة قبل المحاولة التالية
+      if (attempt < MODELS.length - 1) await new Promise((r) => setTimeout(r, 600));
     }
-    const text =
-      data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("") ?? "";
-    if (!text.trim()) {
-      // قد يحدث عند حظر المحتوى أو رد فارغ من Gemini
-      const finishReason = data?.candidates?.[0]?.finishReason;
-      let msg = "عذراً، لم أتمكّن من توليد ردّ. حاول إعادة صياغة سؤالك 🙏";
-      if (finishReason === "SAFETY" || finishReason === "RECITATION")
-        msg = "عذراً، لا أستطيع الإجابة عن هذا الطلب. جرّب سؤالاً آخر متعلّقاً بدراستك 📚";
-      return Response.json({ text: msg });
-    }
-    return Response.json({ text });
+
+    // فشلت كل المحاولات
+    const msg = lastErr === "quota"
+      ? "⏳ الخباشة مشغولة بطلبات كثيرة الآن. انتظر دقيقة وأعد المحاولة!"
+      : "⏳ خدمة الخباشة مزدحمة لحظياً. حاول مجدداً بعد ثوانٍ قليلة 🙏";
+    return Response.json({ text: msg });
   } catch (e) {
     console.error("[Omibot] fetch error:", e);
-    return Response.json({ error: "تعذّر الاتصال بخدمة الذكاء الاصطناعي." }, { status: 500 });
+    return Response.json({ text: "تعذّر الاتصال بالخباشة الآن. تحقّق من اتصالك وأعد المحاولة 🙏" });
   }
 }
