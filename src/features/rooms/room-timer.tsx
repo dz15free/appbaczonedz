@@ -92,8 +92,8 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
         <span className="hidden sm:inline">مؤقّت</span>
       </button>
 
-      {showSetup && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowSetup(false)}>
+      {showSetup && createPortal(
+        <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowSetup(false)}>
           <div className="w-full max-w-xs rounded-2xl bg-surface p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-bold">⏱️ ضبط المؤقّت</h3>
@@ -120,10 +120,11 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
                 إيقاف المؤقّت الحالي
               </button>
             )}
-            <button onClick={() => start((preset ?? (parseFloat(customMin) || 15)) * 60)}
+            <button onClick={() => start(preset ?? (parseFloat(customMin) || 15) * 60)}
               className="w-full rounded-md bg-gradient-primary py-2.5 text-sm font-bold text-white">🚀 ابدأ للجميع</button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

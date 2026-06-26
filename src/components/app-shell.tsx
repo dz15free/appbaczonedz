@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* وسط: الشعار (هاتف فقط) — مُوسَّط بصرياً */}
-        <Link href="/home" className="pointer-events-auto absolute right-1/2 flex translate-x-1/2 items-center gap-2 lg:hidden" style={{ marginRight: "-18px" }}>
+        <Link href="/home" className="pointer-events-auto absolute right-1/2 flex translate-x-1/2 items-center gap-2 lg:hidden" style={{ marginRight: "10px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZoneDZ"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
           <span className="bz-brand text-xl">{settings.siteName ?? "BacZoneDZ"}</span>

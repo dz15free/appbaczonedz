@@ -65,9 +65,10 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
       </button>
 
       <div className="relative min-h-[130px] pb-2">
+        <div key={idx} className="bz-slide-in">
         {/* الشريحة 0: ترحيب */}
         {idx === 0 && (
-          <div className="bz-slide-in">
+          <div>
             <p className="text-sm font-bold text-white/70">{welcomeTitle || "مرحباً بعودتك"} 👋</p>
             <h1 className="mt-1 font-display text-3xl font-extrabold text-white sm:text-4xl">أهلاً، {name}</h1>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-white/70">
@@ -78,7 +79,7 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
 
         {/* الشريحة 1: عدّاد البكالوريا */}
         {idx === 1 && (
-          <div className="bz-slide-in">
+          <div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-white/70">
               <FontAwesomeIcon icon={faFire} className="h-3.5 w-3.5 text-amber-400" />
               عدّاد البكالوريا
@@ -106,7 +107,7 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
 
         {/* الشريحة 2: عدّاد النتائج */}
         {idx === 2 && (
-          <div className="bz-slide-in">
+          <div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-white/70">
               <FontAwesomeIcon icon={faAward} className="h-3.5 w-3.5 text-emerald-400" />
               نتائج البكالوريا
@@ -125,7 +126,7 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
 
         {/* الشريحة 3: تحفيزية */}
         {idx === 3 && (
-          <div className="bz-slide-in">
+          <div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-white/70">
               <FontAwesomeIcon icon={faBolt} className="h-3.5 w-3.5 text-yellow-400" />
               نصيحة اليوم
@@ -136,6 +137,7 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
             <p className="mt-2 text-xs text-white/50">ابدأ بمراجعة 25 دقيقة الآن — خطوة صغيرة تصنع الفرق.</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* نقاط المؤشّر */}
