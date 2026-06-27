@@ -36,6 +36,7 @@ export interface Post {
   fileName?: string;
   subject?: string;
   locked?: boolean;
+  editedAt?: number;
 }
 export interface Comment {
   id: string;
@@ -96,6 +97,14 @@ export async function createPost(
   await awardActivity(authorId, "post");
 }
 
+/** تعديل نصّ منشور (للمؤلّف فقط — يُتحقّق عبر قواعد RTDB) */
+export async function editPost(postId: string, text: string) {
+  await update(ref(rtdb, `community/posts/${postId}`), {
+    text: text.trim(),
+    editedAt: Date.now(),
+  });
+}
+
 export async function getPostAttachment(attachmentId: string): Promise<string | null> {
   const snap = await get(ref(rtdb, `community/postAttachments/${attachmentId}`));
   return (snap.val() as string) ?? null;
@@ -150,6 +159,7 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
         visibility: p.visibility ?? "public",
+      editedAt: p.editedAt,
         attachmentId: p.attachmentId,
         attachmentKind: p.attachmentKind,
         fileName: p.fileName,
@@ -175,6 +185,7 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       myVote: votes[myUid] ?? 0,
       commentCount: p.commentCount ?? 0,
       visibility: p.visibility ?? "public",
+      editedAt: p.editedAt,
       attachmentId: p.attachmentId,
       attachmentKind: p.attachmentKind,
       fileName: p.fileName,
@@ -199,6 +210,7 @@ export function listenUserPosts(authorUid: string, myUid: string, cb: (posts: Po
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
         visibility: p.visibility ?? "public",
+      editedAt: p.editedAt,
         attachmentId: p.attachmentId,
         attachmentKind: p.attachmentKind,
         fileName: p.fileName,

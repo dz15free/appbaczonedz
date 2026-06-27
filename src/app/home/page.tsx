@@ -15,6 +15,8 @@ import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
+import { InstallAppBanner } from "@/components/ui/install-app-banner";
+import { FeatureCards, SocialLinks } from "@/components/ui/home-feature-sections";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -223,6 +225,7 @@ export default function HomePage() {
           <div className="rounded-2xl border border-border bg-surface p-5">
             <SectionsRow />
           </div>
+          <FeatureCards />
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
@@ -242,6 +245,7 @@ export default function HomePage() {
         {/* العمود الجانبي */}
         <aside className="space-y-6">
           <MiniLeaderboard />
+          <SocialLinks />
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">أدوات الدراسة</h3>
             <div className="space-y-3">
@@ -280,9 +284,11 @@ export default function HomePage() {
       </div>
 
       {/* ══════════ نسخة الهاتف ══════════ */}
-      <section className="mx-auto max-w-2xl space-y-7 px-4 py-4 lg:hidden">
+      <section className="mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
+        <InstallAppBanner />
         <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
         <SectionsRow />
+        <FeatureCards />
 
         {/* آخر المنشورات */}
         <div>
@@ -311,6 +317,9 @@ export default function HomePage() {
           <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
           <ExternalGrid />
         </div>
+
+        {/* تابعنا */}
+        <SocialLinks />
       </section>
     </AppShell>
   );

@@ -12,6 +12,7 @@ import {
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
   faPlus, faXmark, faToggleOn, faToggleOff, faUsers,
   faDoorOpen, faBan, faUnlock, faEye, faBookOpen,
+  faGlobe, faUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -120,6 +121,11 @@ export default function AdminPage() {
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
   const [bacDate, setBacDate] = useState("");
   const [resultsDate, setResultsDate] = useState("");
+  const [telegramUrl, setTelegramUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [averageCalcUrl, setAverageCalcUrl] = useState("");
+  const [pastExamsUrl, setPastExamsUrl] = useState("");
   const [allowReg, setAllowReg] = useState(true);
   // Posts
   const [announceText, setAnnounceText] = useState("");
@@ -142,6 +148,11 @@ export default function AdminPage() {
     setBannerActive(!!settings.siteBanner?.active);
     setBacDate(settings.bacExamDate ?? "");
     setResultsDate(settings.bacResultsDate ?? "");
+    setTelegramUrl(settings.telegramUrl ?? "");
+    setInstagramUrl(settings.instagramUrl ?? "");
+    setFacebookUrl(settings.facebookUrl ?? "");
+    setAverageCalcUrl(settings.averageCalcUrl ?? "");
+    setPastExamsUrl(settings.pastExamsUrl ?? "");
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
 
@@ -471,6 +482,27 @@ export default function AdminPage() {
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
               {settings.bacResultsDate && <p className="text-xs text-text-muted">الحالي: <span className="font-bold text-secondary">{settings.bacResultsDate}</span></p>}
               <SaveBtn onClick={() => save("resultsDate", () => saveSetting("bacResultsDate", resultsDate))} loading={!!saving.resultsDate} />
+            </Card>
+            <Card icon={faGlobe} title="روابط التواصل الاجتماعي" hint="تظهر في الصفحة الرئيسية">
+              <label className="text-xs font-semibold text-text-muted">تيليغرام</label>
+              <input value={telegramUrl} onChange={(e) => setTelegramUrl(e.target.value)} placeholder="https://t.me/..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <label className="text-xs font-semibold text-text-muted">إنستغرام</label>
+              <input value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <label className="text-xs font-semibold text-text-muted">فيسبوك</label>
+              <input value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <SaveBtn onClick={() => save("social", () => saveSiteSettings({ telegramUrl, instagramUrl, facebookUrl }))} loading={!!saving.social} />
+            </Card>
+            <Card icon={faUpRightFromSquare} title="روابط الأقسام الخارجية" hint="حاسبة المعدّل والمواضيع السابقة">
+              <label className="text-xs font-semibold text-text-muted">حاسبة المعدّل</label>
+              <input value={averageCalcUrl} onChange={(e) => setAverageCalcUrl(e.target.value)} placeholder="https://..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <label className="text-xs font-semibold text-text-muted">مواضيع وحلول سابقة</label>
+              <input value={pastExamsUrl} onChange={(e) => setPastExamsUrl(e.target.value)} placeholder="https://..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <SaveBtn onClick={() => save("exturls", () => saveSiteSettings({ averageCalcUrl, pastExamsUrl }))} loading={!!saving.exturls} />
             </Card>
             <Card icon={faWrench} title="وضع الصيانة">
               <label className="flex cursor-pointer items-center gap-3">

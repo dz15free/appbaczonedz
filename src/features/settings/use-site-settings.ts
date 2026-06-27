@@ -63,6 +63,14 @@ export interface SiteSettings {
   homeWelcomeTitle?: string;      // "مرحباً بعودتك"
   homeWelcomeSubtitle?: string;   // النص أسفله
   homeCards?: HomeCard[];         // بطاقات الوصول السريع
+
+  /* ── روابط التواصل الاجتماعي (قابلة للتعديل من الأدمن) ── */
+  telegramUrl?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  /* ── روابط الأقسام الخارجية ── */
+  averageCalcUrl?: string;        // حاسبة المعدّل
+  pastExamsUrl?: string;          // مواضيع وحلول سابقة
 }
 
 export interface FooterLink { label: string; href: string }
@@ -121,6 +129,13 @@ const DEFAULTS: SiteSettings = {
   /* ── محتوى مرحباً بعودتك ── */
   homeWelcomeTitle: "مرحباً بعودتك",
   homeWelcomeSubtitle: "ماذا تريد أن تفعل اليوم؟",
+
+  /* ── روابط افتراضية ── */
+  telegramUrl: "https://t.me/baczonedz",
+  instagramUrl: "https://www.instagram.com/baczonedz",
+  facebookUrl: "https://www.facebook.com/baczonedz",
+  averageCalcUrl: "https://www.baczonedz.com/p/blog-page_14.html",
+  pastExamsUrl: "https://www.baczonedz.com/p/blog-page_9.html",
 };
 
 /* ─── Hook: قراءة الإعدادات الكاملة ─── */

@@ -23,7 +23,7 @@
           "authorId"
         ],
         "$postId": {
-          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
+          ".write": "auth != null && ((!data.exists() && newData.child('authorId').val() === auth.uid) || (data.exists() && newData.exists() && data.child('authorId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('authorId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
           "votes": {
             "$uid": {
               ".write": "auth != null && $uid === auth.uid"

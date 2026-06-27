@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag, faReply, faXmark, faSpinner, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faArrowUp, faArrowDown, faPaperPlane, faUserPlus, faTrash, faFlag, faReply, faXmark, faSpinner, faLock, faLockOpen, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -21,6 +21,7 @@ import {
   sendFriendRequest,
   cancelFriendRequest,
   deletePost,
+  editPost,
   deleteComment,
   reportContent,
   setPostLocked,
@@ -42,6 +43,8 @@ export default function PostPage() {
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -202,6 +205,16 @@ export default function PostPage() {
                       <FontAwesomeIcon icon={post.locked ? faLockOpen : faLock} className="h-3.5 w-3.5" />
                     </button>
                   )}
+                  {post.authorId === user.uid && (
+                    <button
+                      onClick={() => { setEditText(post.text); setEditing(true); }}
+                      aria-label="تعديل"
+                      title="تعديل المنشور"
+                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-primary/10 hover:text-primary"
+                    >
+                      <FontAwesomeIcon icon={faPenToSquare} className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                   {(post.authorId === user.uid || profile?.role === "admin") ? (
                     <button
                       onClick={() => {
@@ -229,7 +242,38 @@ export default function PostPage() {
                   )}
                 </div>
               </div>
-              {post.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{post.text}</p>}
+              {editing ? (
+                <div className="mt-3">
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!editText.trim()) return;
+                        await editPost(post.id, editText);
+                        setEditing(false);
+                      }}
+                      className="rounded-lg bg-gradient-primary px-4 py-1.5 text-sm font-bold text-white"
+                    >
+                      حفظ التعديل
+                    </button>
+                    <button onClick={() => setEditing(false)} className="rounded-lg border border-border px-4 py-1.5 text-sm font-semibold text-text-muted">
+                      إلغاء
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                post.text && (
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
+                    {post.text}
+                    {post.editedAt && <span className="ms-2 text-xs text-text-muted">(مُعدّل)</span>}
+                  </p>
+                )
+              )}
               <PostAttachment post={post} />
               <div className="mt-3 flex items-center gap-1 rounded-full bg-background px-1" style={{ width: "fit-content" }}>
                 <button
