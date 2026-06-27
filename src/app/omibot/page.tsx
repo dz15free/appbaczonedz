@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faSpinner, faRobot, faGraduationCap, faListCheck, faFlask, faClock, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faSpinner, faRobot, faGraduationCap, faListCheck, faBookOpen, faClock, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { TRACKS } from "@/lib/constants";
@@ -11,6 +11,8 @@ import { AppShell } from "@/components/app-shell";
 import { MarwaMessage } from "@/components/ui/marwa-message";
 import { extractTasksFromPlan, addStudyTasksBatch } from "@/features/study/study-tasks";
 import Link from "next/link";
+import { ref, query, orderByChild, limitToLast, get } from "firebase/database";
+import { rtdb } from "@/lib/firebase/config";
 
 interface Msg { role: "user" | "assistant"; text: string }
 
@@ -18,9 +20,9 @@ const GREETING =
   "أهلاً! أنا **الخباشة** 🌟 مساعدتك الآلية، وهنا لأساعدك في دراستك.\n\nاسألني عن أي درس، أو اطلب خطة مراجعة، أو دعني أختبرك! يمكنني أيضاً شرح المعادلات الرياضية خطوة بخطوة.";
 
 const SUGGESTIONS = [
-  { icon: faFlask, text: "اشرح لي مبرهنة فيثاغورس" },
+  { icon: faBookOpen, text: "أعطني أفضل ملخّص في المكتبة" },
   { icon: faListCheck, text: "ضع لي خطة مراجعة لأسبوع" },
-  { icon: faGraduationCap, text: "اختبرني في الرياضيات" },
+  { icon: faGraduationCap, text: "اختبرني في مادة من اختياري" },
   { icon: faClock, text: "كيف أنظّم وقتي قبل الباك؟" },
 ];
 
@@ -73,6 +75,19 @@ export default function OmibotPage() {
   const [thinking, setThinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const libRef = useRef<{ title: string; subject: string; chapter?: string; uploaderName?: string }[]>([]);
+
+  // تحميل فهرس المكتبة مرّة واحدة لتزويد البوت بأفضل الملخّصات
+  useEffect(() => {
+    get(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(80)))
+      .then((snap) => {
+        const val = (snap.val() as Record<string, any>) ?? {};
+        libRef.current = Object.values(val).map((e: any) => ({
+          title: e.title, subject: e.subject, chapter: e.chapter, uploaderName: e.uploaderName,
+        }));
+      })
+      .catch(() => { libRef.current = []; });
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -100,7 +115,7 @@ export default function OmibotPage() {
       const res = await fetch("/api/omibot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.slice(-12), track: trackName }),
+        body: JSON.stringify({ messages: next.slice(-12), track: trackName, library: libRef.current }),
       });
       const data = await res.json();
       const replyText = res.ok

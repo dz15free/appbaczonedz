@@ -26,6 +26,8 @@ export interface Room {
   ownerRole?: "teacher";
   subject: string | null;
   createdAt: number | null;
+  isPaid?: boolean;
+  price?: number;
 }
 
 export interface ChatMessage {
@@ -51,9 +53,11 @@ export async function createRoom(input: {
   ownerId: string;
   ownerName: string;
   ownerRole?: "teacher";
+  isPaid?: boolean;
+  price?: number;
 }): Promise<string> {
   const id = generateRoomId();
-  await set(ref(rtdb, `rooms/${id}`), {
+  const data: Record<string, unknown> = {
     name: input.name.trim(),
     type: input.type,
     subject: input.subject ?? null,
@@ -61,7 +65,12 @@ export async function createRoom(input: {
     ownerName: input.ownerName,
     ownerRole: input.ownerRole ?? null,
     createdAt: Date.now(),
-  });
+  };
+  if (input.isPaid && input.price && input.price > 0) {
+    data.isPaid = true;
+    data.price = input.price;
+  }
+  await set(ref(rtdb, `rooms/${id}`), data);
   return id;
 }
 

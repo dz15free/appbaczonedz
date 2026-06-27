@@ -35,6 +35,24 @@ export function FeatureCards() {
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      {/* مواضيع وحلول سابقة (أولاً) */}
+      <a href={pastUrl} target="_blank" rel="noopener noreferrer"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-secondary/40 hover:shadow-glass">
+        <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-secondary/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex items-center gap-4">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
+            <FontAwesomeIcon icon={faFileLines} className="h-7 w-7" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 font-display text-base font-extrabold">
+              بكالوريات سابقة
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">مواضيع وحلول السنوات الماضية لكل الشُّعب</p>
+          </div>
+          <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-secondary" />
+        </div>
+      </a>
+
       {/* حاسبة المعدّل */}
       <a href={avgUrl} target="_blank" rel="noopener noreferrer"
         className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-glass">
@@ -50,24 +68,6 @@ export function FeatureCards() {
             <p className="mt-0.5 text-xs leading-relaxed text-text-muted">احسب معدّلك المتوقّع حسب الشعبة والمعاملات</p>
           </div>
           <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-primary" />
-        </div>
-      </a>
-
-      {/* مواضيع وحلول سابقة */}
-      <a href={pastUrl} target="_blank" rel="noopener noreferrer"
-        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-secondary/40 hover:shadow-glass">
-        <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-secondary/10 blur-2xl transition group-hover:scale-150" />
-        <div className="relative flex items-center gap-4">
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
-            <FontAwesomeIcon icon={faFileLines} className="h-7 w-7" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h3 className="flex items-center gap-1.5 font-display text-base font-extrabold">
-              بكالوريات سابقة
-            </h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">مواضيع وحلول السنوات الماضية لكل الشُّعب</p>
-          </div>
-          <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-secondary" />
         </div>
       </a>
     </div>

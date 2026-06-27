@@ -43,17 +43,28 @@ export async function POST(req: NextRequest) {
   }
   let messages: { role: string; text: string }[] = [];
   let track = "";
+  let library: { title: string; subject: string; chapter?: string; uploaderName?: string }[] = [];
   try {
     const body = await req.json();
     messages = Array.isArray(body.messages) ? body.messages : [];
     track = typeof body.track === "string" ? body.track : "";
+    library = Array.isArray(body.library) ? body.library.slice(0, 80) : [];
   } catch {
     return Response.json({ error: "طلب غير صالح." }, { status: 400 });
   }
 
-  const systemText = track
+  // بناء فهرس المكتبة لإدراجه في تعليمات النظام
+  let libraryText = "";
+  if (library.length > 0) {
+    const lines = library.map((e) =>
+      `- "${e.title}" | المادة: ${e.subject}${e.chapter ? ` | الفصل: ${e.chapter}` : ""}${e.uploaderName ? ` | الناشر: ${e.uploaderName}` : ""}`
+    ).join("\n");
+    libraryText = `\n\nمكتبة الموقع الحالية (الملخّصات والملفّات المنشورة):\n${lines}\n\nعند طلب الطالب أفضل ملخّص أو مصدر، اقترحي من هذه القائمة فقط حسب المادة/الشعبة المطلوبة، واذكري العناوين بدقّة. إن لم تكن لديك تفاصيل كافية (الشعبة/المادة) اسأليه أولاً. لا تختلقي ملخّصات غير موجودة في القائمة، ووجّهيه لصفحة المكتبة لتحميلها.`;
+  }
+
+  const systemText = (track
     ? `${SYSTEM}\n\nشعبة الطالب الحالية: ${track} — استعمليها لتخصيص إجاباتك دون سؤاله عن شعبته.`
-    : SYSTEM;
+    : SYSTEM) + libraryText;
 
   const contents = messages
     .filter((m) => m.text?.trim())

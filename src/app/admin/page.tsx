@@ -18,6 +18,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink } from "@/features/settings/use-site-settings";
+import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllCodes, deleteAccessCode, splitAmount, type AccessCode } from "@/features/paid/paid-access";
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
@@ -126,6 +127,7 @@ export default function AdminPage() {
   const [facebookUrl, setFacebookUrl] = useState("");
   const [averageCalcUrl, setAverageCalcUrl] = useState("");
   const [pastExamsUrl, setPastExamsUrl] = useState("");
+  const [commissionPct, setCommissionPct] = useState("10");
   const [allowReg, setAllowReg] = useState(true);
   // Posts
   const [announceText, setAnnounceText] = useState("");
@@ -134,6 +136,11 @@ export default function AdminPage() {
     if (!loading && !user) { router.replace("/login"); return; }
     if (!loading && profile && profile.role !== "admin") router.replace("/home");
   }, [loading, user, profile, router]);
+
+  // عمولة الموقع + سجلّ الأكواد المالي
+  const [codes, setCodes] = useState<AccessCode[]>([]);
+  useEffect(() => listenCommissionPct((p) => setCommissionPct(String(p))), []);
+  useEffect(() => listenAllCodes(setCodes), []);
 
   useEffect(() => {
     setLogoUrl(settings.logoUrl ?? "");
@@ -503,6 +510,63 @@ export default function AdminPage() {
               <input value={pastExamsUrl} onChange={(e) => setPastExamsUrl(e.target.value)} placeholder="https://..."
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
               <SaveBtn onClick={() => save("exturls", () => saveSiteSettings({ averageCalcUrl, pastExamsUrl }))} loading={!!saving.exturls} />
+            </Card>
+            <Card icon={faChartBar} title="عمولة الموقع" hint="نسبة الموقع من مبيعات الملخّصات والغرف المدفوعة">
+              <div className="flex items-center gap-2">
+                <input type="number" value={commissionPct} onChange={(e) => setCommissionPct(e.target.value)} min="0" max="100"
+                  className="h-10 w-24 rounded-md border border-border bg-background px-3 text-center text-sm outline-none focus:border-primary" />
+                <span className="text-sm font-bold text-text-muted">%</span>
+              </div>
+              <p className="text-xs text-text-muted">مثال: سعر 2000 دج، عمولة {commissionPct || 0}% → الموقع {Math.round((2000 * (parseInt(commissionPct) || 0)) / 100)} دج، الأستاذ {2000 - Math.round((2000 * (parseInt(commissionPct) || 0)) / 100)} دج.</p>
+              <SaveBtn onClick={() => save("commission", () => setCommissionPctFn(parseInt(commissionPct) || 0))} loading={!!saving.commission} />
+            </Card>
+            <Card icon={faChartBar} title="السجلّ المالي" hint="الأكواد المُباعة وتوزيع الأرباح">
+              {(() => {
+                const sold = codes.filter((c) => c.redeemedBy);
+                const totalRevenue = sold.reduce((s, c) => s + c.price, 0);
+                const totalCommission = sold.reduce((s, c) => s + splitAmount(c.price, c.commissionPct).commission, 0);
+                return (
+                  <div>
+                    <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-lg bg-primary/10 p-2">
+                        <p className="text-sm font-extrabold text-primary">{sold.length}</p>
+                        <p className="text-[10px] text-text-muted">مبيعات</p>
+                      </div>
+                      <div className="rounded-lg bg-secondary/10 p-2">
+                        <p className="text-sm font-extrabold text-secondary">{totalRevenue}</p>
+                        <p className="text-[10px] text-text-muted">إجمالي (دج)</p>
+                      </div>
+                      <div className="rounded-lg bg-amber-400/15 p-2">
+                        <p className="text-sm font-extrabold text-amber-600">{totalCommission}</p>
+                        <p className="text-[10px] text-text-muted">عمولتك (دج)</p>
+                      </div>
+                    </div>
+                    {sold.length === 0 ? (
+                      <p className="py-4 text-center text-xs text-text-muted">لا مبيعات بعد.</p>
+                    ) : (
+                      <div className="max-h-72 space-y-2 overflow-y-auto">
+                        {sold.map((c) => {
+                          const sp = splitAmount(c.price, c.commissionPct);
+                          return (
+                            <div key={c.id} className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="truncate font-bold">{c.itemTitle}</span>
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{c.itemType === "library" ? "ملخّص" : "غرفة"}</span>
+                              </div>
+                              <p className="mt-1 text-text-muted">اشترى: <span className="font-semibold text-text-primary">{c.redeemedName || "طالب"}</span> · الأستاذ: {c.ownerName}</p>
+                              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
+                                <span>السعر: <span className="font-bold">{c.price} دج</span></span>
+                                <span className="text-amber-600">عمولتك: <span className="font-bold">{sp.commission} دج</span></span>
+                                <span className="text-secondary">للأستاذ: <span className="font-bold">{sp.owner} دج</span></span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </Card>
             <Card icon={faWrench} title="وضع الصيانة">
               <label className="flex cursor-pointer items-center gap-3">

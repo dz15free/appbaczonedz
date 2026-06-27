@@ -8,7 +8,7 @@ import {
   faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faClock, faSpinner,
+  faNoteSticky, faClock, faSpinner, faLock, faKey,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -36,6 +36,8 @@ import { ChatPanel } from "@/features/chat/chat-panel";
 import { FullscreenChatOverlay } from "@/features/chat/fullscreen-chat";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
+import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
 import dynamic from "next/dynamic";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
@@ -197,12 +199,18 @@ export default function RoomPage() {
   }, []);
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [roomAccess, setRoomAccess] = useState(false);
+  const { settings } = useSiteSettings();
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
   useEffect(() => listenMods(roomId, setMods), [roomId]);
   useEffect(() => listenBanned(roomId, setBanned), [roomId]);
   useEffect(() => listenPoll(roomId, setActivePoll), [roomId]);
+  useEffect(() => {
+    if (!room?.isPaid || !user) return;
+    return listenHasAccess(user.uid, "room", roomId, setRoomAccess);
+  }, [room?.isPaid, user, roomId]);
   useEffect(() => {
     if (!user) return;
     return listenKicked(roomId, user.uid, (kicked) => {
@@ -265,6 +273,11 @@ export default function RoomPage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   if (notFound) return <div className="p-10 text-center text-text-muted">الغرفة غير موجودة.</div>;
+
+  // بوّابة الغرف المدفوعة
+  if (room?.isPaid && !isOwner && !roomAccess && !isPrivileged) {
+    return <PaidRoomGate room={room} uid={user.uid} telegramUrl={settings.telegramUrl} onUnlocked={() => setRoomAccess(true)} />;
+  }
 
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
 
@@ -449,6 +462,24 @@ export default function RoomPage() {
             <span className="text-base leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
             <span className="hidden sm:inline">{ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}</span>
           </button>
+
+          {/* توليد كود لغرفة مدفوعة */}
+          {room?.isPaid && (
+            <button
+              onClick={async () => {
+                const c = await createAccessCode({
+                  itemType: "room", itemId: roomId, itemTitle: room.name,
+                  price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
+                });
+                prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
+              }}
+              title="توليد كود وصول"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
+            >
+              <FontAwesomeIcon icon={faKey} className="h-4 w-4" />
+              <span className="hidden sm:inline">كود</span>
+            </button>
+          )}
 
 
           <div className="mr-auto" />
@@ -657,5 +688,59 @@ export default function RoomPage() {
       )}
 
     </main>
+  );
+}
+
+/* بوّابة الغرف المدفوعة — قفل + كود وصول */
+function PaidRoomGate({ room, uid, telegramUrl, onUnlocked }: {
+  room: Room; uid: string; telegramUrl?: string; onUnlocked: () => void;
+}) {
+  const router = useRouter();
+  const [code, setCode] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function unlock() {
+    setBusy(true); setErr("");
+    const error = await redeemCode(code, uid, "");
+    setBusy(false);
+    if (error) { setErr(error); return; }
+    onUnlocked();
+  }
+
+  return (
+    <div className="flex min-h-[80vh] flex-col items-center justify-center px-5 text-center">
+      <div className="w-full max-w-sm rounded-3xl border border-amber-400/30 bg-surface p-6 shadow-glass">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-amber-400/15 text-amber-500">
+          <FontAwesomeIcon icon={faLock} className="h-8 w-8" />
+        </span>
+        <h1 className="mt-4 font-display text-xl font-extrabold">{room.name}</h1>
+        <p className="mt-1 text-sm text-text-muted">غرفة مدفوعة — تحتاج كود وصول للدخول</p>
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-sm font-bold text-amber-600">
+          <FontAwesomeIcon icon={faLock} className="h-3 w-3" /> {room.price} دج
+        </div>
+
+        {telegramUrl && (
+          <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 py-2.5 text-sm font-bold text-white hover:opacity-90">
+            💬 تواصل مع الأدمن للشراء
+          </a>
+        )}
+
+        <div className="mt-3 flex gap-2">
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="أدخل كود الوصول"
+            className="h-11 flex-1 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+          <button onClick={unlock} disabled={busy || !code.trim()}
+            className="rounded-xl bg-gradient-primary px-5 text-sm font-bold text-white disabled:opacity-50">
+            {busy ? "..." : "دخول"}
+          </button>
+        </div>
+        {err && <p className="mt-2 text-sm text-danger">{err}</p>}
+
+        <button onClick={() => router.replace("/rooms")} className="mt-4 text-xs font-semibold text-text-muted hover:text-primary">
+          ← العودة للغرف
+        </button>
+      </div>
+    </div>
   );
 }

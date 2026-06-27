@@ -6,6 +6,8 @@ import { createRoom, type RoomType } from "@/features/rooms/rooms";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { Input, Button } from "@/components/ui/field";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faLock, faToggleOn, faToggleOff } from "@fortawesome/free-solid-svg-icons";
 
 const TYPES: { id: RoomType; label: string }[] = [
   { id: "public", label: "عامة" },
@@ -46,6 +48,8 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<RoomType>("public");
   const [subject, setSubject] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+  const [price, setPrice] = useState("");
 
   const isTeacher = profile?.role === "teacher" || profile?.role === "admin";
   // الأساتذة/الأدمن فقط يرون خيار "غرفة أستاذ"
@@ -53,6 +57,8 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
 
   async function handleCreate() {
     if (!name.trim() || !user) return;
+    const priceNum = parseInt(price, 10);
+    if (isPaid && isTeacher && (!priceNum || priceNum <= 0)) return;
     setLoading(true);
     const id = await createRoom({
       name,
@@ -61,6 +67,8 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
       ownerId: user.uid,
       ownerName: user.displayName || profile?.name || "طالب",
       ownerRole: profile?.role === "teacher" || profile?.role === "admin" ? "teacher" : undefined,
+      isPaid: isPaid && isTeacher,
+      price: isPaid && isTeacher ? priceNum : undefined,
     });
     router.push(`/rooms/${id}`);
   }
@@ -106,6 +114,29 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
+
+          {/* غرفة مدفوعة (أستاذ/أدمن) */}
+          {isTeacher && (
+            <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
+              <label className="flex cursor-pointer items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <FontAwesomeIcon icon={faLock} className="h-3.5 w-3.5 text-amber-500" />
+                  غرفة مدفوعة (دخول بكود)
+                </span>
+                <button type="button" onClick={() => setIsPaid(!isPaid)}>
+                  <FontAwesomeIcon icon={isPaid ? faToggleOn : faToggleOff} className={`h-7 w-7 ${isPaid ? "text-amber-500" : "text-text-muted"}`} />
+                </button>
+              </label>
+              {isPaid && (
+                <div className="mt-3">
+                  <label className="mb-1 block text-xs font-semibold text-text-muted">السعر بالدينار الجزائري</label>
+                  <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="2000" min="1"
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+                  <p className="mt-1.5 text-[11px] text-text-muted">سيتواصل الطلاب مع الأدمن للدفع والحصول على كود الدخول.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="mt-6 flex gap-2">
           <Button onClick={handleCreate} loading={loading} disabled={!name.trim()} className="flex-1">

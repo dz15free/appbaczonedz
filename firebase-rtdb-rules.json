@@ -259,6 +259,23 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
       }
+    },
+    "accessCodes": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "createdBy",
+        "code",
+        "createdAt"
+      ],
+      "$codeId": {
+        ".write": "auth != null && ((!data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin') || (data.exists() && !data.child('redeemedBy').exists() && newData.child('redeemedBy').val() === auth.uid))"
+      }
+    },
+    "userAccess": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
     }
   }
 }
