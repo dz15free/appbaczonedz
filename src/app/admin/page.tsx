@@ -18,7 +18,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink } from "@/features/settings/use-site-settings";
-import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllCodes, deleteAccessCode, splitAmount, type AccessCode } from "@/features/paid/paid-access";
+import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllCodes, deleteAccessCode, splitAmount, markSettled, type AccessCode } from "@/features/paid/paid-access";
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
@@ -559,6 +559,12 @@ export default function AdminPage() {
                                 <span className="text-amber-600">عمولتك: <span className="font-bold">{sp.commission} دج</span></span>
                                 <span className="text-secondary">للأستاذ: <span className="font-bold">{sp.owner} دج</span></span>
                               </div>
+                              <button onClick={() => markSettled(c.id, !c.settled)}
+                                className={`mt-2 w-full rounded-md py-1.5 text-[11px] font-bold transition ${
+                                  c.settled ? "bg-secondary/15 text-secondary hover:bg-secondary/25" : "bg-amber-400/15 text-amber-600 hover:bg-amber-400/25"
+                                }`}>
+                                {c.settled ? "✓ سُوّيت (دفعتَ للأستاذ) — اضغط للتراجع" : "وسم كـ«تمّت تسوية الأستاذ»"}
+                              </button>
                             </div>
                           );
                         })}

@@ -265,7 +265,8 @@
       ".indexOn": [
         "createdBy",
         "code",
-        "createdAt"
+        "createdAt",
+        "ownerId"
       ],
       "$codeId": {
         ".write": "auth != null && ((!data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin') || (data.exists() && !data.child('redeemedBy').exists() && newData.child('redeemedBy').val() === auth.uid))"

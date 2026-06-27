@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGraduationCap, faLocationDot, faStar, faRightFromBracket,
-  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines,
+  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines, faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
+import { listenOwnerCodes, splitAmount, type AccessCode } from "@/features/paid/paid-access";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
@@ -206,6 +207,11 @@ export default function ProfilePage() {
         )}
       </section>
 
+      {/* لوحة أرباح الأستاذ */}
+      {user && (profile?.role === "teacher" || profile?.role === "admin") && (
+        <TeacherEarnings uid={user.uid} />
+      )}
+
       {/* نافذة التعديل */}
       {editing && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onClick={() => setEditing(false)}>
@@ -279,5 +285,81 @@ export default function ProfilePage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+/* لوحة أرباح الأستاذ — مبيعاته وأرباحه بعد خصم العمولة */
+function TeacherEarnings({ uid }: { uid: string }) {
+  const [codes, setCodes] = useState<AccessCode[]>([]);
+  useEffect(() => listenOwnerCodes(uid, setCodes), [uid]);
+
+  const sold = codes.filter((c) => c.redeemedBy);
+  const totalGross = sold.reduce((s, c) => s + c.price, 0);
+  const totalNet = sold.reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0);
+  const settledNet = sold.filter((c) => c.settled).reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0);
+  const pendingNet = totalNet - settledNet;
+  const buyers = new Set(sold.map((c) => c.redeemedBy)).size;
+
+  return (
+    <section className="mx-auto mt-4 max-w-md px-4">
+      <div className="rounded-2xl border border-border bg-surface p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <FontAwesomeIcon icon={faChartLine} className="h-4 w-4 text-secondary" />
+          <h2 className="font-display text-base font-extrabold">أرباحي من المحتوى المدفوع</h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl bg-secondary/10 p-3 text-center">
+            <p className="text-lg font-extrabold text-secondary">{totalNet}</p>
+            <p className="text-[11px] text-text-muted">صافي أرباحك (دج)</p>
+          </div>
+          <div className="rounded-xl bg-primary/10 p-3 text-center">
+            <p className="text-lg font-extrabold text-primary">{sold.length}</p>
+            <p className="text-[11px] text-text-muted">عدد المبيعات</p>
+          </div>
+          <div className="rounded-xl bg-amber-400/15 p-3 text-center">
+            <p className="text-lg font-extrabold text-amber-600">{pendingNet}</p>
+            <p className="text-[11px] text-text-muted">بانتظار التسوية (دج)</p>
+          </div>
+          <div className="rounded-xl bg-border/40 p-3 text-center">
+            <p className="text-lg font-extrabold">{buyers}</p>
+            <p className="text-[11px] text-text-muted">عدد المشترين</p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
+          الإجمالي قبل العمولة: {totalGross} دج · المُسوّى: {settledNet} دج. التسوية تتم مع أدمن الموقع.
+        </p>
+
+        {sold.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs font-bold text-text-muted">تفاصيل المبيعات</p>
+            <div className="max-h-72 space-y-2 overflow-y-auto">
+              {sold.map((c) => {
+                const sp = splitAmount(c.price, c.commissionPct);
+                return (
+                  <div key={c.id} className="rounded-lg border border-border bg-background p-2.5 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-bold">{c.itemTitle}</span>
+                      {c.settled ? (
+                        <span className="shrink-0 rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-bold text-secondary">سُوّيت ✓</span>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">معلّقة</span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-text-muted">المشتري: <span className="font-semibold text-text-primary">{c.redeemedName || "طالب"}</span></p>
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px]">
+                      <span>السعر: <span className="font-bold">{c.price} دج</span></span>
+                      <span className="text-secondary">حصّتك: <span className="font-bold">{sp.owner} دج</span></span>
+                      <span className="text-text-muted">عمولة الموقع: {sp.commission} دج</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

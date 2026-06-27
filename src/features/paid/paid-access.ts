@@ -27,6 +27,8 @@ export interface AccessCode {
   redeemedBy?: string;     // uid الطالب الذي قفل الكود
   redeemedName?: string;
   redeemedAt?: number;
+  settled?: boolean;       // هل سوّى الأدمن حساب الأستاذ؟
+  settledAt?: number;
 }
 
 /** نسبة العمولة العامة (settings/commissionPct) */
@@ -94,6 +96,14 @@ export function listenMyCodes(uid: string, cb: (codes: AccessCode[]) => void) {
   });
 }
 
+/** أكواد مرتبطة بأستاذ (مالك المحتوى) — لإحصائياته الخاصّة */
+export function listenOwnerCodes(ownerId: string, cb: (codes: AccessCode[]) => void) {
+  return onValue(query(ref(rtdb, "accessCodes"), orderByChild("ownerId"), equalTo(ownerId)), (snap) => {
+    const val = (snap.val() as Record<string, Omit<AccessCode, "id">>) ?? {};
+    cb(Object.entries(val).map(([id, c]) => ({ id, ...c })).sort((a, b) => b.createdAt - a.createdAt));
+  });
+}
+
 /** كل الأكواد (للأدمن: السجلّ المالي) */
 export function listenAllCodes(cb: (codes: AccessCode[]) => void) {
   return onValue(query(ref(rtdb, "accessCodes"), orderByChild("createdAt")), (snap) => {
@@ -104,6 +114,14 @@ export function listenAllCodes(cb: (codes: AccessCode[]) => void) {
 
 export async function deleteAccessCode(codeId: string) {
   await remove(ref(rtdb, `accessCodes/${codeId}`));
+}
+
+/** تعليم عملية بأنها سُوّيت (الأدمن دفع للأستاذ حصّته) */
+export async function markSettled(codeId: string, settled: boolean) {
+  await update(ref(rtdb, `accessCodes/${codeId}`), {
+    settled,
+    settledAt: settled ? Date.now() : null,
+  });
 }
 
 /**
