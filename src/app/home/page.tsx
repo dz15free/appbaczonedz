@@ -8,7 +8,7 @@ import {
   faUsers, faRobot, faComments, faChalkboardUser,
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
-  faArrowUp, faArrowDown, faComment, faCrown,
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -16,7 +16,8 @@ import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
-import { FeatureCards, SocialLinks } from "@/components/ui/home-feature-sections";
+import { FeatureCards, SocialLinks, AdvertiseCard } from "@/components/ui/home-feature-sections";
+import { AdSlot } from "@/components/ui/ad-slot";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -36,6 +37,7 @@ const TOOLS = [
   { href: "/tools/tasks", label: "مهامي الدراسية", desc: "خطط الخباشة كمهام", icon: faListCheck, color: "bg-violet-500/10 text-violet-500" },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "bg-amber-500/10 text-amber-500" },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك", icon: faListCheck, color: "bg-sky-500/10 text-sky-500" },
+  { href: "/tools/planner", label: "مخطّط للطباعة", desc: "بلانر يومي احترافي", icon: faCalendarDays, color: "bg-rose-500/10 text-rose-500" },
 ];
 
 const EXTERNAL = [
@@ -226,6 +228,7 @@ export default function HomePage() {
             <SectionsRow />
           </div>
           <FeatureCards />
+          <AdSlot placement="home" />
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
@@ -246,6 +249,7 @@ export default function HomePage() {
         <aside className="space-y-6">
           <MiniLeaderboard />
           <SocialLinks />
+          <AdvertiseCard />
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">أدوات الدراسة</h3>
             <div className="space-y-3">
@@ -320,6 +324,9 @@ export default function HomePage() {
 
         {/* تابعنا */}
         <SocialLinks />
+
+        {/* أعلن معنا */}
+        <AdvertiseCard />
       </section>
     </AppShell>
   );

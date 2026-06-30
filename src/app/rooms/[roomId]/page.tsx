@@ -276,7 +276,7 @@ export default function RoomPage() {
 
   // بوّابة الغرف المدفوعة
   if (room?.isPaid && !isOwner && !roomAccess && !isPrivileged) {
-    return <PaidRoomGate room={room} uid={user.uid} telegramUrl={settings.telegramUrl} onUnlocked={() => setRoomAccess(true)} />;
+    return <PaidRoomGate room={room} uid={user.uid} telegramUrl={settings.paymentUrl || settings.telegramUrl} onUnlocked={() => setRoomAccess(true)} />;
   }
 
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
@@ -722,8 +722,8 @@ function PaidRoomGate({ room, uid, telegramUrl, onUnlocked }: {
 
         {telegramUrl && (
           <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 py-2.5 text-sm font-bold text-white hover:opacity-90">
-            💬 تواصل مع الأدمن للشراء
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:opacity-90">
+            💬 تواصل عبر ميسنجر للشراء
           </a>
         )}
 

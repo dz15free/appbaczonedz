@@ -1,7 +1,8 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalculator, faFileLines, faArrowLeft, faChartLine } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn } from "@fortawesome/free-solid-svg-icons";
+import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 
 /* أيقونات التواصل (SVG مضمّن — بلا حزم إضافية) */
@@ -32,6 +33,7 @@ export function FeatureCards() {
   const { settings } = useSiteSettings();
   const avgUrl = settings.averageCalcUrl || "https://www.baczonedz.com/p/blog-page_14.html";
   const pastUrl = settings.pastExamsUrl || "https://www.baczonedz.com/p/blog-page_9.html";
+  const weightedUrl = settings.weightedCalcUrl || "https://www.baczonedz.com/p/2026.html";
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -70,6 +72,43 @@ export function FeatureCards() {
           <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-primary" />
         </div>
       </a>
+
+      {/* حاسبة المعدّل الموزون */}
+      <a href={weightedUrl} target="_blank" rel="noopener noreferrer"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-violet-400/40 hover:shadow-glass">
+        <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-violet-500/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex items-center gap-4">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-400 text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3">
+            <FontAwesomeIcon icon={faScaleBalanced} className="h-7 w-7" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 font-display text-base font-extrabold">
+              حساب المعدّل الموزون
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">احسب معدّلك الموزون للجامعات والتخصّصات</p>
+          </div>
+          <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-violet-500" />
+        </div>
+      </a>
+
+      {/* مخطّط البكالوريا (بلانر) */}
+      <Link href="/tools/planner"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-rose-400/40 hover:shadow-glass">
+        <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex items-center gap-4">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-400 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
+            <FontAwesomeIcon icon={faCalendarDays} className="h-7 w-7" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 font-display text-base font-extrabold">
+              مخطّط البكالوريا للطباعة
+              <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[9px] font-bold text-rose-500">جديد</span>
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">بلانر يومي احترافي جاهز للطباعة بأشكال متنوّعة</p>
+          </div>
+          <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-rose-500" />
+        </div>
+      </Link>
     </div>
   );
 }
@@ -101,6 +140,40 @@ export function SocialLinks() {
             <span className="text-xs font-bold">{l.label}</span>
           </a>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* بطاقة "أعلن معنا" */
+export function AdvertiseCard() {
+  const { settings } = useSiteSettings();
+  const email = settings.adsEmail || "saidaouina22@gmail.com";
+  const wa = (settings.adsWhatsapp || "+213657498876").replace(/[^\d]/g, "");
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-l from-amber-400/10 to-orange-400/5 p-5">
+      <div className="pointer-events-none absolute -left-8 -top-8 h-28 w-28 rounded-full bg-amber-400/15 blur-2xl" />
+      <div className="relative">
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg">
+            <FontAwesomeIcon icon={faBullhorn} className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display text-base font-extrabold">أعلن معنا 📢</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">وصّل علامتك التجارية لآلاف طلاب البكالوريا</p>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <a href={`mailto:${email}?subject=${encodeURIComponent("طلب إعلان على BacZone")}`}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 py-2.5 text-xs font-bold text-white transition hover:opacity-90">
+            ✉️ راسلنا بالإيميل
+          </a>
+          <a href={`https://wa.me/${wa}?text=${encodeURIComponent("مرحباً، أريد الإعلان على BacZone")}`} target="_blank" rel="noopener noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 py-2.5 text-xs font-bold text-white transition hover:opacity-90">
+            💬 واتساب
+          </a>
+        </div>
       </div>
     </div>
   );

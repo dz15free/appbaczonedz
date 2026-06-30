@@ -325,6 +325,8 @@ export interface ScheduledSession {
   ownerName: string;
   scheduledAt: number;
   createdAt: number;
+  isPaid?: boolean;
+  price?: number;
 }
 
 const SESSION_HIDE_AFTER_MS = 60 * 60 * 1000; // أخفِ الجلسة بعد مرور ساعة من وقتها
@@ -335,6 +337,9 @@ export async function scheduleSession(input: {
   ownerId: string;
   ownerName: string;
   scheduledAt: number;
+  ownerRole?: "teacher";
+  isPaid?: boolean;
+  price?: number;
 }): Promise<string> {
   // أنشئ غرفة الجلسة فوراً (تصبح جاهزة للانضمام عند حلول الوقت)
   const roomId = await createRoom({
@@ -343,10 +348,12 @@ export async function scheduleSession(input: {
     subject: input.subject,
     ownerId: input.ownerId,
     ownerName: input.ownerName,
+    ownerRole: input.ownerRole,
+    isPaid: input.isPaid,
+    price: input.price,
   });
 
-  const sRef = push(ref(rtdb, "scheduledSessions"));
-  await set(sRef, {
+  const sData: Record<string, unknown> = {
     name: input.name.trim(),
     subject: input.subject ?? null,
     roomId,
@@ -354,7 +361,13 @@ export async function scheduleSession(input: {
     ownerName: input.ownerName,
     scheduledAt: input.scheduledAt,
     createdAt: Date.now(),
-  });
+  };
+  if (input.isPaid && input.price && input.price > 0) {
+    sData.isPaid = true;
+    sData.price = input.price;
+  }
+  const sRef = push(ref(rtdb, "scheduledSessions"));
+  await set(sRef, sData);
   return roomId;
 }
 

@@ -17,7 +17,8 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
-import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink } from "@/features/settings/use-site-settings";
+import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink, type AdSlotConfig } from "@/features/settings/use-site-settings";
+import { AD_PLACEMENTS } from "@/components/ui/ad-slot";
 import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllCodes, deleteAccessCode, splitAmount, markSettled, type AccessCode } from "@/features/paid/paid-access";
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
@@ -55,6 +56,7 @@ const TABS = [
   { id: "welcome",   label: "مرحباً بعودتك", icon: faFont },
   { id: "footer",    label: "الفوتر",     icon: faLink },
   { id: "control",   label: "التحكّم",    icon: faWrench },
+  { id: "ads",       label: "الإعلانات",  icon: faBullhorn },
   { id: "users",     label: "المستخدمون", icon: faUsers },
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
@@ -127,6 +129,11 @@ export default function AdminPage() {
   const [facebookUrl, setFacebookUrl] = useState("");
   const [averageCalcUrl, setAverageCalcUrl] = useState("");
   const [pastExamsUrl, setPastExamsUrl] = useState("");
+  const [paymentUrl, setPaymentUrl] = useState("");
+  const [weightedCalcUrl, setWeightedCalcUrl] = useState("");
+  const [adsEmail, setAdsEmail] = useState("");
+  const [adsWhatsapp, setAdsWhatsapp] = useState("");
+  const [adsDraft, setAdsDraft] = useState<Record<string, AdSlotConfig>>({});
   const [commissionPct, setCommissionPct] = useState("10");
   const [allowReg, setAllowReg] = useState(true);
   // Posts
@@ -160,6 +167,11 @@ export default function AdminPage() {
     setFacebookUrl(settings.facebookUrl ?? "");
     setAverageCalcUrl(settings.averageCalcUrl ?? "");
     setPastExamsUrl(settings.pastExamsUrl ?? "");
+    setPaymentUrl(settings.paymentUrl ?? "");
+    setWeightedCalcUrl(settings.weightedCalcUrl ?? "");
+    setAdsEmail(settings.adsEmail ?? "");
+    setAdsWhatsapp(settings.adsWhatsapp ?? "");
+    setAdsDraft(settings.ads ?? {});
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
 
@@ -509,7 +521,24 @@ export default function AdminPage() {
               <label className="text-xs font-semibold text-text-muted">مواضيع وحلول سابقة</label>
               <input value={pastExamsUrl} onChange={(e) => setPastExamsUrl(e.target.value)} placeholder="https://..."
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
-              <SaveBtn onClick={() => save("exturls", () => saveSiteSettings({ averageCalcUrl, pastExamsUrl }))} loading={!!saving.exturls} />
+              <label className="text-xs font-semibold text-text-muted">حاسبة المعدّل الموزون</label>
+              <input value={weightedCalcUrl} onChange={(e) => setWeightedCalcUrl(e.target.value)} placeholder="https://..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <SaveBtn onClick={() => save("exturls", () => saveSiteSettings({ averageCalcUrl, pastExamsUrl, weightedCalcUrl }))} loading={!!saving.exturls} />
+            </Card>
+            <Card icon={faLink} title="رابط الدفع (ميسنجر)" hint="يظهر للطلاب لشراء المحتوى المدفوع">
+              <input value={paymentUrl} onChange={(e) => setPaymentUrl(e.target.value)} placeholder="https://m.me/..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <SaveBtn onClick={() => save("payment", () => saveSetting("paymentUrl", paymentUrl))} loading={!!saving.payment} />
+            </Card>
+            <Card icon={faBullhorn} title="جهات التواصل للإعلانات" hint="بطاقة «أعلن معنا» في الرئيسية">
+              <label className="text-xs font-semibold text-text-muted">الإيميل</label>
+              <input value={adsEmail} onChange={(e) => setAdsEmail(e.target.value)} placeholder="email@example.com"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <label className="text-xs font-semibold text-text-muted">واتساب (مع رمز الدولة)</label>
+              <input value={adsWhatsapp} onChange={(e) => setAdsWhatsapp(e.target.value)} placeholder="+213..."
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
+              <SaveBtn onClick={() => save("ads", () => saveSiteSettings({ adsEmail, adsWhatsapp }))} loading={!!saving.ads} />
             </Card>
             <Card icon={faChartBar} title="عمولة الموقع" hint="نسبة الموقع من مبيعات الملخّصات والغرف المدفوعة">
               <div className="flex items-center gap-2">
@@ -559,12 +588,19 @@ export default function AdminPage() {
                                 <span className="text-amber-600">عمولتك: <span className="font-bold">{sp.commission} دج</span></span>
                                 <span className="text-secondary">للأستاذ: <span className="font-bold">{sp.owner} دج</span></span>
                               </div>
-                              <button onClick={() => markSettled(c.id, !c.settled)}
-                                className={`mt-2 w-full rounded-md py-1.5 text-[11px] font-bold transition ${
-                                  c.settled ? "bg-secondary/15 text-secondary hover:bg-secondary/25" : "bg-amber-400/15 text-amber-600 hover:bg-amber-400/25"
-                                }`}>
-                                {c.settled ? "✓ سُوّيت (دفعتَ للأستاذ) — اضغط للتراجع" : "وسم كـ«تمّت تسوية الأستاذ»"}
-                              </button>
+                              <div className="mt-2 flex gap-2">
+                                <button onClick={() => markSettled(c.id, !c.settled)}
+                                  className={`flex-1 rounded-md py-1.5 text-[11px] font-bold transition ${
+                                    c.settled ? "bg-secondary/15 text-secondary hover:bg-secondary/25" : "bg-amber-400/15 text-amber-600 hover:bg-amber-400/25"
+                                  }`}>
+                                  {c.settled ? "✓ سُوّيت — تراجع" : "وسم كـ«سُوّيت»"}
+                                </button>
+                                <button onClick={() => { if (confirm("حذف هذه المعاملة نهائياً؟ لا يمكن التراجع.")) deleteAccessCode(c.id); }}
+                                  title="حذف المعاملة"
+                                  className="grid w-9 shrink-0 place-items-center rounded-md bg-danger/10 text-danger transition hover:bg-danger/20">
+                                  <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                                </button>
+                              </div>
                             </div>
                           );
                         })}
@@ -594,6 +630,60 @@ export default function AdminPage() {
               </label>
               <SaveBtn onClick={() => save("reg", () => saveSetting("allowRegistration", allowReg))} loading={!!saving.reg} />
             </Card>
+          </div>
+        )}
+
+        {/* ════ الإعلانات ════ */}
+        {tab === "ads" && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <p className="text-sm font-bold">📢 إدارة الإعلانات</p>
+              <p className="mt-1 text-xs text-text-muted">أضف إعلاناً (كود HTML/AdSense أو صورة برابط) في المواضع المختلفة. فعّل/عطّل كل موضع حسب الحاجة.</p>
+            </div>
+            {AD_PLACEMENTS.map((p) => {
+              const cur = adsDraft[p.id] ?? { enabled: false, type: "html" as const, html: "", imageUrl: "", linkUrl: "" };
+              const upd = (patch: Partial<typeof cur>) => setAdsDraft({ ...adsDraft, [p.id]: { ...cur, ...patch } });
+              return (
+                <Card key={p.id} icon={faBullhorn} title={p.label} hint={p.desc}>
+                  <label className="flex cursor-pointer items-center justify-between">
+                    <span className="text-sm font-bold">تفعيل الإعلان هنا</span>
+                    <button type="button" onClick={() => upd({ enabled: !cur.enabled })}>
+                      <FontAwesomeIcon icon={cur.enabled ? faToggleOn : faToggleOff} className={`h-7 w-7 ${cur.enabled ? "text-secondary" : "text-text-muted"}`} />
+                    </button>
+                  </label>
+                  {cur.enabled && (
+                    <>
+                      <div className="flex gap-2">
+                        <button onClick={() => upd({ type: "html" })}
+                          className={`flex-1 rounded-lg border py-2 text-xs font-bold ${cur.type === "html" ? "border-primary bg-primary/5 text-primary" : "border-border text-text-muted"}`}>
+                          كود HTML / AdSense
+                        </button>
+                        <button onClick={() => upd({ type: "image" })}
+                          className={`flex-1 rounded-lg border py-2 text-xs font-bold ${cur.type === "image" ? "border-primary bg-primary/5 text-primary" : "border-border text-text-muted"}`}>
+                          صورة برابط
+                        </button>
+                      </div>
+                      {cur.type === "html" ? (
+                        <textarea value={cur.html ?? ""} onChange={(e) => upd({ html: e.target.value })}
+                          placeholder="<script>...</script> أو أي كود إعلان"
+                          rows={4} dir="ltr"
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary" />
+                      ) : (
+                        <>
+                          <label className="text-xs font-semibold text-text-muted">رابط الصورة</label>
+                          <input value={cur.imageUrl ?? ""} onChange={(e) => upd({ imageUrl: e.target.value })} placeholder="https://...jpg" dir="ltr"
+                            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+                          <label className="text-xs font-semibold text-text-muted">رابط عند الضغط (اختياري)</label>
+                          <input value={cur.linkUrl ?? ""} onChange={(e) => upd({ linkUrl: e.target.value })} placeholder="https://..." dir="ltr"
+                            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+                        </>
+                      )}
+                    </>
+                  )}
+                  <SaveBtn onClick={() => save(`ad_${p.id}`, () => saveSiteSettings({ ads: { ...(settings.ads ?? {}), [p.id]: cur } }))} loading={!!saving[`ad_${p.id}`]} />
+                </Card>
+              );
+            })}
           </div>
         )}
 

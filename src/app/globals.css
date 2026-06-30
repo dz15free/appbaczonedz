@@ -438,3 +438,15 @@ html { scrollbar-gutter: stable; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══ معاينة الملاحظات المشتركة ═══ */
+.bz-notes-preview h1 { font-size: 1.3rem; font-weight: 800; color: rgb(var(--bz-primary)); margin: 0.8em 0 0.4em; border-bottom: 2px solid rgba(var(--bz-primary), 0.15); padding-bottom: 4px; }
+.bz-notes-preview h2 { font-size: 1.12rem; font-weight: 700; color: rgb(var(--bz-primary)); margin: 0.7em 0 0.3em; }
+.bz-notes-preview h3 { font-size: 1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
+.bz-notes-preview p { margin: 0.4em 0; }
+.bz-notes-preview ul { margin: 0.4em 1.4em; list-style: disc; }
+.bz-notes-preview li { margin: 0.25em 0; }
+.bz-notes-preview blockquote { border-inline-start: 3px solid rgb(var(--bz-primary)); background: rgba(var(--bz-primary), 0.06); margin: 0.6em 0; padding: 0.5em 0.9em; border-radius: 8px; }
+.bz-notes-preview mark { background: #fef08a; color: #1a1a2e; padding: 0 3px; border-radius: 3px; }
+.bz-notes-preview hr { border: none; border-top: 2px dashed var(--bz-border); margin: 1.2em 0; }
+.bz-notes-preview u { text-decoration-color: rgb(var(--bz-primary)); text-decoration-thickness: 2px; }

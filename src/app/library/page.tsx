@@ -8,6 +8,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { AdSlot } from "@/components/ui/ad-slot";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
 
@@ -103,6 +104,7 @@ export default function LibraryPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-3xl px-4 py-4">
+        <AdSlot placement="library" className="mb-4" />
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button onClick={() => router.back()} className="text-text-muted hover:text-primary"><FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" /></button>
@@ -298,10 +300,10 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
           <p className="text-xs font-semibold leading-relaxed">
             هذا الملخّص مدفوع ({e.price} دج). للحصول على كود الوصول، تواصل مع الأدمن للدفع.
           </p>
-          {settings.telegramUrl && (
-            <a href={settings.telegramUrl} target="_blank" rel="noopener noreferrer"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-2 text-xs font-bold text-white">
-              💬 تواصل مع الأدمن للشراء
+          {(settings.paymentUrl || settings.telegramUrl) && (
+            <a href={settings.paymentUrl || settings.telegramUrl} target="_blank" rel="noopener noreferrer"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white">
+              💬 تواصل عبر ميسنجر للشراء
             </a>
           )}
           <div className="mt-2 flex gap-2">

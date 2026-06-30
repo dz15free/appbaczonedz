@@ -68,9 +68,25 @@ export interface SiteSettings {
   telegramUrl?: string;
   instagramUrl?: string;
   facebookUrl?: string;
+  /* ── رابط التواصل للدفع (ميسنجر) ── */
+  paymentUrl?: string;
   /* ── روابط الأقسام الخارجية ── */
   averageCalcUrl?: string;        // حاسبة المعدّل
   pastExamsUrl?: string;          // مواضيع وحلول سابقة
+  weightedCalcUrl?: string;       // حاسبة المعدّل الموزون
+  /* ── جهات التواصل للإعلانات ── */
+  adsEmail?: string;
+  adsWhatsapp?: string;
+  /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
+  ads?: Record<string, AdSlotConfig>;
+}
+
+export interface AdSlotConfig {
+  enabled: boolean;
+  type: "html" | "image";
+  html?: string;        // كود HTML/AdSense
+  imageUrl?: string;    // رابط الصورة
+  linkUrl?: string;     // رابط عند الضغط (للصورة)
 }
 
 export interface FooterLink { label: string; href: string }
@@ -134,8 +150,12 @@ const DEFAULTS: SiteSettings = {
   telegramUrl: "https://t.me/baczonedz",
   instagramUrl: "https://www.instagram.com/baczonedz",
   facebookUrl: "https://www.facebook.com/baczonedz",
+  paymentUrl: "https://m.me/baczonedz1",
   averageCalcUrl: "https://www.baczonedz.com/p/blog-page_14.html",
   pastExamsUrl: "https://www.baczonedz.com/p/blog-page_9.html",
+  weightedCalcUrl: "https://www.baczonedz.com/p/2026.html",
+  adsEmail: "saidaouina22@gmail.com",
+  adsWhatsapp: "+213657498876",
 };
 
 /* ─── Hook: قراءة الإعدادات الكاملة ─── */

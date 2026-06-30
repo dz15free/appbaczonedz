@@ -184,6 +184,11 @@ export default function RoomsPage() {
                               {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
                             </span>
                           )}
+                          {r.isPaid && (
+                            <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+                              🔒 {r.price} دج
+                            </span>
+                          )}
                         </div>
                         <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
                           <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />

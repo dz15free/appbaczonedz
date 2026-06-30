@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
+import { AdSlot } from "@/components/ui/ad-slot";
 import { prepareFile } from "@/lib/upload";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -77,6 +78,7 @@ export default function CommunityPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-5">
+        <AdSlot placement="community" className="mb-4" />
         <div className="mb-4 flex gap-1 rounded-lg border border-border bg-surface p-1">
           {TABS.map((t) => (
             <button

@@ -14,6 +14,7 @@ import { useSiteBanner } from "@/features/settings/use-bac-date";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { AdSlot } from "@/components/ui/ad-slot";
 import { KhabbashaFloatingButton } from "@/components/ui/khabbasha-floating-button";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 
@@ -378,6 +379,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             )}
+            <AdSlot placement="header" className="mx-auto mb-3 max-w-5xl px-4 pt-3" />
             {children}
           </>
         )}
