@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -46,8 +46,8 @@ const TOOLS_DROPDOWN = [
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
 ];
 
-// قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية
-const MORE_DROPDOWN = [
+// قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية (الروابط الثابتة؛ تُدمج مع روابط قابلة للتعديل من الأدمن داخل المكوّن)
+const MORE_DROPDOWN_BASE = [
   { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
@@ -63,7 +63,7 @@ const MOBILE_NAV_RIGHT = [
 ];
 
 // عناصر قائمة المزيد (الدرج الجانبي) — كل الأقسام بما فيها الخارجية
-const MENU_ITEMS = [
+const MENU_ITEMS_BASE = [
   { href: "/rooms", label: "غرف الدراسة", icon: faUsers, external: false },
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/omibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
@@ -73,6 +73,9 @@ const MENU_ITEMS = [
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
   { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
+];
+// روابط خارجية ثابتة تُضاف بعد الروابط القابلة للتعديل من الأدمن
+const MENU_ITEMS_EXTERNAL = [
   { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
@@ -87,6 +90,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const banner = useSiteBanner();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { settings } = useSiteSettings();
+
+  // عناصر ديناميكية (روابط قابلة للتعديل من الأدمن) تُدمج مع القوائم الثابتة
+  const dynamicLinks = [
+    { href: "/tools/planner", label: "مخطّط البكالوريا للطباعة", icon: faCalendarDays, external: false },
+    { href: settings.weightedCalcUrl || "https://www.baczonedz.com/p/2026.html", label: "حساب المعدّل الموزون", icon: faScaleBalanced, external: true },
+    { href: settings.pastExamsUrl || "https://www.baczonedz.com/p/blog-page_9.html", label: "بكالوريات سابقة", icon: faFileLines, external: true },
+    { href: settings.averageCalcUrl || "https://www.baczonedz.com/p/blog-page_14.html", label: "حساب معدّل البكالوريا", icon: faCalculator, external: true },
+  ];
+  const moreDropdown = [...dynamicLinks, ...MORE_DROPDOWN_BASE];
+  const menuItems = [...MENU_ITEMS_BASE, ...dynamicLinks, ...MENU_ITEMS_EXTERNAL];
 
   // تطبيق لون التمييز المخصَّص من إعدادات الإدارة
   useEffect(() => {
@@ -212,7 +225,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
             </button>
             <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
-              {MORE_DROPDOWN.map((m) => (
+              {moreDropdown.map((m) => (
                 <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
                   <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
@@ -295,7 +308,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* عناصر القائمة */}
             <nav className="flex-1 overflow-y-auto p-3">
-              {MENU_ITEMS.map((m) =>
+              {menuItems.map((m) =>
                 m.external ? (
                   <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
                     className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">

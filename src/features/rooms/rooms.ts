@@ -82,11 +82,12 @@ export async function getRoom(roomId: string): Promise<Room | null> {
 
 // الغرف العامة (RTDB مفهرس على type في القواعد)
 export async function listPublicRooms(): Promise<Room[]> {
-  const q = query(ref(rtdb, "rooms"), orderByChild("type"), equalTo("public"));
-  const snap = await get(q);
+  // نجلب كل الغرف ونستبعد فقط "الخاصة" (private) — الغرف العامة وغرف الأستاذ (بما فيها المدفوعة) تظهر في القائمة
+  const snap = await get(ref(rtdb, "rooms"));
   const val = (snap.val() as Record<string, Omit<Room, "id">>) ?? {};
   return Object.entries(val)
     .map(([id, v]) => ({ id, ...v }))
+    .filter((r) => r.type !== "private")
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 }
 
