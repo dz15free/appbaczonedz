@@ -450,3 +450,32 @@ html { scrollbar-gutter: stable; }
 .bz-notes-preview mark { background: #fef08a; color: #1a1a2e; padding: 0 3px; border-radius: 3px; }
 .bz-notes-preview hr { border: none; border-top: 2px dashed var(--bz-border); margin: 1.2em 0; }
 .bz-notes-preview u { text-decoration-color: rgb(var(--bz-primary)); text-decoration-thickness: 2px; }
+
+/* ═══ BottomSheet + Floating Assistant (وضع التركيز) ═══ */
+@keyframes bz-bs-fade-in { from { opacity:0 } to { opacity:1 } }
+@keyframes bz-bs-slide-up { from { transform:translateY(100%) } to { transform:translateY(0) } }
+.bz-bs-fade { animation: bz-bs-fade-in .22s ease both; }
+.bz-bs-slide { animation: bz-bs-slide-up .32s cubic-bezier(.22,1,.36,1) both; }
+@keyframes bz-radial-pop { from { opacity:0; transform:translateY(10px) scale(.9) } to { opacity:1; transform:translateY(0) scale(1) } }
+.bz-radial-in { animation: bz-radial-pop .2s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .bz-bs-fade, .bz-bs-slide, .bz-radial-in { animation-duration: .01ms !important; }
+}
+
+/* ═══ وضع التركيز الدراسي (Study Focus Mode) ═══ */
+.bz-focus-root {
+  position: fixed; inset: 0; z-index: 9990;
+  background: var(--bz-bg, #f8fafc);
+  display: flex; flex-direction: column;
+  height: 100dvh;
+}
+.bz-focus-topbar {
+  height: 46px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 10px; padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: content-box;
+}
+.bz-focus-bottombar {
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

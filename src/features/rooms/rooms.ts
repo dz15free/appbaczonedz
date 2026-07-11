@@ -524,3 +524,42 @@ export function listenWelcomeMessage(roomId: string, cb: (msg: string) => void) 
     cb((snap.val() as string) ?? "");
   });
 }
+
+/* ══════════════════════════════════════════
+   الأسئلة المجهولة (Anonymous Questions)
+   تصل للأستاذ دون إظهار اسم الطالب
+   roomLive/{roomId}/anonQuestions/{qid} = { text, at, answered? }
+══════════════════════════════════════════ */
+export interface AnonQuestion {
+  id: string;
+  text: string;
+  at: number;
+  answered?: boolean;
+}
+
+export async function sendAnonQuestion(roomId: string, text: string) {
+  const clean = text.trim();
+  if (!clean) return;
+  await push(ref(rtdb, `roomLive/${roomId}/anonQuestions`), {
+    text: clean.slice(0, 500),
+    at: Date.now(),
+  });
+}
+
+export function listenAnonQuestions(roomId: string, cb: (qs: AnonQuestion[]) => void) {
+  return onValue(ref(rtdb, `roomLive/${roomId}/anonQuestions`), (snap) => {
+    const val = (snap.val() as Record<string, Omit<AnonQuestion, "id">>) ?? {};
+    const list = Object.entries(val)
+      .map(([id, q]) => ({ id, ...q }))
+      .sort((a, b) => b.at - a.at);
+    cb(list);
+  });
+}
+
+export async function markAnonAnswered(roomId: string, qid: string) {
+  await update(ref(rtdb, `roomLive/${roomId}/anonQuestions/${qid}`), { answered: true });
+}
+
+export async function deleteAnonQuestion(roomId: string, qid: string) {
+  await remove(ref(rtdb, `roomLive/${roomId}/anonQuestions/${qid}`));
+}

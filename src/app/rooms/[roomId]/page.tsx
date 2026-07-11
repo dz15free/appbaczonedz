@@ -9,6 +9,7 @@ import {
   faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
   faNoteSticky, faClock, faSpinner, faLock, faKey,
+  faUserSecret, faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -38,6 +39,10 @@ import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
+import { sendAnonQuestion, listenAnonQuestions, markAnonAnswered, deleteAnonQuestion, type AnonQuestion } from "@/features/rooms/rooms";
+import { saveFlashcard } from "@/features/study/save-flashcard";
+import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
@@ -200,6 +205,13 @@ export default function RoomPage() {
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [roomAccess, setRoomAccess] = useState(false);
+  // وضع التركيز للطالب + الأدراج الثانوية داخله
+  const [studentFocus, setStudentFocus] = useState(false);
+  const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
+  // الأسئلة المجهولة (يراها المالك)
+  const [anonQs, setAnonQs] = useState<AnonQuestion[]>([]);
+  const [anonOpen, setAnonOpen] = useState(false);
+  const prevAnon = useRef(0);
   const { settings } = useSiteSettings();
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
@@ -207,6 +219,16 @@ export default function RoomPage() {
   useEffect(() => listenMods(roomId, setMods), [roomId]);
   useEffect(() => listenBanned(roomId, setBanned), [roomId]);
   useEffect(() => listenPoll(roomId, setActivePoll), [roomId]);
+  // الأسئلة المجهولة — للمالك فقط
+  useEffect(() => {
+    if (!isOwner) return;
+    return listenAnonQuestions(roomId, (qs) => {
+      const unanswered = qs.filter((q) => !q.answered).length;
+      if (unanswered > prevAnon.current) { try { playHandRaiseSound(); } catch {} }
+      prevAnon.current = unanswered;
+      setAnonQs(qs);
+    });
+  }, [roomId, isOwner]);
   useEffect(() => {
     if (!room?.isPaid || !user) return;
     return listenHasAccess(user.uid, "room", roomId, setRoomAccess);
@@ -269,6 +291,25 @@ export default function RoomPage() {
     remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
     // فتح الميكروفون عبر إزالة الكتم في عقدة الصوت
     update(ref(rtdb, `roomLive/${roomId}/voice/${uid}`), { muted: false });
+  }
+
+  // حفظ سريع لبطاقة مراجعة من داخل الغرفة (تكامل الدفتر الحيّ)
+  function quickSaveCard() {
+    if (!user) return;
+    const label = `${room?.name ?? "الغرفة"} — ${currentToolLabel()}`;
+    saveFlashcard({
+      uid: user.uid,
+      front: `📚 ${label}`,
+      back: "أضف التفاصيل لاحقاً من صفحة بطاقات المراجعة.",
+      subject: room?.subject || "general",
+      source: room?.name,
+    });
+  }
+  function currentToolLabel() {
+    return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
+  }
+  function submitAnonQuestion(q: string) {
+    sendAnonQuestion(roomId, q);
   }
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
@@ -446,6 +487,23 @@ export default function RoomPage() {
             <span className="hidden sm:inline">استفتاء</span>
           </button>
 
+          {/* الأسئلة المجهولة */}
+          <button
+            onClick={() => setAnonOpen(true)}
+            title="الأسئلة المجهولة"
+            className={`relative flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
+              anonQs.some((q) => !q.answered) ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary hover:bg-primary/10"
+            }`}
+          >
+            <FontAwesomeIcon icon={faUserSecret} className="h-4 w-4" />
+            <span className="hidden sm:inline">أسئلة</span>
+            {anonQs.some((q) => !q.answered) && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                {anonQs.filter((q) => !q.answered).length}
+              </span>
+            )}
+          </button>
+
           {/* حالة المعلّم */}
           <button
             onClick={() => {
@@ -519,13 +577,14 @@ export default function RoomPage() {
             <span className="text-text-muted">يعرض المعلّم الآن</span>
             <span className="font-bold" >{currentLabel}</span>
           </div>
-          {/* شاشة كاملة للطالب أيضاً */}
+          {/* وضع التركيز للطالب — بيئة دراسة نظيفة */}
           <button
-            onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
-            title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
+            onClick={() => setStudentFocus(true)}
+            title="وضع التركيز"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-primary px-3 text-sm font-bold text-white shadow-glow transition active:scale-95"
           >
-            <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
+            <FontAwesomeIcon icon={faExpand} className="h-4 w-4" />
+            <span className="hidden sm:inline">تركيز</span>
           </button>
         </div>
       )}
@@ -685,6 +744,98 @@ export default function RoomPage() {
       {/* نافذة إنشاء استفتاء */}
       {showCreatePoll && isOwner && (
         <CreatePollModal roomId={roomId} onClose={() => setShowCreatePoll(false)} />
+      )}
+
+      {/* ═══ وضع التركيز للطالب ═══ */}
+      {studentFocus && !isOwner && (
+        <StudentFocusMode
+          roomName={room?.name ?? "الغرفة"}
+          ownerName={room?.ownerName}
+          ownerStatus={ownerStatus}
+          memberCount={members.length}
+          myHandRaised={myHand}
+          onToggleHand={toggleHand}
+          onExit={() => setStudentFocus(false)}
+          onSaveToCards={quickSaveCard}
+          onAnonymousQuestion={submitAnonQuestion}
+          onOpenFiles={() => setFocusSheet("files")}
+          onOpenNotes={() => setFocusSheet("notes")}
+          onOpenCards={() => setFocusSheet("cards")}
+          unreadChat={unreadChat}
+          timerLabel={null}
+          chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
+        >
+          {/* نفس المحتوى الذي يعرضه المعلّم */}
+          {activePoll?.open ? (
+            <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
+          ) : (
+            <>
+              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />}
+              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
+              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+            </>
+          )}
+        </StudentFocusMode>
+      )}
+
+      {/* أدراج الوظائف الثانوية داخل وضع التركيز */}
+      <BottomSheet open={focusSheet === "files"} onClose={() => setFocusSheet(null)} title="ملفات الغرفة" maxHeight="80vh">
+        <div className="h-[68vh]"><RoomFiles roomId={roomId} isOwner={isOwner} /></div>
+      </BottomSheet>
+      <BottomSheet open={focusSheet === "notes"} onClose={() => setFocusSheet(null)} title="ملاحظات الدرس" maxHeight="80vh">
+        <div className="h-[68vh]"><RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} /></div>
+      </BottomSheet>
+      <BottomSheet open={focusSheet === "cards"} onClose={() => setFocusSheet(null)} title="بطاقات المراجعة">
+        <div className="px-1 py-2">
+          <p className="text-sm leading-relaxed text-text-muted">
+            كل ما تحفظه من الغرفة بزرّ ⭐ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
+          </p>
+          <a
+            href="/tools/flashcards"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white active:scale-95"
+          >
+            فتح بطاقات المراجعة
+          </a>
+        </div>
+      </BottomSheet>
+
+      {/* درج الأسئلة المجهولة — للمالك */}
+      {isOwner && (
+        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
+          {anonQs.length === 0 ? (
+            <p className="py-8 text-center text-sm text-text-muted">لا أسئلة بعد. يمكن للطلاب إرسال أسئلتهم دون إظهار أسمائهم.</p>
+          ) : (
+            <div className="space-y-2.5 pb-2">
+              {anonQs.map((q) => (
+                <div
+                  key={q.id}
+                  className={`rounded-2xl border p-3.5 ${q.answered ? "border-border bg-border/20 opacity-60" : "border-primary/20 bg-primary/5"}`}
+                >
+                  <p className="text-sm leading-relaxed text-text-primary" dir="auto">{q.text}</p>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    {!q.answered && (
+                      <button
+                        onClick={() => markAnonAnswered(roomId, q.id)}
+                        className="flex items-center gap-1.5 rounded-lg bg-secondary/10 px-3 py-1.5 text-xs font-bold text-secondary active:scale-95"
+                      >
+                        <FontAwesomeIcon icon={faCircleCheck} className="h-3.5 w-3.5" /> تمّت الإجابة
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteAnonQuestion(roomId, q.id)}
+                      className="flex items-center gap-1.5 rounded-lg bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger active:scale-95"
+                    >
+                      <FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> حذف
+                    </button>
+                    {q.answered && <span className="text-xs font-bold text-secondary">✓ أُجيب عنه</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </BottomSheet>
       )}
 
     </main>
