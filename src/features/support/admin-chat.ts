@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ref, push, update, onValue, query, limitToLast, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
-import { threadId } from "@/features/community/social";
+import { threadId, addNotification } from "@/features/community/social";
 
 /* ════════════════════════════════════════════════════════════
    دردشة الدعم مع إدارة الموقع
@@ -78,16 +78,22 @@ export function listenSupportMessages(
   });
 }
 
+/**
+ * إرسال في خيط الدعم — يعمل في الاتجاهين.
+ * الطالب يراسل الإدارة، والإدارة تردّ عليه، بنفس الدالة.
+ * الإشعار يذهب دائماً إلى الطرف الآخر باسم المُرسِل.
+ */
 export async function sendSupportMessage(
   me: { uid: string; name: string },
-  adminUid: string,
-  adminName: string,
+  otherUid: string,
+  otherName: string,
   kind: SupportKind,
   text: string
 ) {
   const trimmed = text.trim();
-  if (!trimmed || !adminUid) return;
-  const tid = supportThreadId(me.uid, adminUid, kind);
+  if (!trimmed || !otherUid) return;
+  const tid = supportThreadId(me.uid, otherUid, kind);
+  const suffix = kind === "payment" ? "_pay" : "";
 
   await push(ref(rtdb, `dms/${tid}/messages`), {
     senderId: me.uid,
@@ -95,18 +101,31 @@ export async function sendSupportMessage(
     createdAt: Date.now(),
   });
 
-  // قائمة المحادثات — نميّز خيط الدفع باسمه حتى يظهر منفصلاً عند الأدمن
-  const label = kind === "payment" ? `${adminName} — الدفع` : adminName;
-  const myLabel = kind === "payment" ? `${me.name} — الدفع` : me.name;
-  const key = kind === "payment" ? `${adminUid}_pay` : adminUid;
-  const adminKey = kind === "payment" ? `${me.uid}_pay` : me.uid;
-
+  // قائمة المحادثات لكلا الطرفين. المفتاح يحمل لاحقة _pay ليظهر خيط
+  // الدفع منفصلاً، وصفحة الرسائل تعرف كيف تفكّها (parseThreadUid).
+  const tag = kind === "payment" ? " — الدفع" : "";
   await update(ref(rtdb, `dmThreads/${me.uid}`), {
-    [key]: { name: label, lastText: trimmed, lastAt: Date.now() },
+    [`${otherUid}${suffix}`]: { name: `${otherName}${tag}`, lastText: trimmed, lastAt: Date.now() },
   });
-  await update(ref(rtdb, `dmThreads/${adminUid}`), {
-    [adminKey]: { name: myLabel, lastText: trimmed, lastAt: Date.now() },
+  await update(ref(rtdb, `dmThreads/${otherUid}`), {
+    [`${me.uid}${suffix}`]: { name: `${me.name}${tag}`, lastText: trimmed, lastAt: Date.now() },
   });
+
+  // إشعار للطرف الآخر — باسم المُرسِل صريحاً، وبرابط يفتح الخيط الصحيح
+  await addNotification(otherUid, {
+    type: kind === "payment" ? "payment" : "support",
+    text: kind === "payment"
+      ? `💳 ${me.name} — بشأن الدفع: ${trimmed.slice(0, 60)}`
+      : `💬 ${me.name}: ${trimmed.slice(0, 60)}`,
+    link: `/messages/${me.uid}${suffix}?name=${encodeURIComponent(me.name)}`,
+  });
+}
+
+/** يفكّ لاحقة _pay من معرّف المحادثة القادم من قائمة الرسائل */
+export function parseThreadUid(raw: string): { uid: string; kind: SupportKind } {
+  return raw.endsWith("_pay")
+    ? { uid: raw.slice(0, -4), kind: "payment" }
+    : { uid: raw, kind: "general" };
 }
 
 /** عدد الرسائل غير المقروءة تقريبياً — آخر رسالة من الطرف الآخر */

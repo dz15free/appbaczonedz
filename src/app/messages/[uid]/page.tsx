@@ -18,6 +18,7 @@ import { playMessageSound } from "@/lib/sound";
 import { prepareFile } from "@/lib/upload";
 import { FileViewer } from "@/features/files/file-viewer";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { parseThreadUid, listenSupportMessages, sendSupportMessage } from "@/features/support/admin-chat";
 
 /* مرفق محادثة — يُحمَّل عند العرض */
 function DMAttachment({
@@ -62,7 +63,10 @@ function DMAttachment({
 }
 
 export default function DMPage() {
-  const { uid: otherUid } = useParams<{ uid: string }>();
+  const { uid: rawUid } = useParams<{ uid: string }>();
+  // خيط الدفع يُخزَّن بمفتاح ينتهي بـ _pay — نفكّه لنعرف الطرف الآخر والخيط معاً
+  const { uid: otherUid, kind: chatKind } = parseThreadUid(rawUid);
+  const isPayThread = chatKind === "payment";
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
@@ -90,6 +94,11 @@ export default function DMPage() {
 
   useEffect(() => {
     if (!user) return;
+    if (isPayThread) {
+      return listenSupportMessages(otherUid, user.uid, "payment", (msgs) =>
+        setMessages(msgs.map((m) => ({ id: m.id, senderId: m.senderId, text: m.text, createdAt: m.createdAt })))
+      );
+    }
     return listenDM(user.uid, otherUid, (msgs) => {
       setMessages(msgs);
       if (initialized.current && msgs.length > lastCount.current) {
@@ -108,6 +117,10 @@ export default function DMPage() {
     const me: Person = { uid: user.uid, name: profile?.name || user.displayName || "طالب" };
     const other: Person = { uid: otherUid, name: otherName };
     setText("");
+    if (isPayThread) {
+      await sendSupportMessage(me, otherUid, otherName, "payment", text);
+      return;
+    }
     await sendDM(me, other, text);
   }
 
