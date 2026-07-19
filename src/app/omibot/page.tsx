@@ -13,6 +13,7 @@ import { extractTasksFromPlan, addStudyTasksBatch } from "@/features/study/study
 import Link from "next/link";
 import { ref, query, orderByChild, limitToLast, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 interface Msg { role: "user" | "assistant"; text: string }
 
@@ -90,7 +91,7 @@ export default function OmibotPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, thinking]);

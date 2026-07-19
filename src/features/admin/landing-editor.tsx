@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk, faCheck } from "@fortawesome/free-solid-svg-icons";
 import {
   useSiteSettings, saveSiteSettings,
-  type LandingCard, type LandingStep, type SiteSettings,
+  type LandingCard, type LandingStep, type FaqItem, type SiteSettings,
 } from "@/features/settings/use-site-settings";
 import { CardListEditor } from "@/features/admin/card-list-editor";
 
@@ -55,6 +55,14 @@ export function LandingEditor() {
       featuresTitle: draft.featuresTitle,
       featuresSubtitle: draft.featuresSubtitle,
       features: draft.features,
+      audienceTitle: draft.audienceTitle,
+      audienceSubtitle: draft.audienceSubtitle,
+      audience: draft.audience,
+      pricingTitle: draft.pricingTitle,
+      pricingNote: draft.pricingNote,
+      pricingRows: draft.pricingRows,
+      faqTitle: draft.faqTitle,
+      faq: draft.faq,
       ctaTitle: draft.ctaTitle,
       ctaSubtitle: draft.ctaSubtitle,
       ctaButton: draft.ctaButton,
@@ -111,6 +119,68 @@ export function LandingEditor() {
               { key: "desc", label: "الوصف", type: "textarea" },
             ]}
             newItem={() => ({ id: uid(), n: "0" + (((draft.steps ?? []).length) + 1), title: "خطوة جديدة", desc: "" })}
+          />
+        </div>
+      </section>
+
+      {/* لمن هذه المنصّة */}
+      <section className="rounded-xl border border-border bg-surface p-4">
+        <h3 className="mb-3 font-display text-lg font-bold">👥 لمن هذه المنصّة</h3>
+        <div className="space-y-3">
+          <Field label="عنوان القسم" value={draft.audienceTitle ?? ""} onChange={(v) => set("audienceTitle", v)} />
+          <Field label="وصف القسم" value={draft.audienceSubtitle ?? ""} onChange={(v) => set("audienceSubtitle", v)} />
+        </div>
+        <div className="mt-3">
+          <CardListEditor<LandingCard>
+            title="البطاقات (للطالب / للأستاذ)"
+            items={draft.audience ?? []}
+            onChange={(items) => set("audience", items)}
+            fields={[
+              { key: "title", label: "العنوان" },
+              { key: "desc", label: "الشرح", type: "textarea" },
+            ]}
+            newItem={() => ({ id: uid(), icon: "users", title: "دور جديد", desc: "" })}
+          />
+        </div>
+      </section>
+
+      {/* التكلفة */}
+      <section className="rounded-xl border border-border bg-surface p-4">
+        <h3 className="mb-3 font-display text-lg font-bold">💳 قسم التكلفة</h3>
+        <div className="space-y-3">
+          <Field label="عنوان القسم" value={draft.pricingTitle ?? ""} onChange={(v) => set("pricingTitle", v)} />
+          <Field label="الشرح الرئيسي" value={draft.pricingNote ?? ""} onChange={(v) => set("pricingNote", v)} textarea />
+        </div>
+        <div className="mt-3">
+          <CardListEditor<{ id: string; title: string; desc: string }>
+            title="بنود التكلفة"
+            items={draft.pricingRows ?? []}
+            onChange={(items) => set("pricingRows", items)}
+            hasIcon={false}
+            fields={[
+              { key: "title", label: "البند" },
+              { key: "desc", label: "التفصيل", type: "textarea" },
+            ]}
+            newItem={() => ({ id: uid(), title: "بند جديد", desc: "" })}
+          />
+        </div>
+      </section>
+
+      {/* الأسئلة الشائعة */}
+      <section className="rounded-xl border border-border bg-surface p-4">
+        <h3 className="mb-3 font-display text-lg font-bold">❓ الأسئلة الشائعة</h3>
+        <Field label="عنوان القسم" value={draft.faqTitle ?? ""} onChange={(v) => set("faqTitle", v)} />
+        <div className="mt-3">
+          <CardListEditor<FaqItem>
+            title="الأسئلة"
+            items={draft.faq ?? []}
+            onChange={(items) => set("faq", items)}
+            hasIcon={false}
+            fields={[
+              { key: "q", label: "السؤال" },
+              { key: "a", label: "الجواب", type: "textarea" },
+            ]}
+            newItem={() => ({ id: uid(), q: "سؤال جديد", a: "" })}
           />
         </div>
       </section>

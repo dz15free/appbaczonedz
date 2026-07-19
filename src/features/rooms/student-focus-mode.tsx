@@ -6,6 +6,7 @@ import {
   faCompress, faHand, faComments, faStar,
   faUserSecret, faPaperPlane, faFolderOpen, faNoteSticky, faLayerGroup,
   faClock,
+  faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-assistant";
@@ -31,6 +32,8 @@ export interface StudentFocusProps {
   onOpenFiles: () => void;
   onOpenNotes: () => void;
   onOpenCards: () => void;
+  onOpenSummary?: () => void;     // لا يظهر إلا إن نشر الأستاذ ملخّصاً
+  onRateTeacher?: () => void;     // تقييم الأستاذ
   unreadChat: number;
   children: ReactNode;            // المحتوى الرئيسي (سبورة/PDF/فيديو)
   chatPanel: ReactNode;           // لوحة الدردشة
@@ -67,6 +70,12 @@ export function StudentFocusMode(props: StudentFocusProps) {
     { id: "files", icon: faFolderOpen, label: "الملفات", onClick: props.onOpenFiles, tone: "primary" },
     { id: "notes", icon: faNoteSticky, label: "الملاحظات", onClick: props.onOpenNotes, tone: "amber" },
     { id: "cards", icon: faLayerGroup, label: "بطاقاتي", onClick: props.onOpenCards, tone: "primary" },
+    ...(props.onRateTeacher
+      ? [{ id: "rate", icon: faStar, label: "تقييم الأستاذ", onClick: props.onRateTeacher, tone: "amber" as const }]
+      : []),
+    ...(props.onOpenSummary
+      ? [{ id: "summary", icon: faFileLines, label: "ملخّص الحصة", onClick: props.onOpenSummary, tone: "primary" as const }]
+      : []),
   ];
 
   return (

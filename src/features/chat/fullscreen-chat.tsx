@@ -7,6 +7,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { listenMessages, sendMessage, sendAttachment, getAttachment, deleteRoomMessage, type ChatMessage } from "@/features/rooms/rooms";
 import { prepareFile } from "@/lib/upload";
 import { ImageZoom } from "@/components/ui/image-zoom";
+import { Linkify } from "@/components/ui/linkify";
 
 /* ─── مرفق داخل الدردشة (صورة/ملف) ─── */
 function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
@@ -182,7 +183,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
                   <p className={`rounded-xl px-3 py-1.5 text-sm leading-snug text-white ${
                     isMe ? "bg-indigo-600/70" : "bg-white/10"
                   }`}>
-                    {m.text}
+                    <Linkify text={m.text ?? ""} />
                   </p>
                 )}
                 {(m.type === "image" || m.type === "file") && (
@@ -263,7 +264,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
                       backdropFilter: "blur(8px)",
                     }}
                   >
-                    {m.text}
+                    <Linkify text={m.text ?? ""} />
                   </span>
                 )}
                 {canDelete && (

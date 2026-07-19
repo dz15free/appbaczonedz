@@ -37,6 +37,7 @@ import {
   type Post,
   type Person,
 } from "@/features/community/social";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 function timeAgo(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -67,7 +68,7 @@ export default function UserProfilePage() {
   }, [uid]);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

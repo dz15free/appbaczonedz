@@ -17,6 +17,7 @@ import {
 import { playMessageSound } from "@/lib/sound";
 import { prepareFile } from "@/lib/upload";
 import { FileViewer } from "@/features/files/file-viewer";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 /* مرفق محادثة — يُحمَّل عند العرض */
 function DMAttachment({
@@ -77,7 +78,7 @@ export default function DMPage() {
   const lastCount = useRef(0);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

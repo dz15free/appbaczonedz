@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { registerUser, AuthError } from "@/lib/firebase/auth";
 import { Input, Button } from "@/components/ui/field";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { useNextDestination } from "@/features/auth/use-require-auth";
 
 export default function RegisterPage() {
+  const next = useNextDestination();
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +38,7 @@ export default function RegisterPage() {
     try {
       await registerUser(name, email, password, accountType);
       // الدخول مباشر دون تأكيد البريد → إلى صفحة إكمال الملف
-      router.push("/onboarding");
+      router.push(`/onboarding?next=${encodeURIComponent(next)}`);
     } catch (err) {
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });
       setLoading(false);

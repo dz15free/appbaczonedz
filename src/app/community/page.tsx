@@ -15,7 +15,7 @@ import {
   faArrowDown,
   faFire,
   faClock,
-  faImage,
+  faImage, faVideo, faEllipsis,
   faPaperclip,
   faSpinner,
   faTrash,
@@ -28,7 +28,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { AdSlot } from "@/components/ui/ad-slot";
-import { prepareFile } from "@/lib/upload";
+import { prepareFile, prepareImagePair, type PreparedImage } from "@/lib/upload";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { LiveAvatar } from "@/components/ui/live-avatar";
@@ -53,6 +53,12 @@ import {
   type Person,
   type Thread,
 } from "@/features/community/social";
+import { RichText } from "@/components/ui/linkify";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { ShareButton } from "@/components/ui/share-sheet";
+import { PostMediaGrid, isSupportedVideoUrl } from "@/features/community/post-media";
+
+const MAX_IMAGES = 6;
 
 type Tab = "feed" | "people" | "messages";
 
@@ -64,7 +70,7 @@ export default function CommunityPage() {
   const [tab, setTab] = useState<Tab>("feed");
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   if (loading || !user || !me) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
@@ -120,6 +126,9 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<{ kind: "image" | "file"; dataUrl: string; name: string } | null>(null);
+  const [pendingImages, setPendingImages] = useState<PreparedImage[]>([]);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [showVideoField, setShowVideoField] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [visibility, setVisibility] = useState<"public" | "friends" | "private">("public");
   const imageInput = useRef<HTMLInputElement>(null);
@@ -132,13 +141,25 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
   const friendIds = new Set(friends.map((f) => f.uid));
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
+    if (!files.length) return;
     setPreparing(true);
     try {
-      const p = await prepareFile(file);
-      setPending({ kind: p.kind, dataUrl: p.dataUrl, name: p.name });
+      const images = files.filter((f) => f.type.startsWith("image/"));
+      const others = files.filter((f) => !f.type.startsWith("image/"));
+
+      if (images.length) {
+        const room = MAX_IMAGES - pendingImages.length;
+        if (room <= 0) { alert(`الحد الأقصى ${MAX_IMAGES} صور في المنشور.`); return; }
+        const prepared = await Promise.all(images.slice(0, room).map((f) => prepareImagePair(f)));
+        setPendingImages((prev) => [...prev, ...prepared]);
+      }
+      // الملفات غير الصور تبقى على النظام القديم: مرفق واحد
+      if (others.length) {
+        const p = await prepareFile(others[0]);
+        setPending({ kind: p.kind, dataUrl: p.dataUrl, name: p.name });
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "فشل تجهيز الملف.");
     } finally {
@@ -147,11 +168,22 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
   }
 
   async function publish() {
-    if (!text.trim() && !pending) return;
+    const vid = videoUrl.trim();
+    if (vid && !isSupportedVideoUrl(vid)) {
+      alert("رابط الفيديو غير مدعوم. استعمل يوتيوب أو Vimeo أو رابط ملف mp4.");
+      return;
+    }
+    if (!text.trim() && !pending && !pendingImages.length && !vid) return;
     setPosting(true);
-    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole);
+    const media = [
+      ...(vid ? [{ kind: "video" as const, url: vid }] : []),
+      ...pendingImages.map((i) => ({ kind: "image" as const, thumb: i.thumb, full: i.full, name: i.name })),
+    ];
+    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media);
     setText("");
     setPending(null);
+    setPendingImages([]);
+    setVideoUrl("");
     setVisibility("public");
     setPostSubject("");
     setPosting(false);
@@ -213,13 +245,55 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
           </div>
         )}
 
+        {/* معاينة الصور المختارة */}
+        {pendingImages.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {pendingImages.map((img, i) => (
+              <div key={i} className="relative h-20 w-20 overflow-hidden rounded-lg border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.thumb} alt="" className="h-full w-full object-cover" />
+                <button
+                  onClick={() => setPendingImages((p) => p.filter((_, j) => j !== i))}
+                  aria-label="إزالة الصورة"
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white"
+                >
+                  <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ))}
+            <span className="self-end text-[11px] text-text-muted">{pendingImages.length}/{MAX_IMAGES}</span>
+          </div>
+        )}
+
+        {/* رابط فيديو */}
+        {showVideoField && (
+          <div className="mt-2">
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="رابط يوتيوب أو Vimeo أو ملف mp4"
+              dir="ltr"
+              className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            />
+            <p className="mt-1 text-[10px] text-text-muted">
+              الفيديو يُشارَك برابط ولا يُرفع — هذا يحافظ على سرعة المنصّة ويُبقيها مجانية.
+            </p>
+          </div>
+        )}
+
         {/* صف الأدوات */}
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-          <input ref={imageInput} type="file" accept="image/*" hidden onChange={pick} />
+          <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={pick} />
           <input ref={fileInput} type="file" hidden onChange={pick} />
-          <button onClick={() => imageInput.current?.click()} aria-label="صورة" title="إرفاق صورة"
+          <button onClick={() => imageInput.current?.click()} aria-label="صور" title="إرفاق صور (حتى 6)"
             className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
             <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+          </button>
+          <button onClick={() => setShowVideoField((v) => !v)} aria-label="فيديو" title="إضافة فيديو برابط"
+            className={`grid h-9 w-9 place-items-center rounded-lg transition hover:bg-primary/10 hover:text-primary ${
+              showVideoField || videoUrl ? "bg-primary/10 text-primary" : "text-text-muted"
+            }`}>
+            <FontAwesomeIcon icon={faVideo} className="h-4 w-4" />
           </button>
           <button onClick={() => fileInput.current?.click()} aria-label="ملف" title="إرفاق ملف"
             className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
@@ -276,97 +350,116 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
       {shown.map((p) => {
         const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId);
         return (
-          <div key={p.id} className="rounded-lg border border-border bg-surface p-4">
-            <div className="flex items-start justify-between gap-2">
-              <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="flex min-w-0 flex-1 items-center gap-2">
-                <LiveAvatar uid={p.authorId} name={p.authorName} size="sm" className="shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                    <span className="truncate text-sm font-bold hover:underline">{p.authorName}</span>
-                    <RoleBadge uid={p.authorId} role={p.authorRole} />
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-text-muted">
-                    {timeAgo(p.createdAt)}
-                    <FontAwesomeIcon
-                      icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
-                      className="h-2.5 w-2.5"
-                    />
-                    {p.locked && <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5 text-warning" title="مُغلق" />}
-                  </span>
-                </div>
+          <article
+            key={p.id}
+            className="overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-primary/30 hover:shadow-glass"
+          >
+            {/* ترويسة الكاتب */}
+            <div className="flex items-start gap-2.5 px-4 pt-3.5">
+              <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="shrink-0">
+                <LiveAvatar uid={p.authorId} name={p.authorName} size="sm" />
               </Link>
-              <div className="flex shrink-0 items-center gap-2">
-                {(p.authorId === me.uid || isAdmin) ? (
-                  <button
-                    onClick={() => {
-                      if (confirm("حذف هذا المنشور؟")) deletePost(p);
-                    }}
-                    aria-label="حذف"
-                    className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-danger"
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <Link
+                    href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`}
+                    className="truncate text-sm font-bold hover:underline"
                   >
-                    <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-                  </button>
-                ) : (
-                  <>
-                    {showAdd &&
-                      (sent[p.authorId] || sentSet.has(p.authorId) ? (
-                        <button onClick={() => cancelReq(p.authorId)} className="rounded-md px-2 py-1 text-xs text-text-muted hover:text-danger">
-                          إلغاء الطلب
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => addFriend(p.authorId, p.authorName)}
-                          className="flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs text-primary"
-                        >
-                          <FontAwesomeIcon icon={faUserPlus} className="h-3 w-3" />
-                          صداقة
-                        </button>
-                      ))}
-                    <button
-                      onClick={() => {
-                        reportContent("post", p.id, me);
-                        alert("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
-                      }}
-                      aria-label="إبلاغ"
-                      className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"
-                    >
-                      <FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5" />
-                    </button>
-                  </>
-                )}
+                    {p.authorName}
+                  </Link>
+                  <RoleBadge uid={p.authorId} role={p.authorRole} />
+                  {p.subject && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {p.subject}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+                  <span>{timeAgo(p.createdAt)}</span>
+                  <span aria-hidden>·</span>
+                  <FontAwesomeIcon
+                    icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
+                    className="h-2.5 w-2.5"
+                    title={p.visibility === "private" ? "خاص" : p.visibility === "friends" ? "الأصدقاء" : "عام"}
+                  />
+                  {p.editedAt && <span>· مُعدّل</span>}
+                  {p.locked && <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5 text-warning" title="مُغلق" />}
+                </div>
               </div>
+
+              <PostMenu
+                canDelete={p.authorId === me.uid || isAdmin}
+                onDelete={() => { if (confirm("حذف هذا المنشور؟")) deletePost(p); }}
+                onReport={() => {
+                  reportContent("post", p.id, me);
+                  alert("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
+                }}
+                friendState={!showAdd ? null : (sent[p.authorId] || sentSet.has(p.authorId)) ? "sent" : "none"}
+                onFriend={() => addFriend(p.authorId, p.authorName)}
+                onCancelFriend={() => cancelReq(p.authorId)}
+              />
             </div>
 
-            {p.text && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{p.text}</p>}
-            <PostAttachment post={p} />
+            {/* المحتوى */}
+            <div className="px-4 pt-2.5">
+              {p.text && (
+                <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
+                  <RichText text={p.text} noPreview={!!p.media?.length || !!p.attachmentId} />
+                </div>
+              )}
+            </div>
 
-            <div className="mt-3 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1 rounded-full bg-background px-1">
+            {/* الوسائط — بعرض البطاقة كاملاً */}
+            <div className="px-4">
+              {p.media?.length ? <PostMediaGrid media={p.media} /> : <PostAttachment post={p} />}
+            </div>
+
+            {/* شريط التفاعل */}
+            <div className="mt-3 flex items-center gap-1 border-t border-border px-2 py-1.5">
+              <div className="flex items-center rounded-full bg-background">
                 <button
                   onClick={() => votePost(p.id, me.uid, 1, p.myVote)}
-                  className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"}`}
-                  aria-label="رفع"
+                  aria-label="تصويت مؤيّد"
+                  className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${
+                    p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"
+                  }`}
                 >
                   <FontAwesomeIcon icon={faArrowUp} className="h-4 w-4" />
                 </button>
-                <span className={`min-w-4 text-center text-sm font-bold ${p.score > 0 ? "text-secondary" : p.score < 0 ? "text-danger" : "text-text-muted"}`}>
+                <span
+                  className={`min-w-6 text-center text-sm font-bold tabular-nums ${
+                    p.score > 0 ? "text-secondary" : p.score < 0 ? "text-danger" : "text-text-muted"
+                  }`}
+                >
                   {p.score}
                 </span>
                 <button
                   onClick={() => votePost(p.id, me.uid, -1, p.myVote)}
-                  className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"}`}
-                  aria-label="خفض"
+                  aria-label="تصويت معارض"
+                  className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${
+                    p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"
+                  }`}
                 >
                   <FontAwesomeIcon icon={faArrowDown} className="h-4 w-4" />
                 </button>
               </div>
 
-              <Link href={`/community/${p.id}`} className="flex items-center gap-1.5 text-text-muted hover:text-primary">
-                <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
+              <Link
+                href={`/community/${p.id}`}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary"
+              >
+                <FontAwesomeIcon icon={faComment} className="h-3.5 w-3.5" />
                 {p.commentCount > 0 ? `${p.commentCount} تعليق` : "تعليق"}
               </Link>
+
+              <ShareButton
+                target={{
+                  path: `/community/${p.id}`,
+                  title: p.text ? p.text.slice(0, 80) : `منشور ${p.authorName}`,
+                }}
+              />
             </div>
-          </div>
+          </article>
         );
       })}
     </div>
@@ -543,5 +636,79 @@ function Messages({ me }: { me: Person }) {
         </Link>
       ))}
     </div>
+  );
+}
+
+/* قائمة إجراءات المنشور — تجمع الثانوي بدل تكديسه في الترويسة */
+function PostMenu({
+  canDelete, onDelete, onReport, friendState, onFriend, onCancelFriend,
+}: {
+  canDelete: boolean;
+  onDelete: () => void;
+  onReport: () => void;
+  friendState: "sent" | "none" | null;
+  onFriend: () => void;
+  onCancelFriend: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={box}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="خيارات المنشور"
+        aria-expanded={open}
+        className="grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary"
+      >
+        <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-9 z-30 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-glass">
+          {friendState === "none" && (
+            <MenuRow icon={faUserPlus} label="إضافة صديق" onClick={() => { onFriend(); setOpen(false); }} />
+          )}
+          {friendState === "sent" && (
+            <MenuRow icon={faXmark} label="إلغاء طلب الصداقة" onClick={() => { onCancelFriend(); setOpen(false); }} />
+          )}
+          {canDelete ? (
+            <MenuRow icon={faTrash} label="حذف المنشور" danger onClick={() => { setOpen(false); onDelete(); }} />
+          ) : (
+            <MenuRow icon={faFlag} label="إبلاغ" onClick={() => { setOpen(false); onReport(); }} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuRow({ icon, label, onClick, danger }: {
+  icon: typeof faFlag; label: string; onClick: () => void; danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-right text-xs font-semibold transition ${
+        danger ? "text-danger hover:bg-danger/10" : "text-text-primary hover:bg-primary/10"
+      }`}
+    >
+      <FontAwesomeIcon icon={icon} className="h-3.5 w-3.5" />
+      {label}
+    </button>
   );
 }

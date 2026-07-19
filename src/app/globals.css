@@ -144,7 +144,7 @@ input::placeholder, textarea::placeholder {
   height: var(--bz-vvh, 100dvh) !important; /* يتكيّف مع لوحة المفاتيح */
   max-height: var(--bz-vvh, 100dvh) !important;
   z-index: 9999 !important;
-  background: #0a0a14 !important;
+  background: var(--bz-bg) !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -510,7 +510,8 @@ html { scrollbar-gutter: stable; }
   padding: 0 10px;
   padding-top: env(safe-area-inset-top, 0px);
   box-sizing: content-box;
-  background: linear-gradient(to bottom, rgba(8,10,20,.88), rgba(8,10,20,.55) 70%, transparent);
+  background: var(--bz-surface);
+  border-bottom: 1px solid var(--bz-border);
 }
 
 /* الشريط العائم — ثلاثة مواضع */
@@ -522,9 +523,9 @@ html { scrollbar-gutter: stable; }
   gap: 6px;
   padding: 6px;
   border-radius: 16px;
-  background: rgba(12,14,26,.92);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 10px 34px rgba(0,0,0,.45);
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-border);
+  box-shadow: 0 10px 30px rgba(15,23,42,.14);
 }
 .bz-tfocus-right  { top: 50%; right: 12px; transform: translateY(-50%); flex-direction: column; }
 .bz-tfocus-left   { top: 50%; left: 12px;  transform: translateY(-50%); flex-direction: column; }
@@ -534,11 +535,9 @@ html { scrollbar-gutter: stable; }
 }
 /* زر المؤقّت الحالي يرث ألوان الشريط الداكن */
 .bz-tfocus-timer :is(button) {
-  border-color: rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.75) !important;
+  border-color: var(--bz-border) !important;
   background: transparent !important;
 }
-.bz-tfocus-timer :is(button):hover { background: rgba(255,255,255,.12) !important; }
 
 /* شريط مفاتيح اللوحة الجانبية — أعلى اليسار (اتجاه القراءة العربي) */
 /* موضع المفاتيح يُحسب في JS (يتفادى الشريط العائم واللوحة معاً) */
@@ -552,8 +551,9 @@ html { scrollbar-gutter: stable; }
   gap: 6px;
   padding: 6px;
   border-radius: 16px;
-  background: rgba(12,14,26,.92);
-  border: 1px solid rgba(255,255,255,.10);
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-border);
+  box-shadow: 0 10px 30px rgba(15,23,42,.12);
 }
 /* اللوحة الجانبية الواحدة */
 .bz-tfocus-sidebar {
@@ -566,7 +566,7 @@ html { scrollbar-gutter: stable; }
   flex-direction: column;
   background: var(--bz-surface);
   border-left: 1px solid var(--bz-border);
-  box-shadow: -8px 0 34px rgba(0,0,0,.35);
+  box-shadow: -8px 0 30px rgba(15,23,42,.16);
   animation: bz-tfocus-slide .22s cubic-bezier(.22,1,.36,1) both;
 }
 @keyframes bz-tfocus-slide { from { transform: translateX(-100%); } to { transform: translateX(0); } }
@@ -581,8 +581,8 @@ html { scrollbar-gutter: stable; }
   gap: 2px;
   padding: 4px 6px;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
-  background: rgba(8,10,20,.94);
-  border-top: 1px solid rgba(255,255,255,.08);
+  background: var(--bz-surface);
+  border-top: 1px solid var(--bz-border);
 }
 
 /* مسرح وضع التركيز: فسحة ثابتة للأشرطة حتى لا تُغطّى أدوات السبورة

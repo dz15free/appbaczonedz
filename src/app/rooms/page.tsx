@@ -20,6 +20,7 @@ import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog"
 import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
 import { AppShell } from "@/components/app-shell";
 import { Input, Button } from "@/components/ui/field";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function RoomsPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function RoomsPage() {
   const [subjectFilter, setSubjectFilter] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   const loadRooms = useCallback(async () => {

@@ -16,6 +16,7 @@ import { listenNotifications } from "@/features/community/social";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { KhabbashaFloatingButton } from "@/components/ui/khabbasha-floating-button";
+import { SupportFloatingButton } from "@/features/support/support-chat";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 
 /* أيقونات التواصل (SVG مضمّن) */
@@ -417,6 +418,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* زر الخباشة العائم مع نص منبثق (كل الصفحات) */}
       {pathname !== "/omibot" && <KhabbashaFloatingButton />}
+      {pathname !== "/omibot" && <SupportFloatingButton />}
 
       {/* ═══════ شريط التنقّل السفلي (هاتف) ═══════ */}
       <nav

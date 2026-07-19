@@ -8,7 +8,7 @@ import {
   faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
   faUsers, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faSpinner, faLock, faKey, faBrain,
+  faNoteSticky, faSpinner, faLock, faKey, faBrain, faFileLines,
   faUserSecret, faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
@@ -43,8 +43,13 @@ import { saveFlashcard } from "@/features/study/save-flashcard";
 import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
 import { TeacherFocusMode } from "@/features/rooms/teacher-focus-mode";
 import { StudentChallengeLayer, CreateChallengeSheet, TeacherChallengePanel, useChallenge } from "@/features/rooms/room-challenge";
+import { TeacherSummarySheet, SummaryViewerSheet, useSummaries } from "@/features/rooms/room-summary";
+import { RateTeacherSheet } from "@/features/community/teacher-rating-ui";
+import { SupportChatSheet } from "@/features/support/support-chat";
+import { markAttendance } from "@/features/community/teacher-rating";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -223,6 +228,11 @@ export default function RoomPage() {
   const [challengeCreateOpen, setChallengeCreateOpen] = useState(false);
   const [challengePanelOpen, setChallengePanelOpen] = useState(false);
   const challenge = useChallenge(roomId);
+  // ملخّص الحصة
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const summaries = useSummaries(roomId);
+  // تقييم الأستاذ
+  const [rateOpen, setRateOpen] = useState(false);
   const prevAnon = useRef(0);
   const { settings } = useSiteSettings();
   const isMod = !!user && mods.has(user.uid);
@@ -258,7 +268,7 @@ export default function RoomPage() {
   }, [fullscreen]);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -321,6 +331,12 @@ export default function RoomPage() {
     return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
   }
   // مشاركة رابط الغرفة — يستعمله الشريط العادي ووضع التركيز معاً
+  // يُسجَّل حضور الطالب مرة واحدة عند دخوله غرفة الأستاذ (أساس أهلية التقييم)
+  useEffect(() => {
+    if (!user || !room?.ownerId || isOwner) return;
+    markAttendance(room.ownerId, user.uid).catch(() => {});
+  }, [user, room?.ownerId, isOwner]);
+
   function shareRoomLink() {
     const url = window.location.href;
     navigator.clipboard?.writeText(url)
@@ -347,7 +363,7 @@ export default function RoomPage() {
 
   // بوّابة الغرف المدفوعة
   if (room?.isPaid && !isOwner && !roomAccess && !isPrivileged) {
-    return <PaidRoomGate room={room} uid={user.uid} telegramUrl={settings.paymentUrl || settings.telegramUrl} onUnlocked={() => setRoomAccess(true)} />;
+    return <PaidRoomGate room={room} uid={user.uid} onUnlocked={() => setRoomAccess(true)} />;
   }
 
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
@@ -529,6 +545,28 @@ export default function RoomPage() {
             <span className="hidden sm:inline">تحدٍّ</span>
           </button>
 
+          {/* تقييم الأستاذ — للطالب وحده */}
+      {!isOwner && room?.ownerId && (
+        <RateTeacherSheet
+          teacherUid={room.ownerId}
+          teacherName={room.ownerName || "الأستاذ"}
+          studentUid={user.uid}
+          studentName={user.displayName || "طالب"}
+          open={rateOpen}
+          onClose={() => setRateOpen(false)}
+        />
+      )}
+
+      {/* ملخّص الحصة */}
+          <button
+            onClick={() => setSummaryOpen(true)}
+            title="ملخّص الحصة"
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-2.5 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary"
+          >
+            <FontAwesomeIcon icon={faFileLines} className="h-4 w-4" />
+            <span className="hidden sm:inline">ملخّص</span>
+          </button>
+
           {/* الأسئلة المجهولة */}
           <button
             onClick={() => setAnonOpen(true)}
@@ -694,6 +732,7 @@ export default function RoomPage() {
               timerButton={<RoomTimerButton roomId={roomId} />}
               onCreatePoll={() => setShowCreatePoll(true)}
               onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
+              onSummary={() => setSummaryOpen(true)}
               hasChallenge={!!challenge}
               challengePanel={<TeacherChallengePanel roomId={roomId} memberCount={members.length} />}
               onShare={shareRoomLink}
@@ -829,6 +868,8 @@ export default function RoomPage() {
           onOpenFiles={() => setFocusSheet("files")}
           onOpenNotes={() => setFocusSheet("notes")}
           onOpenCards={() => setFocusSheet("cards")}
+          onOpenSummary={summaries.length > 0 ? () => setSummaryOpen(true) : undefined}
+          onRateTeacher={() => setRateOpen(true)}
           unreadChat={unreadChat}
           roomId={roomId}
           chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
@@ -877,6 +918,38 @@ export default function RoomPage() {
           </a>
         </div>
       </BottomSheet>
+
+      {/* تقييم الأستاذ — للطالب وحده */}
+      {!isOwner && room?.ownerId && (
+        <RateTeacherSheet
+          teacherUid={room.ownerId}
+          teacherName={room.ownerName || "الأستاذ"}
+          studentUid={user.uid}
+          studentName={user.displayName || "طالب"}
+          open={rateOpen}
+          onClose={() => setRateOpen(false)}
+        />
+      )}
+
+      {/* ملخّص الحصة */}
+      {isOwner ? (
+        <TeacherSummarySheet
+          roomId={roomId}
+          roomName={room?.name ?? "الغرفة"}
+          teacherName={user.displayName || "الأستاذ"}
+          open={summaryOpen}
+          onClose={() => setSummaryOpen(false)}
+        />
+      ) : (
+        <SummaryViewerSheet
+          roomId={roomId}
+          roomName={room?.name ?? "الغرفة"}
+          uid={user.uid}
+          subject={room?.subject}
+          open={summaryOpen}
+          onClose={() => setSummaryOpen(false)}
+        />
+      )}
 
       {/* أدراج التحدي — للمالك */}
       {isOwner && (
@@ -946,13 +1019,14 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
 }
 
 /* بوّابة الغرف المدفوعة — قفل + كود وصول */
-function PaidRoomGate({ room, uid, telegramUrl, onUnlocked }: {
-  room: Room; uid: string; telegramUrl?: string; onUnlocked: () => void;
+function PaidRoomGate({ room, uid, onUnlocked }: {
+  room: Room; uid: string; onUnlocked: () => void;
 }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPay, setShowPay] = useState(false);
 
   async function unlock() {
     setBusy(true); setErr("");
@@ -974,12 +1048,11 @@ function PaidRoomGate({ room, uid, telegramUrl, onUnlocked }: {
           <FontAwesomeIcon icon={faLock} className="h-3 w-3" /> {room.price} دج
         </div>
 
-        {telegramUrl && (
-          <a href={telegramUrl} target="_blank" rel="noopener noreferrer"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:opacity-90">
-            💬 تواصل عبر ميسنجر للشراء
-          </a>
-        )}
+        <button onClick={() => setShowPay(true)}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-2.5 text-sm font-bold text-white active:scale-95">
+          💬 تواصل مع الإدارة للشراء
+        </button>
+        <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
 
         <div className="mt-3 flex gap-2">
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="أدخل كود الوصول"

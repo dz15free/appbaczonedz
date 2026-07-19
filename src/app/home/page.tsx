@@ -23,6 +23,7 @@ import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { ref, query, orderByChild, limitToLast, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 /* أقسام الموقع */
 const SECTIONS = [
@@ -208,7 +209,7 @@ export default function HomePage() {
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
 
-  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
+  useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
     return listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));

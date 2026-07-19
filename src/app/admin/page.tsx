@@ -6,7 +6,7 @@ import { ref, onValue, remove, query, orderByChild, limitToLast, get, update } f
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faShield, faFlag, faLayerGroup, faTrash, faChartBar,
+  faShield, faFlag, faStar, faLayerGroup, faTrash, faChartBar,
   faCircleExclamation, faCheckCircle, faGear, faCalendarDays,
   faFloppyDisk, faLock, faLockOpen, faBullhorn, faPaperPlane,
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
@@ -23,6 +23,10 @@ import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllC
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
+import { AdminRatingRow } from "@/features/community/teacher-rating-ui";
+import { detectBrigading, listenTeacherRatings, computeStats, type TeacherRating } from "@/features/community/teacher-rating";
+import { setSupportAccount, useSupportInfo, SUPPORT_DEFAULTS } from "@/features/support/admin-chat";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 interface Report {
   firebaseKey: string;
@@ -49,6 +53,101 @@ function timeAgo(ts: number) {
   return d === 0 ? "اليوم" : d === 1 ? "أمس" : `منذ ${d} يوم`;
 }
 
+/* حساب الدعم — يفتح الدردشة المباشرة مع الإدارة */
+function SupportAccountCard() {
+  const { user } = useAuth();
+  const info = useSupportInfo();
+  const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const isMe = info.adminUid === user?.uid;
+
+  async function claim() {
+    if (!user || busy) return;
+    setBusy(true);
+    try {
+      await setSupportAccount(
+        user.uid,
+        SUPPORT_DEFAULTS.adminName,
+        email.trim() || info.adminEmail || SUPPORT_DEFAULTS.adminEmail
+      );
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="mb-3 rounded-xl border border-primary/25 bg-primary/5 p-3">
+      <p className="text-xs font-bold text-text-primary">💬 حساب الدردشة المباشرة</p>
+      <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
+        الحساب الذي تصله رسائل «تواصل مع الإدارة» ورسائل الدفع.
+        دون ضبطه سيرى المستخدمون البريد الإلكتروني فقط.
+      </p>
+      <p className="mt-2 text-[11px] text-text-muted">
+        الحالي: <span className="font-bold text-text-primary">{info.adminUid ? (isMe ? "أنت" : info.adminUid) : "غير مضبوط"}</span>
+      </p>
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={info.adminEmail}
+        dir="ltr"
+        className="mt-2 h-9 w-full rounded-lg border border-border bg-surface px-3 text-xs outline-none focus:border-primary"
+      />
+      <button
+        onClick={claim}
+        disabled={busy || isMe}
+        className="mt-2 w-full rounded-lg bg-gradient-primary py-2 text-xs font-bold text-white disabled:opacity-50"
+      >
+        {isMe ? "أنت جهة الدعم ✓" : busy ? "..." : "اجعل هذا الحساب جهة الدعم"}
+      </button>
+    </div>
+  );
+}
+
+/* مراقبة التقييمات — كشف الحملات المنسّقة ضد الأساتذة */
+function RatingsAdminPanel({ users }: { users: { uid: string; name?: string; role?: string }[] }) {
+  const teachers = users.filter((u) => u.role === "teacher" || u.role === "admin");
+  const [flags, setFlags] = useState<Record<string, ReturnType<typeof detectBrigading>>>({});
+
+  useEffect(() => {
+    const unsubs = teachers.map((t) =>
+      listenTeacherRatings(t.uid, (list: TeacherRating[]) => {
+        setFlags((prev) => ({ ...prev, [t.uid]: detectBrigading(list, t.uid) }));
+      })
+    );
+    return () => unsubs.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teachers.map((t) => t.uid).join(",")]);
+
+  const flagged = teachers.filter((t) => flags[t.uid]);
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
+        <p className="text-xs font-bold text-warning">⚠️ أنماط تستحق المراجعة ({flagged.length})</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
+          إشارة لا حكم: ثلاثة تقييمات منخفضة أو أكثر وصلت خلال أقل من ٢٤ ساعة.
+          قد يكون سبباً وجيهاً، وقد يكون حملة. القرار لك — لا يُحذف شيء تلقائياً.
+        </p>
+      </div>
+
+      {flagged.map((t) => {
+        const f = flags[t.uid]!;
+        return (
+          <div key={t.uid} className="rounded-xl border border-danger/30 bg-danger/5 p-3">
+            <p className="text-sm font-bold text-text-primary">{t.name ?? t.uid}</p>
+            <p className="mt-1 text-[11px] text-danger">
+              {f.lowCount} تقييمات منخفضة — أضيق نافذة: {f.windowHours} ساعة — المتوسّط {f.avg} من {f.total}
+            </p>
+          </div>
+        );
+      })}
+
+      <p className="pt-2 text-xs font-bold text-text-muted">كل الأساتذة</p>
+      {teachers.map((t) => (
+        <AdminRatingRow key={t.uid} teacherUid={t.uid} teacherName={t.name ?? t.uid} />
+      ))}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview",  label: "إحصائيات",  icon: faChartBar },
   { id: "identity",  label: "الهوية",     icon: faImage },
@@ -61,6 +160,7 @@ const TABS = [
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
+  { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
 ] as const;
 
@@ -140,7 +240,7 @@ export default function AdminPage() {
   const [announceText, setAnnounceText] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) { router.replace("/login"); return; }
+    if (!loading && !user) { router.replace(loginHrefFor(window.location.pathname, window.location.search)); return; }
     if (!loading && profile && profile.role !== "admin") router.replace("/home");
   }, [loading, user, profile, router]);
 
@@ -526,8 +626,9 @@ export default function AdminPage() {
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
               <SaveBtn onClick={() => save("exturls", () => saveSiteSettings({ averageCalcUrl, pastExamsUrl, weightedCalcUrl }))} loading={!!saving.exturls} />
             </Card>
-            <Card icon={faLink} title="رابط الدفع (ميسنجر)" hint="يظهر للطلاب لشراء المحتوى المدفوع">
-              <input value={paymentUrl} onChange={(e) => setPaymentUrl(e.target.value)} placeholder="https://m.me/..."
+            <Card icon={faLink} title="الدعم والدفع" hint="الدردشة المباشرة هي الأساس — الرابط الخارجي احتياطي فقط">
+              <SupportAccountCard />
+              <input value={paymentUrl} onChange={(e) => setPaymentUrl(e.target.value)} placeholder="https://m.me/... (احتياطي)"
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
               <SaveBtn onClick={() => save("payment", () => saveSetting("paymentUrl", paymentUrl))} loading={!!saving.payment} />
             </Card>
@@ -861,6 +962,10 @@ export default function AdminPage() {
         )}
 
         {/* ════ البلاغات ════ */}
+        {tab === "ratings" && (
+          <RatingsAdminPanel users={appUsers} />
+        )}
+
         {tab === "reports" && (
           <div className="space-y-3">
             {reports.length > 0 && (

@@ -29,6 +29,9 @@ import {
   type Comment,
   type Person,
 } from "@/features/community/social";
+import { RichText } from "@/components/ui/linkify";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { PostMediaGrid } from "@/features/community/post-media";
 
 export default function PostPage() {
   const { postId } = useParams<{ postId: string }>();
@@ -47,7 +50,7 @@ export default function PostPage() {
   const [editText, setEditText] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -160,7 +163,7 @@ export default function PostPage() {
             )}
           </div>
         </div>
-        <p className="mt-1 whitespace-pre-wrap text-sm">{c.text}</p>
+        <div className="mt-1 whitespace-pre-wrap text-sm"><RichText text={c.text} compact /></div>
       </div>
     );
   }
@@ -269,12 +272,12 @@ export default function PostPage() {
               ) : (
                 post.text && (
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
-                    {post.text}
+                    <RichText text={post.text} noPreview={!!post.media?.length || !!post.attachmentId} />
                     {post.editedAt && <span className="ms-2 text-xs text-text-muted">(مُعدّل)</span>}
                   </p>
                 )
               )}
-              <PostAttachment post={post} />
+              {post.media?.length ? <PostMediaGrid media={post.media} /> : <PostAttachment post={post} />}
               <div className="mt-3 flex items-center gap-1 rounded-full bg-background px-1" style={{ width: "fit-content" }}>
                 <button
                   onClick={() => votePost(post.id, user.uid, 1, post.myVote)}

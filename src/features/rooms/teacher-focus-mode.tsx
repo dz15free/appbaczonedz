@@ -6,7 +6,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers,
   faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis,
-  faChalkboard, faBrain,
+  faChalkboard, faBrain, faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useTimerLabel } from "@/features/rooms/room-timer";
@@ -42,6 +42,7 @@ export interface TeacherFocusProps {
   timerButton: ReactNode;          // زر المؤقّت الحالي (يُعاد استعماله كما هو)
   onCreatePoll: () => void;
   onChallenge: () => void;         // إنشاء تحدٍّ أو فتح لوحته
+  onSummary: () => void;           // ملخّص الحصة
   hasChallenge: boolean;
   challengePanel: ReactNode;
   onShare: () => void;
@@ -184,14 +185,14 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
         onClick={props.onExit}
         title="خروج من وضع التركيز (Esc)"
         aria-label="خروج من وضع التركيز"
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 active:scale-95"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary active:scale-95"
       >
         <FontAwesomeIcon icon={faCompress} className="h-3.5 w-3.5" />
       </button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-[13px] font-bold leading-tight text-white">{props.roomName}</h1>
-        <p className="truncate text-[10px] leading-tight text-white/55">{props.memberCount} متصل</p>
+        <h1 className="truncate text-[13px] font-bold leading-tight text-text-primary">{props.roomName}</h1>
+        <p className="truncate text-[10px] leading-tight text-text-muted">{props.memberCount} متصل</p>
       </div>
 
       <FocusTimerChip roomId={props.roomId} />
@@ -199,7 +200,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
       <button
         onClick={props.onCycleStatus}
         title="تغيير حالتك"
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-white/10 px-2.5 text-[11px] font-bold text-white transition hover:bg-white/20"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[11px] font-bold text-text-primary transition hover:bg-primary/10"
       >
         <span className="text-xs leading-none">{statusDot}</span>
         <span className="hidden sm:inline">{statusText}</span>
@@ -215,6 +216,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
     })),
     { id: "challenge", icon: faBrain, label: props.hasChallenge ? "لوحة التحدي" : "تحدٍّ جديد", onClick: props.onChallenge, active: props.hasChallenge },
     { id: "poll", icon: faChartBar, label: "استفتاء", onClick: props.onCreatePoll },
+    { id: "summary", icon: faFileLines, label: "ملخّص الحصة", onClick: props.onSummary },
     { id: "share", icon: faShareNodes, label: "مشاركة الرابط", onClick: props.onShare },
     ...(props.onGenerateCode ? [{ id: "code", icon: faKey, label: "كود وصول", onClick: props.onGenerateCode }] : []),
   ];
@@ -271,6 +273,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           <div className="space-y-2 pb-2">
             <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
             <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
+            <SheetRow icon={faFileLines} label="ملخّص الحصة" onClick={() => { setSheet(null); props.onSummary(); }} />
             <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
             <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
             <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />
@@ -303,14 +306,14 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           onPointerUp={onGripUp}
           title="اسحب لتغيير الموضع (أو انقر للتنقّل: يمين ← يسار ← أسفل)"
           aria-label="نقل شريط الأدوات"
-          className={`grid shrink-0 cursor-grab touch-none place-items-center rounded-md text-white/40 transition hover:text-white active:cursor-grabbing ${
+          className={`grid shrink-0 cursor-grab touch-none place-items-center rounded-md text-text-muted transition hover:text-primary active:cursor-grabbing ${
             vertical ? "h-6 w-9" : "h-9 w-6"
           }`}
         >
           <FontAwesomeIcon icon={faGripVertical} className={`h-3.5 w-3.5 ${vertical ? "rotate-90" : ""}`} />
         </button>
 
-        <span className={vertical ? "h-px w-6 bg-white/15" : "h-6 w-px bg-white/15"} />
+        <span className={vertical ? "h-px w-6 bg-border" : "h-6 w-px bg-border"} />
 
         {actions.map((a) => (
           <button
@@ -319,14 +322,14 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
             title={a.label}
             aria-label={a.label}
             className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-lg transition active:scale-90 ${
-              a.active ? "bg-gradient-primary text-white shadow" : "text-white/70 hover:bg-white/15 hover:text-white"
+              a.active ? "bg-gradient-primary text-white shadow" : "text-text-muted hover:bg-primary/10 hover:text-primary"
             }`}
           >
             <FontAwesomeIcon icon={a.icon} className="h-4 w-4" />
           </button>
         ))}
 
-        <span className={vertical ? "h-px w-6 bg-white/15" : "h-6 w-px bg-white/15"} />
+        <span className={vertical ? "h-px w-6 bg-border" : "h-6 w-px bg-border"} />
 
         <div className="bz-tfocus-timer">{props.timerButton}</div>
       </div>
@@ -385,7 +388,7 @@ function FocusTimerChip({ roomId }: { roomId: string }) {
   const label = useTimerLabel(roomId);
   if (!label) return null;
   return (
-    <span className="shrink-0 rounded-lg bg-white/10 px-2 py-1 text-[11px] font-bold tabular-nums text-white">
+    <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold tabular-nums text-primary">
       {label}
     </span>
   );
@@ -401,7 +404,7 @@ function RailBtn({ icon, label, badge, active, onClick }: {
       title={label}
       aria-label={label}
       className={`relative grid h-10 w-10 place-items-center rounded-xl transition active:scale-90 ${
-        active ? "bg-gradient-primary text-white shadow" : "text-white/70 hover:bg-white/15 hover:text-white"
+        active ? "bg-gradient-primary text-white shadow" : "text-text-muted hover:bg-primary/10 hover:text-primary"
       }`}
     >
       <FontAwesomeIcon icon={icon} className="h-[17px] w-[17px]" />
@@ -421,7 +424,7 @@ function MobileBtn({ icon, label, badge, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-white/75 transition active:scale-90"
+      className="relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-text-muted transition active:scale-90"
     >
       <FontAwesomeIcon icon={icon} className="h-[18px] w-[18px]" />
       <span className="text-[10px] font-bold">{label}</span>

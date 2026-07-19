@@ -13,6 +13,7 @@ import {
   listenStudyTasks, addStudyTask, toggleStudyTask, deleteStudyTask,
   clearCompletedTasks, type StudyTask,
 } from "@/features/study/study-tasks";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function TasksPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<StudyTask[]>([]);
   const [newTask, setNewTask] = useState("");
 
-  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
+  useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
     return listenStudyTasks(user.uid, setTasks);

@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { loginUser, resetPassword, needsOnboarding, AuthError } from "@/lib/firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
+import { useNextDestination } from "@/features/auth/use-require-auth";
 
 export default function LoginPage() {
+  const next = useNextDestination();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +34,8 @@ export default function LoginPage() {
       } catch (e) {
         console.error("[BacZone] فشل فحص الإعداد — تأكّد أن Firestore مُفعّل:", e);
       }
-      router.push(goOnboarding ? "/onboarding" : "/home");
+      // نمرّر الوجهة إلى الإعداد الأولي أيضاً حتى لا تضيع
+      router.push(goOnboarding ? `/onboarding?next=${encodeURIComponent(next)}` : next);
     } catch (err) {
       console.error("[BacZone] خطأ الدخول:", err);
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });

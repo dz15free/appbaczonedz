@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBrain, faPaperPlane, faCheck, faStar, faXmark,
   faTrophy, faLock, faPenToSquare, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
   type Challenge, type ChallengeAnswer,
@@ -21,6 +22,28 @@ import {
    الطالب: مساحة حل خاصة به وحده، يعدّلها ما دام التسليم مفتوحاً.
    الأستاذ: كل الحلول في لوحة واحدة، يقيّمها ويعرض أفضلها للجميع.
 ════════════════════════════════════════════════════════════ */
+
+/* شريط إدراج المعادلات — يكتب بصيغة $...$ ويُعرض منسّقاً */
+function MathBar({ taRef, onChange }: {
+  taRef: React.RefObject<HTMLTextAreaElement | null>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {MATH_SNIPPETS.map((sn) => (
+        <button
+          key={sn.label}
+          type="button"
+          onClick={() => { if (taRef.current) insertAtCursor(taRef.current, sn, onChange); }}
+          title={sn.insert}
+          className="grid h-7 min-w-7 place-items-center rounded-lg bg-border px-1.5 text-xs font-bold text-text-primary transition active:scale-90 hover:bg-primary/10 hover:text-primary"
+        >
+          {sn.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /* ─────────── هوك مشترك ─────────── */
 export function useChallenge(roomId: string) {
@@ -44,6 +67,7 @@ export function StudentChallengeLayer({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const answerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => listenMyAnswer(roomId, uid, setMyAnswer), [roomId, uid]);
   useEffect(() => listenMyScore(roomId, uid, setMyScore), [roomId, uid]);
@@ -95,9 +119,7 @@ export function StudentChallengeLayer({
         <div className="pb-2">
           {/* السؤال */}
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
-            <p className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-text-primary" dir="auto">
-              {challenge.question}
-            </p>
+            <MathText text={challenge.question} className="text-sm font-semibold leading-relaxed text-text-primary" />
           </div>
 
           {/* تقييم الأستاذ إن وُجد */}
@@ -113,13 +135,21 @@ export function StudentChallengeLayer({
             <>
               <label className="mt-4 block text-xs font-bold text-text-muted">مساحة حلّك (لا يراها إلا أنت والأستاذ)</label>
               <textarea
+                ref={answerRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="اكتب خطوات حلّك هنا..."
+                placeholder="اكتب خطوات حلّك هنا... (استعمل $x^2$ للمعادلات)"
                 rows={7}
                 dir="auto"
                 className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-primary"
               />
+              <MathBar taRef={answerRef} onChange={setDraft} />
+              {draft.includes("$") && (
+                <div className="mt-2 rounded-xl border border-border bg-background p-3">
+                  <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة</p>
+                  <MathText text={draft} className="text-sm leading-relaxed text-text-primary" />
+                </div>
+              )}
               <button
                 onClick={send}
                 disabled={!draft.trim() || busy}
@@ -135,9 +165,7 @@ export function StudentChallengeLayer({
                 <FontAwesomeIcon icon={faLock} className="h-3.5 w-3.5" /> أُغلق التسليم
               </p>
               {myAnswer && (
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text-primary" dir="auto">
-                  {myAnswer.text}
-                </p>
+                <MathText text={myAnswer.text} className="mt-2 text-sm leading-relaxed text-text-primary" />
               )}
             </div>
           )}
@@ -149,9 +177,7 @@ export function StudentChallengeLayer({
                 <FontAwesomeIcon icon={faTrophy} className="h-3.5 w-3.5" />
                 أفضل حل — {challenge.showcase.name}
               </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text-primary" dir="auto">
-                {challenge.showcase.text}
-              </p>
+              <MathText text={challenge.showcase.text} className="mt-2 text-sm leading-relaxed text-text-primary" />
             </div>
           )}
 
@@ -179,6 +205,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
 }) {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const qRef = useRef<HTMLTextAreaElement>(null);
 
   async function start() {
     if (!q.trim() || busy) return;
@@ -196,14 +223,22 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
           اكتب التمرين. سيحصل كل طالب على مساحة حل خاصة، وتصلك كل الحلول في لوحة واحدة.
         </p>
         <textarea
+          ref={qRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="مثال: احسب نهاية الدالة f(x) = (x²−1)/(x−1) عند x → 1، مع تبرير كل خطوة."
+          placeholder="مثال: احسب $\\lim_{x \\to 1} \\frac{x^{2}-1}{x-1}$ مع تبرير كل خطوة."
           rows={5}
           dir="auto"
           autoFocus
           className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-primary"
         />
+        <MathBar taRef={qRef} onChange={setQ} />
+        {q.includes("$") && (
+          <div className="mt-2 rounded-xl border border-border bg-background p-3">
+            <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة كما سيراها الطلاب</p>
+            <MathText text={q} className="text-sm leading-relaxed text-text-primary" />
+          </div>
+        )}
         <p className="mt-2 px-1 text-[11px] text-text-muted">
           ⚠️ بدء تحدٍّ جديد يمسح حلول التحدي السابق.
         </p>
@@ -252,9 +287,7 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
     <div className="pb-2">
       {/* السؤال + الحالة */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
-        <p className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-text-primary" dir="auto">
-          {challenge.question}
-        </p>
+        <MathText text={challenge.question} className="text-sm font-semibold leading-relaxed text-text-primary" />
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
             {answers.length} من {Math.max(memberCount - 1, answers.length)} سلّموا
@@ -321,9 +354,7 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
 
                 {open && (
                   <>
-                    <p className="mt-2.5 whitespace-pre-wrap border-t border-border pt-2.5 text-sm leading-relaxed text-text-primary" dir="auto">
-                      {a.text}
-                    </p>
+                    <MathText text={a.text} className="mt-2.5 border-t border-border pt-2.5 text-sm leading-relaxed text-text-primary" />
                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                       <span className="text-[11px] font-bold text-text-muted">التقييم:</span>
                       {[1, 2, 3, 4, 5].map((n) => (

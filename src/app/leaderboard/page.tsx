@@ -12,6 +12,7 @@ import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { BADGES, earnedBadges } from "@/features/gamification/points";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 interface Player {
   uid: string;
@@ -38,7 +39,7 @@ export default function LeaderboardPage() {
   const [myRank, setMyRank] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

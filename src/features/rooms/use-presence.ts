@@ -9,7 +9,12 @@ export interface PresenceMember {
   name: string;
   joinedAt: number;
   lastActive?: number;
+  /* إشارات Teacher Radar — تُكتب مع النبض نفسه، بلا أي طلب إضافي */
+  visible?: boolean;   // هل تبويب الطالب مفتوح أمامه؟
+  idle?: boolean;      // لم يلمس شيئاً منذ فترة طويلة
 }
+
+const IDLE_MS = 5 * 60 * 1000; // 5 دقائق بلا أي تفاعل
 
 // حضور لحظي عبر RTDB (نفس فكرة الكود القديم: onDisconnect + نبض)
 export function usePresence(roomId: string, uid?: string, name?: string) {
@@ -19,15 +24,33 @@ export function usePresence(roomId: string, uid?: string, name?: string) {
     if (!roomId || !uid) return;
     const myRef = ref(rtdb, `presence/${roomId}/${uid}`);
 
-    // سجّل حضوري + احذفه تلقائياً عند قطع الاتصال
     const joined = Date.now();
-    set(myRef, { name: name ?? "طالب", joinedAt: joined, lastActive: serverTimestamp() });
+    let lastTouch = Date.now();
+    const touched = () => { lastTouch = Date.now(); };
+
+    // نكتب حالة الانتباه داخل نفس النبض الموجود — صفر طلبات إضافية
+    const write = () => {
+      set(myRef, {
+        name: name ?? "طالب",
+        joinedAt: joined,
+        lastActive: serverTimestamp(),
+        visible: typeof document === "undefined" || document.visibilityState === "visible",
+        idle: Date.now() - lastTouch > IDLE_MS,
+      });
+    };
+
+    // سجّل حضوري + احذفه تلقائياً عند قطع الاتصال
+    write();
     onDisconnect(myRef).remove();
 
+    // تغيّر ظهور التبويب حدث نادر → كتابة فورية تجعل الرادار دقيقاً
+    const onVis = () => { if (document.visibilityState === "visible") touched(); write(); };
+    document.addEventListener("visibilitychange", onVis);
+    const acts: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "touchstart", "wheel"];
+    acts.forEach((e) => window.addEventListener(e, touched, { passive: true }));
+
     // نبض كل 20 ثانية — يُحدَّث lastActive فقط، لا joinedAt
-    const beat = setInterval(() => {
-      set(myRef, { name: name ?? "طالب", joinedAt: joined, lastActive: serverTimestamp() });
-    }, 20000);
+    const beat = setInterval(write, 20000);
 
     // استمع لقائمة الحاضرين
     const roomRef = ref(rtdb, `presence/${roomId}`);
@@ -38,6 +61,8 @@ export function usePresence(roomId: string, uid?: string, name?: string) {
 
     return () => {
       clearInterval(beat);
+      document.removeEventListener("visibilitychange", onVis);
+      acts.forEach((e) => window.removeEventListener(e, touched));
       unsub();
       remove(myRef);
     };

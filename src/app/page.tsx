@@ -1,11 +1,11 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faUserPlus, faCheckCircle, faFlag } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faUserPlus, faCheckCircle, faFlag, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LandingPage() {
@@ -32,7 +32,7 @@ export default function LandingPage() {
           <ThemeToggle />
           <Link href="/login" className="hidden text-sm font-semibold text-text-muted transition hover:text-primary sm:block">دخول</Link>
           <Link href="/register" className="rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-bold text-white shadow-glow transition hover:opacity-90 hover:scale-105">
-            ابدأ مجاناً
+            {s.heroCtaPrimary || "أنشئ حسابك"}
           </Link>
         </div>
       </header>
@@ -105,6 +105,28 @@ export default function LandingPage() {
         </section>
       )}
 
+      {/* لمن هذه المنصّة */}
+      {(s.audience ?? []).length > 0 && (
+        <section className="relative px-5 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <span className="text-sm font-bold uppercase tracking-wider text-primary">الأدوار</span>
+            <h2 className="mt-2 font-display text-3xl font-extrabold md:text-4xl">{s.audienceTitle}</h2>
+            {s.audienceSubtitle && <p className="mt-3 text-text-muted">{s.audienceSubtitle}</p>}
+          </div>
+          <div className="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-2">
+            {(s.audience ?? []).map((a) => (
+              <article key={a.id} className="rounded-3xl border border-border bg-surface p-7 transition hover:border-primary hover:shadow-glass">
+                <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-primary text-white">
+                  <DynamicIcon value={a.icon} className="h-6 w-6" emojiClass="text-2xl" />
+                </span>
+                <h3 className="mt-5 font-display text-xl font-extrabold">{a.title}</h3>
+                <p className="mt-3 text-sm leading-loose text-text-muted">{a.desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* الميزات */}
       {(s.features ?? []).length > 0 && (
         <section className="relative px-5 py-20 bg-surface">
@@ -123,6 +145,44 @@ export default function LandingPage() {
                 <p className="mt-2 text-sm leading-relaxed text-text-muted">{f.desc}</p>
               </article>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* التكلفة — صريحة بلا مبالغة */}
+      {(s.pricingNote || (s.pricingRows ?? []).length > 0) && (
+        <section className="relative px-5 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <span className="text-sm font-bold uppercase tracking-wider text-primary">الشفافية</span>
+            <h2 className="mt-2 font-display text-3xl font-extrabold md:text-4xl">{s.pricingTitle}</h2>
+            {s.pricingNote && (
+              <p className="mx-auto mt-4 max-w-2xl leading-loose text-text-muted">{s.pricingNote}</p>
+            )}
+          </div>
+          {(s.pricingRows ?? []).length > 0 && (
+            <div className="mx-auto mt-10 max-w-3xl space-y-3">
+              {(s.pricingRows ?? []).map((r) => (
+                <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                  <FontAwesomeIcon icon={faCheckCircle} className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold">{r.title}</h3>
+                    <p className="mt-0.5 text-sm leading-relaxed text-text-muted">{r.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* الأسئلة الشائعة */}
+      {(s.faq ?? []).length > 0 && (
+        <section className="relative bg-surface px-5 py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-3xl font-extrabold md:text-4xl">{s.faqTitle}</h2>
+          </div>
+          <div className="mx-auto mt-10 max-w-3xl space-y-2.5">
+            {(s.faq ?? []).map((f) => <FaqRow key={f.id} q={f.q} a={f.a} />)}
           </div>
         </section>
       )}
@@ -160,12 +220,35 @@ export default function LandingPage() {
           <img src={s.logoUrl || "/icon.svg"} alt="" className="h-7 w-7 rounded-lg object-contain" />
           <p className="font-bold text-text-primary">{s.siteName || "BacZoneDZ"}</p>
         </div>
-        <p className="mt-2">© {year} — مجاني 100% للطلاب الجزائريين 🇩🇿</p>
+        <p className="mt-2">{s.footerText || `© ${year} BacZoneDZ`}</p>
         <div className="mt-3 flex justify-center gap-4 text-xs">
           <Link href="/login" className="hover:text-primary">تسجيل الدخول</Link>
           <Link href="/register" className="hover:text-primary">تسجيل جديد</Link>
         </div>
       </footer>
     </main>
+  );
+}
+
+/* سؤال قابل للطي — يبقى المحتوى في DOM ليجده محرّك البحث */
+function FaqRow({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-background">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-right transition hover:bg-primary/5"
+      >
+        <span className="flex-1 text-sm font-bold">{q}</span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`h-3 w-3 shrink-0 text-text-muted transition ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div className={open ? "px-4 pb-4" : "hidden"}>
+        <p className="text-sm leading-loose text-text-muted">{a}</p>
+      </div>
+    </div>
   );
 }
