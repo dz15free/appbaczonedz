@@ -6,7 +6,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers,
   faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis,
-  faChalkboard,
+  faChalkboard, faBrain,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useTimerLabel } from "@/features/rooms/room-timer";
@@ -41,6 +41,9 @@ export interface TeacherFocusProps {
   /* إجراءات الحصة */
   timerButton: ReactNode;          // زر المؤقّت الحالي (يُعاد استعماله كما هو)
   onCreatePoll: () => void;
+  onChallenge: () => void;         // إنشاء تحدٍّ أو فتح لوحته
+  hasChallenge: boolean;
+  challengePanel: ReactNode;
   onShare: () => void;
   onGenerateCode?: () => void;     // للغرف المدفوعة فقط
   /* اللوحات */
@@ -58,7 +61,7 @@ export interface TeacherFocusProps {
   onExit: () => void;
 }
 
-type TabId = "chat" | "hands" | "questions" | "files" | "people";
+type TabId = "chat" | "hands" | "questions" | "files" | "people" | "challenge";
 
 export function TeacherFocusMode(props: TeacherFocusProps) {
   const [side, setSide] = useState<FocusSide>("right");
@@ -210,6 +213,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
       id: `tool-${t.id}`, icon: t.icon, label: t.label,
       onClick: () => props.onPickTool(t.id), active: props.activeTool === t.id,
     })),
+    { id: "challenge", icon: faBrain, label: props.hasChallenge ? "لوحة التحدي" : "تحدٍّ جديد", onClick: props.onChallenge, active: props.hasChallenge },
     { id: "poll", icon: faChartBar, label: "استفتاء", onClick: props.onCreatePoll },
     { id: "share", icon: faShareNodes, label: "مشاركة الرابط", onClick: props.onShare },
     ...(props.onGenerateCode ? [{ id: "code", icon: faKey, label: "كود وصول", onClick: props.onGenerateCode }] : []),
@@ -266,6 +270,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
         <BottomSheet open={sheet === "more"} onClose={() => setSheet(null)} title="أدوات الحصة">
           <div className="space-y-2 pb-2">
             <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
+            <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
             <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
             <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
             <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />
@@ -334,6 +339,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
         <RailBtn icon={faUserSecret} label="الأسئلة (Q)" badge={props.unansweredCount} active={tab === "questions"} onClick={() => setTab((v) => (v === "questions" ? null : "questions"))} />
         <RailBtn icon={faFolderOpen} label="الملفات (F)" active={tab === "files"} onClick={() => setTab((v) => (v === "files" ? null : "files"))} />
         <RailBtn icon={faUsers} label="المشاركون" active={tab === "people"} onClick={() => setTab((v) => (v === "people" ? null : "people"))} />
+        <RailBtn icon={faBrain} label="حلول التحدي" active={tab === "challenge"} onClick={() => setTab((v) => (v === "challenge" ? null : "challenge"))} />
       </div>
 
       {/* اللوحة الجانبية الواحدة */}
@@ -345,6 +351,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
                 : tab === "hands" ? "رفع اليد"
                 : tab === "questions" ? "الأسئلة المجهولة"
                 : tab === "files" ? "ملفات الغرفة"
+                : tab === "challenge" ? "حلول التحدي"
                 : "المشاركون"}
             </span>
             <button
@@ -360,6 +367,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
             {tab === "files" && props.filesPanel}
             {tab === "people" && props.participantsPanel}
             {tab === "questions" && <div className="h-full overflow-y-auto p-3">{props.questionsPanel}</div>}
+            {tab === "challenge" && <div className="h-full overflow-y-auto p-3">{props.challengePanel}</div>}
             {tab === "hands" && (
               <div className="h-full overflow-y-auto p-3">
                 <HandsList hands={props.hands} onLower={props.onLowerHand} onGrantMic={props.onGrantMic} />

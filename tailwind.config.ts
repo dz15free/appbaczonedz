@@ -16,12 +16,11 @@ const config: Config = {
         danger: "rgb(var(--bz-danger) / <alpha-value>)",
         warning: "rgb(var(--bz-warning) / <alpha-value>)",
         // ألوان الثيم (تتغيّر بين الفاتح والداكن)
-        // قنوات RGB + <alpha-value> — بدونها كان Tailwind يتجاهل bg-surface/80 بصمت
-        surface: "rgb(var(--bz-surface-rgb) / <alpha-value>)",
-        background: "rgb(var(--bz-bg-rgb) / <alpha-value>)",
-        border: "rgb(var(--bz-border-rgb) / <alpha-value>)",
-        "text-primary": "rgb(var(--bz-text-rgb) / <alpha-value>)",
-        "text-muted": "rgb(var(--bz-text-muted-rgb) / <alpha-value>)",
+        surface: "var(--bz-surface)",
+        background: "var(--bz-bg)",
+        border: "var(--bz-border)",
+        "text-primary": "var(--bz-text)",
+        "text-muted": "var(--bz-text-muted)",
       },
       fontFamily: {
         sans: ["var(--font-tajawal)", "system-ui", "sans-serif"],

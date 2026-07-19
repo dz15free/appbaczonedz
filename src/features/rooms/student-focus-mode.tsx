@@ -34,6 +34,7 @@ export interface StudentFocusProps {
   unreadChat: number;
   children: ReactNode;            // المحتوى الرئيسي (سبورة/PDF/فيديو)
   chatPanel: ReactNode;           // لوحة الدردشة
+  challengeLayer?: ReactNode;     // طبقة تحدّي الحصة (Live Problem)
 }
 
 export function StudentFocusMode(props: StudentFocusProps) {
@@ -98,6 +99,9 @@ export function StudentFocusMode(props: StudentFocusProps) {
       {/* ═══ المحتوى الرئيسي ═══ */}
       <div className="relative flex-1 overflow-hidden">
         {props.children}
+
+        {/* تحدّي الحصة — يظهر فوق المحتوى دون حجبه */}
+        {props.challengeLayer}
 
         {/* تأكيد الحفظ السريع */}
         {savedFlash && (

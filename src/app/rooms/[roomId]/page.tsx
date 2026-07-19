@@ -8,7 +8,7 @@ import {
   faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
   faUsers, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faSpinner, faLock, faKey,
+  faNoteSticky, faSpinner, faLock, faKey, faBrain,
   faUserSecret, faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
@@ -42,6 +42,7 @@ import { sendAnonQuestion, listenAnonQuestions, markAnonAnswered, deleteAnonQues
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
 import { TeacherFocusMode } from "@/features/rooms/teacher-focus-mode";
+import { StudentChallengeLayer, CreateChallengeSheet, TeacherChallengePanel, useChallenge } from "@/features/rooms/room-challenge";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 
@@ -218,6 +219,10 @@ export default function RoomPage() {
   // الأسئلة المجهولة (يراها المالك)
   const [anonQs, setAnonQs] = useState<AnonQuestion[]>([]);
   const [anonOpen, setAnonOpen] = useState(false);
+  // Live Problem — تحدّي الحصة
+  const [challengeCreateOpen, setChallengeCreateOpen] = useState(false);
+  const [challengePanelOpen, setChallengePanelOpen] = useState(false);
+  const challenge = useChallenge(roomId);
   const prevAnon = useRef(0);
   const { settings } = useSiteSettings();
   const isMod = !!user && mods.has(user.uid);
@@ -512,6 +517,18 @@ export default function RoomPage() {
             <span className="hidden sm:inline">استفتاء</span>
           </button>
 
+          {/* تحدّي الحصة (Live Problem) */}
+          <button
+            onClick={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
+            title={challenge ? "لوحة حلول التحدي" : "إنشاء تحدٍّ"}
+            className={`relative flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
+              challenge ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary hover:bg-primary/10"
+            }`}
+          >
+            <FontAwesomeIcon icon={faBrain} className="h-4 w-4" />
+            <span className="hidden sm:inline">تحدٍّ</span>
+          </button>
+
           {/* الأسئلة المجهولة */}
           <button
             onClick={() => setAnonOpen(true)}
@@ -645,6 +662,17 @@ export default function RoomPage() {
                 {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
               </>
             )}
+            {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
+            {!isOwner && !studentFocus && (
+              <StudentChallengeLayer
+                roomId={roomId}
+                uid={user.uid}
+                name={user.displayName || "طالب"}
+                subject={room?.subject}
+                roomName={room?.name}
+              />
+            )}
+
             {/* مؤقّت الدرس — يظهر للجميع */}
             <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus || fullscreen} />
           </div>
@@ -665,6 +693,9 @@ export default function RoomPage() {
               onPickTool={(id) => setTool(id as RoomTool)}
               timerButton={<RoomTimerButton roomId={roomId} />}
               onCreatePoll={() => setShowCreatePoll(true)}
+              onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
+              hasChallenge={!!challenge}
+              challengePanel={<TeacherChallengePanel roomId={roomId} memberCount={members.length} />}
               onShare={shareRoomLink}
               onGenerateCode={room?.isPaid ? generateAccessCode : undefined}
               chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
@@ -801,6 +832,15 @@ export default function RoomPage() {
           unreadChat={unreadChat}
           roomId={roomId}
           chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
+          challengeLayer={
+            <StudentChallengeLayer
+              roomId={roomId}
+              uid={user.uid}
+              name={user.displayName || "طالب"}
+              subject={room?.subject}
+              roomName={room?.name}
+            />
+          }
         >
           {/* نفس المحتوى الذي يعرضه المعلّم */}
           {activePoll?.open ? (
@@ -837,6 +877,22 @@ export default function RoomPage() {
           </a>
         </div>
       </BottomSheet>
+
+      {/* أدراج التحدي — للمالك */}
+      {isOwner && (
+        <>
+          <CreateChallengeSheet roomId={roomId} open={challengeCreateOpen} onClose={() => setChallengeCreateOpen(false)} />
+          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="🧠 حلول التحدي" maxHeight="88vh">
+            <TeacherChallengePanel roomId={roomId} memberCount={members.length} />
+            <button
+              onClick={() => { setChallengePanelOpen(false); setChallengeCreateOpen(true); }}
+              className="mt-3 w-full rounded-xl border border-border py-2.5 text-sm font-bold text-text-muted transition hover:border-primary hover:text-primary"
+            >
+              بدء تحدٍّ جديد
+            </button>
+          </BottomSheet>
+        </>
+      )}
 
       {/* درج الأسئلة المجهولة — للمالك */}
       {isOwner && (
