@@ -6,9 +6,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
   faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
-  faUsers, faUserShield, faUserSlash, faBan, faUnlock, faCircleCheck,
+  faUsers, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faClock, faSpinner, faLock, faKey,
+  faNoteSticky, faSpinner, faLock, faKey,
   faUserSecret, faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
@@ -87,10 +87,12 @@ export default function RoomPage() {
   const lastMsgCount = useRef(0);
   const chatInit = useRef(false);
   const isDesktop = useRef(false);
+  // في وضع التركيز تصبح الدردشة درجاً سفلياً حتى على الشاشات العريضة → يبقى العدّاد فعّالاً
+  const focusRef = useRef(false);
 
   // على الحاسوب، الشريط الجانبي للدردشة ظاهر دائماً → لا عدّاد
   useEffect(() => {
-    const check = () => { isDesktop.current = window.matchMedia("(min-width: 1024px)").matches; if (isDesktop.current) setUnreadChat(0); };
+    const check = () => { isDesktop.current = window.matchMedia("(min-width: 1024px)").matches; if (isDesktop.current && !focusRef.current) setUnreadChat(0); };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -110,7 +112,7 @@ export default function RoomPage() {
       if (newCount > 0) {
         const last = textMsgs[textMsgs.length - 1];
         const fromOther = last && last.userId !== user?.uid;
-        if (fromOther && !chatOpenRef.current && !isDesktop.current) {
+        if (fromOther && !chatOpenRef.current && (!isDesktop.current || focusRef.current)) {
           setUnreadChat((u) => u + newCount);
           // صوت إشعار قصير
           try {
@@ -208,6 +210,11 @@ export default function RoomPage() {
   // وضع التركيز للطالب + الأدراج الثانوية داخله
   const [studentFocus, setStudentFocus] = useState(false);
   const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
+  // الخروج من وضع التركيز يغلق أي درج مفتوح تابع له (وإلا بقي معلّقاً فوق الغرفة العادية)
+  useEffect(() => {
+    focusRef.current = studentFocus;
+    if (!studentFocus) setFocusSheet(null);
+  }, [studentFocus]);
   // الأسئلة المجهولة (يراها المالك)
   const [anonQs, setAnonQs] = useState<AnonQuestion[]>([]);
   const [anonOpen, setAnonOpen] = useState(false);
@@ -647,7 +654,7 @@ export default function RoomPage() {
               </>
             )}
             {/* مؤقّت الدرس — يظهر للجميع */}
-            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} />
+            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus} />
           </div>
 
           {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
@@ -762,7 +769,7 @@ export default function RoomPage() {
           onOpenNotes={() => setFocusSheet("notes")}
           onOpenCards={() => setFocusSheet("cards")}
           unreadChat={unreadChat}
-          timerLabel={null}
+          roomId={roomId}
           chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
         >
           {/* نفس المحتوى الذي يعرضه المعلّم */}

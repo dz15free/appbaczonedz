@@ -33,7 +33,7 @@ function fmt(secs: number) {
 }
 
 /* ─── Hook مشترك لحالة المؤقّت ─── */
-function useTimerState(roomId: string) {
+export function useTimerState(roomId: string) {
   const [timer, setTimer] = useState<RTimer | null>(null);
   const [remaining, setRemaining] = useState(0);
   const alarmFired = useRef(false);
@@ -133,7 +133,14 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
 /* ═══════════════════════════════════════════════
    2) عرض المؤقّت العائم — يظهر للجميع داخل لوحة المحتوى
 ═══════════════════════════════════════════════ */
-export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
+/* نص مختصر للمؤقّت — يُستعمل في الأشرطة المصغّرة (وضع التركيز) */
+export function useTimerLabel(roomId: string): string | null {
+  const { timer, remaining } = useTimerState(roomId);
+  if (!timer) return null;
+  return remaining === 0 ? "انتهى" : fmt(remaining);
+}
+
+export function RoomTimerDisplay({ roomId, isOwner, hidden = false }: { roomId: string; isOwner: boolean; hidden?: boolean }) {
   const { timer, remaining } = useTimerState(roomId);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
 
@@ -147,7 +154,7 @@ export function RoomTimerDisplay({ roomId, isOwner }: { roomId: string; isOwner:
     return () => obs.disconnect();
   }, []);
 
-  if (!timer || !portalEl) return null;
+  if (!timer || !portalEl || hidden) return null;
 
   const pct = Math.min(100, (remaining / timer.duration) * 100);
   const danger = remaining > 0 && remaining <= 60;

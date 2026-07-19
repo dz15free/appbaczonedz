@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 /* ════════════════════════════════════════════
@@ -72,7 +72,7 @@ export function FloatingAssistant({
         aria-label={open ? "إغلاق" : "أدوات"}
         className={`pointer-events-auto grid h-14 w-14 place-items-center rounded-full text-white shadow-2xl transition active:scale-90 ${open ? "rotate-45 bg-danger" : "bg-gradient-primary"}`}
       >
-        <FontAwesomeIcon icon={open ? faPlus : faPlus} className="h-6 w-6" />
+        <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
       </button>
 
       {/* نقرة خارج القائمة لإغلاقها */}

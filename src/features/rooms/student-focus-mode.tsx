@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCompress, faHand, faComments, faStar,
   faUserSecret, faPaperPlane, faFolderOpen, faNoteSticky, faLayerGroup,
   faClock,
 } from "@fortawesome/free-solid-svg-icons";
-import { BottomSheet, SheetAction } from "@/components/ui/bottom-sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-assistant";
+import { useTimerLabel } from "@/features/rooms/room-timer";
 
 /* ════════════════════════════════════════════
    Student Focus Mode — وضع التركيز للطالب (Mobile First)
@@ -17,6 +18,7 @@ import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-a
 ════════════════════════════════════════════ */
 
 export interface StudentFocusProps {
+  roomId: string;
   roomName: string;
   ownerName?: string;
   ownerStatus: "available" | "busy" | "brb";
@@ -30,7 +32,6 @@ export interface StudentFocusProps {
   onOpenNotes: () => void;
   onOpenCards: () => void;
   unreadChat: number;
-  timerLabel?: string | null;     // نص المؤقّت إن كان يعمل
   children: ReactNode;            // المحتوى الرئيسي (سبورة/PDF/فيديو)
   chatPanel: ReactNode;           // لوحة الدردشة
 }
@@ -91,12 +92,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
           )}
         </div>
 
-        {props.timerLabel && (
-          <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary tabular-nums">
-            <FontAwesomeIcon icon={faClock} className="h-3 w-3" />
-            {props.timerLabel}
-          </span>
-        )}
+        <FocusTimerBadge roomId={props.roomId} />
       </div>
 
       {/* ═══ المحتوى الرئيسي ═══ */}
@@ -183,6 +179,18 @@ export function StudentFocusMode(props: StudentFocusProps) {
         </button>
       </BottomSheet>
     </div>
+  );
+}
+
+/* شارة المؤقّت — مكوّن مستقل حتى يبقى تحديثه كل ثانية معزولاً عن بقية الواجهة */
+function FocusTimerBadge({ roomId }: { roomId: string }) {
+  const label = useTimerLabel(roomId);
+  if (!label) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary tabular-nums">
+      <FontAwesomeIcon icon={faClock} className="h-3 w-3" />
+      {label}
+    </span>
   );
 }
 
