@@ -31,8 +31,9 @@ export function FloatingAssistant({
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
+  // --bz-primary مخزّن كقنوات RGB ("37 99 235") فلا يصلح لوناً إلا داخل rgb()
   const toneColor = (t?: string) =>
-    t === "primary" ? "var(--bz-primary,#2563eb)"
+    t === "primary" ? "rgb(var(--bz-primary, 37 99 235))"
     : t === "amber" ? "#f59e0b"
     : t === "danger" ? "#dc2626"
     : "#334155";

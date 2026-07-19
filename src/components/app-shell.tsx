@@ -157,14 +157,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/8 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10 lg:hidden"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-5 w-5" />
           </button>
           <button
             onClick={() => setMenuOpen(true)}
             aria-label="القائمة"
-            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/8 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10 lg:hidden"
           >
             <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
           </button>
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={n.href}
               href={n.href}
               className={`bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                pathname === n.href ? "bz-nav-active" : "hover:bg-primary/8"
+                pathname === n.href ? "bz-nav-active" : "hover:bg-primary/10"
               }`}
             >
               <FontAwesomeIcon icon={n.icon} className="h-4 w-4" />
@@ -201,7 +201,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* أدوات الدراسة (منسدلة) */}
           <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/8">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/10">
               <FontAwesomeIcon icon={faLayerGroup} className="h-4 w-4" />
               أدوات الدراسة
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -219,7 +219,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* المزيد (منسدلة) */}
           <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/8">
+            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/10">
               <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
               المزيد
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
@@ -242,7 +242,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/8 hover:text-primary lg:grid"
+            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary lg:grid"
           >
             <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
           </button>
@@ -269,7 +269,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
             <div className="mx-1 h-5 w-px bg-border" />
           </div>
-          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/8">
+          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10">
             <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
             {unread > 0 && (
               <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">

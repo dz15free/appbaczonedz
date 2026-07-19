@@ -16,11 +16,12 @@ const config: Config = {
         danger: "rgb(var(--bz-danger) / <alpha-value>)",
         warning: "rgb(var(--bz-warning) / <alpha-value>)",
         // ألوان الثيم (تتغيّر بين الفاتح والداكن)
-        surface: "var(--bz-surface)",
-        background: "var(--bz-bg)",
-        border: "var(--bz-border)",
-        "text-primary": "var(--bz-text)",
-        "text-muted": "var(--bz-text-muted)",
+        // قنوات RGB + <alpha-value> — بدونها كان Tailwind يتجاهل bg-surface/80 بصمت
+        surface: "rgb(var(--bz-surface-rgb) / <alpha-value>)",
+        background: "rgb(var(--bz-bg-rgb) / <alpha-value>)",
+        border: "rgb(var(--bz-border-rgb) / <alpha-value>)",
+        "text-primary": "rgb(var(--bz-text-rgb) / <alpha-value>)",
+        "text-muted": "rgb(var(--bz-text-muted-rgb) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-tajawal)", "system-ui", "sans-serif"],
@@ -34,10 +35,10 @@ const config: Config = {
       },
       boxShadow: {
         glass: "0 8px 32px 0 rgba(31,38,135,0.08)",
-        glow: "0 0 24px rgba(79,70,229,0.28)",
+        glow: "0 0 24px rgba(37,99,235,0.28)",
       },
       backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)",
+        "gradient-primary": "linear-gradient(135deg, #2563EB 0%, #0EA5E9 100%)",
       },
       keyframes: {
         "fade-up": {

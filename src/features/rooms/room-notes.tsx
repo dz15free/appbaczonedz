@@ -213,7 +213,7 @@ u{text-decoration-color:#2563eb;text-decoration-thickness:2px}
       {isOwner && !preview ? (
         <textarea ref={taRef} value={localNotes} onChange={(e) => handleChange(e.target.value)}
           placeholder={"اكتب ملخّص الدرس... استعمل شريط الأدوات للتنسيق 📝\n\n# عنوان رئيسي\n## عنوان ثانوي\n- نقطة مهمّة\n**عريض**  __مُسطّر__  ==مُظلّل==\n\nمعادلة: $E = mc^2$\n$$ \\frac{a}{b} = c $$"}
-          className="flex-1 resize-none bg-transparent p-4 text-sm leading-relaxed text-text-primary outline-none" dir="auto" style={{ caretColor: "var(--bz-primary, #2563eb)" }} />
+          className="flex-1 resize-none bg-transparent p-4 text-sm leading-relaxed text-text-primary outline-none" dir="auto" style={{ caretColor: "rgb(var(--bz-primary, 37 99 235))" }} />
       ) : (
         <div className="flex-1 overflow-y-auto p-4">
           {localNotes ? (
