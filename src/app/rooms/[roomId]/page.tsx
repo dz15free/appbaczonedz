@@ -34,7 +34,6 @@ import type { RaisedHand } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
-import { FullscreenChatOverlay } from "@/features/chat/fullscreen-chat";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -42,6 +41,7 @@ import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/p
 import { sendAnonQuestion, listenAnonQuestions, markAnonAnswered, deleteAnonQuestion, type AnonQuestion } from "@/features/rooms/rooms";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
+import { TeacherFocusMode } from "@/features/rooms/teacher-focus-mode";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 
@@ -138,8 +138,8 @@ export default function RoomPage() {
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
+  // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
 
   // شاشة كاملة حقيقية (Fullscreen API) للحاسوب + CSS لـ iOS
   async function enterFullscreen() {
@@ -212,9 +212,9 @@ export default function RoomPage() {
   const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
   // الخروج من وضع التركيز يغلق أي درج مفتوح تابع له (وإلا بقي معلّقاً فوق الغرفة العادية)
   useEffect(() => {
-    focusRef.current = studentFocus;
+    focusRef.current = studentFocus || fullscreen;
     if (!studentFocus) setFocusSheet(null);
-  }, [studentFocus]);
+  }, [studentFocus, fullscreen]);
   // الأسئلة المجهولة (يراها المالك)
   const [anonQs, setAnonQs] = useState<AnonQuestion[]>([]);
   const [anonOpen, setAnonOpen] = useState(false);
@@ -315,6 +315,24 @@ export default function RoomPage() {
   function currentToolLabel() {
     return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
   }
+  // مشاركة رابط الغرفة — يستعمله الشريط العادي ووضع التركيز معاً
+  function shareRoomLink() {
+    const url = window.location.href;
+    navigator.clipboard?.writeText(url)
+      .then(() => alert("✅ تم نسخ رابط الغرفة!"))
+      .catch(() => prompt("انسخ الرابط:", url));
+  }
+
+  // توليد كود وصول لغرفة مدفوعة
+  async function generateAccessCode() {
+    if (!room || !user) return;
+    const c = await createAccessCode({
+      itemType: "room", itemId: roomId, itemTitle: room.name,
+      price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
+    });
+    prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
+  }
+
   function submitAnonQuestion(q: string) {
     sendAnonQuestion(roomId, q);
   }
@@ -531,13 +549,7 @@ export default function RoomPage() {
           {/* توليد كود لغرفة مدفوعة */}
           {room?.isPaid && (
             <button
-              onClick={async () => {
-                const c = await createAccessCode({
-                  itemType: "room", itemId: roomId, itemTitle: room.name,
-                  price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
-                });
-                prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
-              }}
+              onClick={generateAccessCode}
               title="توليد كود وصول"
               className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
             >
@@ -551,30 +563,22 @@ export default function RoomPage() {
 
           {/* مشاركة الرابط */}
           <button
-            onClick={() => {
-              const url = window.location.href;
-              navigator.clipboard?.writeText(url).then(() => alert("✅ تم نسخ رابط الغرفة!")).catch(() => prompt("انسخ الرابط:", url));
-            }}
+            onClick={shareRoomLink}
             title="مشاركة الغرفة"
             className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
           >
             <FontAwesomeIcon icon={faShareNodes} className="h-4 w-4" />
           </button>
-          {/* وضع التركيز */}
+          {/* وضع تركيز الأستاذ — يستبدل الشاشة الكاملة وإخفاء اللوحات */}
           <button
-            onClick={() => setFocusMode((f) => !f)}
-            title={focusMode ? "إظهار اللوحات الجانبية" : "وضع التركيز (إخفاء الجانبين)"}
-            className={`hidden h-9 w-9 shrink-0 place-items-center rounded-xl border transition lg:grid ${focusMode ? "border-primary bg-primary/10 text-primary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-          >
-            <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
-          </button>
-          {/* شاشة كاملة */}
-          <button
-            onClick={() => fullscreen ? exitFullscreen() : enterFullscreen()}
-            title={fullscreen ? "خروج من الشاشة الكاملة" : "شاشة كاملة"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
+            onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
+            title={fullscreen ? "خروج من وضع التركيز" : "وضع التركيز — أكبر مساحة للشرح"}
+            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition active:scale-95 ${
+              fullscreen ? "bg-primary/10 text-primary" : "bg-gradient-primary text-white shadow-glow"
+            }`}
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
+            <span className="hidden sm:inline">تركيز</span>
           </button>
         </nav>
       ) : (
@@ -599,7 +603,7 @@ export default function RoomPage() {
       {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}
       <div className="flex flex-1 overflow-hidden">
         {/* عمود المشاركون — حاسوب فقط، غير ظاهر في الشاشة الكاملة أو وضع التركيز */}
-        {!fullscreen && !focusMode && (
+        {!fullscreen && (
           <aside className="hidden w-64 shrink-0 border-l border-border bg-surface/40 xl:block">
             <ParticipantsPanel
               members={members}
@@ -620,20 +624,8 @@ export default function RoomPage() {
           className={`relative flex flex-col overflow-hidden bg-background ${fullscreen ? "bz-fullscreen" : ""}`}
           style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
         >
-          {/* زر الخروج من الشاشة الكاملة */}
-          {fullscreen && (
-            <button
-              onClick={exitFullscreen}
-              className="pointer-events-auto absolute right-3 z-[110] flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-sm font-bold text-white shadow-xl backdrop-blur-md transition active:scale-95 hover:bg-black/90"
-              style={{ top: "max(12px, env(safe-area-inset-top, 12px))" }}
-            >
-              <FontAwesomeIcon icon={faCompress} className="h-4 w-4" />
-              خروج
-            </button>
-          )}
-
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
-          <div className={fullscreen ? "bz-fs-content relative flex flex-1 flex-col overflow-hidden" : "relative flex flex-1 flex-col overflow-hidden"}>
+          <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
             {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
             {activePoll?.open ? (
               <RoomPollPanel
@@ -654,12 +646,50 @@ export default function RoomPage() {
               </>
             )}
             {/* مؤقّت الدرس — يظهر للجميع */}
-            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus} />
+            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus || fullscreen} />
           </div>
 
-          {/* دردشة Fullscreen — تظهر فقط في وضع الشاشة الكاملة */}
-          {fullscreen && (
-            <FullscreenChatOverlay roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
+          {/* ═══ طبقة وضع تركيز الأستاذ ═══ */}
+          {fullscreen && isOwner && (
+            <TeacherFocusMode
+              roomId={roomId}
+              roomName={room?.name ?? "الغرفة"}
+              memberCount={members.length}
+              ownerStatus={ownerStatus}
+              onCycleStatus={() => {
+                const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
+                setOwnerStatus(roomId, next);
+              }}
+              tools={TOOLS}
+              activeTool={tool}
+              onPickTool={(id) => setTool(id as RoomTool)}
+              timerButton={<RoomTimerButton roomId={roomId} />}
+              onCreatePoll={() => setShowCreatePoll(true)}
+              onShare={shareRoomLink}
+              onGenerateCode={room?.isPaid ? generateAccessCode : undefined}
+              chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
+              filesPanel={<RoomFiles roomId={roomId} isOwner={isOwner} />}
+              participantsPanel={
+                <ParticipantsPanel
+                  members={members}
+                  hands={handsQueue}
+                  mods={mods}
+                  ownerId={room?.ownerId ?? ""}
+                  myUid={user?.uid}
+                  isOwner={isOwner}
+                  onPromote={(uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid))}
+                  onKick={(uid) => kickUser(roomId, uid)}
+                  onGrantMic={grantMic}
+                />
+              }
+              questionsPanel={<AnonQuestionsList roomId={roomId} questions={anonQs} />}
+              unreadChat={unreadChat}
+              hands={handsQueue}
+              onLowerHand={lowerHand}
+              onGrantMic={grantMic}
+              unansweredCount={anonQs.filter((q) => !q.answered).length}
+              onExit={exitFullscreen}
+            />
           )}
 
           {/* إشعارات الأنشطة المباشرة */}
@@ -674,7 +704,7 @@ export default function RoomPage() {
           />
         </section>
 
-        {!fullscreen && !focusMode && (
+        {!fullscreen && (
           <aside className="hidden w-96 border-r border-border lg:block">
             <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
           </aside>
@@ -811,41 +841,51 @@ export default function RoomPage() {
       {/* درج الأسئلة المجهولة — للمالك */}
       {isOwner && (
         <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
-          {anonQs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-muted">لا أسئلة بعد. يمكن للطلاب إرسال أسئلتهم دون إظهار أسمائهم.</p>
-          ) : (
-            <div className="space-y-2.5 pb-2">
-              {anonQs.map((q) => (
-                <div
-                  key={q.id}
-                  className={`rounded-2xl border p-3.5 ${q.answered ? "border-border bg-border/20 opacity-60" : "border-primary/20 bg-primary/5"}`}
-                >
-                  <p className="text-sm leading-relaxed text-text-primary" dir="auto">{q.text}</p>
-                  <div className="mt-2.5 flex items-center gap-2">
-                    {!q.answered && (
-                      <button
-                        onClick={() => markAnonAnswered(roomId, q.id)}
-                        className="flex items-center gap-1.5 rounded-lg bg-secondary/10 px-3 py-1.5 text-xs font-bold text-secondary active:scale-95"
-                      >
-                        <FontAwesomeIcon icon={faCircleCheck} className="h-3.5 w-3.5" /> تمّت الإجابة
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteAnonQuestion(roomId, q.id)}
-                      className="flex items-center gap-1.5 rounded-lg bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger active:scale-95"
-                    >
-                      <FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> حذف
-                    </button>
-                    {q.answered && <span className="text-xs font-bold text-secondary">✓ أُجيب عنه</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <AnonQuestionsList roomId={roomId} questions={anonQs} />
         </BottomSheet>
       )}
 
     </main>
+  );
+}
+
+/* قائمة الأسئلة المجهولة — تُستعمل في الدرج السفلي وفي لوحة وضع التركيز */
+function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: AnonQuestion[] }) {
+  if (questions.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-text-muted">
+        لا أسئلة بعد. يمكن للطلاب إرسال أسئلتهم دون إظهار أسمائهم.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2.5 pb-2">
+      {questions.map((q) => (
+        <div
+          key={q.id}
+          className={`rounded-2xl border p-3.5 ${q.answered ? "border-border bg-border/20 opacity-60" : "border-primary/20 bg-primary/5"}`}
+        >
+          <p className="text-sm leading-relaxed text-text-primary" dir="auto">{q.text}</p>
+          <div className="mt-2.5 flex items-center gap-2">
+            {!q.answered && (
+              <button
+                onClick={() => markAnonAnswered(roomId, q.id)}
+                className="flex items-center gap-1.5 rounded-lg bg-secondary/10 px-3 py-1.5 text-xs font-bold text-secondary active:scale-95"
+              >
+                <FontAwesomeIcon icon={faCircleCheck} className="h-3.5 w-3.5" /> تمّت الإجابة
+              </button>
+            )}
+            <button
+              onClick={() => deleteAnonQuestion(roomId, q.id)}
+              className="flex items-center gap-1.5 rounded-lg bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger active:scale-95"
+            >
+              <FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> حذف
+            </button>
+            {q.answered && <span className="text-xs font-bold text-secondary">✓ أُجيب عنه</span>}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -52,7 +52,7 @@ export function FloatingAssistant({
             <button
               key={a.id}
               onClick={() => { a.onClick(); setOpen(false); }}
-              className="flex items-center gap-2.5 rounded-full bg-surface/95 py-2 pr-2 pl-4 shadow-xl ring-1 ring-border backdrop-blur-md transition active:scale-95"
+              className="flex items-center gap-2.5 rounded-full bg-surface py-2 pr-2 pl-4 shadow-xl ring-1 ring-border transition active:scale-95"
             >
               <span
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white"

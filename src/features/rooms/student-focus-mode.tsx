@@ -71,7 +71,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
   return (
     <div className="bz-focus-root">
       {/* ═══ شريط علوي صغير جداً ═══ */}
-      <div className="bz-focus-topbar border-b border-border bg-surface/80 backdrop-blur-md">
+      <div className="bz-focus-topbar border-b border-border bg-surface">
         <button
           onClick={props.onExit}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition active:scale-95 hover:text-primary"
@@ -110,7 +110,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
         {!chatOpen && props.unreadChat > 0 && (
           <button
             onClick={() => setChatOpen(true)}
-            className="absolute bottom-3 left-3 z-[55] flex items-center gap-2 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-xl bz-radial-in active:scale-95"
+            className="absolute bottom-3 right-3 z-[55] flex items-center gap-2 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-xl bz-radial-in active:scale-95"
           >
             <FontAwesomeIcon icon={faComments} className="h-3.5 w-3.5" />
             {props.unreadChat > 9 ? "9+" : props.unreadChat} رسالة جديدة
@@ -119,7 +119,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
       </div>
 
       {/* ═══ شريط سفلي صغير ═══ */}
-      <div className="bz-focus-bottombar border-t border-border bg-surface/90 backdrop-blur-md">
+      <div className="bz-focus-bottombar border-t border-border bg-surface">
         <div className="flex items-stretch justify-around gap-1 px-2 py-1.5">
           <FocusBtn
             icon={faHand}
