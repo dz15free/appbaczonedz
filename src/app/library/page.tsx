@@ -253,7 +253,7 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
   return (
     <div className={`rounded-xl border bg-surface p-4 transition ${locked ? "border-amber-400/30" : "border-border hover:border-primary/30 hover:shadow-glass"}`}>
       <div className="flex items-start gap-3">
-        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-border/30 ${locked ? "text-amber-500" : color}`}>
+        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-border ${locked ? "text-amber-500" : color}`}>
           <FontAwesomeIcon icon={locked ? faLock : icon} className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">

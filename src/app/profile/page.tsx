@@ -321,7 +321,7 @@ function TeacherEarnings({ uid }: { uid: string }) {
             <p className="text-lg font-extrabold text-amber-600">{pendingNet}</p>
             <p className="text-[11px] text-text-muted">بانتظار التسوية (دج)</p>
           </div>
-          <div className="rounded-xl bg-border/40 p-3 text-center">
+          <div className="rounded-xl bg-border p-3 text-center">
             <p className="text-lg font-extrabold">{buyers}</p>
             <p className="text-[11px] text-text-muted">عدد المشترين</p>
           </div>

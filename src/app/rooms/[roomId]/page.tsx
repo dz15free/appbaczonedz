@@ -604,7 +604,7 @@ export default function RoomPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* عمود المشاركون — حاسوب فقط، غير ظاهر في الشاشة الكاملة أو وضع التركيز */}
         {!fullscreen && (
-          <aside className="hidden w-64 shrink-0 border-l border-border bg-surface/40 xl:block">
+          <aside className="hidden w-64 shrink-0 border-l border-border bg-surface xl:block">
             <ParticipantsPanel
               members={members}
               hands={handsQueue}
@@ -863,7 +863,7 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
       {questions.map((q) => (
         <div
           key={q.id}
-          className={`rounded-2xl border p-3.5 ${q.answered ? "border-border bg-border/20 opacity-60" : "border-primary/20 bg-primary/5"}`}
+          className={`rounded-2xl border p-3.5 ${q.answered ? "border-border bg-border opacity-60" : "border-primary/20 bg-primary/5"}`}
         >
           <p className="text-sm leading-relaxed text-text-primary" dir="auto">{q.text}</p>
           <div className="mt-2.5 flex items-center gap-2">

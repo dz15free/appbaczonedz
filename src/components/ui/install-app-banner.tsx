@@ -78,7 +78,7 @@ export function InstallAppBanner() {
           </p>
 
           {isIOS ? (
-            <div className="mt-3 space-y-1.5 rounded-xl bg-surface/80 p-3 text-xs">
+            <div className="mt-3 space-y-1.5 rounded-xl bg-surface p-3 text-xs">
               <p className="flex items-center gap-2">
                 <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">1</span>
                 اضغط زر المشاركة <FontAwesomeIcon icon={faArrowUpFromBracket} className="h-3 w-3 text-primary" /> في أسفل المتصفّح

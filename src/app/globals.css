@@ -34,6 +34,7 @@
   --bz-text: #f9fafb;
   --bz-text-muted: #94a3b8;
   --bz-border: #334155;
+
   --bz-workspace: #0f1117;
 
   color-scheme: dark;
@@ -384,7 +385,7 @@ body.bz-fullscreen-active {
 }
 .bz-header-bar .bz-brand { color: var(--bz-text); }
 .bz-header-bar .bz-nav-link { color: var(--bz-text-muted); }
-.bz-header-bar .bz-nav-link:hover { background: rgba(var(--bz-primary), 0.07); color: var(--bz-text); }
+.bz-header-bar .bz-nav-link:hover { background: rgb(var(--bz-primary) / 0.07); color: var(--bz-text); }
 .bz-header-bar .bz-nav-active { background: rgba(var(--bz-primary), 0.1) !important; color: rgb(var(--bz-primary)) !important; }
 
 /* البانر السفلي (هاتف) — أبيض نظيف */

@@ -164,7 +164,7 @@ u{text-decoration-color:#2563eb;text-decoration-thickness:2px}
   }
 
   const toolbar = (
-    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-background/50 px-2 py-1.5">
+    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-background px-2 py-1.5">
       <ToolBtn icon={faHeading} title="عنوان رئيسي" onClick={() => prefix("# ", "عنوان")} />
       <ToolBtn label="ع٢" title="عنوان ثانوي" onClick={() => prefix("## ", "عنوان ثانوي")} />
       <ToolBtn label="ع٣" title="عنوان فرعي" onClick={() => prefix("### ", "عنوان فرعي")} />

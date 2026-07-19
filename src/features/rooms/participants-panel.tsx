@@ -69,7 +69,7 @@ export function ParticipantsPanel({
                 {!handPos && (
                   <span
                     className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-background ${
-                      m.lastActive && Date.now() - m.lastActive < 45000 ? "bg-secondary" : "bg-text-muted/50"
+                      m.lastActive && Date.now() - m.lastActive < 45000 ? "bg-secondary" : "bg-text-muted"
                     }`}
                     title={m.lastActive && Date.now() - m.lastActive < 45000 ? "نشط" : "غائب"}
                   />

@@ -64,7 +64,7 @@ export default function LandingPage() {
               {s.heroCtaPrimary}
               <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 transition group-hover:-translate-x-1" />
             </Link>
-            <Link href="/login" className="w-full rounded-xl border border-border bg-surface/80 px-7 py-4 font-bold backdrop-blur-sm transition hover:bg-primary/10 sm:w-auto">
+            <Link href="/login" className="w-full rounded-xl border border-border bg-surface px-7 py-4 font-bold backdrop-blur-sm transition hover:bg-primary/10 sm:w-auto">
               {s.heroCtaSecondary}
             </Link>
           </div>
@@ -107,7 +107,7 @@ export default function LandingPage() {
 
       {/* الميزات */}
       {(s.features ?? []).length > 0 && (
-        <section className="relative px-5 py-20 bg-surface/40">
+        <section className="relative px-5 py-20 bg-surface">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-sm font-bold uppercase tracking-wider text-primary">المزايا</span>
             <h2 className="mt-2 font-display text-3xl font-extrabold md:text-4xl">{s.featuresTitle}</h2>

@@ -400,7 +400,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* الفوتر */}
       {settings.footerText && (
-        <footer className="border-t border-border bg-surface/50 px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4">
+        <footer className="border-t border-border bg-surface px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4">
           <p>{settings.footerText}</p>
           {(settings.footerLinks?.length ?? 0) > 0 && (
             <div className="mt-1.5 flex flex-wrap justify-center gap-3">

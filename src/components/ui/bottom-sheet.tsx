@@ -130,7 +130,7 @@ export function SheetAction({
     tone === "primary" ? "bg-primary/10" :
     tone === "danger" ? "bg-danger/10" :
     tone === "amber" ? "bg-amber-400/15" :
-    "bg-border/40";
+    "bg-border";
   return (
     <button
       onClick={onClick}
