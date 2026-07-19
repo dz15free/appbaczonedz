@@ -6,14 +6,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { SupportChatSheet } from "@/features/support/support-chat";
-import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
 import { ShareButton } from "@/components/ui/share-sheet";
 
 const SUBJECTS = [
@@ -54,7 +54,7 @@ function subjectLabel(id: string) { return SUBJECTS.find((s) => s.id === id)?.la
 
 export default function LibraryPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
   const [entries, setEntries] = useState<LibEntry[]>([]);
@@ -77,7 +77,7 @@ export default function LibraryPage() {
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   // عنصر مشارَك عبر رابط: نتجاهل الفلاتر ونرفعه إلى الأعلى ونبرزه
-  const sharedId = searchParams?.get("item") ?? null;
+  const sharedId = useQueryParam("item");
 
   const filtered = entries
     .filter((e) => {

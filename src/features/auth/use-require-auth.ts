@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-provider";
 
 /* ════════════════════════════════════════════════════════════
@@ -11,7 +11,12 @@ import { useAuth } from "@/features/auth/auth-provider";
    /home بعد الدخول فيضيع الرابط. الآن نحمل الوجهة في ?next=
    ونعيده إليها بعد الدخول أو التسجيل.
 
-   الأمان: نقبل المسارات الداخلية فقط (تبدأ بـ / ولا تبدأ بـ //)،
+   لماذا لا نستعمل useSearchParams؟
+   لأنها تُجبر Next على تعطيل التوليد المسبق للصفحة ما لم تُغلَّف
+   بـ <Suspense>، وهذا يكسر البناء في /login و/register.
+   القراءة من window.location تعطي النتيجة نفسها بلا هذا القيد.
+
+   الأمان: نقبل المسارات الداخلية فقط (تبدأ بـ / ولا بـ //)،
    وإلا صار الرابط أداة تحويل إلى مواقع خارجية (Open Redirect).
 ════════════════════════════════════════════════════════════ */
 
@@ -30,6 +35,16 @@ export function loginHrefFor(pathname: string, search?: string) {
   return safe ? `/login?next=${encodeURIComponent(safe)}` : "/login";
 }
 
+/** قراءة معامل من الرابط بعد التركيب — آمنة أثناء التوليد على الخادم */
+export function useQueryParam(key: string): string | null {
+  const [value, setValue] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setValue(new URLSearchParams(window.location.search).get(key));
+  }, [key]);
+  return value;
+}
+
 /**
  * يستبدل النمط المتكرّر: if (!loading && !user) router.replace("/login")
  * مع الاحتفاظ بالوجهة.
@@ -37,20 +52,17 @@ export function loginHrefFor(pathname: string, search?: string) {
 export function useRequireAuth() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
 
   useEffect(() => {
-    if (loading || user) return;
-    const qs = params?.toString();
-    router.replace(loginHrefFor(pathname ?? "/", qs ? `?${qs}` : ""));
-  }, [loading, user, router, pathname, params]);
+    if (loading || user || typeof window === "undefined") return;
+    router.replace(loginHrefFor(window.location.pathname, window.location.search));
+  }, [loading, user, router]);
 
   return { user, loading };
 }
 
 /** الوجهة بعد نجاح الدخول أو التسجيل */
 export function useNextDestination(fallback = "/home") {
-  const params = useSearchParams();
-  return safeNext(params?.get("next")) ?? fallback;
+  const raw = useQueryParam("next");
+  return safeNext(raw) ?? fallback;
 }
