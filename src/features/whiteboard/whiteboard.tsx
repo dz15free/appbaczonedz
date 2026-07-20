@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pickShape, boundsOf, describeShape } from "@/features/whiteboard/shape-geometry";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,7 +20,7 @@ import {
   faBorderAll,
   faChevronLeft,
   faChevronRight,
-  faPlus,
+  faPlus, faArrowPointer, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 
@@ -42,7 +43,12 @@ const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"
 const SIZES = [2, 4, 8];
 const SYMBOLS = ["+", "−", "×", "÷", "=", "√", "π", "²", "³", "≤", "≥", "→", "∞", "∫", "Σ", "θ", "α", "Δ"];
 
-const TOOLS: { id: Kind; icon: typeof faPen; label: string }[] = [
+/* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
+   فلا يتسرّب إلى قاعدة البيانات ولا يُخزَّن كشكل. */
+type ToolId = Kind | "select";
+
+const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
+  { id: "select", icon: faArrowPointer, label: "اختيار" },
   { id: "pen", icon: faPen, label: "قلم" },
   { id: "highlighter", icon: faHighlighter, label: "تحديد" },
   { id: "line", icon: faSlash, label: "خط" },
@@ -67,11 +73,17 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   const drawing = useRef(false);
   const currentShape = useRef<Shape | null>(null);
 
-  const [tool, setTool] = useState<Kind>("pen");
+  const [tool, setTool] = useState<ToolId>("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [grid, setGrid] = useState(true);
   const [stamp, setStamp] = useState<string | null>(null);
+  // التحديد: الحالة للواجهة، والمرجع ليقرأه الرسم دون إعادة إنشاء الدوال
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  // الطالب لا يرسم، فالاختيار عنده دائم بلا زر إضافي
+  const selecting = !canDraw || tool === "select";
+  const selectingRef = useRef(selecting);
 
   // الصفحات: صفحة نشطة متزامنة + عدد الصفحات
   const [activePage, setActivePage] = useState(0);
@@ -85,6 +97,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   colorRef.current = color;
   sizeRef.current = size;
   stampRef.current = stamp;
+  selectingRef.current = selecting;
+  selectedRef.current = selectedId;
 
   // مسار الأشكال للصفحة النشطة
   const strokesPath = `roomLive/${roomId}/whiteboard/pages/${activePage}/strokes`;
@@ -173,6 +187,23 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const s of shapes.current) drawShape(s, ctx);
+
+    // إطار العنصر المحدَّد — يُرسم هنا لا على طبقة منفصلة، فيبقى
+    // ظاهراً بعد أي إعادة رسم أو تغيير حجم دون منطق إضافي
+    const sel = selectedRef.current;
+    if (sel) {
+      const shape = shapes.current.find((x) => x.id === sel);
+      const b = shape ? boundsOf(shape) : null;
+      if (b) {
+        const w = canvas.width, h = canvas.height;
+        ctx.save();
+        ctx.strokeStyle = "#2563eb";
+        ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+        ctx.setLineDash([7 * (window.devicePixelRatio || 1), 5 * (window.devicePixelRatio || 1)]);
+        ctx.strokeRect(b.x0 * w, b.y0 * h, (b.x1 - b.x0) * w, (b.y1 - b.y0) * h);
+        ctx.restore();
+      }
+    }
   }, [drawShape]);
 
   const scheduleRedraw = useCallback(() => {
@@ -189,6 +220,16 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const c = previewRef.current;
     if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
   }, []);
+
+  // Escape يلغي التحديد — سلوك متوقّع في كل محرّر
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, scheduleRedraw]);
 
   // ── تهيئة + تجاوب ──
   useEffect(() => {
@@ -218,6 +259,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     shapes.current = [];
     drawnIds.current = new Set();
     redoStack.current = [];
+    setSelectedId(null);
+    selectedRef.current = null;
     scheduleRedraw();
 
     const sref = ref(rtdb, strokesPath);
@@ -294,6 +337,19 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const p = getPoint(e);
     const t = toolRef.current;
 
+    // وضع الاختيار: نلتقط الشكل ولا نرسم شيئاً
+    if (selectingRef.current) {
+      const c = mainRef.current;
+      const v = { w: c?.clientWidth ?? 1, h: c?.clientHeight ?? 1 };
+      // هامش أوسع للمس من هامش الفأرة
+      const tol = e.pointerType === "mouse" ? 10 : 18;
+      const hit = pickShape(shapes.current, p, v, tol);
+      setSelectedId(hit ? hit.id : null);
+      selectedRef.current = hit ? hit.id : null;
+      scheduleRedraw();
+      return;
+    }
+
     // ختم رمز رياضي
     if (stampRef.current) {
       commit(newShape("text", p, stampRef.current));
@@ -305,7 +361,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
       if (txt) commit(newShape("text", p, txt));
       return;
     }
-    // أدوات الرسم
+    // أدوات الرسم — "select" استُبعد أعلاه، والحارس يوثّق ذلك للمترجم
+    if (t === "select") return;
     drawing.current = true;
     currentShape.current = newShape(t, p);
     if (t === "line" || t === "arrow" || t === "rect" || t === "ellipse") {
@@ -391,9 +448,15 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { pageCount: pageCount - 1, activePage: target });
   }
 
-  function pickTool(k: Kind) {
+  function pickTool(k: ToolId) {
     setTool(k);
     setStamp(null);
+    // مغادرة وضع الاختيار تُسقط التحديد حتى لا يبقى إطار معلّق
+    if (k !== "select" && selectedRef.current) {
+      setSelectedId(null);
+      selectedRef.current = null;
+      scheduleRedraw();
+    }
   }
 
   return (
@@ -467,10 +530,31 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
         }
       >
         <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
+        {/* شريط التحديد — يؤكّد للمستخدم ما التقطه، ويسهّل الإفلات.
+            هذا هو المرساة التي ستُعلَّق عليها إجراءات الخطوة الثالثة. */}
+        {selectedId && (() => {
+          const shape = shapes.current.find((x) => x.id === selectedId);
+          return (
+            <div className="pointer-events-auto absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary/30 bg-surface px-3 py-1.5 shadow-glass">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+              <span className="max-w-[45vw] truncate text-[11px] font-bold text-text-primary">
+                {shape ? describeShape(shape) : "عنصر"}
+              </span>
+              <button
+                onClick={() => { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }}
+                aria-label="إلغاء التحديد"
+                className="grid h-5 w-5 place-items-center rounded-full text-text-muted transition hover:bg-danger/10 hover:text-danger"
+              >
+                <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
+              </button>
+            </div>
+          );
+        })()}
+
         <canvas
           ref={previewRef}
-          className={`absolute inset-0 ${canDraw ? "touch-none" : "pointer-events-none"}`}
-          onPointerDown={canDraw ? onPointerDown : undefined}
+          className={`absolute inset-0 ${canDraw || selecting ? "touch-none" : "pointer-events-none"}`}
+          onPointerDown={canDraw || selecting ? onPointerDown : undefined}
           onPointerMove={canDraw ? onPointerMove : undefined}
           onPointerUp={canDraw ? onPointerUp : undefined}
           onPointerLeave={canDraw ? onPointerUp : undefined}

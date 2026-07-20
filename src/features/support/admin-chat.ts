@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ref, push, update, onValue, query, limitToLast, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { threadId, addNotification } from "@/features/community/social";
+import { tryPushNotification } from "@/lib/push";
 
 /* ════════════════════════════════════════════════════════════
    دردشة الدعم مع إدارة الموقع
@@ -112,12 +113,23 @@ export async function sendSupportMessage(
   });
 
   // إشعار للطرف الآخر — باسم المُرسِل صريحاً، وبرابط يفتح الخيط الصحيح
+  const link = `/messages/${me.uid}${suffix}?name=${encodeURIComponent(me.name)}`;
+  // اسم مختلف عن وسيط الدالة text تفادياً لإعادة التعريف
+  const notifText = kind === "payment"
+    ? `💳 ${me.name} — بشأن الدفع: ${trimmed.slice(0, 60)}`
+    : `💬 ${me.name}: ${trimmed.slice(0, 60)}`;
+
   await addNotification(otherUid, {
     type: kind === "payment" ? "payment" : "support",
-    text: kind === "payment"
-      ? `💳 ${me.name} — بشأن الدفع: ${trimmed.slice(0, 60)}`
-      : `💬 ${me.name}: ${trimmed.slice(0, 60)}`,
-    link: `/messages/${me.uid}${suffix}?name=${encodeURIComponent(me.name)}`,
+    text: notifText,
+    link,
+  });
+
+  // ويصل أيضاً كإشعار متصفّح والموقع مغلق
+  tryPushNotification(otherUid, {
+    title: kind === "payment" ? "💳 استفسار عن الدفع" : "💬 رسالة جديدة",
+    body: notifText,
+    link,
   });
 }
 
