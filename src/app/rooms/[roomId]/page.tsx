@@ -695,7 +695,7 @@ export default function RoomPage() {
                   <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />
                 )}
                 {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
+                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
                 {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
                 {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
               </>
@@ -890,7 +890,7 @@ export default function RoomPage() {
             <>
               {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />}
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} />}
+              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
               {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
             </>

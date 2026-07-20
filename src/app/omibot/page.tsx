@@ -73,6 +73,12 @@ export default function OmibotPage() {
   const trackName = TRACKS.find((t) => t.id === profile?.track)?.name ?? "";
   const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", text: GREETING }]);
   const [input, setInput] = useState("");
+  // سؤال قادم من السبورة عبر ?q= — نملأ الحقل ولا نرسله تلقائياً
+  // ليبقى للطالب فرصة تعديله قبل الإرسال
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setInput(q.slice(0, 500));
+  }, []);
   const [thinking, setThinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

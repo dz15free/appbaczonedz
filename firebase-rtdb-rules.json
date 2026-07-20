@@ -250,6 +250,9 @@
         },
         "challenge": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "marks": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     },
