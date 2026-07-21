@@ -14,7 +14,14 @@ import { faLink } from "@fortawesome/free-solid-svg-icons";
    ومخزّنة أسبوعاً على حافة Vercel — فالرابط الشائع لا يُجلب إلا مرّة.
 ════════════════════════════════════════════════════════════ */
 
-const URL_RE = /(https?:\/\/[^\s<>"')\]]+)/gi;
+// يلتقط: روابط http(s) الكاملة، وروابط www.، والنطاقات الشائعة بلا بروتوكول
+// (مثل baczonedz.com و t.me/... ) مع تجنّب التقاط عناوين البريد الإلكتروني.
+const URL_RE = /((?:https?:\/\/|www\.)[^\s<>"')\]]+|(?<![@\w])(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:com|net|org|dz|io|me|co|tv|app|dev|info|edu|gov|ly|gg|xyz|online|store|site|link)(?:\/[^\s<>"')\]]*)?)/gi;
+
+/** يضمن أنّ الرابط يبدأ ببروتوكول (يضيف https:// للنطاقات المجرّدة) */
+function normalizeHref(match: string): string {
+  return /^https?:\/\//i.test(match) ? match : `https://${match}`;
+}
 
 export interface PreviewData {
   url: string;
@@ -30,7 +37,7 @@ const inflight = new Map<string, Promise<PreviewData | null>>();
 
 export function extractFirstUrl(text: string): string | null {
   const m = text.match(URL_RE);
-  return m?.[0] ?? null;
+  return m?.[0] ? normalizeHref(m[0]) : null;
 }
 
 async function fetchPreview(url: string): Promise<PreviewData | null> {
@@ -65,7 +72,7 @@ export function Linkify({ text, className }: { text: string; className?: string 
     parts.push(
       <a
         key={`l${i++}`}
-        href={match}
+        href={normalizeHref(match)}
         target="_blank"
         rel="noopener noreferrer nofollow"
         onClick={(e) => e.stopPropagation()}

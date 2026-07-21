@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { MyRatingSummary, RateTeacherSheet } from "@/features/community/teacher-rating-ui";
+import { SupportChatSheet } from "@/features/support/support-chat";
 import { TRACKS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -64,7 +65,9 @@ export default function UserProfilePage() {
 
   const isMe = user?.uid === uid;
   const isTeacher = theirProfile?.role === "teacher" || theirProfile?.role === "admin";
+  const isAdmin = theirProfile?.role === "admin";
   const [rateOpen, setRateOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   useEffect(() => {
     setNameParam(new URLSearchParams(window.location.search).get("name") || "");
@@ -141,7 +144,16 @@ export default function UserProfilePage() {
             </span>
           </div>
 
-          {!isMe && (
+          {!isMe && isAdmin && user && (
+            <button
+              onClick={() => setSupportOpen(true)}
+              className="mt-4 flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white shadow-glow transition hover:opacity-90"
+            >
+              <FontAwesomeIcon icon={faMessage} className="h-4 w-4" /> تواصل مع الإدارة
+            </button>
+          )}
+
+          {!isMe && !isAdmin && (
             <div className="mt-4 flex gap-2">
               {isFriend ? (
                 <Link
@@ -162,14 +174,19 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          {/* زرّ تقييم الأستاذ — لأي طالب زار بروفايله */}
-          {isTeacher && !isMe && user && (
+          {/* زرّ تقييم الأستاذ — لأي طالب زار بروفايله (الأساتذة فقط، لا الإدارة) */}
+          {isTeacher && !isAdmin && !isMe && user && (
             <button
               onClick={() => setRateOpen(true)}
               className="mt-3 flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-400/10 px-5 py-2 text-sm font-bold text-amber-600 transition hover:bg-amber-400/20"
             >
               <FontAwesomeIcon icon={faStar} className="h-4 w-4" /> قيّم الأستاذ
             </button>
+          )}
+
+          {/* درج التواصل مع الإدارة */}
+          {isAdmin && !isMe && (
+            <SupportChatSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
           )}
         </div>
 
@@ -183,15 +200,15 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {/* تقييم الطلاب — يظهر للجميع على بروفايل الأستاذ */}
-        {isTeacher && (
+        {/* تقييم الطلاب — يظهر على بروفايل الأستاذ (لا الإدارة) */}
+        {isTeacher && !isAdmin && (
           <div className="mt-4">
-            <MyRatingSummary uid={uid} />
+            <MyRatingSummary uid={uid} owner={isMe} />
           </div>
         )}
 
         {/* درج تقييم الأستاذ */}
-        {isTeacher && !isMe && user && (
+        {isTeacher && !isAdmin && !isMe && user && (
           <RateTeacherSheet
             teacherUid={uid}
             teacherName={name}

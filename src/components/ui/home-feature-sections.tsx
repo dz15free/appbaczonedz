@@ -267,14 +267,20 @@ export function NotificationToggle() {
     <button
       onClick={toggle}
       disabled={busy}
-      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 text-right transition hover:border-primary/30 disabled:opacity-60"
+      className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-right shadow-sm transition hover:shadow-glass disabled:opacity-60 ${
+        on
+          ? "border-secondary/30 bg-secondary/5"
+          : "border-primary/30 bg-gradient-to-l from-primary/10 to-secondary/10"
+      }`}
     >
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition ${on ? "bg-secondary/15 text-secondary" : "bg-amber-400/15 text-amber-600"}`}>
-        <FontAwesomeIcon icon={on ? faBell : faBellSlash} className="h-5 w-5" />
+      <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-white shadow-lg transition ${on ? "bg-gradient-to-br from-emerald-500 to-teal-400" : "bg-gradient-to-br from-amber-500 to-orange-500"} ${busy ? "" : on ? "" : "animate-pulse"}`}>
+        <FontAwesomeIcon icon={on ? faBell : faBellSlash} className="h-6 w-6" />
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="text-sm font-bold">إشعارات الموقع</h3>
-        <p className="text-[11px] text-text-muted">{on ? "مفعّلة — ستصلك آخر المستجدّات" : "مطفأة — فعّلها لتصلك التنبيهات"}</p>
+        <h3 className="text-sm font-extrabold">{on ? "الإشعارات مفعّلة ✓" : "فعّل إشعارات الموقع"}</h3>
+        <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
+          {on ? "ستصلك الغرف الجديدة، الملخّصات، وردود الإدارة فوراً" : "لا تفوّت غرفة جديدة أو ملخّصاً أو ردّ الإدارة — فعّلها الآن"}
+        </p>
       </div>
       {/* مفتاح التبديل */}
       <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${on ? "bg-secondary" : "bg-border"}`}>

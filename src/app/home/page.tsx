@@ -232,6 +232,9 @@ export default function HomePage() {
             <SectionsRow />
           </div>
 
+          {/* الإشعارات — بارزة ليراها الجميع */}
+          <NotificationToggle />
+
           {/* وجهات مهمّة */}
           <HomeExternalHighlights />
 
@@ -256,7 +259,6 @@ export default function HomePage() {
         {/* العمود الجانبي */}
         <aside className="space-y-6">
           <MiniLeaderboard />
-          <NotificationToggle />
           <SocialLinks />
           <AdvertiseCard />
           <div>

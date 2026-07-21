@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const avatarInput = useRef<HTMLInputElement>(null);
   const rank = useLeaderboardRank(user?.uid, profile?.points);
   const isTeacher = profile?.role === "teacher";
+  const isStaff = profile?.role === "teacher" || profile?.role === "admin";
 
   async function pickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -128,41 +129,45 @@ export default function ProfilePage() {
             </span>
           )}
 
-          {/* Streak */}
-          {(profile?.streak ?? 0) >= 2 && (
-            <div className={`mt-2 flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${
-              (profile?.streak ?? 0) >= 7 ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
-            }`}>
-              <FontAwesomeIcon icon={faFire} className="h-4 w-4" />
-              {profile?.streak} أيام متتالية
-            </div>
-          )}
+          {!isStaff && (
+            <>
+              {/* Streak */}
+              {(profile?.streak ?? 0) >= 2 && (
+                <div className={`mt-2 flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold ${
+                  (profile?.streak ?? 0) >= 7 ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
+                }`}>
+                  <FontAwesomeIcon icon={faFire} className="h-4 w-4" />
+                  {profile?.streak} أيام متتالية
+                </div>
+              )}
 
-          {/* Level + Points */}
-          <div className="mt-3 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
-            <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
-            المستوى {profile?.level ?? 1} · {profile?.points ?? 0} نقطة
-          </div>
-
-          {/* Stats grid */}
-          <div className="mt-4 grid w-full grid-cols-4 gap-2 text-center">
-            {[
-              { icon: faFileLines, val: profile?.postCount ?? 0,   label: "منشور" },
-              { icon: faComments,  val: profile?.commentCount ?? 0, label: "تعليق" },
-              { icon: faUsers,     val: friends.length,             label: "صديق" },
-              { icon: faStar,      val: rank ? `#${rank}` : "—",   label: "ترتيبي" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-border bg-surface py-3">
-                <FontAwesomeIcon icon={s.icon} className="h-4 w-4 text-primary" />
-                <p className="mt-1 text-lg font-extrabold">{s.val}</p>
-                <p className="text-xs text-text-muted">{s.label}</p>
+              {/* Level + Points */}
+              <div className="mt-3 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
+                <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
+                المستوى {profile?.level ?? 1} · {profile?.points ?? 0} نقطة
               </div>
-            ))}
-          </div>
-          {rank && (
-            <a href="/leaderboard" className="mt-2 block text-center text-xs text-primary hover:underline">
-              عرض لوحة الترتيب الكاملة →
-            </a>
+
+              {/* Stats grid */}
+              <div className="mt-4 grid w-full grid-cols-4 gap-2 text-center">
+                {[
+                  { icon: faFileLines, val: profile?.postCount ?? 0,   label: "منشور" },
+                  { icon: faComments,  val: profile?.commentCount ?? 0, label: "تعليق" },
+                  { icon: faUsers,     val: friends.length,             label: "صديق" },
+                  { icon: faStar,      val: rank ? `#${rank}` : "—",   label: "ترتيبي" },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl border border-border bg-surface py-3">
+                    <FontAwesomeIcon icon={s.icon} className="h-4 w-4 text-primary" />
+                    <p className="mt-1 text-lg font-extrabold">{s.val}</p>
+                    <p className="text-xs text-text-muted">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+              {rank && (
+                <a href="/leaderboard" className="mt-2 block text-center text-xs text-primary hover:underline">
+                  عرض لوحة الترتيب الكاملة →
+                </a>
+              )}
+            </>
           )}
         </div>
 
@@ -183,12 +188,14 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="mt-4">
-          <ProfileBadges
-            stats={{ points: profile?.points, postCount: profile?.postCount, commentCount: profile?.commentCount }}
-            friendCount={friends.length}
-          />
-        </div>
+        {!isStaff && (
+          <div className="mt-4">
+            <ProfileBadges
+              stats={{ points: profile?.points, postCount: profile?.postCount, commentCount: profile?.commentCount }}
+              friendCount={friends.length}
+            />
+          </div>
+        )}
 
         <Button
           variant="ghost"
@@ -212,7 +219,7 @@ export default function ProfilePage() {
       {/* تقييم الطلاب + لوحة أرباح الأستاذ */}
       {user && (profile?.role === "teacher" || profile?.role === "admin") && (
         <>
-          <MyRatingSummary uid={user.uid} />
+          <MyRatingSummary uid={user.uid} owner />
           <TeacherEarnings uid={user.uid} />
         </>
       )}

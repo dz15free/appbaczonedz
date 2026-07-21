@@ -64,16 +64,26 @@ export function useContentRatings(itemId: string) {
 
 /* نجوم بصريّة (ممتلئة/نصف/فارغة) — بأسلوب متاجر التسوّق */
 export function StarRow({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
-  const cls = size === "md" ? "h-4 w-4" : "h-3 w-3";
+  const px = size === "md" ? 16 : 13; // حجم النجمة بالبكسل — ثابت يمنع الخروج عن الإطار
   return (
-    <span className="inline-flex items-center gap-0.5 align-middle" aria-label={`${value.toFixed(1)} من 5`}>
+    <span className="inline-flex items-center leading-none" aria-label={`${value.toFixed(1)} من 5`} style={{ gap: 2 }}>
       {[1, 2, 3, 4, 5].map((n) => {
         const fill = Math.max(0, Math.min(1, value - (n - 1))); // 0..1 لهذه النجمة
         return (
-          <span key={n} className={`relative inline-block ${cls}`}>
-            <FontAwesomeIcon icon={faStarOutline} className={`absolute inset-0 ${cls} text-amber-400/50`} />
-            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-              <FontAwesomeIcon icon={faStar} className={`${cls} text-amber-500`} />
+          <span key={n} className="relative inline-block shrink-0" style={{ width: px, height: px }}>
+            {/* نجمة فارغة (الخلفية) */}
+            <FontAwesomeIcon
+              icon={faStarOutline}
+              className="absolute inset-0 text-amber-400/40"
+              style={{ width: px, height: px }}
+            />
+            {/* نجمة ممتلئة مقصوصة حسب نسبة التقييم */}
+            <span className="absolute inset-y-0 right-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <FontAwesomeIcon
+                icon={faStar}
+                className="text-amber-500"
+                style={{ width: px, height: px, maxWidth: "none" }}
+              />
             </span>
           </span>
         );

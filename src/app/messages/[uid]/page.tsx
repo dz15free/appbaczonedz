@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { RichText } from "@/components/ui/linkify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight, faPaperPlane, faImage, faPaperclip, faFile, faSpinner,
@@ -173,7 +174,7 @@ export default function DMPage() {
                       mine ? "bg-gradient-primary text-white" : "border border-border bg-surface"
                     }`}
                   >
-                    {m.text}
+                    <RichText text={m.text ?? ""} compact />
                   </div>
                 )}
               </div>

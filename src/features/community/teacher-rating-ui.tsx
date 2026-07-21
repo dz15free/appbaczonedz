@@ -193,10 +193,18 @@ export function RateTeacherSheet({
   );
 }
 
-/* ─────────── ملخّص التقييم في بروفايل الأستاذ ─────────── */
-export function MyRatingSummary({ uid }: { uid: string }) {
+/* ─────────── ملخّص التقييم على بروفايل الأستاذ ───────────
+   owner=true  → الأستاذ يرى بروفايله: تظهر ملاحظة الحماية الشخصية.
+   owner=false → طالب/زائر: يرى النجوم والآراء بلا الملاحظة الشخصية. */
+export function MyRatingSummary({ uid, owner = false }: { uid: string; owner?: boolean }) {
   const { list, stats } = useTeacherRating(uid);
-  if (stats.count === 0) return null;
+  if (stats.count === 0) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-4 text-center text-sm text-text-muted">
+        لم يُقيَّم بعد
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
@@ -208,7 +216,7 @@ export function MyRatingSummary({ uid }: { uid: string }) {
         <RatingBadge stats={stats} size="md" />
       </div>
 
-      {!stats.visible && (
+      {owner && !stats.visible && (
         <p className="mt-2 text-[11px] leading-relaxed text-text-muted">
           لا يظهر متوسّطك للطلاب قبل بلوغ {MIN_RATINGS_TO_SHOW} تقييمات — حمايةً لك من أثر تقييم واحد.
         </p>
