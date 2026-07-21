@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LandingPage() {
-  const { settings: s } = useSiteSettings();
+  const { settings: s, loaded } = useSiteSettings();
   const year = new Date().getFullYear();
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function LandingPage() {
           <ThemeToggle />
           <Link href="/login" className="hidden text-sm font-semibold text-text-muted transition hover:text-primary sm:block">دخول</Link>
           <Link href="/register" className="whitespace-nowrap rounded-xl bg-gradient-primary px-3.5 py-2 text-sm font-bold text-white shadow-glow transition hover:scale-105 hover:opacity-90 sm:px-5 sm:py-2.5">
-            {s.heroCtaPrimary || "أنشئ حسابك"}
+            {loaded ? (s.heroCtaPrimary || "أنشئ حسابك") : <span className="inline-block h-4 w-20 animate-pulse rounded bg-white/40" />}
           </Link>
         </div>
       </header>
@@ -61,7 +61,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/register" className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary px-7 py-4 font-bold text-white shadow-glow transition hover:opacity-90 hover:scale-105 sm:w-auto">
-              {s.heroCtaPrimary}
+              {loaded ? s.heroCtaPrimary : <span className="inline-block h-5 w-40 animate-pulse rounded bg-white/40" />}
               <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 transition group-hover:-translate-x-1" />
             </Link>
             <Link href="/login" className="w-full rounded-xl border border-border bg-surface px-7 py-4 font-bold backdrop-blur-sm transition hover:bg-primary/10 sm:w-auto">
