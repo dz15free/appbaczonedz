@@ -21,6 +21,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
+import { MyRatingSummary } from "@/features/community/teacher-rating-ui";
 import { TRACKS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -166,6 +167,13 @@ export default function UserProfilePage() {
             friendCount={theirFriends.length}
           />
         </div>
+
+        {/* تقييم الطلاب — يظهر للجميع على بروفايل الأستاذ */}
+        {(theirProfile?.role === "teacher" || theirProfile?.role === "admin") && (
+          <div className="mt-4">
+            <MyRatingSummary uid={uid} />
+          </div>
+        )}
 
         {/* منشورات الشخص */}
         <h2 className="mb-2 mt-6 text-sm font-bold">المنشورات ({visiblePosts.length})</h2>

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ref, push, remove, onValue, query, orderByChild, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -291,8 +292,14 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
           <h3 className="mt-1 font-semibold">{e.title}</h3>
           {e.description && <p className="mt-0.5 text-xs text-text-muted line-clamp-2">{e.description}</p>}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <p className="text-[11px] text-text-muted">بواسطة {e.uploaderName} · {timeAgo(e.createdAt)}</p>
-            {e.isPaid && <ContentRatingBadge itemId={e.id} />}
+            <p className="text-[11px] text-text-muted">
+              بواسطة{" "}
+              <Link href={`/u/${e.uploaderId}`} className="font-semibold text-primary hover:underline">
+                {e.uploaderName}
+              </Link>{" "}
+              · {timeAgo(e.createdAt)}
+            </p>
+            {e.isPaid && <ContentRatingBadge itemId={e.id} showEmpty />}
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">

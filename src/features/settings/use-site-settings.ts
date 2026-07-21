@@ -44,6 +44,7 @@ export interface SiteSettings {
   bacResultsDate?: string;    // تاريخ نتائج البكالوريا
   siteBanner?: { text: string; active: boolean }; // البانر
   allowRegistration?: boolean; // السماح بالتسجيل الجديد
+  lessonsUrl?: string;         // رابط صفحة الدروس والملخّصات (خارجي)
 
   /* ── محتوى الصفحة الرئيسية (قبل التسجيل) ── */
   landingBadge?: string;          // الشارة أعلى الهيرو

@@ -16,7 +16,7 @@ import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
-import { FeatureCards, SocialLinks, AdvertiseCard } from "@/components/ui/home-feature-sections";
+import { FeatureCards, SocialLinks, AdvertiseCard, HomeHighlightCards } from "@/components/ui/home-feature-sections";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
@@ -225,6 +225,7 @@ export default function HomePage() {
         {/* العمود الرئيسي */}
         <div className="space-y-6 lg:col-span-2">
           <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
+          <HomeHighlightCards />
           <div className="rounded-2xl border border-border bg-surface p-5">
             <SectionsRow />
           </div>
@@ -292,6 +293,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
         <InstallAppBanner />
         <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
+        <HomeHighlightCards />
         <SectionsRow />
         <FeatureCards />
 

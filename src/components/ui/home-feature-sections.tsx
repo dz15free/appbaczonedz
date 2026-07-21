@@ -1,9 +1,12 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn, faBookOpen, faBell, faBellSlash, faGraduationCap, faCheck } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { isPushSupported, subscribePush } from "@/lib/push";
+import { useAuth } from "@/features/auth/auth-provider";
 
 /* أيقونات التواصل (SVG مضمّن — بلا حزم إضافية) */
 function TelegramIcon({ className = "" }: { className?: string }) {
@@ -175,6 +178,121 @@ export function AdvertiseCard() {
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   بطاقات بارزة أعلى الرئيسية — وصول سريع لأهمّ الوجهات
+   (دروس وملخّصات، المكتبة، الإشعارات، تيليغرام)
+
+   لا تحذف شيئاً من الرئيسية — تُضاف فوق المحتوى الحالي.
+   الروابط الخارجية قابلة للتهيئة من الإعدادات مع قيم احتياطية.
+════════════════════════════════════════════════════════════ */
+export function HomeHighlightCards() {
+  const { settings } = useSiteSettings();
+  const { user } = useAuth();
+
+  const lessonsUrl = settings.lessonsUrl || "https://www.baczonedz.com/p/blog-page_33.html";
+  const telegramUrl = settings.telegramUrl || "https://t.me/baczonedz";
+
+  const [notifState, setNotifState] = useState<"idle" | "on" | "unsupported">("idle");
+  useEffect(() => {
+    if (!isPushSupported()) { setNotifState("unsupported"); return; }
+    try {
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") setNotifState("on");
+    } catch { /* تجاهل */ }
+  }, []);
+
+  async function enableNotifications() {
+    if (!user || notifState === "on") return;
+    const ok = await subscribePush(user.uid);
+    if (ok) setNotifState("on");
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* دروس وملخّصات */}
+      <a
+        href={lessonsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-glass"
+      >
+        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-primary/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex flex-col items-start gap-2.5">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
+            <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
+          </span>
+          <div>
+            <h3 className="font-display text-sm font-extrabold">دروس وملخّصات</h3>
+            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات ودروس منظّمة لكل الشُّعب</p>
+          </div>
+        </div>
+      </a>
+
+      {/* المكتبة */}
+      <Link
+        href="/library"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-glass"
+      >
+        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-emerald-500/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex flex-col items-start gap-2.5">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3">
+            <FontAwesomeIcon icon={faBookOpen} className="h-6 w-6" />
+          </span>
+          <div>
+            <h3 className="font-display text-sm font-extrabold">المكتبة</h3>
+            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات الطلبة والأساتذة في مكان واحد</p>
+          </div>
+        </div>
+      </Link>
+
+      {/* تفعيل الإشعارات */}
+      <button
+        onClick={enableNotifications}
+        disabled={notifState !== "idle"}
+        className={`group relative overflow-hidden rounded-2xl border p-4 text-right transition hover:-translate-y-1 hover:shadow-glass ${
+          notifState === "on" ? "border-secondary/40 bg-secondary/5" : "border-border bg-surface hover:border-amber-400/40"
+        } disabled:hover:translate-y-0`}
+      >
+        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-amber-400/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex flex-col items-start gap-2.5">
+          <span className={`grid h-12 w-12 place-items-center rounded-2xl text-white shadow-lg transition group-hover:scale-110 ${
+            notifState === "on" ? "bg-gradient-to-br from-emerald-500 to-teal-400" : "bg-gradient-to-br from-amber-500 to-orange-500"
+          }`}>
+            <FontAwesomeIcon icon={notifState === "unsupported" ? faBellSlash : notifState === "on" ? faCheck : faBell} className="h-6 w-6" />
+          </span>
+          <div>
+            <h3 className="font-display text-sm font-extrabold">
+              {notifState === "on" ? "الإشعارات مفعّلة" : notifState === "unsupported" ? "الإشعارات" : "فعّل الإشعارات"}
+            </h3>
+            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
+              {notifState === "on" ? "ستصلك آخر المستجدّات فوراً" : notifState === "unsupported" ? "غير مدعومة على هذا المتصفّح" : "كن أوّل من يعرف الجديد"}
+            </p>
+          </div>
+        </div>
+      </button>
+
+      {/* انضمّ لتيليغرام */}
+      <a
+        href={telegramUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-sky-400/40 hover:shadow-glass"
+      >
+        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-sky-500/10 blur-2xl transition group-hover:scale-150" />
+        <div className="relative flex flex-col items-start gap-2.5">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
+            <TelegramIcon className="h-6 w-6" />
+          </span>
+          <div>
+            <h3 className="font-display text-sm font-extrabold">انضمّ لتيليغرام</h3>
+            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">قناتنا: كل جديد أوّلاً بأوّل</p>
+          </div>
+        </div>
+      </a>
     </div>
   );
 }

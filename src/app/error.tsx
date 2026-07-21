@@ -39,14 +39,13 @@ export default function Error({
           الرئيسية
         </a>
       </div>
-      {process.env.NODE_ENV === "development" && (
-        <details className="mt-6 max-w-lg text-left">
-          <summary className="cursor-pointer text-xs text-text-muted">تفاصيل (dev)</summary>
-          <pre className="mt-2 overflow-auto rounded-md bg-surface p-3 text-xs text-danger">
-            {error.message}
-          </pre>
-        </details>
-      )}
+      {/* تفاصيل الخطأ — متاحة دائماً (قابلة للطي) لتسهيل الإبلاغ والإصلاح */}
+      <details className="mt-6 max-w-lg text-left">
+        <summary className="cursor-pointer text-xs text-text-muted">تفاصيل تقنية (انسخها للدعم)</summary>
+        <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-surface p-3 text-xs text-danger" dir="ltr">
+{error.message}{error.digest ? `\n\ndigest: ${error.digest}` : ""}{error.stack ? `\n\n${error.stack}` : ""}
+        </pre>
+      </details>
     </main>
   );
 }

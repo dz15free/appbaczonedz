@@ -1,6 +1,7 @@
 "use client";
 
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -31,6 +32,12 @@ export default function GlobalError({
         >
           إعادة المحاولة
         </button>
+        <details style={{ marginTop: "1.5rem", maxWidth: "40rem", marginInline: "auto", textAlign: "left" }}>
+          <summary style={{ cursor: "pointer", fontSize: "0.75rem", color: "#6b7280" }}>تفاصيل تقنية (انسخها للدعم)</summary>
+          <pre dir="ltr" style={{ marginTop: "0.5rem", maxHeight: "12rem", overflow: "auto", background: "#f3f4f6", padding: "0.75rem", borderRadius: "0.375rem", fontSize: "0.7rem", color: "#dc2626" }}>
+{error.message}{error.digest ? `\n\ndigest: ${error.digest}` : ""}{error.stack ? `\n\n${error.stack}` : ""}
+          </pre>
+        </details>
       </body>
     </html>
   );

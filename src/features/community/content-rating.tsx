@@ -62,10 +62,12 @@ export function useContentRatings(itemId: string) {
   return { list, count, avg, visible: count >= MIN_CONTENT_RATINGS };
 }
 
-/* شارة مضغوطة تُعرض على بطاقة الملخّص */
-export function ContentRatingBadge({ itemId }: { itemId: string }) {
+/* شارة مضغوطة تُعرض على بطاقة الملخّص / الغرفة المدفوعة */
+export function ContentRatingBadge({ itemId, showEmpty }: { itemId: string; showEmpty?: boolean }) {
   const { count, avg, visible } = useContentRatings(itemId);
-  if (count === 0) return null;
+  if (count === 0) {
+    return showEmpty ? <span className="text-[10px] text-text-muted">لم يُقيَّم بعد</span> : null;
+  }
   if (!visible) {
     return <span className="text-[10px] text-text-muted">{count} تقييم</span>;
   }
