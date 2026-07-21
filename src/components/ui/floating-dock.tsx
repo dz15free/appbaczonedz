@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRobot, faXmark, faHeadset } from "@fortawesome/free-solid-svg-icons";
+import { faRobot, faXmark, faHeadset, faEllipsisVertical } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { SupportChatSheet } from "@/features/support/support-chat";
 
 /* ════════════════════════════════════════════════════════════
-   الأزرار العائمة — عمود واحد
+   الأزرار العائمة — زرّ واحد رئيسي (الخبّاشة) يفتح قائمة صغيرة
 
-   كانت فقاعة الخبّاشة تُرسم فوق زرّها بموضع مطلق، وهو نفس
-   المكان الذي يجلس فيه زر التواصل، فيتراكبان.
+   التصميم السابق كوّم زرّين بحجم 56px فوق بعضهما في الزاوية،
+   فبدا مزدحماً وتصادم مع شريط التنقّل السفلي على الهاتف.
 
-   الحل هنا بنيوي لا تجميلي: كل شيء داخل عمود flex واحد،
-   فيدفع بعضه بعضاً تلقائياً ويستحيل التصادم مهما تغيّرت
-   الأحجام أو أُضيف زر ثالث لاحقاً.
+   الآن: زرّ رئيسي واحد للخبّاشة، وزرّ صغير ⋮ يفتح إجراءً واحداً
+   (التواصل مع الإدارة) فوقه. الشاشة تبقى نظيفة، ويتّسع التصميم
+   لإجراءات إضافية لاحقاً دون أي تصادم.
+
+   الموضع يرفع العمود فوق شريط التنقّل السفلي (hidden على lg)
+   عبر safe-area + مسافة كافية، ثم يعود للأسفل على الحاسوب.
 ════════════════════════════════════════════════════════════ */
 
 const MSG_PRIMARY = "كِشما تحتاج، راني هنا! 👋";
-const MSG_SECONDARY = "الخباشة — متحصّلة على معدّل 18 في الباك 🎓";
-const FAB = "h-14 w-14";
+const MSG_SECONDARY = "الخبّاشة — متحصّلة على معدّل 18 في الباك 🎓";
 
 export function FloatingDock() {
   const { user } = useAuth();
@@ -28,8 +30,11 @@ export function FloatingDock() {
   const [showSecondary, setShowSecondary] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [animKey, setAnimKey] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
+  // فقاعة التعريف: تظهر مرّة، تتبدّل الرسالة، ثم تستقرّ
   useEffect(() => {
     if (dismissed) return;
     const t1 = setTimeout(() => { setVisible(true); setShowSecondary(false); setAnimKey((k) => k + 1); }, 1200);
@@ -38,15 +43,36 @@ export function FloatingDock() {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [dismissed]);
 
+  // إغلاق القائمة عند النقر خارجها أو ضغط Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  // فتح الفقاعة يُلغى بمجرّد فتح القائمة حتى لا يتراكبا
+  useEffect(() => { if (menuOpen) setDismissed(true); }, [menuOpen]);
+
   return (
     <>
-      {/* العمود: الفقاعة أعلى، ثم التواصل، ثم الخبّاشة في الأسفل */}
-      <div className="fixed bottom-24 left-4 z-30 flex flex-col items-start gap-2.5 lg:bottom-6">
-        {/* فقاعة الخبّاشة — في تدفّق العمود، لا بموضع مطلق */}
-        {visible && !dismissed && (
+      <div
+        ref={menuRef}
+        className="fixed left-4 z-30 flex flex-col items-start gap-2.5"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)" }}
+      >
+        {/* فقاعة التعريف — تظهر فقط قبل فتح القائمة */}
+        {visible && !dismissed && !menuOpen && (
           <div
             key={animKey}
-            className="animate-bubble-in relative w-max max-w-[190px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass sm:max-w-[220px]"
+            className="animate-bubble-in relative mb-0.5 w-max max-w-[190px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass sm:max-w-[220px]"
           >
             <button
               onClick={(e) => { e.preventDefault(); setDismissed(true); }}
@@ -62,37 +88,48 @@ export function FloatingDock() {
           </div>
         )}
 
-        {/* زر التواصل مع الإدارة — بعلامة تشرح وظيفته */}
-        {user && (
-          <div className="flex items-center gap-2">
+        {/* إجراءات القائمة — تظهر فوق الزرّ الرئيسي عند الفتح */}
+        {menuOpen && user && (
+          <div className="bz-radial-in flex flex-col items-start gap-2">
             <button
-              onClick={() => setSupportOpen(true)}
-              aria-label="تواصل مع إدارة الموقع"
-              className={`group relative grid ${FAB} place-items-center rounded-full border border-border bg-surface text-primary shadow-glass transition hover:scale-105 active:scale-95`}
+              onClick={() => { setSupportOpen(true); setMenuOpen(false); }}
+              className="flex items-center gap-2.5 rounded-full border border-border bg-surface py-2 pr-2 pl-4 shadow-glass transition active:scale-95"
             >
-              <FontAwesomeIcon icon={faHeadset} className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-secondary" />
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                <FontAwesomeIcon icon={faHeadset} className="h-4 w-4" />
+              </span>
+              <span className="whitespace-nowrap text-sm font-bold text-text-primary">تواصل مع الإدارة</span>
             </button>
-            <span className="pointer-events-none rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-bold text-text-primary shadow-glass">
-              الإدارة
-            </span>
           </div>
         )}
 
-        {/* زر الخبّاشة */}
-        <div className="flex items-center gap-2">
+        {/* صفّ الزرّ الرئيسي: الخبّاشة + مفتاح القائمة الصغير */}
+        <div className="flex items-end gap-2">
           <Link
-            href="/omibot"
-            aria-label="الخباشة — المساعد الذكي"
-            className={`group relative grid ${FAB} place-items-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105 active:scale-95`}
+            href="/aibot"
+            aria-label="الخبّاشة — المساعد الذكي"
+            className="group relative grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105 active:scale-95"
           >
-            <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping-slow" />
+            {!menuOpen && <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping-slow" />}
             <FontAwesomeIcon icon={faRobot} className="relative h-6 w-6" />
             <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-secondary" />
           </Link>
-          <span className="pointer-events-none rounded-full border border-border bg-surface px-2.5 py-1 text-[10px] font-bold text-text-primary shadow-glass">
-            الخبّاشة
-          </span>
+
+          {/* مفتاح القائمة — يظهر فقط للمستخدم المسجّل (لأنّ الإدارة تتطلّب تسجيلاً) */}
+          {user && (
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? "إغلاق القائمة" : "خيارات إضافية"}
+              aria-expanded={menuOpen}
+              className={`mb-1 grid h-9 w-9 place-items-center rounded-full border shadow-glass transition active:scale-90 ${
+                menuOpen
+                  ? "rotate-90 border-danger/40 bg-danger/10 text-danger"
+                  : "border-border bg-surface text-text-muted hover:text-primary"
+              }`}
+            >
+              <FontAwesomeIcon icon={menuOpen ? faXmark : faEllipsisVertical} className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 

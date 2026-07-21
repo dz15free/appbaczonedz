@@ -29,7 +29,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 const SECTIONS = [
   { href: "/rooms", label: "غرف الدراسة", icon: faChalkboardUser, color: "bg-indigo-500/10 text-indigo-500" },
   { href: "/library", label: "المكتبة", icon: faBookOpen, color: "bg-emerald-500/10 text-emerald-500" },
-  { href: "/omibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
+  { href: "/aibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
 ];

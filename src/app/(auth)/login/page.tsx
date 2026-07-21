@@ -17,6 +17,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
+    if (!email.trim() || !password) {
+      setMsg({ type: "error", text: "الرجاء إدخال البريد وكلمة المرور." });
+      return;
+    }
     setLoading(true);
     setMsg(null);
     try {
@@ -24,7 +28,6 @@ export default function LoginPage() {
       const current = auth.currentUser;
       if (!current) throw new AuthError("تعذّر إكمال الدخول. حاول مجدداً.");
 
-      // فحص الإعداد عبر Firestore — مع مهلة حتى لا يتجمّد الدخول إن تأخّر
       let goOnboarding = false;
       try {
         goOnboarding = await Promise.race([
@@ -34,7 +37,6 @@ export default function LoginPage() {
       } catch (e) {
         console.error("[BacZone] فشل فحص الإعداد — تأكّد أن Firestore مُفعّل:", e);
       }
-      // نمرّر الوجهة إلى الإعداد الأولي أيضاً حتى لا تضيع
       router.push(goOnboarding ? `/onboarding?next=${encodeURIComponent(next)}` : next);
     } catch (err) {
       console.error("[BacZone] خطأ الدخول:", err);
@@ -44,10 +46,10 @@ export default function LoginPage() {
   }
 
   async function handleReset() {
-    if (!email) return setMsg({ type: "error", text: "أدخل بريدك أولاً ثم اضغط نسيت كلمة المرور." });
+    if (!email.trim()) return setMsg({ type: "error", text: "أدخل بريدك أولاً ثم اضغط نسيت كلمة المرور." });
     try {
       await resetPassword(email);
-      setMsg({ type: "success", text: "تم إرسال رابط الاستعادة إلى بريدك." });
+      setMsg({ type: "success", text: "تم إرسال رابط استعادة كلمة المرور إلى بريدك." });
     } catch (err) {
       setMsg({ type: "error", text: err instanceof AuthError ? err.message : "فشل الإرسال." });
     }
@@ -55,11 +57,14 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="font-display text-2xl font-extrabold">تسجيل الدخول</h1>
+      <div>
+        <h1 className="font-display text-2xl font-extrabold">مرحباً بعودتك 👋</h1>
+        <p className="mt-1 text-sm text-text-muted">سجّل الدخول لمتابعة رحلتك نحو الباك.</p>
+      </div>
 
       {msg && (
         <div
-          className={`rounded-md px-4 py-2.5 text-sm ${
+          className={`rounded-xl px-4 py-3 text-sm font-semibold ${
             msg.type === "error" ? "bg-danger/10 text-danger" : "bg-secondary/10 text-secondary"
           }`}
         >
@@ -67,24 +72,35 @@ export default function LoginPage() {
         </div>
       )}
 
-      <Input
-        label="البريد الإلكتروني"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="example@email.com"
-      />
-      <Input
-        label="كلمة المرور"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-      />
-
-      <button onClick={handleReset} className="text-sm text-primary hover:underline">
-        نسيت كلمة المرور؟
-      </button>
+      <div className="space-y-4">
+        <Input
+          label="البريد الإلكتروني"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          dir="ltr"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="example@email.com"
+          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+        />
+        <div>
+          <Input
+            label="كلمة المرور"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+          />
+          <button
+            onClick={handleReset}
+            className="mt-2 text-xs font-semibold text-primary transition hover:underline"
+          >
+            نسيت كلمة المرور؟
+          </button>
+        </div>
+      </div>
 
       <Button onClick={handleLogin} loading={loading} className="w-full">
         دخول

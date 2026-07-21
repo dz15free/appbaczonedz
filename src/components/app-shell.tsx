@@ -40,7 +40,7 @@ const NAV = [
 // قائمة "أدوات الدراسة" المنسدلة (حاسوب)
 const TOOLS_DROPDOWN = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
-  { href: "/omibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
+  { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
@@ -66,7 +66,7 @@ const MOBILE_NAV_RIGHT = [
 const MENU_ITEMS_BASE = [
   { href: "/rooms", label: "غرف الدراسة", icon: faUsers, external: false },
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
-  { href: "/omibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
+  { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
@@ -416,7 +416,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
       {/* زر الخباشة العائم مع نص منبثق (كل الصفحات) */}
-      {pathname !== "/omibot" && <FloatingDock />}
+      {pathname !== "/aibot" && <FloatingDock />}
 
       {/* ═══════ شريط التنقّل السفلي (هاتف) ═══════ */}
       <nav

@@ -79,7 +79,7 @@ export function ShapeActionsSheet({
   function askAi() {
     if (!shape?.text) return;
     // نمرّر السؤال عبر الرابط — صفحة الخبّاشة تلتقطه
-    router.push(`/omibot?q=${encodeURIComponent(`اشرح لي هذا: ${shape.text}`)}`);
+    router.push(`/aibot?q=${encodeURIComponent(`اشرح لي هذا: ${shape.text}`)}`);
   }
 
   return (
