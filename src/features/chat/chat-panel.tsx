@@ -26,6 +26,7 @@ import { prepareFile } from "@/lib/upload";
 import { FileViewer } from "@/features/files/file-viewer";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { useTypingIndicator, TypingIndicator } from "@/features/rooms/typing-indicator";
+import { RichText } from "@/components/ui/linkify";
 
 // مرفق يُحمَّل عند العرض فقط (يبقي الدردشة خفيفة)
 function Attachment({
@@ -168,7 +169,7 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
                     mine ? "bg-gradient-primary text-white" : "bg-background text-text-primary"
                   }`}
                 >
-                  {m.text}
+                  <RichText text={m.text ?? ""} compact />
                 </div>
               )}
               {(m.type === "image" || m.type === "file") && (

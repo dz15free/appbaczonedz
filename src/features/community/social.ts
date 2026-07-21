@@ -20,6 +20,17 @@ import { rtdb } from "@/lib/firebase/config";
 import { awardActivity } from "@/features/gamification/points";
 import { tryPushNotification } from "@/lib/push";
 
+/** عنصر وسائط في المنشور */
+export interface PostMedia {
+  kind: "image" | "video";
+  /** للصور: معرّفا النسختين في community/postAttachments */
+  thumbId?: string;
+  fullId?: string;
+  /** للفيديو: رابط خارجي (لا نرفع فيديو — يستنزف حصّة RTDB) */
+  url?: string;
+  name?: string;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -31,9 +42,10 @@ export interface Post {
   myVote: number; // 1 | -1 | 0
   commentCount: number;
   visibility: "public" | "friends" | "private";
-  attachmentId?: string;
+  attachmentId?: string;            // قديم: مرفق واحد (تبقى المنشورات القديمة تعمل)
   attachmentKind?: "image" | "file";
   fileName?: string;
+  media?: PostMedia[];              // جديد: عدة صور و/أو فيديو
   subject?: string;
   locked?: boolean;
   editedAt?: number;
@@ -75,7 +87,8 @@ export async function createPost(
   attachment?: { kind: "image" | "file"; dataUrl: string; name: string },
   visibility: "public" | "friends" | "private" = "public",
   subject?: string,
-  authorRole?: string
+  authorRole?: string,
+  media?: { kind: "image" | "video"; thumb?: string; full?: string; url?: string; name?: string }[]
 ) {
   const post: Record<string, unknown> = {
     authorId,
@@ -86,6 +99,24 @@ export async function createPost(
   };
   if (authorRole) post.authorRole = authorRole;
   if (subject) post.subject = subject;
+  // وسائط متعدّدة: نرفع النسختين لكل صورة ونحتفظ بالمعرّفين فقط
+  if (media && media.length) {
+    const saved: PostMedia[] = [];
+    for (const m of media.slice(0, 6)) {
+      if (m.kind === "video" && m.url) {
+        saved.push({ kind: "video", url: m.url, name: m.name });
+        continue;
+      }
+      if (m.kind === "image" && m.thumb && m.full) {
+        const tRef = push(ref(rtdb, "community/postAttachments"));
+        const fRef = push(ref(rtdb, "community/postAttachments"));
+        await Promise.all([set(tRef, m.thumb), set(fRef, m.full)]);
+        saved.push({ kind: "image", thumbId: tRef.key!, fullId: fRef.key!, name: m.name });
+      }
+    }
+    if (saved.length) post.media = saved;
+  }
+
   if (attachment) {
     const aRef = push(ref(rtdb, "community/postAttachments"));
     await set(aRef, attachment.dataUrl);

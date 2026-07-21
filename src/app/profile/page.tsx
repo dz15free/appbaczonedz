@@ -19,6 +19,8 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { ProfileBadges } from "@/features/gamification/profile-stats";
 import { listenFriends, type Person } from "@/features/community/social";
 import { useLeaderboardRank } from "@/features/gamification/use-rank";
+import { MyRatingSummary } from "@/features/community/teacher-rating-ui";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -50,7 +52,7 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {
@@ -207,9 +209,12 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* لوحة أرباح الأستاذ */}
+      {/* تقييم الطلاب + لوحة أرباح الأستاذ */}
       {user && (profile?.role === "teacher" || profile?.role === "admin") && (
-        <TeacherEarnings uid={user.uid} />
+        <>
+          <MyRatingSummary uid={user.uid} />
+          <TeacherEarnings uid={user.uid} />
+        </>
       )}
 
       {/* نافذة التعديل */}
@@ -321,7 +326,7 @@ function TeacherEarnings({ uid }: { uid: string }) {
             <p className="text-lg font-extrabold text-amber-600">{pendingNet}</p>
             <p className="text-[11px] text-text-muted">بانتظار التسوية (دج)</p>
           </div>
-          <div className="rounded-xl bg-border/40 p-3 text-center">
+          <div className="rounded-xl bg-border p-3 text-center">
             <p className="text-lg font-extrabold">{buyers}</p>
             <p className="text-[11px] text-text-muted">عدد المشترين</p>
           </div>

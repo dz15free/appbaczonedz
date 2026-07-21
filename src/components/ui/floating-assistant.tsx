@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 /* ════════════════════════════════════════════
@@ -31,8 +31,9 @@ export function FloatingAssistant({
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
+  // --bz-primary مخزّن كقنوات RGB ("37 99 235") فلا يصلح لوناً إلا داخل rgb()
   const toneColor = (t?: string) =>
-    t === "primary" ? "var(--bz-primary,#2563eb)"
+    t === "primary" ? "rgb(var(--bz-primary, 37 99 235))"
     : t === "amber" ? "#f59e0b"
     : t === "danger" ? "#dc2626"
     : "#334155";
@@ -52,7 +53,7 @@ export function FloatingAssistant({
             <button
               key={a.id}
               onClick={() => { a.onClick(); setOpen(false); }}
-              className="flex items-center gap-2.5 rounded-full bg-surface/95 py-2 pr-2 pl-4 shadow-xl ring-1 ring-border backdrop-blur-md transition active:scale-95"
+              className="flex items-center gap-2.5 rounded-full bg-surface py-2 pr-2 pl-4 shadow-xl ring-1 ring-border transition active:scale-95"
             >
               <span
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white"
@@ -72,7 +73,7 @@ export function FloatingAssistant({
         aria-label={open ? "إغلاق" : "أدوات"}
         className={`pointer-events-auto grid h-14 w-14 place-items-center rounded-full text-white shadow-2xl transition active:scale-90 ${open ? "rotate-45 bg-danger" : "bg-gradient-primary"}`}
       >
-        <FontAwesomeIcon icon={open ? faPlus : faPlus} className="h-6 w-6" />
+        <FontAwesomeIcon icon={faPlus} className="h-6 w-6" />
       </button>
 
       {/* نقرة خارج القائمة لإغلاقها */}

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCompress, faHand, faComments, faStar,
   faUserSecret, faPaperPlane, faFolderOpen, faNoteSticky, faLayerGroup,
   faClock,
+  faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
-import { BottomSheet, SheetAction } from "@/components/ui/bottom-sheet";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-assistant";
+import { useTimerLabel } from "@/features/rooms/room-timer";
 
 /* ════════════════════════════════════════════
    Student Focus Mode — وضع التركيز للطالب (Mobile First)
@@ -17,6 +19,7 @@ import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-a
 ════════════════════════════════════════════ */
 
 export interface StudentFocusProps {
+  roomId: string;
   roomName: string;
   ownerName?: string;
   ownerStatus: "available" | "busy" | "brb";
@@ -29,10 +32,12 @@ export interface StudentFocusProps {
   onOpenFiles: () => void;
   onOpenNotes: () => void;
   onOpenCards: () => void;
+  onOpenSummary?: () => void;     // لا يظهر إلا إن نشر الأستاذ ملخّصاً
+  onRateTeacher?: () => void;     // تقييم الأستاذ
   unreadChat: number;
-  timerLabel?: string | null;     // نص المؤقّت إن كان يعمل
   children: ReactNode;            // المحتوى الرئيسي (سبورة/PDF/فيديو)
   chatPanel: ReactNode;           // لوحة الدردشة
+  challengeLayer?: ReactNode;     // طبقة تحدّي الحصة (Live Problem)
 }
 
 export function StudentFocusMode(props: StudentFocusProps) {
@@ -65,12 +70,18 @@ export function StudentFocusMode(props: StudentFocusProps) {
     { id: "files", icon: faFolderOpen, label: "الملفات", onClick: props.onOpenFiles, tone: "primary" },
     { id: "notes", icon: faNoteSticky, label: "الملاحظات", onClick: props.onOpenNotes, tone: "amber" },
     { id: "cards", icon: faLayerGroup, label: "بطاقاتي", onClick: props.onOpenCards, tone: "primary" },
+    ...(props.onRateTeacher
+      ? [{ id: "rate", icon: faStar, label: "تقييم الأستاذ", onClick: props.onRateTeacher, tone: "amber" as const }]
+      : []),
+    ...(props.onOpenSummary
+      ? [{ id: "summary", icon: faFileLines, label: "ملخّص الحصة", onClick: props.onOpenSummary, tone: "primary" as const }]
+      : []),
   ];
 
   return (
     <div className="bz-focus-root">
       {/* ═══ شريط علوي صغير جداً ═══ */}
-      <div className="bz-focus-topbar border-b border-border bg-surface/80 backdrop-blur-md">
+      <div className="bz-focus-topbar border-b border-border bg-surface">
         <button
           onClick={props.onExit}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition active:scale-95 hover:text-primary"
@@ -91,17 +102,15 @@ export function StudentFocusMode(props: StudentFocusProps) {
           )}
         </div>
 
-        {props.timerLabel && (
-          <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary tabular-nums">
-            <FontAwesomeIcon icon={faClock} className="h-3 w-3" />
-            {props.timerLabel}
-          </span>
-        )}
+        <FocusTimerBadge roomId={props.roomId} />
       </div>
 
       {/* ═══ المحتوى الرئيسي ═══ */}
       <div className="relative flex-1 overflow-hidden">
         {props.children}
+
+        {/* تحدّي الحصة — يظهر فوق المحتوى دون حجبه */}
+        {props.challengeLayer}
 
         {/* تأكيد الحفظ السريع */}
         {savedFlash && (
@@ -114,7 +123,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
         {!chatOpen && props.unreadChat > 0 && (
           <button
             onClick={() => setChatOpen(true)}
-            className="absolute bottom-3 left-3 z-[55] flex items-center gap-2 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-xl bz-radial-in active:scale-95"
+            className="absolute bottom-3 right-3 z-[55] flex items-center gap-2 rounded-full bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-xl bz-radial-in active:scale-95"
           >
             <FontAwesomeIcon icon={faComments} className="h-3.5 w-3.5" />
             {props.unreadChat > 9 ? "9+" : props.unreadChat} رسالة جديدة
@@ -123,7 +132,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
       </div>
 
       {/* ═══ شريط سفلي صغير ═══ */}
-      <div className="bz-focus-bottombar border-t border-border bg-surface/90 backdrop-blur-md">
+      <div className="bz-focus-bottombar border-t border-border bg-surface">
         <div className="flex items-stretch justify-around gap-1 px-2 py-1.5">
           <FocusBtn
             icon={faHand}
@@ -183,6 +192,18 @@ export function StudentFocusMode(props: StudentFocusProps) {
         </button>
       </BottomSheet>
     </div>
+  );
+}
+
+/* شارة المؤقّت — مكوّن مستقل حتى يبقى تحديثه كل ثانية معزولاً عن بقية الواجهة */
+function FocusTimerBadge({ roomId }: { roomId: string }) {
+  const label = useTimerLabel(roomId);
+  if (!label) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary tabular-nums">
+      <FontAwesomeIcon icon={faClock} className="h-3 w-3" />
+      {label}
+    </span>
   );
 }
 

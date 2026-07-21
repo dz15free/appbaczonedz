@@ -14,6 +14,7 @@ import {
   clearNotifications,
   type AppNotification,
 } from "@/features/community/social";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 function icon(type: string) {
   if (type === "friend_request") return faUserPlus;
@@ -38,7 +39,7 @@ export default function NotificationsPage() {
   const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

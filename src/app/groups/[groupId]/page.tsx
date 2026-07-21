@@ -28,6 +28,7 @@ import {
   type GroupMember,
   type GroupMessage,
 } from "@/features/groups/groups";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 function timeHm(ts: number) {
   return new Date(ts).toLocaleTimeString("ar-DZ", { hour: "2-digit", minute: "2-digit" });
@@ -51,7 +52,7 @@ export default function GroupPage() {
   const lastCount = useRef(0);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

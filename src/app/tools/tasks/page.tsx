@@ -13,6 +13,7 @@ import {
   listenStudyTasks, addStudyTask, toggleStudyTask, deleteStudyTask,
   clearCompletedTasks, type StudyTask,
 } from "@/features/study/study-tasks";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function TasksPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<StudyTask[]>([]);
   const [newTask, setNewTask] = useState("");
 
-  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
+  useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
     return listenStudyTasks(user.uid, setTasks);
@@ -100,7 +101,7 @@ export default function TasksPage() {
             <FontAwesomeIcon icon={faRobot} className="h-10 w-10 text-primary/40" />
             <p className="mt-3 font-semibold">لا مهام بعد</p>
             <p className="mt-1 text-sm text-text-muted">اطلب من الخباشة خطة مراجعة واحفظها كمهام، أو أضف مهمة يدوياً.</p>
-            <Link href="/omibot" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
+            <Link href="/aibot" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
               <FontAwesomeIcon icon={faRobot} className="h-4 w-4" /> اسأل الخباشة
             </Link>
           </div>

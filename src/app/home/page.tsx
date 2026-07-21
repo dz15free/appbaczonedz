@@ -23,12 +23,13 @@ import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { ref, query, orderByChild, limitToLast, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 /* أقسام الموقع */
 const SECTIONS = [
   { href: "/rooms", label: "غرف الدراسة", icon: faChalkboardUser, color: "bg-indigo-500/10 text-indigo-500" },
   { href: "/library", label: "المكتبة", icon: faBookOpen, color: "bg-emerald-500/10 text-emerald-500" },
-  { href: "/omibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
+  { href: "/aibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
 ];
@@ -208,7 +209,7 @@ export default function HomePage() {
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
 
-  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
+  useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
     return listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));

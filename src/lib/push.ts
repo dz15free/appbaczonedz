@@ -46,20 +46,23 @@ export async function unsubscribePush(uid: string) {
   } catch { /* تجاهل */ }
 }
 
+/**
+ * إرسال إشعار متصفّح إلى مستخدم.
+ * لا نمرّر كائن الاشتراك — نمرّر معرّف المستلم ورمز هويّتنا،
+ * والخادم يتحقّق ويجلب الاشتراك بنفسه (انظر /api/push).
+ */
 export async function tryPushNotification(
   toUid: string,
   payload: { title: string; body: string; link: string }
 ) {
   try {
-    const { ref: rtRef, get } = await import("firebase/database");
-    const { rtdb: db } = await import("@/lib/firebase/config");
-    const snap = await get(rtRef(db, `users/${toUid}/pushSub`));
-    const subscription = snap.val();
-    if (!subscription?.endpoint) return;
+    const { getAuth } = await import("firebase/auth");
+    const idToken = await getAuth().currentUser?.getIdToken();
+    if (!idToken) return;
     fetch("/api/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription, ...payload }),
+      body: JSON.stringify({ idToken, toUid, ...payload }),
     }).catch(() => {/* صامت */});
   } catch { /* صامت */ }
 }

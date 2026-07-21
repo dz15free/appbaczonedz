@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHand, faUserShield, faUserSlash, faCrown, faMicrophone } from "@fortawesome/free-solid-svg-icons";
+import { faHand, faUserShield, faUserSlash, faCrown, faMicrophone, faSatelliteDish, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import type { PresenceMember } from "@/features/rooms/use-presence";
@@ -23,7 +24,15 @@ interface Props {
 export function ParticipantsPanel({
   members, hands, mods, ownerId, myUid, isOwner, speakingUid, onPromote, onKick, onGrantMic,
 }: Props) {
+  const [radarOpen, setRadarOpen] = useState(false);
   const handMap = new Map(hands.map((h, i) => [h.uid, i + 1]));
+
+  /* Teacher Radar — من فقد التركيز الآن؟ للأستاذ وحده، وبلا إشعارات.
+     "بعيد" = التبويب مغلق أمامه (إشارة قوية).
+     "ساكن" = لم يلمس شيئاً منذ 5 دقائق (إشارة ضعيفة، قد يكون منتبهاً فقط). */
+  const away = members.filter((m) => m.uid !== ownerId && m.visible === false);
+  const idle = members.filter((m) => m.uid !== ownerId && m.visible !== false && m.idle);
+  const offTrack = away.length + idle.length;
 
   // ترتيب: المالك أولاً، ثم رافعو الأيدي، ثم البقية
   const sorted = [...members].sort((a, b) => {
@@ -43,6 +52,55 @@ export function ParticipantsPanel({
         </h3>
         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{members.length}</span>
       </div>
+
+      {/* رادار الأستاذ — مطوي دائماً، لا يظهر إلا إن كان هناك ما يستحق */}
+      {isOwner && offTrack > 0 && (
+        <div className="border-b border-border">
+          <button
+            onClick={() => setRadarOpen((v) => !v)}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-right transition hover:bg-warning/5"
+          >
+            <FontAwesomeIcon icon={faSatelliteDish} className="h-3.5 w-3.5 shrink-0 text-warning" />
+            <span className="flex-1 text-xs font-bold text-text-primary">
+              {offTrack} قد يكونون خارج المتابعة
+            </span>
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              className={`h-3 w-3 shrink-0 text-text-muted transition ${radarOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {radarOpen && (
+            <div className="space-y-1 px-3 pb-3">
+              {away.length > 0 && (
+                <>
+                  <p className="pt-1 text-[10px] font-bold text-text-muted">غادروا التبويب</p>
+                  {away.map((m) => (
+                    <div key={m.uid} className="flex items-center gap-2 rounded-lg bg-danger/5 px-2 py-1.5">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger" />
+                      <span className="truncate text-xs font-semibold text-text-primary">{m.name}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {idle.length > 0 && (
+                <>
+                  <p className="pt-1 text-[10px] font-bold text-text-muted">لم يتفاعلوا منذ مدّة</p>
+                  {idle.map((m) => (
+                    <div key={m.uid} className="flex items-center gap-2 rounded-lg bg-warning/5 px-2 py-1.5">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                      <span className="truncate text-xs font-semibold text-text-primary">{m.name}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              <p className="pt-1.5 text-[10px] leading-relaxed text-text-muted">
+                مؤشّر تقريبي فقط — قد يكون الطالب منتبهاً دون أن يلمس شاشته.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {sorted.map((m) => {
@@ -69,7 +127,7 @@ export function ParticipantsPanel({
                 {!handPos && (
                   <span
                     className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-background ${
-                      m.lastActive && Date.now() - m.lastActive < 45000 ? "bg-secondary" : "bg-text-muted/50"
+                      m.lastActive && Date.now() - m.lastActive < 45000 ? "bg-secondary" : "bg-text-muted"
                     }`}
                     title={m.lastActive && Date.now() - m.lastActive < 45000 ? "نشط" : "غائب"}
                   />

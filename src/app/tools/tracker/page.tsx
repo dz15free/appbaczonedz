@@ -8,6 +8,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { AppShell } from "@/components/app-shell";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faCircleCheck, faCircleHalfStroke, faCircle } from "@fortawesome/free-solid-svg-icons";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 type Status = "todo" | "partial" | "done";
 
@@ -63,7 +64,7 @@ export default function TrackerPage() {
   const [progress, setProgress] = useState<Record<string, Record<string, Status>>>({});
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

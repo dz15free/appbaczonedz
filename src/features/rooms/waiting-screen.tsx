@@ -39,7 +39,7 @@ export function WaitingScreen({ isOwner, roomName, memberCount, ownerStatus }: {
                 { icon: faChalkboard, label: "سبورة" },
                 { icon: faBookOpen, label: "ملاحظات" },
               ].map((t) => (
-                <div key={t.label} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface/50 p-4 backdrop-blur-sm">
+                <div key={t.label} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4 backdrop-blur-sm">
                   <FontAwesomeIcon icon={t.icon} className="h-5 w-5 text-primary" />
                   <span className="text-xs font-semibold text-text-muted">{t.label}</span>
                 </div>
@@ -48,7 +48,7 @@ export function WaitingScreen({ isOwner, roomName, memberCount, ownerStatus }: {
           </>
         ) : (
           <>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-surface/70 px-4 py-2 backdrop-blur-sm">
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-surface px-4 py-2 backdrop-blur-sm">
               <span className="flex gap-1">
                 <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "0ms" }} />
                 <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "150ms" }} />

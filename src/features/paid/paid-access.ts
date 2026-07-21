@@ -146,7 +146,8 @@ export async function redeemCode(code: string, uid: string, name: string): Promi
   if (data.redeemedBy) {
     if (data.redeemedBy === uid) {
       // أعد منح الوصول (مفيد إن فُقد)
-      await grantAccess(uid, data.itemType, data.itemId);
+      await grantAccess(uid, data.itemType, data.itemId, codeId);
+      await recordPurchase(uid, data.itemType, data.itemId, codeId);
       return null;
     }
     return "هذا الكود مُستخدَم مسبقاً من حساب آخر.";
@@ -156,19 +157,58 @@ export async function redeemCode(code: string, uid: string, name: string): Promi
   await update(ref(rtdb, `accessCodes/${codeId}`), {
     redeemedBy: uid, redeemedName: name, redeemedAt: Date.now(),
   });
-  await grantAccess(uid, data.itemType, data.itemId);
+  await grantAccess(uid, data.itemType, data.itemId, codeId);
+  await recordPurchase(uid, data.itemType, data.itemId, codeId);
   return null;
 }
 
-/** منح الوصول لعنصر مدفوع (يُخزّن تحت حساب الطالب) */
-async function grantAccess(uid: string, itemType: PaidItemType, itemId: string) {
-  await set(ref(rtdb, `userAccess/${uid}/${itemType}/${itemId}`), true);
+/**
+ * إثبات شراء لا يمكن تزويره.
+ * القيمة هي معرّف كود الوصول، وقاعدة Firebase تتحقّق أن هذا الكود
+ * مُستهلَك فعلاً باسم هذا الطالب ولهذا العنصر بالذات — فلا ينفع اختلاقه.
+ * (بخلاف userAccess الذي يستطيع الطالب الكتابة فيه بنفسه.)
+ */
+async function recordPurchase(uid: string, itemType: PaidItemType, itemId: string, codeId: string) {
+  try {
+    await set(ref(rtdb, `purchases/${uid}/${itemType}/${itemId}`), codeId);
+  } catch { /* لا نُفشل عملية الاسترداد إن تعذّر التسجيل */ }
+}
+
+/** هل اشترى هذا الطالب العنصر فعلاً؟ (يُستعمل لأهلية التقييم) */
+export async function hasPurchased(uid: string, itemType: PaidItemType, itemId: string): Promise<boolean> {
+  try {
+    const snap = await get(ref(rtdb, `purchases/${uid}/${itemType}/${itemId}`));
+    return snap.exists();
+  } catch { return false; }
+}
+
+/**
+ * منح الوصول لعنصر مدفوع.
+ *
+ * القيمة صارت معرّف كود الوصول بدل `true`، وقاعدة Firebase تتحقّق
+ * أن هذا الكود مُستهلَك فعلاً باسم هذا الطالب ولهذا العنصر — فلا
+ * يستطيع أحد منح نفسه وصولاً دون شراء.
+ *
+ * القيم القديمة (`true`) تبقى صالحة عند القراءة، فلا يفقد أحد
+ * وصولاً اشتراه قبل هذا التغيير.
+ */
+async function grantAccess(uid: string, itemType: PaidItemType, itemId: string, codeId: string) {
+  try {
+    await set(ref(rtdb, `userAccess/${uid}/${itemType}/${itemId}`), codeId);
+  } catch {
+    // الوصول ممنوح مسبقاً — القاعدة تمنع الكتابة فوقه، وهذا مقصود
+  }
+}
+
+/** هل القيمة تعني وصولاً صالحاً؟ `true` قديمة أو معرّف كود جديد */
+function isGranted(v: unknown): boolean {
+  return v === true || (typeof v === "string" && v.length > 0);
 }
 
 /** هل لدى الطالب وصول لعنصر؟ (استماع حيّ) */
 export function listenHasAccess(uid: string, itemType: PaidItemType, itemId: string, cb: (has: boolean) => void) {
   return onValue(ref(rtdb, `userAccess/${uid}/${itemType}/${itemId}`), (snap) => {
-    cb(snap.val() === true);
+    cb(isGranted(snap.val()));
   });
 }
 
@@ -176,7 +216,7 @@ export function listenHasAccess(uid: string, itemType: PaidItemType, itemId: str
 export async function checkAccess(uid: string, itemType: PaidItemType, itemId: string): Promise<boolean> {
   try {
     const snap = await get(ref(rtdb, `userAccess/${uid}/${itemType}/${itemId}`));
-    return snap.val() === true;
+    return isGranted(snap.val());
   } catch { return false; }
 }
 

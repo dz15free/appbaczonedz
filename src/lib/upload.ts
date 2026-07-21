@@ -8,6 +8,25 @@ export interface Prepared {
   dataUrl: string;
 }
 
+/* نسخة مصغّرة + نسخة كاملة.
+   المصغّرة وحدها تُحمَّل في قائمة المنشورات، والكاملة عند التكبير فقط.
+   هذا يقلّل استهلاك حصّة التنزيل إلى نحو الخُمس. */
+export interface PreparedImage {
+  name: string;
+  thumb: string;   // ~400px  — للعرض في القائمة
+  full: string;    // ~1400px — عند التكبير أو التحميل
+}
+
+export async function prepareImagePair(file: File): Promise<PreparedImage> {
+  if (!file.type.startsWith("image/")) throw new Error("الملف ليس صورة.");
+  if (file.size > MAX_IMAGE_SRC) throw new Error("الصورة كبيرة جداً.");
+  const [thumb, full] = await Promise.all([
+    compressImage(file, 400, 0.6),
+    compressImage(file, 1400, 0.75),
+  ]);
+  return { name: file.name, thumb, full };
+}
+
 export async function prepareFile(file: File): Promise<Prepared> {
   const isImage = file.type.startsWith("image/");
   if (isImage) {

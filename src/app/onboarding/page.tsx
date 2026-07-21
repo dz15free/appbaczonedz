@@ -7,8 +7,11 @@ import { useProfile } from "@/features/auth/use-profile";
 import { saveProfile } from "@/lib/firebase/auth";
 import { TRACKS, WILAYAS, ALL_SUBJECTS } from "@/lib/constants";
 import { Button } from "@/components/ui/field";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { useNextDestination } from "@/features/auth/use-require-auth";
 
 export default function OnboardingPage() {
+  const next = useNextDestination();
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
@@ -21,7 +24,7 @@ export default function OnboardingPage() {
 
   // حماية الصفحة: لا دخول بدون مصادقة
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   async function handleSave() {
@@ -34,7 +37,7 @@ export default function OnboardingPage() {
     } else {
       await saveProfile(user.uid, { track, wilaya });
     }
-    router.push("/home");
+    router.push(next);
   }
 
   if (loading || !user || !profile) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

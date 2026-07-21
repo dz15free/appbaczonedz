@@ -11,6 +11,7 @@ import {
   faArrowRight, faPlus, faTrash, faRotateLeft,
   faCheck, faXmark, faTrophy, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 const SUBJECTS = [
   { id: "all",       name: "الكل" },
@@ -81,7 +82,7 @@ export default function FlashcardsPage() {
   const [studying, setStudying] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => {

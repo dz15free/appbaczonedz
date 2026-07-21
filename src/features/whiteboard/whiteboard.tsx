@@ -1,6 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pickShape, boundsOf, describeShape } from "@/features/whiteboard/shape-geometry";
+import { ShapeActionsSheet } from "@/features/whiteboard/shape-actions";
+import {
+  listenMarks, listenSavedMarks, recordMarkSaved, tagInfo,
+  setMark, clearMark,
+  type ShapeMark, type MarkTag,
+} from "@/features/whiteboard/marks";
+import { saveFlashcard } from "@/features/study/save-flashcard";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,7 +27,7 @@ import {
   faBorderAll,
   faChevronLeft,
   faChevronRight,
-  faPlus,
+  faPlus, faArrowPointer, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 
@@ -42,7 +50,12 @@ const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"
 const SIZES = [2, 4, 8];
 const SYMBOLS = ["+", "−", "×", "÷", "=", "√", "π", "²", "³", "≤", "≥", "→", "∞", "∫", "Σ", "θ", "α", "Δ"];
 
-const TOOLS: { id: Kind; icon: typeof faPen; label: string }[] = [
+/* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
+   فلا يتسرّب إلى قاعدة البيانات ولا يُخزَّن كشكل. */
+type ToolId = Kind | "select";
+
+const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
+  { id: "select", icon: faArrowPointer, label: "اختيار" },
   { id: "pen", icon: faPen, label: "قلم" },
   { id: "highlighter", icon: faHighlighter, label: "تحديد" },
   { id: "line", icon: faSlash, label: "خط" },
@@ -53,7 +66,9 @@ const TOOLS: { id: Kind; icon: typeof faPen; label: string }[] = [
   { id: "eraser", icon: faEraser, label: "ممحاة" },
 ];
 
-export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw?: boolean }) {
+export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
+  roomId: string; canDraw?: boolean; roomName?: string; subject?: string | null;
+}) {
   const { user } = useAuth();
   const wrapRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLCanvasElement>(null);
@@ -67,15 +82,35 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   const drawing = useRef(false);
   const currentShape = useRef<Shape | null>(null);
 
-  const [tool, setTool] = useState<Kind>("pen");
+  const [tool, setTool] = useState<ToolId>("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
   const [grid, setGrid] = useState(true);
   const [stamp, setStamp] = useState<string | null>(null);
+  // التحديد: الحالة للواجهة، والمرجع ليقرأه الرسم دون إعادة إنشاء الدوال
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  // الطالب لا يرسم، فالاختيار عنده دائم بلا زر إضافي
+  const selecting = !canDraw || tool === "select";
+  const selectingRef = useRef(selecting);
+  // درج الإجراءات + مؤقّت الضغط المطوّل
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressStart = useRef<{ x: number; y: number } | null>(null);
+  // Smart Highlights
+  const [marks, setMarks] = useState<Record<string, ShapeMark>>({});
+  const marksRef = useRef<Record<string, ShapeMark>>({});
+  const [toast, setToast] = useState<{ tag: MarkTag; text?: string } | null>(null);
+  const savedMarks = useRef<Set<string>>(new Set());
+  const seenMarks = useRef<Set<string>>(new Set());
 
   // الصفحات: صفحة نشطة متزامنة + عدد الصفحات
   const [activePage, setActivePage] = useState(0);
   const [pageCount, setPageCount] = useState(1);
+  // Follow Teacher: صفحة الأستاذ، وهل يتابعها هذا المستخدم؟
+  const [teacherPage, setTeacherPage] = useState(0);
+  const [following, setFollowing] = useState(true);
+  const followingRef = useRef(true);
 
   const toolRef = useRef(tool);
   const colorRef = useRef(color);
@@ -85,6 +120,10 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   colorRef.current = color;
   sizeRef.current = size;
   stampRef.current = stamp;
+  selectingRef.current = selecting;
+  selectedRef.current = selectedId;
+  marksRef.current = marks;
+  followingRef.current = following;
 
   // مسار الأشكال للصفحة النشطة
   const strokesPath = `roomLive/${roomId}/whiteboard/pages/${activePage}/strokes`;
@@ -173,6 +212,44 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const s of shapes.current) drawShape(s, ctx);
+
+    // العلامات — خط رفيع بلون الوسم حول العنصر.
+    // خفيف عمداً: الملاحظات تقول ألّا يقطع التعليم تركيز الطالب.
+    const dprv = window.devicePixelRatio || 1;
+    for (const [shapeId, m] of Object.entries(marksRef.current)) {
+      const shape = shapes.current.find((x) => x.id === shapeId);
+      const mb = shape ? boundsOf(shape) : null;
+      if (!mb) continue;
+      const info = tagInfo(m.tag);
+      const w = canvas.width, h = canvas.height;
+      ctx.save();
+      ctx.strokeStyle = info.color;
+      ctx.globalAlpha = 0.75;
+      ctx.lineWidth = 2 * dprv;
+      ctx.strokeRect(mb.x0 * w, mb.y0 * h, (mb.x1 - mb.x0) * w, (mb.y1 - mb.y0) * h);
+      ctx.globalAlpha = 1;
+      ctx.font = `${13 * dprv}px sans-serif`;
+      ctx.textBaseline = "bottom";
+      ctx.fillText(info.emoji, mb.x0 * w, Math.max(mb.y0 * h - 2 * dprv, 14 * dprv));
+      ctx.restore();
+    }
+
+    // إطار العنصر المحدَّد — يُرسم هنا لا على طبقة منفصلة، فيبقى
+    // ظاهراً بعد أي إعادة رسم أو تغيير حجم دون منطق إضافي
+    const sel = selectedRef.current;
+    if (sel) {
+      const shape = shapes.current.find((x) => x.id === sel);
+      const b = shape ? boundsOf(shape) : null;
+      if (b) {
+        const w = canvas.width, h = canvas.height;
+        ctx.save();
+        ctx.strokeStyle = "#2563eb";
+        ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+        ctx.setLineDash([7 * (window.devicePixelRatio || 1), 5 * (window.devicePixelRatio || 1)]);
+        ctx.strokeRect(b.x0 * w, b.y0 * h, (b.x1 - b.x0) * w, (b.y1 - b.y0) * h);
+        ctx.restore();
+      }
+    }
   }, [drawShape]);
 
   const scheduleRedraw = useCallback(() => {
@@ -189,6 +266,53 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const c = previewRef.current;
     if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
   }, []);
+
+  // العلامات لهذه الصفحة
+  useEffect(() => {
+    const unsub = listenMarks(roomId, activePage, (m) => { setMarks(m); scheduleRedraw(); });
+    return () => { unsub(); seenMarks.current = new Set(); };
+  }, [roomId, activePage, scheduleRedraw]);
+
+  // ما حُفظ سابقاً في حساب الطالب — يمنع تكرار البطاقة نفسها
+  useEffect(() => {
+    if (!user || canDraw) return;
+    return listenSavedMarks(user.uid, roomId, (ids) => { savedMarks.current = ids; });
+  }, [user, canDraw, roomId]);
+
+  // علامة جديدة عند الطالب: تنبيه خفيف، ونقلها إلى بطاقاته إن كانت نصاً
+  useEffect(() => {
+    if (canDraw || !user) return;
+    for (const [shapeId, m] of Object.entries(marks)) {
+      if (seenMarks.current.has(shapeId)) continue;
+      seenMarks.current.add(shapeId);
+      // أول تحميل للصفحة ليس حدثاً — لا نُغرق الطالب بتنبيهات قديمة
+      if (Date.now() - m.at > 60000) continue;
+
+      setToast({ tag: m.tag, text: m.text });
+      setTimeout(() => setToast(null), 3200);
+
+      if (m.text && !savedMarks.current.has(shapeId)) {
+        const info = tagInfo(m.tag);
+        saveFlashcard({
+          uid: user.uid,
+          front: m.text,
+          back: `${info.emoji} ${info.label}${roomName ? ` — ${roomName}` : ""}`,
+          subject: subject || "general",
+          source: roomName ? `سبورة ${roomName}` : "السبورة",
+        }).then(() => recordMarkSaved(user.uid, roomId, shapeId)).catch(() => {});
+      }
+    }
+  }, [marks, canDraw, user, roomId, roomName, subject]);
+
+  // Escape يلغي التحديد — سلوك متوقّع في كل محرّر
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, scheduleRedraw]);
 
   // ── تهيئة + تجاوب ──
   useEffect(() => {
@@ -218,6 +342,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     shapes.current = [];
     drawnIds.current = new Set();
     redoStack.current = [];
+    setSelectedId(null);
+    selectedRef.current = null;
     scheduleRedraw();
 
     const sref = ref(rtdb, strokesPath);
@@ -254,7 +380,11 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const unsub = onValue(metaRef, (snap) => {
       const m = (snap.val() as { activePage?: number; pageCount?: number }) ?? {};
       if (typeof m.pageCount === "number") setPageCount(Math.max(1, m.pageCount));
-      if (typeof m.activePage === "number") setActivePage(m.activePage);
+      if (typeof m.activePage === "number") {
+        setTeacherPage(m.activePage);
+        // الأستاذ يتبع صفحته دائماً، والطالب فقط إن لم يوقف المتابعة
+        if (canDraw || followingRef.current) setActivePage(m.activePage);
+      }
     });
     return () => unsub();
   }, [roomId]);
@@ -294,6 +424,26 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     const p = getPoint(e);
     const t = toolRef.current;
 
+    // وضع الاختيار: نلتقط الشكل ولا نرسم شيئاً
+    if (selectingRef.current) {
+      const c = mainRef.current;
+      const v = { w: c?.clientWidth ?? 1, h: c?.clientHeight ?? 1 };
+      // هامش أوسع للمس من هامش الفأرة
+      const tol = e.pointerType === "mouse" ? 10 : 18;
+      const hit = pickShape(shapes.current, p, v, tol);
+      setSelectedId(hit ? hit.id : null);
+      selectedRef.current = hit ? hit.id : null;
+      scheduleRedraw();
+
+      // ضغط مطوّل على عنصر → درج الإجراءات (بديل النقر الأيمن على الهاتف)
+      if (hit) {
+        pressStart.current = { x: e.clientX, y: e.clientY };
+        if (longPress.current) clearTimeout(longPress.current);
+        longPress.current = setTimeout(() => setActionsOpen(true), 550);
+      }
+      return;
+    }
+
     // ختم رمز رياضي
     if (stampRef.current) {
       commit(newShape("text", p, stampRef.current));
@@ -305,7 +455,8 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
       if (txt) commit(newShape("text", p, txt));
       return;
     }
-    // أدوات الرسم
+    // أدوات الرسم — "select" استُبعد أعلاه، والحارس يوثّق ذلك للمترجم
+    if (t === "select") return;
     drawing.current = true;
     currentShape.current = newShape(t, p);
     if (t === "line" || t === "arrow" || t === "rect" || t === "ellipse") {
@@ -313,7 +464,17 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     }
   }
 
+  function cancelLongPress() {
+    if (longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
+    pressStart.current = null;
+  }
+
   function onPointerMove(e: React.PointerEvent) {
+    // تحريك الإصبع يعني تمريراً لا ضغطاً مطوّلاً
+    if (longPress.current && pressStart.current) {
+      const d = Math.hypot(e.clientX - pressStart.current.x, e.clientY - pressStart.current.y);
+      if (d > 10) cancelLongPress();
+    }
     if (!drawing.current || !currentShape.current) return;
     e.preventDefault();
     const p = getPoint(e);
@@ -339,6 +500,7 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   }
 
   function onPointerUp() {
+    cancelLongPress();
     if (!drawing.current || !currentShape.current) return;
     drawing.current = false;
     const s = currentShape.current;
@@ -376,6 +538,13 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
   // ── إدارة الصفحات ──
   function gotoPage(idx: number) {
     if (idx < 0 || idx >= pageCount) return;
+    // الأستاذ ينقل الغرفة كلها. الطالب يتصفّح لنفسه فقط ويتوقّف عن
+    // المتابعة تلقائياً — كان أي طالب ينقل الجميع، وهذا يُربك الحصة.
+    if (!canDraw) {
+      setActivePage(idx);
+      setFollowing(false);
+      return;
+    }
     update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { activePage: idx, pageCount });
   }
   function addPage() {
@@ -391,9 +560,15 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
     update(ref(rtdb, `roomLive/${roomId}/whiteboard/meta`), { pageCount: pageCount - 1, activePage: target });
   }
 
-  function pickTool(k: Kind) {
+  function pickTool(k: ToolId) {
     setTool(k);
     setStamp(null);
+    // مغادرة وضع الاختيار تُسقط التحديد حتى لا يبقى إطار معلّق
+    if (k !== "select" && selectedRef.current) {
+      setSelectedId(null);
+      selectedRef.current = null;
+      scheduleRedraw();
+    }
   }
 
   return (
@@ -467,10 +642,77 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
         }
       >
         <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
+        {/* شريط التحديد — يؤكّد للمستخدم ما التقطه، ويسهّل الإفلات.
+            هذا هو المرساة التي ستُعلَّق عليها إجراءات الخطوة الثالثة. */}
+        {selectedId && (() => {
+          const shape = shapes.current.find((x) => x.id === selectedId);
+          return (
+            <div className="pointer-events-auto absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary/30 bg-surface px-3 py-1.5 shadow-glass">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+              <span className="max-w-[45vw] truncate text-[11px] font-bold text-text-primary">
+                {shape ? describeShape(shape) : "عنصر"}
+              </span>
+              <button
+                onClick={() => setActionsOpen(true)}
+                aria-label="إجراءات العنصر"
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary transition hover:bg-primary/20"
+              >
+                إجراءات
+              </button>
+              <button
+                onClick={() => { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }}
+                aria-label="إلغاء التحديد"
+                className="grid h-5 w-5 place-items-center rounded-full text-text-muted transition hover:bg-danger/10 hover:text-danger"
+              >
+                <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* تنبيه العلامة — يظهر ويختفي دون مقاطعة */}
+        {toast && (
+          <div
+            className="bz-radial-in pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[80%] -translate-x-1/2 items-center gap-2 rounded-full px-3.5 py-2 shadow-glass"
+            style={{ background: `${tagInfo(toast.tag).color}1f`, border: `1px solid ${tagInfo(toast.tag).color}55` }}
+          >
+            <span className="text-sm leading-none">{tagInfo(toast.tag).emoji}</span>
+            <span className="truncate text-[11px] font-bold" style={{ color: tagInfo(toast.tag).color }}>
+              {tagInfo(toast.tag).label}
+              {toast.text ? " — حُفظت في بطاقاتك" : ""}
+            </span>
+          </div>
+        )}
+
+        <ShapeActionsSheet
+          open={actionsOpen}
+          onClose={() => setActionsOpen(false)}
+          shape={shapes.current.find((x) => x.id === selectedId) ?? null}
+          uid={user?.uid ?? ""}
+          roomName={roomName}
+          subject={subject}
+          canDelete={canDraw}
+          canMark={canDraw}
+          currentTag={selectedId ? marks[selectedId]?.tag ?? null : null}
+          onMark={(tag) => {
+            if (!selectedId) return;
+            const sh = shapes.current.find((x) => x.id === selectedId);
+            if (tag === null) clearMark(roomId, activePage, selectedId);
+            else setMark(roomId, activePage, selectedId, tag, sh?.text);
+          }}
+          onDelete={() => {
+            if (!selectedId) return;
+            remove(ref(rtdb, `${strokesPath}/${selectedId}`));
+            setSelectedId(null);
+            selectedRef.current = null;
+            scheduleRedraw();
+          }}
+        />
+
         <canvas
           ref={previewRef}
-          className={`absolute inset-0 ${canDraw ? "touch-none" : "pointer-events-none"}`}
-          onPointerDown={canDraw ? onPointerDown : undefined}
+          className={`absolute inset-0 ${canDraw || selecting ? "touch-none" : "pointer-events-none"}`}
+          onPointerDown={canDraw || selecting ? onPointerDown : undefined}
           onPointerMove={canDraw ? onPointerMove : undefined}
           onPointerUp={canDraw ? onPointerUp : undefined}
           onPointerLeave={canDraw ? onPointerUp : undefined}
@@ -480,6 +722,21 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
 
       {/* ── شريط الصفحات ── */}
       <div className="flex items-center justify-center gap-2 border-t border-border bg-surface px-2 py-1.5">
+        {!canDraw && (
+          following ? (
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-bold text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
+              أتابع الأستاذ
+            </span>
+          ) : (
+            <button
+              onClick={() => { setFollowing(true); setActivePage(teacherPage); }}
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary transition active:scale-95"
+            >
+              عُد إلى الأستاذ ({teacherPage + 1})
+            </button>
+          )
+        )}
         <button
           onClick={() => gotoPage(activePage - 1)}
           disabled={activePage === 0}
@@ -494,11 +751,16 @@ export function Whiteboard({ roomId, canDraw = true }: { roomId: string; canDraw
             <button
               key={i}
               onClick={() => gotoPage(i)}
-              className={`grid h-8 min-w-8 place-items-center rounded-lg px-2 text-xs font-bold transition ${
+              title={i === teacherPage && !canDraw ? "صفحة الأستاذ الآن" : undefined}
+              className={`relative grid h-8 min-w-8 place-items-center rounded-lg px-2 text-xs font-bold transition ${
                 i === activePage ? "bg-gradient-primary text-white" : "bg-background text-text-muted hover:bg-primary/10"
               }`}
             >
               {i + 1}
+              {/* نقطة تدلّ الطالب على موضع الأستاذ حين يتصفّح بحرّية */}
+              {!canDraw && !following && i === teacherPage && (
+                <span className="absolute -top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-secondary" />
+              )}
             </button>
           ))}
         </div>

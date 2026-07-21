@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ref, push, remove, onValue, query, orderByChild, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,10 @@ import { AppShell } from "@/components/app-shell";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
+import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
+import { SupportChatSheet } from "@/features/support/support-chat";
+import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
+import { ShareButton } from "@/components/ui/share-sheet";
 
 const SUBJECTS = [
   { id: "all", label: "الكل" },
@@ -50,6 +54,7 @@ function subjectLabel(id: string) { return SUBJECTS.find((s) => s.id === id)?.la
 
 export default function LibraryPage() {
   const router = useRouter();
+
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
   const [entries, setEntries] = useState<LibEntry[]>([]);
@@ -60,7 +65,7 @@ export default function LibraryPage() {
   const [adding, setAdding] = useState(false);
   const [formErr, setFormErr] = useState("");
 
-  useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
+  useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     return onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(200)), (snap) => {
       const val = snap.val() ?? {};
@@ -71,11 +76,17 @@ export default function LibraryPage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
-  const filtered = entries.filter((e) => {
-    if (subFilter !== "all" && e.subject !== subFilter) return false;
-    if (search && !e.title.includes(search) && !e.chapter?.includes(search)) return false;
-    return true;
-  });
+  // عنصر مشارَك عبر رابط: نتجاهل الفلاتر ونرفعه إلى الأعلى ونبرزه
+  const sharedId = useQueryParam("item");
+
+  const filtered = entries
+    .filter((e) => {
+      if (sharedId && e.id === sharedId) return true;
+      if (subFilter !== "all" && e.subject !== subFilter) return false;
+      if (search && !e.title.includes(search) && !e.chapter?.includes(search)) return false;
+      return true;
+    })
+    .sort((a, b) => (a.id === sharedId ? -1 : b.id === sharedId ? 1 : 0));
 
   // فقط الأستاذ والأدمن يمكنهما نشر محتوى مدفوع
   const canSell = profile?.role === "teacher" || profile?.role === "admin";
@@ -134,8 +145,8 @@ export default function LibraryPage() {
         ) : (
           <div className="grid gap-3">
             {filtered.map((e) => (
-              <LibEntryCard key={e.id} e={e} uid={user.uid} isAdmin={profile?.role === "admin"}
-                isTeacher={profile?.role === "teacher"} myUid={user.uid}
+              <LibEntryCard key={e.id} e={e} highlighted={e.id === sharedId} uid={user.uid} isAdmin={profile?.role === "admin"}
+                isTeacher={profile?.role === "teacher"} myUid={user.uid} myName={user.displayName || "طالب"}
                 onDelete={() => confirm("حذف؟") && remove(ref(rtdb, `library/${e.id}`))} />
             ))}
           </div>
@@ -208,8 +219,8 @@ export default function LibraryPage() {
 }
 
 /* بطاقة مصدر — تدعم المحتوى المدفوع بالقفل والكود */
-function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
-  e: LibEntry; uid: string; isAdmin: boolean; isTeacher: boolean; myUid: string; onDelete: () => void;
+function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, onDelete }: {
+  e: LibEntry; uid: string; isAdmin: boolean; isTeacher: boolean; myUid: string; myName: string; highlighted?: boolean; onDelete: () => void;
 }) {
   const { settings } = useSiteSettings();
   const [hasAccess, setHasAccess] = useState(false);
@@ -222,6 +233,8 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
   const [genBusy, setGenBusy] = useState(false);
   const isOwnerOrAdmin = e.uploaderId === myUid || isAdmin;
   const locked = !!e.isPaid && !hasAccess && !isOwnerOrAdmin;
+  const [showRate, setShowRate] = useState(false);
+  const [showPay, setShowPay] = useState(false);
 
   async function doGenerate() {
     setGenBusy(true);
@@ -251,9 +264,18 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
   }
 
   return (
-    <div className={`rounded-xl border bg-surface p-4 transition ${locked ? "border-amber-400/30" : "border-border hover:border-primary/30 hover:shadow-glass"}`}>
+    <div className={`rounded-xl border bg-surface p-4 transition ${
+      highlighted ? "border-primary ring-2 ring-primary/25"
+        : locked ? "border-amber-400/30"
+        : "border-border hover:border-primary/30 hover:shadow-glass"
+    }`}>
+      {highlighted && (
+        <p className="mb-2 rounded-lg bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+          🔗 هذا هو الملخّص المشارَك معك
+        </p>
+      )}
       <div className="flex items-start gap-3">
-        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-border/30 ${locked ? "text-amber-500" : color}`}>
+        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-border ${locked ? "text-amber-500" : color}`}>
           <FontAwesomeIcon icon={locked ? faLock : icon} className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -268,7 +290,10 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
           </div>
           <h3 className="mt-1 font-semibold">{e.title}</h3>
           {e.description && <p className="mt-0.5 text-xs text-text-muted line-clamp-2">{e.description}</p>}
-          <p className="mt-1 text-[11px] text-text-muted">بواسطة {e.uploaderName} · {timeAgo(e.createdAt)}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <p className="text-[11px] text-text-muted">بواسطة {e.uploaderName} · {timeAgo(e.createdAt)}</p>
+            {e.isPaid && <ContentRatingBadge itemId={e.id} />}
+          </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">
           {locked ? (
@@ -284,6 +309,18 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
               <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
             </button>
           )}
+          <ShareButton
+            target={{ path: `/library?item=${e.id}`, title: e.title }}
+            compact
+            className="grid h-8 w-full place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary"
+          />
+          {e.isPaid && !locked && (
+            <button onClick={() => setShowRate(true)}
+              title="التقييم والآراء"
+              className="grid h-8 w-full place-items-center rounded-lg bg-amber-400/15 text-amber-600 hover:bg-amber-400/25">
+              <FontAwesomeIcon icon={faStar} className="h-3.5 w-3.5" />
+            </button>
+          )}
           {e.isPaid && isOwnerOrAdmin && (
             <button onClick={() => setShowGen(true)}
               title="توليد كود وصول"
@@ -294,18 +331,30 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, onDelete }: {
         </div>
       </div>
 
+      {/* تقييم المحتوى المدفوع — للمشتري وحده */}
+      {e.isPaid && myUid && (
+        <ContentRatingSheet
+          itemId={e.id}
+          itemTitle={e.title}
+          uid={myUid}
+          name={myName}
+          isAdmin={isAdmin}
+          open={showRate}
+          onClose={() => setShowRate(false)}
+        />
+      )}
+
       {/* لوحة فتح القفل بالكود */}
       {showRedeem && locked && (
         <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
           <p className="text-xs font-semibold leading-relaxed">
             هذا الملخّص مدفوع ({e.price} دج). للحصول على كود الوصول، تواصل مع الأدمن للدفع.
           </p>
-          {(settings.paymentUrl || settings.telegramUrl) && (
-            <a href={settings.paymentUrl || settings.telegramUrl} target="_blank" rel="noopener noreferrer"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2 text-xs font-bold text-white">
-              💬 تواصل عبر ميسنجر للشراء
-            </a>
-          )}
+          <button onClick={() => setShowPay(true)}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary py-2 text-xs font-bold text-white active:scale-95">
+            💬 تواصل مع الإدارة للشراء
+          </button>
+          <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
           <div className="mt-2 flex gap-2">
             <input value={code} onChange={(ev) => setCode(ev.target.value)} placeholder="أدخل كود الوصول"
               className="h-9 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />

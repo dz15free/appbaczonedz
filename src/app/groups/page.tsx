@@ -16,6 +16,7 @@ import {
   SUBJECT_COLOR,
   type StudyGroup,
 } from "@/features/groups/groups";
+import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 function timeAgo(ts: number) {
   const d = Math.floor((Date.now() - ts) / 86400000);
@@ -36,7 +37,7 @@ export default function GroupsPage() {
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
   useEffect(() => listenGroups(setGroups), []);
