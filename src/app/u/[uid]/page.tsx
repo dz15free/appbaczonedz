@@ -21,7 +21,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { MyRatingSummary } from "@/features/community/teacher-rating-ui";
+import { MyRatingSummary, RateTeacherSheet } from "@/features/community/teacher-rating-ui";
 import { TRACKS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -63,6 +63,8 @@ export default function UserProfilePage() {
   const [nameParam, setNameParam] = useState("");
 
   const isMe = user?.uid === uid;
+  const isTeacher = theirProfile?.role === "teacher" || theirProfile?.role === "admin";
+  const [rateOpen, setRateOpen] = useState(false);
 
   useEffect(() => {
     setNameParam(new URLSearchParams(window.location.search).get("name") || "");
@@ -121,13 +123,14 @@ export default function UserProfilePage() {
         <div className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
           <UserAvatar name={name} avatarUrl={theirProfile?.avatarUrl} size="xl" />
           <h1 className="mt-3 font-display text-xl font-extrabold">{name}</h1>
-          {(theirProfile?.role === "teacher" || theirProfile?.role === "admin") && (
+          {isTeacher ? (
             <div className="mt-1.5"><RoleBadge uid={uid} role={theirProfile?.role} /></div>
+          ) : (
+            <div className="mt-2 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
+              <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
+              المستوى {theirProfile?.level ?? 1} · {theirProfile?.points ?? 0} نقطة
+            </div>
           )}
-          <div className="mt-2 flex items-center gap-2 rounded-full bg-warning/10 px-4 py-1.5 text-sm font-bold text-warning">
-            <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
-            المستوى {theirProfile?.level ?? 1} · {theirProfile?.points ?? 0} نقطة
-          </div>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-text-muted">
             <span className="flex items-center gap-1.5">
               <FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4 text-primary" />
@@ -158,21 +161,45 @@ export default function UserProfilePage() {
               )}
             </div>
           )}
+
+          {/* زرّ تقييم الأستاذ — لأي طالب زار بروفايله */}
+          {isTeacher && !isMe && user && (
+            <button
+              onClick={() => setRateOpen(true)}
+              className="mt-3 flex items-center gap-2 rounded-md border border-amber-400/40 bg-amber-400/10 px-5 py-2 text-sm font-bold text-amber-600 transition hover:bg-amber-400/20"
+            >
+              <FontAwesomeIcon icon={faStar} className="h-4 w-4" /> قيّم الأستاذ
+            </button>
+          )}
         </div>
 
-        {/* الإنجازات */}
-        <div className="mt-4">
-          <ProfileBadges
-            stats={{ points: theirProfile?.points, postCount: theirProfile?.postCount, commentCount: theirProfile?.commentCount }}
-            friendCount={theirFriends.length}
-          />
-        </div>
+        {/* الإنجازات — للطلبة فقط */}
+        {!isTeacher && (
+          <div className="mt-4">
+            <ProfileBadges
+              stats={{ points: theirProfile?.points, postCount: theirProfile?.postCount, commentCount: theirProfile?.commentCount }}
+              friendCount={theirFriends.length}
+            />
+          </div>
+        )}
 
         {/* تقييم الطلاب — يظهر للجميع على بروفايل الأستاذ */}
-        {(theirProfile?.role === "teacher" || theirProfile?.role === "admin") && (
+        {isTeacher && (
           <div className="mt-4">
             <MyRatingSummary uid={uid} />
           </div>
+        )}
+
+        {/* درج تقييم الأستاذ */}
+        {isTeacher && !isMe && user && (
+          <RateTeacherSheet
+            teacherUid={uid}
+            teacherName={name}
+            studentUid={user.uid}
+            studentName={myProfile?.name || user.displayName || "طالب"}
+            open={rateOpen}
+            onClose={() => setRateOpen(false)}
+          />
         )}
 
         {/* منشورات الشخص */}

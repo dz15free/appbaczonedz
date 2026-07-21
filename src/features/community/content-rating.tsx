@@ -62,20 +62,39 @@ export function useContentRatings(itemId: string) {
   return { list, count, avg, visible: count >= MIN_CONTENT_RATINGS };
 }
 
-/* شارة مضغوطة تُعرض على بطاقة الملخّص / الغرفة المدفوعة */
-export function ContentRatingBadge({ itemId, showEmpty }: { itemId: string; showEmpty?: boolean }) {
-  const { count, avg, visible } = useContentRatings(itemId);
+/* نجوم بصريّة (ممتلئة/نصف/فارغة) — بأسلوب متاجر التسوّق */
+export function StarRow({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
+  const cls = size === "md" ? "h-4 w-4" : "h-3 w-3";
+  return (
+    <span className="inline-flex items-center gap-0.5 align-middle" aria-label={`${value.toFixed(1)} من 5`}>
+      {[1, 2, 3, 4, 5].map((n) => {
+        const fill = Math.max(0, Math.min(1, value - (n - 1))); // 0..1 لهذه النجمة
+        return (
+          <span key={n} className={`relative inline-block ${cls}`}>
+            <FontAwesomeIcon icon={faStarOutline} className={`absolute inset-0 ${cls} text-amber-400/50`} />
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <FontAwesomeIcon icon={faStar} className={`${cls} text-amber-500`} />
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/* شارة تقييم المحتوى — نجوم + متوسّط + عدد المقيّمين (تظهر فور وجود تقييم واحد) */
+export function ContentRatingBadge({ itemId, showEmpty, size = "sm" }: { itemId: string; showEmpty?: boolean; size?: "sm" | "md" }) {
+  const { count, avg } = useContentRatings(itemId);
   if (count === 0) {
-    return showEmpty ? <span className="text-[10px] text-text-muted">لم يُقيَّم بعد</span> : null;
-  }
-  if (!visible) {
-    return <span className="text-[10px] text-text-muted">{count} تقييم</span>;
+    return showEmpty ? <span className="text-[11px] text-text-muted">لم يُقيَّم بعد</span> : null;
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-      <FontAwesomeIcon icon={faStar} className="h-2.5 w-2.5" />
-      {avg.toFixed(1)}
-      <span className="font-normal opacity-70">({count})</span>
+    <span className="inline-flex items-center gap-1.5 align-middle">
+      <StarRow value={avg} size={size} />
+      <span className={`font-bold text-amber-600 ${size === "md" ? "text-sm" : "text-[11px]"}`}>{avg.toFixed(1)}</span>
+      <span className={`text-text-muted ${size === "md" ? "text-xs" : "text-[10px]"}`}>
+        ({count} {count === 1 ? "تقييم" : count === 2 ? "تقييمان" : "تقييمات"})
+      </span>
     </span>
   );
 }

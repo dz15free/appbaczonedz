@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ContentRatingBadge } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -191,9 +192,12 @@ export default function RoomsPage() {
                             </span>
                           )}
                         </div>
-                        <span className="mt-1 flex items-center gap-1.5 text-xs text-secondary">
-                          <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
-                          {r.activeCount} متصل الآن · {r.ownerName}
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-secondary">
+                          <span className="flex items-center gap-1.5">
+                            <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
+                            {r.activeCount} متصل الآن · {r.ownerName}
+                          </span>
+                          {r.isPaid && <ContentRatingBadge itemId={r.id} showEmpty />}
                         </span>
                       </div>
                       <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary" />

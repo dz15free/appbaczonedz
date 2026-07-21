@@ -5,7 +5,7 @@ import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, f
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
-import { isPushSupported, subscribePush } from "@/lib/push";
+import { isPushSupported, subscribePush, unsubscribePush } from "@/lib/push";
 import { useAuth } from "@/features/auth/auth-provider";
 
 /* أيقونات التواصل (SVG مضمّن — بلا حزم إضافية) */
@@ -184,115 +184,102 @@ export function AdvertiseCard() {
 
 
 /* ════════════════════════════════════════════════════════════
-   بطاقات بارزة أعلى الرئيسية — وصول سريع لأهمّ الوجهات
-   (دروس وملخّصات، المكتبة، الإشعارات، تيليغرام)
+   وجهتان خارجيّتان بارزتان — دروس ومواضيع + قناة تيليغرام
 
-   لا تحذف شيئاً من الرئيسية — تُضاف فوق المحتوى الحالي.
-   الروابط الخارجية قابلة للتهيئة من الإعدادات مع قيم احتياطية.
+   منفصلتان عن صفّ الوصول السريع (الذي فيه المكتبة والغرف…)
+   لأنهما وجهتان خارجيّتان مهمّتان للطالب، ونريد إبرازهما.
+   الروابط قابلة للتهيئة من الإعدادات مع قيم احتياطية.
 ════════════════════════════════════════════════════════════ */
-export function HomeHighlightCards() {
+export function HomeExternalHighlights() {
   const { settings } = useSiteSettings();
-  const { user } = useAuth();
-
   const lessonsUrl = settings.lessonsUrl || "https://www.baczonedz.com/p/blog-page_33.html";
   const telegramUrl = settings.telegramUrl || "https://t.me/baczonedz";
 
-  const [notifState, setNotifState] = useState<"idle" | "on" | "unsupported">("idle");
-  useEffect(() => {
-    if (!isPushSupported()) { setNotifState("unsupported"); return; }
-    try {
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") setNotifState("on");
-    } catch { /* تجاهل */ }
-  }, []);
-
-  async function enableNotifications() {
-    if (!user || notifState === "on") return;
-    const ok = await subscribePush(user.uid);
-    if (ok) setNotifState("on");
-  }
-
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {/* دروس وملخّصات */}
+    <div className="grid gap-3 sm:grid-cols-2">
+      {/* دروس ومواضيع */}
       <a
         href={lessonsUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-glass"
+        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glass"
       >
-        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-primary/10 blur-2xl transition group-hover:scale-150" />
-        <div className="relative flex flex-col items-start gap-2.5">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
-            <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
-          </span>
-          <div>
-            <h3 className="font-display text-sm font-extrabold">دروس وملخّصات</h3>
-            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات ودروس منظّمة لكل الشُّعب</p>
-          </div>
+        <div className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl transition group-hover:scale-150" />
+        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110">
+          <FontAwesomeIcon icon={faGraduationCap} className="h-7 w-7" />
+        </span>
+        <div className="relative min-w-0">
+          <h3 className="font-display text-sm font-extrabold">دروس ومواضيع</h3>
+          <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات ومواضيع مُصحَّحة لكل الشُّعب</p>
         </div>
+        <FontAwesomeIcon icon={faArrowLeft} className="relative mr-auto h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-primary" />
       </a>
 
-      {/* المكتبة */}
-      <Link
-        href="/library"
-        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-emerald-400/40 hover:shadow-glass"
-      >
-        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-emerald-500/10 blur-2xl transition group-hover:scale-150" />
-        <div className="relative flex flex-col items-start gap-2.5">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3">
-            <FontAwesomeIcon icon={faBookOpen} className="h-6 w-6" />
-          </span>
-          <div>
-            <h3 className="font-display text-sm font-extrabold">المكتبة</h3>
-            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات الطلبة والأساتذة في مكان واحد</p>
-          </div>
-        </div>
-      </Link>
-
-      {/* تفعيل الإشعارات */}
-      <button
-        onClick={enableNotifications}
-        disabled={notifState !== "idle"}
-        className={`group relative overflow-hidden rounded-2xl border p-4 text-right transition hover:-translate-y-1 hover:shadow-glass ${
-          notifState === "on" ? "border-secondary/40 bg-secondary/5" : "border-border bg-surface hover:border-amber-400/40"
-        } disabled:hover:translate-y-0`}
-      >
-        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-amber-400/10 blur-2xl transition group-hover:scale-150" />
-        <div className="relative flex flex-col items-start gap-2.5">
-          <span className={`grid h-12 w-12 place-items-center rounded-2xl text-white shadow-lg transition group-hover:scale-110 ${
-            notifState === "on" ? "bg-gradient-to-br from-emerald-500 to-teal-400" : "bg-gradient-to-br from-amber-500 to-orange-500"
-          }`}>
-            <FontAwesomeIcon icon={notifState === "unsupported" ? faBellSlash : notifState === "on" ? faCheck : faBell} className="h-6 w-6" />
-          </span>
-          <div>
-            <h3 className="font-display text-sm font-extrabold">
-              {notifState === "on" ? "الإشعارات مفعّلة" : notifState === "unsupported" ? "الإشعارات" : "فعّل الإشعارات"}
-            </h3>
-            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">
-              {notifState === "on" ? "ستصلك آخر المستجدّات فوراً" : notifState === "unsupported" ? "غير مدعومة على هذا المتصفّح" : "كن أوّل من يعرف الجديد"}
-            </p>
-          </div>
-        </div>
-      </button>
-
-      {/* انضمّ لتيليغرام */}
+      {/* قناة تيليغرام */}
       <a
         href={telegramUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-1 hover:border-sky-400/40 hover:shadow-glass"
+        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-sky-400/40 hover:shadow-glass"
       >
-        <div className="pointer-events-none absolute -left-6 -top-6 h-20 w-20 rounded-full bg-sky-500/10 blur-2xl transition group-hover:scale-150" />
-        <div className="relative flex flex-col items-start gap-2.5">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
-            <TelegramIcon className="h-6 w-6" />
-          </span>
-          <div>
-            <h3 className="font-display text-sm font-extrabold">انضمّ لتيليغرام</h3>
-            <p className="mt-0.5 text-[11px] leading-snug text-text-muted">قناتنا: كل جديد أوّلاً بأوّل</p>
-          </div>
+        <div className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl transition group-hover:scale-150" />
+        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110">
+          <TelegramIcon className="h-7 w-7" />
+        </span>
+        <div className="relative min-w-0">
+          <h3 className="font-display text-sm font-extrabold">انضمّ لقناتنا</h3>
+          <p className="mt-0.5 text-[11px] leading-snug text-text-muted">كل جديد أوّلاً بأوّل على تيليغرام</p>
         </div>
+        <FontAwesomeIcon icon={faArrowLeft} className="relative mr-auto h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-sky-500" />
       </a>
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   زرّ تبديل الإشعارات — تشغيل/إيقاف (لا بطاقة كبيرة)
+════════════════════════════════════════════════════════════ */
+export function NotificationToggle() {
+  const { user } = useAuth();
+  const [state, setState] = useState<"unknown" | "on" | "off" | "unsupported">("unknown");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isPushSupported()) { setState("unsupported"); return; }
+    try {
+      setState(typeof Notification !== "undefined" && Notification.permission === "granted" ? "on" : "off");
+    } catch { setState("off"); }
+  }, []);
+
+  async function toggle() {
+    if (!user || busy || state === "unsupported" || state === "unknown") return;
+    setBusy(true);
+    try {
+      if (state === "on") { await unsubscribePush(user.uid); setState("off"); }
+      else { const ok = await subscribePush(user.uid); setState(ok ? "on" : "off"); }
+    } finally { setBusy(false); }
+  }
+
+  if (state === "unsupported" || state === "unknown") return null;
+  const on = state === "on";
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={busy}
+      className="flex w-full items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 text-right transition hover:border-primary/30 disabled:opacity-60"
+    >
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition ${on ? "bg-secondary/15 text-secondary" : "bg-amber-400/15 text-amber-600"}`}>
+        <FontAwesomeIcon icon={on ? faBell : faBellSlash} className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-sm font-bold">إشعارات الموقع</h3>
+        <p className="text-[11px] text-text-muted">{on ? "مفعّلة — ستصلك آخر المستجدّات" : "مطفأة — فعّلها لتصلك التنبيهات"}</p>
+      </div>
+      {/* مفتاح التبديل */}
+      <span className={`relative h-6 w-11 shrink-0 rounded-full transition ${on ? "bg-secondary" : "bg-border"}`}>
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-0.5" : "left-[22px]"}`} />
+      </span>
+    </button>
   );
 }
