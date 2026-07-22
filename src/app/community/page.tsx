@@ -179,14 +179,21 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
       ...(vid ? [{ kind: "video" as const, url: vid }] : []),
       ...pendingImages.map((i) => ({ kind: "image" as const, thumb: i.thumb, full: i.full, name: i.name })),
     ];
-    await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media);
-    setText("");
-    setPending(null);
-    setPendingImages([]);
-    setVideoUrl("");
-    setVisibility("public");
-    setPostSubject("");
-    setPosting(false);
+    try {
+      await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media);
+      setText("");
+      setPending(null);
+      setPendingImages([]);
+      setVideoUrl("");
+      setVisibility("public");
+      setPostSubject("");
+    } catch (err) {
+      // بلا هذا كان الزرّ يبقى «جارٍ النشر» إلى الأبد عند أي فشل
+      console.error("[BacZone] فشل النشر:", err);
+      alert(err instanceof Error ? err.message : "تعذّر نشر المنشور. تحقّق من اتصالك وحاول مجدداً.");
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function addFriend(uid: string, name: string) {

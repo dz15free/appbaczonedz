@@ -103,13 +103,10 @@ export default function PlannerPage() {
       clone.style.width = `${w}px`;
       clone.style.height = `${h}px`;
 
-      /* الصور الخارجية (شعار من نطاق آخر) تلوّث الـcanvas وتمنع التصدير. */
-      clone.querySelectorAll("img").forEach((im) => {
-        const span = document.createElement("span");
-        span.textContent = im.getAttribute("alt") || "BacZoneDZ";
-        span.setAttribute("style", "font-weight:800;font-size:14px;color:#1a1a2e");
-        im.replaceWith(span);
-      });
+      /* الصور الخارجية (الشعار من نطاق آخر) تمنع تحويل الـSVG لصورة.
+         نحذفها كليّاً — والنصّ «BacZone» موجود بجانبها أصلاً في الترويسة،
+         فلا يتكرّر الاسم مرّتين. */
+      clone.querySelectorAll("img").forEach((im) => im.remove());
 
       const xml = new XMLSerializer().serializeToString(clone);
       const svg =

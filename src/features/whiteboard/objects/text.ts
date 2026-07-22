@@ -4,7 +4,7 @@
    بـ ctx.measureText بدل تخمين (عدد الحروف × 0.62) الذي كان
    يجعل تحديد النصّ العربي غير دقيق. */
 
-import { register, type RenderContext } from "../core/registry";
+import { register } from "../core/registry";
 import type { BoardObject } from "../core/board-object";
 
 export interface TextData { text: string; align?: "right" | "center" | "left" }

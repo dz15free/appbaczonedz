@@ -16,7 +16,7 @@ import type { Scene } from "../core/scene";
 import type { LayerId } from "../core/board-object";
 import { renderObject } from "../core/registry";
 import type { Camera, Viewport } from "../core/camera";
-import { WORLD_W, WORLD_H, visibleBounds, worldToScreen } from "../core/camera";
+import { WORLD_W, WORLD_H, visibleBounds } from "../core/camera";
 
 export interface Layers {
   staticC: HTMLCanvasElement;

@@ -89,14 +89,28 @@ export interface RecognizeOptions {
 export function recognize(raw: Pt[], opts: RecognizeOptions = {}): Recognized {
   if (!raw || raw.length < 4) return null;
 
-  const b = bounds(raw);
+  /* أوّل نقطة قد تكون شاذّة: المستخدم يضع إصبعه ثم يقفز لبداية الرسم،
+     فتنشأ «شوكة» تُفسد اختبار الانغلاق. نُسقطها إن كانت بعيدة بوضوح
+     عن باقي المسار مقارنةً بالخطوة المتوسّطة. */
+  let pts = raw;
+  if (raw.length >= 6) {
+    let step = 0;
+    for (let i = 2; i < Math.min(raw.length, 8); i++) {
+      step += Math.hypot(raw[i].x - raw[i - 1].x, raw[i].y - raw[i - 1].y);
+    }
+    step /= Math.max(1, Math.min(raw.length, 8) - 2);
+    const firstGap = Math.hypot(raw[1].x - raw[0].x, raw[1].y - raw[0].y);
+    if (step > 0 && firstGap > step * 3) pts = raw.slice(1);
+  }
+
+  const b = bounds(pts);
   const diag = Math.hypot(b.w, b.h);
   if (diag < 8) return null;                    // نقرة لا رسمة
 
-  const simplified = rdp(raw, diag * 0.035);
-  const first = raw[0], last = raw[raw.length - 1];
+  const simplified = rdp(pts, diag * 0.035);
+  const first = pts[0], last = pts[pts.length - 1];
   const gap = Math.hypot(last.x - first.x, last.y - first.y);
-  const len = pathLength(raw);
+  const len = pathLength(pts);
   const closed = gap < diag * 0.28 && len > diag * 1.2;
 
   /* ── مفتوح ───────────────────────────────────────── */
@@ -125,7 +139,7 @@ export function recognize(raw: Pt[], opts: RecognizeOptions = {}): Recognized {
   if (area < 4) return null;
 
   // معامل الاستدارة: 4π·A / P²  → 1 للدائرة المثالية
-  const perim = pathLength(raw);
+  const perim = pathLength(pts);
   const circ = (4 * Math.PI * area) / (perim * perim);
 
   if (circ > 0.72) {

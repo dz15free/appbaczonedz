@@ -137,8 +137,13 @@ export async function editPost(postId: string, text: string) {
 }
 
 export async function getPostAttachment(attachmentId: string): Promise<string | null> {
-  const snap = await get(ref(rtdb, `community/postAttachments/${attachmentId}`));
-  return (snap.val() as string) ?? null;
+  try {
+    const snap = await get(ref(rtdb, `community/postAttachments/${attachmentId}`));
+    return (snap.val() as string) ?? null;
+  } catch {
+    // انقطاع شبكة أو رفض قراءة — نُرجع null فيعرض المكوّن حالة واضحة
+    return null;
+  }
 }
 
 /* ───────── الإشراف ───────── */

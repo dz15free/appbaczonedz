@@ -8,17 +8,36 @@ import { FileViewer } from "@/features/files/file-viewer";
 
 export function PostAttachment({ post }: { post: Post }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [viewer, setViewer] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    if (post.attachmentId) getPostAttachment(post.attachmentId).then((d) => alive && setDataUrl(d));
+    if (!post.attachmentId) return;
+    setFailed(false);
+    setDataUrl(null);
+    getPostAttachment(post.attachmentId)
+      .then((d) => {
+        if (!alive) return;
+        // غياب البيانات ليس «تحميلاً مستمرّاً» — نعرض حالة واضحة
+        if (d) setDataUrl(d);
+        else setFailed(true);
+      })
+      .catch(() => { if (alive) setFailed(true); });
     return () => {
       alive = false;
     };
   }, [post.attachmentId]);
 
   if (!post.attachmentId) return null;
+
+  if (failed)
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-text-muted">
+        <FontAwesomeIcon icon={faFile} className="h-3 w-3" />
+        تعذّر تحميل المرفق
+      </div>
+    );
 
   if (!dataUrl)
     return (

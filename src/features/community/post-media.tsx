@@ -36,15 +36,26 @@ async function loadAttachment(id: string): Promise<string | null> {
   return p;
 }
 
-function useAttachment(id?: string) {
-  const [src, setSrc] = useState<string | null>(id && cache.has(id) ? cache.get(id)! : null);
+/** يفرّق بين «قيد التحميل» و«فشل» — بدونه تدور الأيقونة إلى الأبد */
+function useAttachment(id?: string): { src: string | null; loading: boolean } {
+  const cached = id && cache.has(id) ? cache.get(id)! : null;
+  const [src, setSrc] = useState<string | null>(cached);
+  const [loading, setLoading] = useState<boolean>(!!id && !cached);
+
   useEffect(() => {
-    if (!id || cache.has(id)) return;
+    if (!id) { setSrc(null); setLoading(false); return; }
+    if (cache.has(id)) { setSrc(cache.get(id)!); setLoading(false); return; }
     let alive = true;
-    loadAttachment(id).then((d) => { if (alive) setSrc(d); });
+    setLoading(true);
+    loadAttachment(id).then((d) => {
+      if (!alive) return;
+      setSrc(d);
+      setLoading(false);
+    });
     return () => { alive = false; };
   }, [id]);
-  return src;
+
+  return { src, loading };
 }
 
 /* ─────────── روابط الفيديو ─────────── */
@@ -125,7 +136,7 @@ function VideoBlock({ url }: { url: string }) {
 
 /* ─────────── صورة مصغّرة داخل الشبكة ─────────── */
 function Thumb({ m, onOpen, overlay }: { m: PostMedia; onOpen: () => void; overlay?: number }) {
-  const src = useAttachment(m.thumbId);
+  const { src, loading } = useAttachment(m.thumbId);
   return (
     <button
       onClick={onOpen}
@@ -136,9 +147,13 @@ function Thumb({ m, onOpen, overlay }: { m: PostMedia; onOpen: () => void; overl
         // صور base64 محلّية — next/image لا يضيف هنا شيئاً
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={m.name ?? ""} loading="lazy" className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]" />
-      ) : (
+      ) : loading ? (
         <span className="grid h-full w-full place-items-center">
           <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 animate-spin text-text-muted" />
+        </span>
+      ) : (
+        <span className="grid h-full w-full place-items-center px-2 text-center text-[11px] text-text-muted">
+          تعذّر تحميل الصورة
         </span>
       )}
       {!!overlay && overlay > 0 && (
@@ -224,7 +239,7 @@ function Lightbox({ media, startIndex, onClose }: {
   const touchStart = useRef<number | null>(null);
 
   const current = media[imgIndexes[pos]];
-  const src = useAttachment(current?.fullId);
+  const { src, loading: srcLoading } = useAttachment(current?.fullId);
 
   const go = useCallback((d: number) => {
     setPos((p) => (p + d + imgIndexes.length) % imgIndexes.length);
@@ -315,9 +330,13 @@ function Lightbox({ media, startIndex, onClose }: {
               transition: drag.current ? "none" : "transform .18s ease-out",
             }}
           />
-        ) : (
+        ) : srcLoading ? (
           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/70">
             <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin" />
+          </span>
+        ) : (
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-sm text-white/70">
+            تعذّر تحميل الصورة
           </span>
         )}
 
