@@ -100,18 +100,24 @@ export async function createPost(
   if (authorRole) post.authorRole = authorRole;
   if (subject) post.subject = subject;
   // وسائط متعدّدة: نرفع النسختين لكل صورة ونحتفظ بالمعرّفين فقط
+  // ملاحظة: RTDB يرفض `undefined` ويُلغي الكتابة كاملةً، لذلك لا نضيف
+  // حقل `name` إلا إن كان موجوداً فعلاً (الفيديو غالباً بلا اسم).
   if (media && media.length) {
     const saved: PostMedia[] = [];
     for (const m of media.slice(0, 6)) {
       if (m.kind === "video" && m.url) {
-        saved.push({ kind: "video", url: m.url, name: m.name });
+        const item: PostMedia = { kind: "video", url: m.url };
+        if (m.name) item.name = m.name;
+        saved.push(item);
         continue;
       }
       if (m.kind === "image" && m.thumb && m.full) {
         const tRef = push(ref(rtdb, "community/postAttachments"));
         const fRef = push(ref(rtdb, "community/postAttachments"));
         await Promise.all([set(tRef, m.thumb), set(fRef, m.full)]);
-        saved.push({ kind: "image", thumbId: tRef.key!, fullId: fRef.key!, name: m.name });
+        const item: PostMedia = { kind: "image", thumbId: tRef.key!, fullId: fRef.key! };
+        if (m.name) item.name = m.name;
+        saved.push(item);
       }
     }
     if (saved.length) post.media = saved;
@@ -122,10 +128,26 @@ export async function createPost(
     await set(aRef, attachment.dataUrl);
     post.attachmentId = aRef.key;
     post.attachmentKind = attachment.kind;
-    post.fileName = attachment.name;
+    if (attachment.name) post.fileName = attachment.name;
   }
-  await push(ref(rtdb, "community/posts"), post);
+  // حماية أخيرة: أي `undefined` متبقٍّ يجعل RTDB يرفض الكتابة كاملةً
+  await push(ref(rtdb, "community/posts"), stripUndefined(post));
   await awardActivity(authorId, "post");
+}
+
+/** يحذف كل الحقول ذات القيمة undefined (RTDB يرفضها ويُلغي الكتابة) */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => stripUndefined(v)) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v !== undefined) out[k] = stripUndefined(v);
+    }
+    return out as T;
+  }
+  return value;
 }
 
 /** تعديل نصّ منشور (للمؤلّف فقط — يُتحقّق عبر قواعد RTDB) */
