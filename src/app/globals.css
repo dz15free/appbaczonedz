@@ -591,3 +591,11 @@ html { scrollbar-gutter: stable; }
 @media (max-width: 1023px) {
   .bz-tfocus-stage { padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* الأزرار العائمة (الخبّاشة + الإدارة)
+   الهاتف: مرفوعة فوق شريط التنقّل السفلي.
+   الحاسوب: قريبة من الزاوية السفلية كالمواقع الاحترافية (لا شريط سفلي). */
+.bz-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); }
+@media (min-width: 1024px) {
+  .bz-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn, faBookOpen, faBell, faBellSlash, faGraduationCap, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn, faBookOpen, faBell, faBellSlash, faGraduationCap, faCheck, faClipboardCheck } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -94,24 +94,24 @@ export function FeatureCards() {
         </div>
       </a>
 
-      {/* مخطّط البكالوريا (بلانر) */}
-      <Link href="/tools/planner"
+      {/* محاكاة البكالوريا */}
+      <a href={settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html"}
+        target="_blank" rel="noopener noreferrer"
         className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-rose-400/40 hover:shadow-glass">
         <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition group-hover:scale-150" />
         <div className="relative flex items-center gap-4">
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-rose-500 to-pink-400 text-white shadow-lg transition group-hover:scale-110 group-hover:-rotate-3">
-            <FontAwesomeIcon icon={faCalendarDays} className="h-7 w-7" />
+            <FontAwesomeIcon icon={faClipboardCheck} className="h-7 w-7" />
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="flex items-center gap-1.5 font-display text-base font-extrabold">
-              مخطّط البكالوريا للطباعة
-              <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[9px] font-bold text-rose-500">جديد</span>
+              محاكاة البكالوريا
             </h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">بلانر يومي احترافي جاهز للطباعة بأشكال متنوّعة</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">عِش تجربة الامتحان الحقيقي قبل الموعد</p>
           </div>
           <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-rose-500" />
         </div>
-      </Link>
+      </a>
     </div>
   );
 }

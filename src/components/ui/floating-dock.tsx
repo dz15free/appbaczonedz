@@ -39,10 +39,9 @@ export function FloatingDock() {
 
   return (
     <>
-      <div
-        className="fixed left-4 z-30 flex items-end gap-3"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)" }}
-      >
+      {/* الهاتف: مرفوعة فوق شريط التنقّل السفلي.
+          الحاسوب: قريبة من الزاوية السفلية كالمواقع الاحترافية (لا شريط سفلي هناك). */}
+      <div className="bz-dock fixed left-4 z-30 flex items-end gap-3 lg:left-6">
         {/* ── الخبّاشة (الشات بوت) — الأبرز، وفوقه الفقاعة ── */}
         <div className="relative flex flex-col items-center gap-1.5">
           {/* الفقاعة التعريفية — ملتصقة بزر الخبّاشة */}

@@ -9,7 +9,6 @@ import {
   type TeacherRating, type RatingStats,
   listenTeacherRatings, computeStats, rateTeacher, removeMyRating,
   checkEligibility, type Eligibility,
-  MIN_RATINGS_TO_SHOW,
 } from "@/features/community/teacher-rating";
 
 /* ─────────── هوك مشترك ─────────── */
@@ -26,14 +25,6 @@ export function useTeacherRating(teacherUid?: string) {
 export function RatingBadge({ stats, size = "sm" }: { stats: RatingStats; size?: "sm" | "md" }) {
   if (stats.count === 0) {
     return <span className="text-[11px] text-text-muted">لا تقييمات بعد</span>;
-  }
-  if (!stats.visible) {
-    // إخفاء المتوسّط قبل الحد الأدنى يمنع تقييماً أو اثنين من صنع سمعة
-    return (
-      <span className="text-[11px] text-text-muted">
-        {stats.count} من {MIN_RATINGS_TO_SHOW} تقييمات مطلوبة
-      </span>
-    );
   }
   const big = size === "md";
   return (
@@ -194,17 +185,10 @@ export function RateTeacherSheet({
 }
 
 /* ─────────── ملخّص التقييم على بروفايل الأستاذ ───────────
-   owner=true  → الأستاذ يرى بروفايله: تظهر ملاحظة الحماية الشخصية.
-   owner=false → طالب/زائر: يرى النجوم والآراء بلا الملاحظة الشخصية. */
-export function MyRatingSummary({ uid, owner = false }: { uid: string; owner?: boolean }) {
+   يعرض للجميع: المتوسّط، توزيع النجوم، ومن قيّم مع آرائهم. */
+export function MyRatingSummary({ uid }: { uid: string; owner?: boolean }) {
   const { list, stats } = useTeacherRating(uid);
-  if (stats.count === 0) {
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-4 text-center text-sm text-text-muted">
-        لم يُقيَّم بعد
-      </div>
-    );
-  }
+  if (stats.count === 0) return null;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
@@ -215,12 +199,6 @@ export function MyRatingSummary({ uid, owner = false }: { uid: string; owner?: b
         </h3>
         <RatingBadge stats={stats} size="md" />
       </div>
-
-      {owner && !stats.visible && (
-        <p className="mt-2 text-[11px] leading-relaxed text-text-muted">
-          لا يظهر متوسّطك للطلاب قبل بلوغ {MIN_RATINGS_TO_SHOW} تقييمات — حمايةً لك من أثر تقييم واحد.
-        </p>
-      )}
 
       <div className="mt-3 space-y-1">
         {[5, 4, 3, 2, 1].map((n) => {

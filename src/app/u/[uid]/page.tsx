@@ -203,7 +203,7 @@ export default function UserProfilePage() {
         {/* تقييم الطلاب — يظهر على بروفايل الأستاذ (لا الإدارة) */}
         {isTeacher && !isAdmin && (
           <div className="mt-4">
-            <MyRatingSummary uid={uid} owner={isMe} />
+            <MyRatingSummary uid={uid} />
           </div>
         )}
 

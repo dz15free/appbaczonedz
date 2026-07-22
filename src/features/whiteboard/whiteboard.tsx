@@ -444,9 +444,12 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
       return;
     }
 
-    // ختم رمز رياضي
+    // ختم رمز رياضي — يُوضع مرّة واحدة ثم يعود المستخدم لأداته
+    // (كان يبقى مفعّلاً فيُبطل الرسم بالقلم حتى يُلغيه المستخدم يدويّاً)
     if (stampRef.current) {
       commit(newShape("text", p, stampRef.current));
+      stampRef.current = null;
+      setStamp(null);
       return;
     }
     // نص حرّ
@@ -467,6 +470,25 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   function cancelLongPress() {
     if (longPress.current) { clearTimeout(longPress.current); longPress.current = null; }
     pressStart.current = null;
+  }
+
+  /* النقر الأيمن على الحاسوب — يفتح إجراءات العنصر مباشرة.
+     كان الوصول الوحيد هو ضغط مطوّل ٥٥٠ms في وضع الاختيار، وهو غير مكتشَف
+     على الحاسوب إطلاقاً، فبدت ميزتا العلامات الذكية وإجراءات العناصر معطّلتين. */
+  function onContextMenu(e: React.MouseEvent) {
+    if (!user) return;
+    const c = mainRef.current;
+    const r = previewRef.current?.getBoundingClientRect();
+    if (!r) return;
+    e.preventDefault();
+    const p = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+    const v = { w: c?.clientWidth ?? 1, h: c?.clientHeight ?? 1 };
+    const hit = pickShape(shapes.current, p, v, 12);
+    if (!hit) return;
+    setSelectedId(hit.id);
+    selectedRef.current = hit.id;
+    scheduleRedraw();
+    setActionsOpen(true);
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -563,6 +585,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   function pickTool(k: ToolId) {
     setTool(k);
     setStamp(null);
+    stampRef.current = null; // مزامنة فوريّة — لا ننتظر إعادة الرسم
+    toolRef.current = k;
     // مغادرة وضع الاختيار تُسقط التحديد حتى لا يبقى إطار معلّق
     if (k !== "select" && selectedRef.current) {
       setSelectedId(null);
@@ -623,7 +647,9 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
                 {sym}
               </button>
             ))}
-            {stamp && <span className="text-xs text-text-muted">اضغط على السبورة لوضع: {stamp}</span>}
+            {stamp
+              ? <span className="text-xs font-bold text-primary">اضغط على السبورة لوضع: {stamp}</span>
+              : <span className="text-[10px] text-text-muted">💡 لتمييز عنصر أو حفظه كبطاقة: اختر أداة «اختيار» ثم انقره بالزر الأيمن (أو اضغط عليه مطوّلاً بالهاتف)</span>}
           </div>
         </div>
       )}
@@ -713,10 +739,11 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
           ref={previewRef}
           className={`absolute inset-0 ${canDraw || selecting ? "touch-none" : "pointer-events-none"}`}
           onPointerDown={canDraw || selecting ? onPointerDown : undefined}
-          onPointerMove={canDraw ? onPointerMove : undefined}
-          onPointerUp={canDraw ? onPointerUp : undefined}
-          onPointerLeave={canDraw ? onPointerUp : undefined}
-          onPointerCancel={canDraw ? onPointerUp : undefined}
+          onPointerMove={canDraw || selecting ? onPointerMove : undefined}
+          onPointerUp={canDraw || selecting ? onPointerUp : undefined}
+          onPointerLeave={canDraw || selecting ? onPointerUp : undefined}
+          onPointerCancel={canDraw || selecting ? onPointerUp : undefined}
+          onContextMenu={canDraw || selecting ? onContextMenu : undefined}
         />
       </div>
 

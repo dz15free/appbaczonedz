@@ -45,6 +45,7 @@ export interface SiteSettings {
   siteBanner?: { text: string; active: boolean }; // البانر
   allowRegistration?: boolean; // السماح بالتسجيل الجديد
   lessonsUrl?: string;         // رابط صفحة الدروس والملخّصات (خارجي)
+  bacSimUrl?: string;          // رابط محاكاة البكالوريا (خارجي)
 
   /* ── محتوى الصفحة الرئيسية (قبل التسجيل) ── */
   landingBadge?: string;          // الشارة أعلى الهيرو

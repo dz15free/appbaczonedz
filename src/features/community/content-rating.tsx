@@ -111,10 +111,13 @@ export function ContentRatingBadge({ itemId, showEmpty, size = "sm" }: { itemId:
 
 /* درج التقييم والتعليقات */
 export function ContentRatingSheet({
-  itemId, itemTitle, uid, name, isAdmin, open, onClose,
+  itemId, itemTitle, uid, name, isAdmin, open, onClose, kind = "library",
 }: {
   itemId: string; itemTitle: string; uid: string; name: string;
   isAdmin?: boolean; open: boolean; onClose: () => void;
+  /** نوع المحتوى المُقيَّم — يحدّد أين نتحقّق من الشراء.
+   *  كان مثبّتاً على "library" فتعذّر تقييم الغرف المدفوعة. */
+  kind?: "library" | "room";
 }) {
   const { list, count, avg, visible } = useContentRatings(itemId);
   const mine = list.find((r) => r.uid === uid);
@@ -127,8 +130,8 @@ export function ContentRatingSheet({
 
   useEffect(() => {
     if (!open) { setDone(false); return; }
-    hasPurchased(uid, "library", itemId).then(setBought);
-  }, [open, uid, itemId]);
+    hasPurchased(uid, kind, itemId).then(setBought);
+  }, [open, uid, itemId, kind]);
 
   useEffect(() => {
     if (mine) { setStars(mine.stars); setComment(mine.comment ?? ""); }

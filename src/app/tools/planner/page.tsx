@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 
@@ -34,6 +34,76 @@ export default function PlannerPage() {
   const ACCENTS = ["#2563eb", "#059669", "#db2777", "#ea580c", "#7c3aed", "#0891b2"];
 
   function printPlanner() { window.print(); }
+
+  const [exporting, setExporting] = useState(false);
+
+  /* تصدير المخطّط صورة PNG بدقّة عالية — بلا أي مكتبة خارجية.
+     الفكرة: نلفّ نسخة من العقدة داخل <foreignObject> في SVG، ثم نرسم
+     الـSVG على canvas بمقياس 3x فتخرج الصورة حادّة للطباعة والمشاركة. */
+  async function exportPng() {
+    const node = document.getElementById("planner-sheet");
+    if (!node || exporting) return;
+    setExporting(true);
+    try {
+      const rect = node.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      const scale = 3; // دقّة عالية
+
+      // ندمج قواعد CSS الخاصّة بالمخطّط داخل الصورة (وإلا خرجت بلا تنسيق)
+      const styleText = Array.from(document.styleSheets)
+        .map((sheet) => {
+          try {
+            return Array.from((sheet as CSSStyleSheet).cssRules).map((r) => r.cssText).join("\n");
+          } catch { return ""; } // أوراق أنماط من نطاق آخر
+        })
+        .join("\n");
+
+      const clone = node.cloneNode(true) as HTMLElement;
+      clone.style.margin = "0";
+      clone.style.boxShadow = "none";
+      clone.style.borderRadius = "0";
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="width:${w}px;height:${h}px">
+            <style>${styleText}</style>
+            ${new XMLSerializer().serializeToString(clone)}
+          </div>
+        </foreignObject>
+      </svg>`;
+
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("تعذّر تحويل المخطّط"));
+        img.src = url;
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w * scale;
+      canvas.height = h * scale;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas غير مدعوم");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      const a = document.createElement("a");
+      a.download = `مخطط-البكالوريا-${template}-${size}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    } catch {
+      alert("تعذّر حفظ الصورة على هذا المتصفّح. جرّب زر «طباعة / حفظ PDF» بدلاً منه.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <AppShell>
@@ -89,10 +159,17 @@ export default function PlannerPage() {
             </div>
           </div>
 
-          <button onClick={printPlanner}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white shadow-glow transition hover:opacity-90 sm:w-auto sm:px-8">
-            <FontAwesomeIcon icon={faPrint} className="h-4 w-4" /> طباعة / حفظ PDF
-          </button>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button onClick={printPlanner}
+              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white shadow-glow transition hover:opacity-90 sm:px-8">
+              <FontAwesomeIcon icon={faPrint} className="h-4 w-4" /> طباعة / حفظ PDF
+            </button>
+            <button onClick={exportPng} disabled={exporting}
+              className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface py-3 text-sm font-bold text-text-primary transition hover:border-primary/40 hover:bg-primary/5 disabled:opacity-60 sm:px-8">
+              <FontAwesomeIcon icon={faDownload} className="h-4 w-4" />
+              {exporting ? "جارٍ التحضير…" : "تحميل صورة PNG"}
+            </button>
+          </div>
         </div>
       </div>
 

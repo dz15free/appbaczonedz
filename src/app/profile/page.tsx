@@ -216,13 +216,11 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* تقييم الطلاب + لوحة أرباح الأستاذ */}
-      {user && (profile?.role === "teacher" || profile?.role === "admin") && (
-        <>
-          <MyRatingSummary uid={user.uid} owner />
-          <TeacherEarnings uid={user.uid} />
-        </>
-      )}
+      {/* تقييم الطلاب — للأستاذ والإدارة */}
+      {user && isStaff && <MyRatingSummary uid={user.uid} />}
+
+      {/* لوحة أرباح الأستاذ — الأستاذ وحده (الإدارة لا تبيع محتوى) */}
+      {user && profile?.role === "teacher" && <TeacherEarnings uid={user.uid} />}
 
       {/* نافذة التعديل */}
       {editing && (

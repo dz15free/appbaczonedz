@@ -38,12 +38,11 @@ const TOOLS = [
   { href: "/tools/tasks", label: "مهامي الدراسية", desc: "خطط الخباشة كمهام", icon: faListCheck, color: "bg-violet-500/10 text-violet-500" },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", desc: "احفظ بالتكرار المتباعد", icon: faLayerGroup, color: "bg-amber-500/10 text-amber-500" },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك", icon: faListCheck, color: "bg-sky-500/10 text-sky-500" },
-  { href: "/tools/planner", label: "مخطّط للطباعة", desc: "بلانر يومي احترافي", icon: faCalendarDays, color: "bg-rose-500/10 text-rose-500" },
 ];
 
 const EXTERNAL = [
-  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", desc: "عِش تجربة الامتحان الحقيقي", icon: faClipboardCheck },
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", desc: "خطّة مراجعة منظّمة لك", icon: faCalendarCheck },
+  { href: "/tools/planner", label: "مخطّط البكالوريا للطباعة", desc: "بلانر يومي احترافي جاهز للطباعة", icon: faCalendarDays },
 ];
 
 function timeAgo(ts: number) {
@@ -138,21 +137,29 @@ const ToolsGrid = memo(function ToolsGrid() {
 const ExternalGrid = memo(function ExternalGrid() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {EXTERNAL.map((q) => (
-        <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer"
-          className="group flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-4 transition hover:-translate-y-0.5 hover:shadow-glass">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
-            <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5 font-bold">
-              {q.label}
-              <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />
+      {EXTERNAL.map((q) => {
+        const isInternal = q.href.startsWith("/");
+        const inner = (
+          <>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
+              <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
             </span>
-            <span className="text-sm text-text-muted">{q.desc}</span>
-          </div>
-        </a>
-      ))}
+            <div className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5 font-bold">
+                {q.label}
+                {!isInternal && <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />}
+              </span>
+              <span className="text-sm text-text-muted">{q.desc}</span>
+            </div>
+          </>
+        );
+        const cls = "group flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-4 transition hover:-translate-y-0.5 hover:shadow-glass";
+        return isInternal ? (
+          <Link key={q.href} href={q.href} className={cls}>{inner}</Link>
+        ) : (
+          <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
+        );
+      })}
     </div>
   );
 });
@@ -226,14 +233,14 @@ export default function HomePage() {
         <div className="space-y-6 lg:col-span-2">
           <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
+          {/* الإشعارات — بارزة ليراها الجميع */}
+          <NotificationToggle />
+
           {/* الوصول السريع */}
           <div className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="mb-4 font-display text-base font-extrabold">الوصول السريع</h2>
             <SectionsRow />
           </div>
-
-          {/* الإشعارات — بارزة ليراها الجميع */}
-          <NotificationToggle />
 
           {/* وجهات مهمّة */}
           <HomeExternalHighlights />
@@ -303,6 +310,9 @@ export default function HomePage() {
         <InstallAppBanner />
         <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
+        {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}
+        <NotificationToggle />
+
         {/* الوصول السريع */}
         <div>
           <h2 className="mb-3 font-display text-base font-extrabold">الوصول السريع</h2>
@@ -311,9 +321,6 @@ export default function HomePage() {
 
         {/* وجهات مهمّة */}
         <HomeExternalHighlights />
-
-        {/* الإشعارات */}
-        <NotificationToggle />
 
         <FeatureCards />
 

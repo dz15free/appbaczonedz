@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse, faVideo, faChalkboard, faFolderOpen,
@@ -9,7 +11,7 @@ import {
   faUsers, faUnlock, faCircleCheck,
   faExpand, faCompress, faChartBar, faShareNodes,
   faNoteSticky, faSpinner, faLock, faKey, faBrain, faFileLines,
-  faUserSecret, faTrash,
+  faUserSecret, faTrash, faEllipsis, faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -144,6 +146,8 @@ export default function RoomPage() {
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
+  // قائمة «المزيد» — تجمع إجراءات الحصة الثانوية فلا يزدحم الشريط
+  const [moreOpen, setMoreOpen] = useState(false);
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -233,6 +237,8 @@ export default function RoomPage() {
   const summaries = useSummaries(roomId);
   // تقييم الأستاذ
   const [rateOpen, setRateOpen] = useState(false);
+  // تقييم الغرفة المدفوعة (لمن اشترى)
+  const [rateRoomOpen, setRateRoomOpen] = useState(false);
   const prevAnon = useRef(0);
   const { settings } = useSiteSettings();
   const isMod = !!user && mods.has(user.uid);
@@ -395,9 +401,20 @@ export default function RoomPage() {
                   {members.length} متصل
                 </span>
               </span>
-              {room?.ownerRole === "teacher" && (
+
+              {/* نوع الغرفة — واضح للجميع */}
+              {room?.type === "teacher" || room?.ownerRole === "teacher" ? (
                 <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
+              ) : room?.type === "private" ? (
+                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">🔒 خاصة</span>
+              ) : room ? (
+                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">🌐 عامة</span>
+              ) : null}
+
+              {room?.isPaid && (
+                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">💳 مدفوعة</span>
               )}
+
               {ownerStatus !== "available" && (
                 <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
                   ownerStatus === "busy" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
@@ -406,6 +423,19 @@ export default function RoomPage() {
                 </span>
               )}
             </div>
+
+            {/* صاحب الغرفة — قابل للضغط + تقييم الغرفة المدفوعة */}
+            {room?.ownerId && (
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <Link
+                  href={`/u/${room.ownerId}`}
+                  className="truncate text-[11px] font-semibold text-primary hover:underline"
+                >
+                  {room.ownerName || "صاحب الغرفة"}
+                </Link>
+                {room.isPaid && <ContentRatingBadge itemId={roomId} showEmpty />}
+              </div>
+            )}
           </div>
         </div>
 
@@ -503,13 +533,15 @@ export default function RoomPage() {
 
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
-        <nav className="bz-glass bz-hide-scrollbar flex items-center gap-1.5 overflow-x-auto border-b px-2.5 py-2 sm:px-3">
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-background p-1">
+        <nav className="bz-glass flex items-center gap-2 border-b px-2.5 py-2 sm:px-3">
+          {/* الأدوات الأساسية — تبديل المحتوى */}
+          <div className="flex flex-1 items-center gap-1 rounded-xl bg-background p-1">
             {TOOLS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTool(t.id)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                title={t.label}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold transition ${
                   tool === t.id ? "bg-gradient-primary text-white shadow" : "text-text-muted hover:bg-primary/10 hover:text-primary"
                 }`}
               >
@@ -519,121 +551,35 @@ export default function RoomPage() {
             ))}
           </div>
 
-          <div className="mx-1 h-6 w-px shrink-0" style={{ background: "var(--bz-border)" }} />
-
-          {/* مؤقّت الدرس */}
-          <RoomTimerButton roomId={roomId} />
-          {/* استفتاء سريع */}
-          <button
-            onClick={() => setShowCreatePoll(true)}
-            title="إنشاء استفتاء سريع"
-            className="flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-semibold text-text-muted border border-border hover:text-primary hover:bg-primary/10 transition"
-          >
-            <FontAwesomeIcon icon={faChartBar} className="h-4 w-4" />
-            <span className="hidden sm:inline">استفتاء</span>
-          </button>
-
-          {/* تحدّي الحصة (Live Problem) */}
-          <button
-            onClick={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
-            title={challenge ? "لوحة حلول التحدي" : "إنشاء تحدٍّ"}
-            className={`relative flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
-              challenge ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary hover:bg-primary/10"
-            }`}
-          >
-            <FontAwesomeIcon icon={faBrain} className="h-4 w-4" />
-            <span className="hidden sm:inline">تحدٍّ</span>
-          </button>
-
-          {/* تقييم الأستاذ — للطالب وحده */}
-      {!isOwner && room?.ownerId && (
-        <RateTeacherSheet
-          teacherUid={room.ownerId}
-          teacherName={room.ownerName || "الأستاذ"}
-          studentUid={user.uid}
-          studentName={user.displayName || "طالب"}
-          open={rateOpen}
-          onClose={() => setRateOpen(false)}
-        />
-      )}
-
-      {/* ملخّص الحصة */}
-          <button
-            onClick={() => setSummaryOpen(true)}
-            title="ملخّص الحصة"
-            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-2.5 py-2 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary"
-          >
-            <FontAwesomeIcon icon={faFileLines} className="h-4 w-4" />
-            <span className="hidden sm:inline">ملخّص</span>
-          </button>
-
-          {/* الأسئلة المجهولة */}
-          <button
-            onClick={() => setAnonOpen(true)}
-            title="الأسئلة المجهولة"
-            className={`relative flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
-              anonQs.some((q) => !q.answered) ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-text-muted hover:text-primary hover:bg-primary/10"
-            }`}
-          >
-            <FontAwesomeIcon icon={faUserSecret} className="h-4 w-4" />
-            <span className="hidden sm:inline">أسئلة</span>
-            {anonQs.some((q) => !q.answered) && (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
-                {anonQs.filter((q) => !q.answered).length}
-              </span>
-            )}
-          </button>
-
-          {/* حالة المعلّم */}
-          <button
-            onClick={() => {
-              const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
-              setOwnerStatus(roomId, next);
-            }}
-            title="تغيير حالتك"
-            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
-              ownerStatus === "available" ? "border-border text-secondary hover:bg-secondary/10"
-                : ownerStatus === "busy" ? "border-danger/40 bg-danger/10 text-danger"
-                : "border-warning/40 bg-warning/10 text-warning"
-            }`}
-          >
-            <span className="text-base leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
-            <span className="hidden sm:inline">{ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}</span>
-          </button>
-
-          {/* توليد كود لغرفة مدفوعة */}
-          {room?.isPaid && (
-            <button
-              onClick={generateAccessCode}
-              title="توليد كود وصول"
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-2.5 py-2 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
-            >
-              <FontAwesomeIcon icon={faKey} className="h-4 w-4" />
-              <span className="hidden sm:inline">كود</span>
-            </button>
-          )}
-
-
-          <div className="mr-auto" />
-
-          {/* مشاركة الرابط */}
-          <button
-            onClick={shareRoomLink}
-            title="مشاركة الغرفة"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
-          >
-            <FontAwesomeIcon icon={faShareNodes} className="h-4 w-4" />
-          </button>
-          {/* وضع تركيز الأستاذ — يستبدل الشاشة الكاملة وإخفاء اللوحات */}
+          {/* وضع التركيز — إجراء أساسي يبقى ظاهراً */}
           <button
             onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
             title={fullscreen ? "خروج من وضع التركيز" : "وضع التركيز — أكبر مساحة للشرح"}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition active:scale-95 ${
+            className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition active:scale-95 ${
               fullscreen ? "bg-primary/10 text-primary" : "bg-gradient-primary text-white shadow-glow"
             }`}
           >
             <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
             <span className="hidden sm:inline">تركيز</span>
+          </button>
+
+          {/* المزيد — يجمع إجراءات الحصة الثانوية */}
+          <button
+            onClick={() => setMoreOpen(true)}
+            title="إجراءات الحصة"
+            aria-label="إجراءات الحصة"
+            className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition ${
+              anonQs.some((q) => !q.answered) || challenge
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
+            {anonQs.some((q) => !q.answered) && (
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                {anonQs.filter((q) => !q.answered).length}
+              </span>
+            )}
           </button>
         </nav>
       ) : (
@@ -643,6 +589,28 @@ export default function RoomPage() {
             <span className="text-text-muted">يعرض المعلّم الآن</span>
             <span className="font-bold" >{currentLabel}</span>
           </div>
+          {/* تقييم الغرفة المدفوعة — لمن اشترى الدخول */}
+          {room?.isPaid && roomAccess && user && (
+            <button
+              onClick={() => setRateRoomOpen(true)}
+              title="قيّم الغرفة"
+              aria-label="قيّم الغرفة"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary active:scale-95"
+            >
+              <FontAwesomeIcon icon={faChalkboard} className="h-4 w-4" />
+            </button>
+          )}
+          {/* تقييم الأستاذ — إجراء مفيد للطالب */}
+          {room?.ownerId && room?.ownerRole === "teacher" && (
+            <button
+              onClick={() => setRateOpen(true)}
+              title="قيّم الأستاذ"
+              aria-label="قيّم الأستاذ"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-amber-400/40 bg-amber-400/10 text-amber-600 transition active:scale-95"
+            >
+              <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
+            </button>
+          )}
           {/* وضع التركيز للطالب — بيئة دراسة نظيفة */}
           <button
             onClick={() => setStudentFocus(true)}
@@ -653,6 +621,92 @@ export default function RoomPage() {
             <span className="hidden sm:inline">تركيز</span>
           </button>
         </div>
+      )}
+
+      {/* درج «إجراءات الحصة» — للمالك */}
+      {isOwner && (
+        <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة">
+          <div className="grid grid-cols-2 gap-2.5 p-1 sm:grid-cols-3">
+            {/* مؤقّت الدرس */}
+            <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-2">
+              <RoomTimerButton roomId={roomId} />
+            </div>
+
+            <button
+              onClick={() => { setShowCreatePoll(true); setMoreOpen(false); }}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <FontAwesomeIcon icon={faChartBar} className="h-5 w-5 text-primary" />
+              استفتاء
+            </button>
+
+            <button
+              onClick={() => { challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true); setMoreOpen(false); }}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
+                challenge ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
+              }`}
+            >
+              <FontAwesomeIcon icon={faBrain} className="h-5 w-5 text-primary" />
+              {challenge ? "لوحة التحدّي" : "تحدٍّ"}
+            </button>
+
+            <button
+              onClick={() => { setAnonOpen(true); setMoreOpen(false); }}
+              className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
+                anonQs.some((q) => !q.answered) ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
+              }`}
+            >
+              <FontAwesomeIcon icon={faUserSecret} className="h-5 w-5 text-primary" />
+              أسئلة مجهولة
+              {anonQs.some((q) => !q.answered) && (
+                <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                  {anonQs.filter((q) => !q.answered).length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => { setSummaryOpen(true); setMoreOpen(false); }}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <FontAwesomeIcon icon={faFileLines} className="h-5 w-5 text-primary" />
+              ملخّص الحصة
+            </button>
+
+            <button
+              onClick={() => {
+                const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
+                setOwnerStatus(roomId, next);
+              }}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
+                ownerStatus === "available" ? "border-border bg-surface text-secondary"
+                  : ownerStatus === "busy" ? "border-danger/40 bg-danger/10 text-danger"
+                  : "border-warning/40 bg-warning/10 text-warning"
+              }`}
+            >
+              <span className="text-xl leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
+              {ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}
+            </button>
+
+            {room?.isPaid && (
+              <button
+                onClick={() => { generateAccessCode(); setMoreOpen(false); }}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
+              >
+                <FontAwesomeIcon icon={faKey} className="h-5 w-5" />
+                كود وصول
+              </button>
+            )}
+
+            <button
+              onClick={() => { shareRoomLink(); setMoreOpen(false); }}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <FontAwesomeIcon icon={faShareNodes} className="h-5 w-5 text-primary" />
+              مشاركة الرابط
+            </button>
+          </div>
+        </BottomSheet>
       )}
 
       {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}
@@ -928,6 +982,19 @@ export default function RoomPage() {
           studentName={user.displayName || "طالب"}
           open={rateOpen}
           onClose={() => setRateOpen(false)}
+        />
+      )}
+
+      {/* تقييم الغرفة المدفوعة — لمن اشترى الدخول */}
+      {!isOwner && room?.isPaid && user && (
+        <ContentRatingSheet
+          itemId={roomId}
+          itemTitle={room.name || "الغرفة"}
+          uid={user.uid}
+          name={user.displayName || "طالب"}
+          kind="room"
+          open={rateRoomOpen}
+          onClose={() => setRateRoomOpen(false)}
         />
       )}
 

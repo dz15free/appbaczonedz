@@ -4,15 +4,19 @@ const nextConfig = {
   // تحسين الأداء: ضغط، إزالة console في الإنتاج، تحسين الحزم
   compress: true,
   poweredByHeader: false,
+  // خرائط المصدر في الإنتاج: تجعل أخطاء المتصفّح تُظهر اسم الملف والسطر الحقيقي
+  // بدل الرموز المصغّرة مثل "i is not a function". مفيدة للتشخيص، ولا تؤثّر على المستخدم.
+  productionBrowserSourceMaps: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
   experimental: {
-    // تحسين استيراد المكتبات الكبيرة (أيقونات، أدوات)
+    // تحسين استيراد المكتبات الكبيرة (الأيقونات فقط).
+    // ملاحظة: أُزيل "firebase" عمداً — تحسين استيراد firebase عبر هذه الميزة
+    // التجريبية يكسر بعض دوالها في الإنتاج فيظهر خطأ "i is not a function".
     optimizePackageImports: [
       "@fortawesome/react-fontawesome",
       "@fortawesome/free-solid-svg-icons",
-      "firebase",
     ],
   },
   images: {
