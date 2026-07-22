@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
@@ -29,7 +29,14 @@ export default function PlannerPage() {
   const [size, setSize] = useState<Size>("a4");
   const [accent, setAccent] = useState("#2563eb");
   const logo = settings.logoUrl;
-  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+
+  /* النصيحة تُختار بعد التركيب لا أثناء الرسم.
+     كان `Math.random()` يُنفَّذ في الرسم فيختار الخادم نصيحة والمتصفّح أخرى،
+     فيقع اختلاف الترطيب (React #418). الآن الخادم والمتصفّح يبدآن بالقيمة نفسها. */
+  const [tip, setTip] = useState(TIPS[0]);
+  useEffect(() => {
+    setTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
+  }, []);
 
   const ACCENTS = ["#2563eb", "#059669", "#db2777", "#ea580c", "#7c3aed", "#0891b2"];
 
@@ -38,8 +45,11 @@ export default function PlannerPage() {
   const [exporting, setExporting] = useState(false);
 
   /* تصدير المخطّط صورة PNG بدقّة عالية — بلا أي مكتبة خارجية.
-     الفكرة: نلفّ نسخة من العقدة داخل <foreignObject> في SVG، ثم نرسم
-     الـSVG على canvas بمقياس 3x فتخرج الصورة حادّة للطباعة والمشاركة. */
+
+     لماذا لا ننسخ أوراق الأنماط؟ لأنّ نسخ كل قواعد Tailwind داخل الـSVG
+     يُدخل صيغاً حديثة (oklch, @supports, @layer) لا يفهمها مُحلّل SVG،
+     فيفشل تحميل الصورة صامتاً. الحلّ الأمتن: نُثبّت الأنماط **المحسوبة**
+     لكل عنصر مباشرةً في خاصيّة style، فلا نحتاج أي ورقة أنماط. */
   async function exportPng() {
     const node = document.getElementById("planner-sheet");
     if (!node || exporting) return;
@@ -48,49 +58,74 @@ export default function PlannerPage() {
       const rect = node.getBoundingClientRect();
       const w = Math.round(rect.width);
       const h = Math.round(rect.height);
-      const scale = 3; // دقّة عالية
+      const scale = 3; // دقّة عالية للطباعة والمشاركة
 
-      // ندمج قواعد CSS الخاصّة بالمخطّط داخل الصورة (وإلا خرجت بلا تنسيق)
-      const styleText = Array.from(document.styleSheets)
-        .map((sheet) => {
-          try {
-            return Array.from((sheet as CSSStyleSheet).cssRules).map((r) => r.cssText).join("\n");
-          } catch { return ""; } // أوراق أنماط من نطاق آخر
-        })
-        .join("\n");
+      // الخصائص التي تكفي لإعادة إنتاج المظهر بدقّة
+      const PROPS = [
+        "display","position","top","right","bottom","left","width","height",
+        "minWidth","minHeight","maxWidth","maxHeight","margin","marginTop","marginRight",
+        "marginBottom","marginLeft","padding","paddingTop","paddingRight","paddingBottom",
+        "paddingLeft","boxSizing","flexDirection","flexWrap","justifyContent","alignItems",
+        "alignContent","gap","rowGap","columnGap","flexGrow","flexShrink","flexBasis",
+        "gridTemplateColumns","gridTemplateRows","gridColumn","gridRow",
+        "fontFamily","fontSize","fontWeight","fontStyle","lineHeight","letterSpacing",
+        "textAlign","textDecoration","textTransform","whiteSpace","wordBreak","direction",
+        "color","backgroundColor","backgroundImage","backgroundSize","backgroundPosition",
+        "border","borderTop","borderRight","borderBottom","borderLeft","borderRadius",
+        "borderColor","borderStyle","borderWidth","opacity","overflow","verticalAlign",
+      ] as const;
+
+      function inlineStyles(src: Element, dst: Element) {
+        const cs = window.getComputedStyle(src);
+        const decl: string[] = [];
+        for (const prop of PROPS) {
+          const v = cs.getPropertyValue(
+            prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
+          );
+          if (v && v !== "none" && v !== "normal" && v !== "auto") {
+            decl.push(`${prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}:${v}`);
+          }
+        }
+        (dst as HTMLElement).setAttribute("style", decl.join(";"));
+
+        const sKids = Array.from(src.children);
+        const dKids = Array.from(dst.children);
+        for (let i = 0; i < sKids.length && i < dKids.length; i++) {
+          inlineStyles(sKids[i], dKids[i]);
+        }
+      }
 
       const clone = node.cloneNode(true) as HTMLElement;
+      inlineStyles(node, clone);
       clone.style.margin = "0";
       clone.style.boxShadow = "none";
       clone.style.borderRadius = "0";
+      clone.style.width = `${w}px`;
+      clone.style.height = `${h}px`;
 
-      /* الصور الخارجية (شعار من نطاق آخر) تمنع تحميل الـSVG كصورة.
-         نستبدلها بنصّ اسم الموقع فيبقى المخطّط كاملاً ويعمل التصدير. */
+      /* الصور الخارجية (شعار من نطاق آخر) تلوّث الـcanvas وتمنع التصدير. */
       clone.querySelectorAll("img").forEach((im) => {
-        const alt = im.getAttribute("alt") || "BacZoneDZ";
         const span = document.createElement("span");
-        span.textContent = alt;
+        span.textContent = im.getAttribute("alt") || "BacZoneDZ";
         span.setAttribute("style", "font-weight:800;font-size:14px;color:#1a1a2e");
         im.replaceWith(span);
       });
 
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
-        <foreignObject width="100%" height="100%">
-          <div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="width:${w}px;height:${h}px">
-            <style>${styleText}</style>
-            ${new XMLSerializer().serializeToString(clone)}
-          </div>
-        </foreignObject>
-      </svg>`;
+      const xml = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+        `<foreignObject x="0" y="0" width="${w}" height="${h}">` +
+        `<div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="width:${w}px;height:${h}px;background:#fff">` +
+        xml +
+        `</div></foreignObject></svg>`;
 
-      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
+      // data: URL أكثر موثوقيّة من blob: هنا (لا قيود أصل)
+      const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 
       const img = new Image();
-      img.crossOrigin = "anonymous";
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
-        img.onerror = () => reject(new Error("تعذّر تحويل المخطّط"));
+        img.onerror = () => reject(new Error("svg-load-failed"));
         img.src = url;
       });
 
@@ -98,18 +133,17 @@ export default function PlannerPage() {
       canvas.width = w * scale;
       canvas.height = h * scale;
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("canvas غير مدعوم");
+      if (!ctx) throw new Error("canvas-unsupported");
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
 
       const a = document.createElement("a");
       a.download = `مخطط-البكالوريا-${template}-${size}.png`;
       a.href = canvas.toDataURL("image/png");
       a.click();
     } catch {
-      alert("تعذّر حفظ الصورة على هذا المتصفّح. جرّب زر «طباعة / حفظ PDF» بدلاً منه.");
+      alert("تعذّر حفظ الصورة على هذا المتصفّح. استعمل زر «طباعة / حفظ PDF» ثم اختر «حفظ كصورة» إن أردت.");
     } finally {
       setExporting(false);
     }

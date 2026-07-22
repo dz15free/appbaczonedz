@@ -101,7 +101,7 @@ const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
 /* قسم الأقسام */
 const SectionsRow = memo(function SectionsRow() {
   return (
-    <div className="grid grid-cols-5 gap-2 sm:gap-3">
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
       {SECTIONS.map((s) => (
         <Link key={s.href} href={s.href} className="group flex flex-col items-center gap-2">
           <span className={`grid h-14 w-14 place-items-center rounded-2xl transition group-hover:scale-105 sm:h-16 sm:w-16 ${s.color}`}>
