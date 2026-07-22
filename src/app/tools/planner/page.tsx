@@ -64,6 +64,16 @@ export default function PlannerPage() {
       clone.style.boxShadow = "none";
       clone.style.borderRadius = "0";
 
+      /* الصور الخارجية (شعار من نطاق آخر) تمنع تحميل الـSVG كصورة.
+         نستبدلها بنصّ اسم الموقع فيبقى المخطّط كاملاً ويعمل التصدير. */
+      clone.querySelectorAll("img").forEach((im) => {
+        const alt = im.getAttribute("alt") || "BacZoneDZ";
+        const span = document.createElement("span");
+        span.textContent = alt;
+        span.setAttribute("style", "font-weight:800;font-size:14px;color:#1a1a2e");
+        im.replaceWith(span);
+      });
+
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
         <foreignObject width="100%" height="100%">
           <div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" style="width:${w}px;height:${h}px">

@@ -8,7 +8,7 @@ import {
   faUsers, faRobot, faComments, faChalkboardUser,
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
-  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays,
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -31,6 +31,7 @@ const SECTIONS = [
   { href: "/library", label: "المكتبة", icon: faBookOpen, color: "bg-emerald-500/10 text-emerald-500" },
   { href: "/aibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
+  { href: "/groups", label: "المجموعات", icon: faPeopleGroup, color: "bg-teal-500/10 text-teal-500" },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
 ];
 
