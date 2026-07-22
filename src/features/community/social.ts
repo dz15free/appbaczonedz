@@ -211,16 +211,22 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
         id,
         authorId: p.authorId,
         authorName: p.authorName,
+        authorRole: p.authorRole,
         text: p.text,
         createdAt: p.createdAt ?? 0,
         score,
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
         visibility: p.visibility ?? "public",
-      editedAt: p.editedAt,
+        editedAt: p.editedAt,
         attachmentId: p.attachmentId,
         attachmentKind: p.attachmentKind,
         fileName: p.fileName,
+        // كانت هذه الحقول تُكتب في القاعدة لكن لا تُقرأ أبداً،
+        // فيظهر المنشور نصّاً فقط بلا صور ولا فيديو.
+        media: p.media,
+        subject: p.subject,
+        locked: p.locked,
       };
     });
     posts.sort((a, b) => b.createdAt - a.createdAt);
@@ -237,6 +243,7 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       id: postId,
       authorId: p.authorId,
       authorName: p.authorName,
+      authorRole: p.authorRole,
       text: p.text,
       createdAt: p.createdAt ?? 0,
       score: Object.values(votes).reduce((a, b) => a + (b as number), 0),
@@ -247,6 +254,9 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       attachmentId: p.attachmentId,
       attachmentKind: p.attachmentKind,
       fileName: p.fileName,
+      media: p.media,
+      subject: p.subject,
+      locked: p.locked,
     });
   });
 }
@@ -268,10 +278,14 @@ export function listenUserPosts(authorUid: string, myUid: string, cb: (posts: Po
         myVote: votes[myUid] ?? 0,
         commentCount: p.commentCount ?? 0,
         visibility: p.visibility ?? "public",
-      editedAt: p.editedAt,
+        editedAt: p.editedAt,
         attachmentId: p.attachmentId,
         attachmentKind: p.attachmentKind,
         fileName: p.fileName,
+        authorRole: p.authorRole,
+        media: p.media,
+        subject: p.subject,
+        locked: p.locked,
       } as Post;
     });
     posts.sort((a, b) => b.createdAt - a.createdAt);
