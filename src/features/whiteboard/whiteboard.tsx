@@ -11,6 +11,7 @@ import {
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { Icon } from "@/components/ui/icon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPen,
@@ -48,6 +49,13 @@ interface Shape {
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
 const SIZES = [2, 4, 8];
+/* نسبة اللوح الثابتة.
+   كانت اللوحة تأخذ شكل الحاوية أيًّا كان، والإحداثيات محفوظة نسبيّة (0..1) —
+   فالدائرة المرسومة على الحاسوب (نسبة ١٫٦٧) تصل الهاتف (نسبة ٠٫٥٨) بيضاويّةً
+   ممطوطة، والكتابة تبدو طويلة. الآن اللوح يحتفظ بنسبة واحدة على كل الأجهزة
+   ويُوسَّط داخل المساحة المتاحة، فما يراه الأستاذ هو ما يراه الطالب بالضبط. */
+const BOARD_AR = 16 / 10;
+
 const SYMBOLS = ["+", "−", "×", "÷", "=", "√", "π", "²", "³", "≤", "≥", "→", "∞", "∫", "Σ", "θ", "α", "Δ"];
 
 /* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
@@ -71,6 +79,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
 }) {
   const { user } = useAuth();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLCanvasElement>(null);
   const previewRef = useRef<HTMLCanvasElement>(null);
 
@@ -317,23 +326,40 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   // ── تهيئة + تجاوب ──
   useEffect(() => {
     const wrap = wrapRef.current;
+    const board = boardRef.current;
     const main = mainRef.current;
     const prev = previewRef.current;
-    if (!wrap || !main || !prev) return;
+    if (!wrap || !board || !main || !prev) return;
     const resize = () => {
       const r = wrap.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return;
+
+      // احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في الحاوية
+      let bw = r.width;
+      let bh = bw / BOARD_AR;
+      if (bh > r.height) { bh = r.height; bw = bh * BOARD_AR; }
+      bw = Math.floor(bw); bh = Math.floor(bh);
+
+      board.style.width = `${bw}px`;
+      board.style.height = `${bh}px`;
+
       for (const c of [main, prev]) {
-        c.width = Math.max(1, Math.floor(r.width * dpr()));
-        c.height = Math.max(1, Math.floor(r.height * dpr()));
-        c.style.width = `${r.width}px`;
-        c.style.height = `${r.height}px`;
+        c.width = Math.max(1, Math.floor(bw * dpr()));
+        c.height = Math.max(1, Math.floor(bh * dpr()));
+        c.style.width = `${bw}px`;
+        c.style.height = `${bh}px`;
       }
       fullRedraw();
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
-    return () => ro.disconnect();
+    // تغيّر اتجاه الهاتف لا يُطلق ResizeObserver دائمًا
+    window.addEventListener("orientationchange", resize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("orientationchange", resize);
+    };
   }, [fullRedraw]);
 
   // ── مزامنة RTDB (onValue: متين، يصل للجميع) — لكل صفحة ──
@@ -649,25 +675,34 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
             ))}
             {stamp
               ? <span className="text-xs font-bold text-primary">اضغط على السبورة لوضع: {stamp}</span>
-              : <span className="text-[10px] text-text-muted">💡 لتمييز عنصر أو حفظه كبطاقة: اختر أداة «اختيار» ثم انقره بالزر الأيمن (أو اضغط عليه مطوّلاً بالهاتف)</span>}
+              : <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                  <Icon name="ai" size={13} />
+                  لتمييز عنصر أو حفظه كبطاقة: اختر أداة «اختيار» ثم انقره بالزر الأيمن (أو اضغط عليه مطوّلاً بالهاتف)
+                </span>}
           </div>
         </div>
       )}
 
       <div
         ref={wrapRef}
-        className="relative flex-1 overflow-hidden bg-white"
-        style={
-          grid
-            ? {
-                backgroundImage:
-                  "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)",
-                backgroundSize: "24px 24px",
-              }
-            : undefined
-        }
+        className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#EDF0F5] p-1.5 sm:p-2"
       >
-        <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
+        {/* اللوح — نسبة ثابتة، موسّط، وما حوله هامش محايد بدل تمطيط المحتوى */}
+        <div
+          ref={boardRef}
+          className="relative shrink-0 overflow-hidden rounded-md bg-white ring-1 ring-black/5"
+          style={{
+            boxShadow: "0 1px 2px rgba(19,23,34,.05), 0 8px 24px rgba(19,23,34,.07)",
+            ...(grid
+              ? {
+                  backgroundImage:
+                    "linear-gradient(#e9ecf2 1px, transparent 1px), linear-gradient(90deg, #e9ecf2 1px, transparent 1px)",
+                  backgroundSize: "24px 24px",
+                }
+              : {}),
+          }}
+        >
+          <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
         {/* شريط التحديد — يؤكّد للمستخدم ما التقطه، ويسهّل الإفلات.
             هذا هو المرساة التي ستُعلَّق عليها إجراءات الخطوة الثالثة. */}
         {selectedId && (() => {
@@ -745,6 +780,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
           onPointerCancel={canDraw || selecting ? onPointerUp : undefined}
           onContextMenu={canDraw || selecting ? onContextMenu : undefined}
         />
+        </div>
       </div>
 
       {/* ── شريط الصفحات ── */}

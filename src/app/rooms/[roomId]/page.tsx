@@ -180,6 +180,26 @@ export default function RoomPage() {
     return () => document.body.classList.remove("bz-fullscreen-active");
   }, [fullscreen]);
 
+  /* مزامنة الحالة مع المتصفّح.
+     بدون هذا: يخرج المستخدم بمفتاح Esc أو بزرّ المتصفّح فتبقى الحالة true
+     وتعلق الواجهة في تخطيط الشاشة الكاملة بلا مخرج. */
+  useEffect(() => {
+    function sync() {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      const active = !!(document.fullscreenElement || doc.webkitFullscreenElement);
+      // على iOS لا توجد Fullscreen API — نبقى على وضع CSS ولا نُلغيه
+      if (!active && (document.fullscreenEnabled || doc.webkitFullscreenElement !== undefined)) {
+        setFullscreen((cur) => (cur ? false : cur));
+      }
+    }
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
+  }, []);
+
   // تتبّع ارتفاع الواجهة الفعلي (يتغيّر مع لوحة المفاتيح على iOS)
   useEffect(() => {
     if (!fullscreen) return;
