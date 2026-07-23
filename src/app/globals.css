@@ -26,6 +26,26 @@
   --bz-workspace: #0a0a0f;
 
   color-scheme: light;
+  /* ── نظام تصميم الغرفة الجديد (الكونسول واللوح) ──
+     ألوان مباشرة (HEX) لأنّها تُستعمل في style inline لا في Tailwind. */
+  --bz-canvas:#F1F3F7;      /* أرضية الغرفة حول اللوح */
+  --bz-line:#E1E5EC;
+  --bz-line-2:#CFD5E0;
+  --bz-ink:#131722;
+  --bz-ink-2:#5A6274;
+  --bz-ink-3:#98A0B0;
+  --bz-blue:#2350D9;        /* الأساسي: الأداة النشطة والتحديد */
+  --bz-blue-700:#1A3FB0;
+  --bz-blue-050:#EDF2FE;
+  --bz-blue-100:#DCE6FD;
+  --bz-amber:#D08217;       /* ما يخصّ الطالب: الالتقاط والكرّاس فقط */
+  --bz-amber-ink:#8A5A12;
+  --bz-amber-050:#FDF4E7;
+  --bz-amber-200:#F2DFC0;
+  --bz-red:#D2453C;         /* تصحيح · مهم · تمرين */
+  --bz-green:#1E8A5F;       /* صحيح · يتكلّم الآن */
+  --bz-board-grid:#EDF0F5;
+
 }
 
 .dark {
@@ -38,6 +58,15 @@
   --bz-workspace: #0f1117;
 
   color-scheme: dark;
+  --bz-canvas:#171A21;
+  --bz-line:#2A303B;
+  --bz-line-2:#39414F;
+  --bz-ink:#E8EBF0;
+  --bz-ink-2:#98A2B3;
+  --bz-ink-3:#6B7585;
+  --bz-blue-050:#1B2540;
+  --bz-blue-100:#233156;
+
 }
 
 /* ========================================================================

@@ -11,7 +11,11 @@ import {
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
-import { Icon } from "@/components/ui/icon";
+import { Icon, type IconName } from "@/components/ui/icon";
+import {
+  FloatingConsole, ConsoleZone, ConsoleDivider, ConsoleButton,
+  ConsoleSwatch, StageIndicator,
+} from "@/components/ui/console";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPen,
@@ -22,13 +26,7 @@ import {
   faCircle,
   faFont,
   faEraser,
-  faRotateLeft,
-  faRotateRight,
-  faTrash,
-  faBorderAll,
-  faChevronLeft,
-  faChevronRight,
-  faPlus, faArrowPointer, faXmark,
+  faArrowPointer, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 
@@ -46,6 +44,12 @@ interface Shape {
   points: Point[];
   text?: string;
 }
+
+/* أيقونات الأدوات في الكونسول — من نظام أيقونات BacZone الموحّد */
+const TOOL_ICON: Record<ToolId, IconName> = {
+  select: "cursor", pen: "pen", highlighter: "marker", line: "line",
+  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", eraser: "eraser",
+};
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
 const SIZES = [2, 4, 8];
@@ -94,6 +98,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   const [tool, setTool] = useState<ToolId>("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(SIZES[1]);
+  // لوحة الرموز الرياضية — كانت صفًّا دائمًا، صارت تظهر عند الطلب فقط
+  const [symbolsOpen, setSymbolsOpen] = useState(false);
   const [grid, setGrid] = useState(true);
   const [stamp, setStamp] = useState<string | null>(null);
   // التحديد: الحالة للواجهة، والمرجع ليقرأه الرسم دون إعادة إنشاء الدوال
@@ -623,65 +629,6 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
 
   return (
     <div className="flex h-full flex-col">
-      {canDraw && (
-        <div className="space-y-1 border-b border-border bg-surface p-2">
-          {/* الأدوات */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {TOOLS.map((t) => (
-              <ToolBtn key={t.id} active={tool === t.id && !stamp} onClick={() => pickTool(t.id)} icon={t.icon} label={t.label} />
-            ))}
-            <div className="mx-1 h-6 w-px bg-border" />
-            {COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => {
-                  setColor(c);
-                  if (tool === "eraser") pickTool("pen");
-                }}
-                aria-label={`لون`}
-                className={`h-6 w-6 rounded-full border-2 ${color === c ? "border-primary" : "border-transparent"}`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-            <div className="mx-1 h-6 w-px bg-border" />
-            {SIZES.map((sz) => (
-              <button
-                key={sz}
-                onClick={() => setSize(sz)}
-                aria-label={`سُمك`}
-                className={`grid h-8 w-8 place-items-center rounded-md ${size === sz ? "bg-primary/10" : "hover:bg-primary/10"}`}
-              >
-                <span className="rounded-full bg-text-primary" style={{ width: sz + 2, height: sz + 2 }} />
-              </button>
-            ))}
-            <div className="mx-1 h-6 w-px bg-border" />
-            <ToolBtn active={grid} onClick={() => setGrid((g) => !g)} icon={faBorderAll} label="شبكة" />
-            <ToolBtn onClick={undo} icon={faRotateLeft} label="تراجع" />
-            <ToolBtn onClick={redo} icon={faRotateRight} label="إعادة" />
-            <ToolBtn onClick={clearAll} icon={faTrash} label="مسح" danger />
-          </div>
-          {/* الرموز الرياضية */}
-          <div className="flex flex-wrap items-center gap-1">
-            {SYMBOLS.map((sym) => (
-              <button
-                key={sym}
-                onClick={() => setStamp((cur) => (cur === sym ? null : sym))}
-                className={`grid h-7 min-w-7 place-items-center rounded px-1.5 text-sm font-bold ${
-                  stamp === sym ? "bg-gradient-primary text-white" : "bg-background text-text-primary hover:bg-primary/10"
-                }`}
-              >
-                {sym}
-              </button>
-            ))}
-            {stamp
-              ? <span className="text-xs font-bold text-primary">اضغط على السبورة لوضع: {stamp}</span>
-              : <span className="flex items-center gap-1.5 text-[10px] text-text-muted">
-                  <Icon name="ai" size={13} />
-                  لتمييز عنصر أو حفظه كبطاقة: اختر أداة «اختيار» ثم انقره بالزر الأيمن (أو اضغط عليه مطوّلاً بالهاتف)
-                </span>}
-          </div>
-        </div>
-      )}
 
       <div
         ref={wrapRef}
@@ -781,109 +728,121 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
           onContextMenu={canDraw || selecting ? onContextMenu : undefined}
         />
         </div>
+
+        {/* لوحة الرموز الرياضية — سياقية، تظهر فوق الكونسول عند الطلب */}
+        {symbolsOpen && canDraw && (
+          <div
+            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-20 flex max-w-[calc(100%-20px)]
+              -translate-x-1/2 flex-wrap items-center justify-center gap-1 rounded-xl border p-1.5"
+            style={{
+              background: "rgba(255,255,255,.98)",
+              borderColor: "var(--bz-line-2)",
+              boxShadow: "0 10px 28px rgba(19,23,34,.14)",
+            }}
+          >
+            {SYMBOLS.map((sym) => (
+              <button
+                key={sym}
+                onClick={() => setStamp((cur) => (cur === sym ? null : sym))}
+                className={`grid h-7 min-w-7 place-items-center rounded-md px-1.5 text-sm font-bold transition ${
+                  stamp === sym
+                    ? "text-white"
+                    : "hover:bg-[var(--bz-blue-050)]"
+                }`}
+                style={stamp === sym ? { background: "var(--bz-blue)" } : { color: "var(--bz-ink)" }}
+              >
+                {sym}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* الطالب: عودة إلى صفحة الأستاذ */}
+        {!canDraw && !following && (
+          <button
+            onClick={() => { setFollowing(true); setActivePage(teacherPage); }}
+            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-20 -translate-x-1/2 rounded-full
+              px-3 py-1 text-[11px] font-bold text-white shadow-lg transition active:scale-95"
+            style={{ background: "var(--bz-blue)" }}
+          >
+            عُد إلى صفحة الأستاذ ({teacherPage + 1})
+          </button>
+        )}
+
+        {/* ══ الكونسول: شريط واحد يستبدل الشريطين العلويين وشريط الصفحات ══ */}
+        <FloatingConsole>
+          {/* المراحل — ثابتة */}
+          <ConsoleZone>
+            <ConsoleButton
+              icon="chevRight" label="الصفحة السابقة"
+              disabled={activePage === 0} onClick={() => gotoPage(activePage - 1)}
+            />
+            <StageIndicator count={pageCount} current={activePage} onSelect={gotoPage} />
+            <ConsoleButton
+              icon="chevLeft" label="الصفحة التالية"
+              disabled={activePage >= pageCount - 1} onClick={() => gotoPage(activePage + 1)}
+            />
+            {canDraw && <ConsoleButton icon="plus" label="إضافة صفحة" onClick={addPage} />}
+          </ConsoleZone>
+
+          {/* الأدوات — تتبدّل بالسياق */}
+          {canDraw && (
+            <>
+              <ConsoleDivider />
+              <ConsoleZone scroll>
+                {TOOLS.map((t) => (
+                  <ConsoleButton
+                    key={t.id} icon={TOOL_ICON[t.id]} label={t.label}
+                    active={tool === t.id && !stamp} onClick={() => pickTool(t.id)}
+                  />
+                ))}
+                <ConsoleButton
+                  icon="sigma" label="رموز رياضية"
+                  active={symbolsOpen} onClick={() => setSymbolsOpen((o) => !o)}
+                />
+                <ConsoleDivider />
+                {COLORS.map((c) => (
+                  <ConsoleSwatch
+                    key={c} color={c} label="لون القلم" active={color === c}
+                    onClick={() => { setColor(c); if (tool === "eraser") pickTool("pen"); }}
+                  />
+                ))}
+                <ConsoleDivider />
+                {SIZES.map((sz) => (
+                  <button
+                    key={sz} onClick={() => setSize(sz)} title={`سماكة ${sz}`} aria-label={`سماكة ${sz}`}
+                    className="grid h-[30px] w-[26px] shrink-0 place-items-center rounded-lg transition
+                      hover:bg-[var(--bz-blue-050)]"
+                  >
+                    <span
+                      className="block rounded-full"
+                      style={{
+                        width: sz + 6, height: sz + 2,
+                        background: size === sz ? "var(--bz-blue)" : "var(--bz-ink-3)",
+                      }}
+                    />
+                  </button>
+                ))}
+              </ConsoleZone>
+            </>
+          )}
+
+          {/* اللوح — ثابتة */}
+          <ConsoleDivider />
+          <ConsoleZone>
+            <ConsoleButton icon="grid" label="شبكة" active={grid} onClick={() => setGrid((g) => !g)} />
+            {canDraw && (
+              <>
+                <ConsoleButton icon="undo" label="تراجع" onClick={undo} />
+                <ConsoleButton icon="redo" label="إعادة" onClick={redo} />
+                <ConsoleButton icon="trash" label="مسح اللوح" onClick={clearAll} />
+              </>
+            )}
+          </ConsoleZone>
+        </FloatingConsole>
       </div>
 
-      {/* ── شريط الصفحات ── */}
-      <div className="flex items-center justify-center gap-2 border-t border-border bg-surface px-2 py-1.5">
-        {!canDraw && (
-          following ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-bold text-secondary">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              أتابع الأستاذ
-            </span>
-          ) : (
-            <button
-              onClick={() => { setFollowing(true); setActivePage(teacherPage); }}
-              className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary transition active:scale-95"
-            >
-              عُد إلى الأستاذ ({teacherPage + 1})
-            </button>
-          )
-        )}
-        <button
-          onClick={() => gotoPage(activePage - 1)}
-          disabled={activePage === 0}
-          className="grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary disabled:opacity-30"
-          aria-label="الصفحة السابقة"
-        >
-          <FontAwesomeIcon icon={faChevronRight} className="h-3.5 w-3.5" />
-        </button>
-
-        <div className="flex items-center gap-1">
-          {Array.from({ length: pageCount }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => gotoPage(i)}
-              title={i === teacherPage && !canDraw ? "صفحة الأستاذ الآن" : undefined}
-              className={`relative grid h-8 min-w-8 place-items-center rounded-lg px-2 text-xs font-bold transition ${
-                i === activePage ? "bg-gradient-primary text-white" : "bg-background text-text-muted hover:bg-primary/10"
-              }`}
-            >
-              {i + 1}
-              {/* نقطة تدلّ الطالب على موضع الأستاذ حين يتصفّح بحرّية */}
-              {!canDraw && !following && i === teacherPage && (
-                <span className="absolute -top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-secondary" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={() => gotoPage(activePage + 1)}
-          disabled={activePage >= pageCount - 1}
-          className="grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary disabled:opacity-30"
-          aria-label="الصفحة التالية"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} className="h-3.5 w-3.5" />
-        </button>
-
-        {canDraw && (
-          <>
-            <div className="mx-1 h-5 w-px bg-border" />
-            <button onClick={addPage} title="إضافة صفحة"
-              className="grid h-8 w-8 place-items-center rounded-lg text-secondary transition hover:bg-secondary/10">
-              <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" />
-            </button>
-            <button onClick={deletePage} title="حذف الصفحة"
-              className="grid h-8 w-8 place-items-center rounded-lg text-danger transition hover:bg-danger/10">
-              <FontAwesomeIcon icon={faTrash} className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
-        <span className="ms-1 text-[11px] font-semibold text-text-muted">صفحة {activePage + 1}/{pageCount}</span>
-      </div>
     </div>
   );
 }
 
-function ToolBtn({
-  active,
-  onClick,
-  icon,
-  label,
-  danger,
-}: {
-  active?: boolean;
-  onClick: () => void;
-  icon: typeof faPen;
-  label: string;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`grid h-9 w-9 place-items-center rounded-md transition ${
-        danger
-          ? "text-danger hover:bg-danger/10"
-          : active
-            ? "bg-gradient-primary text-white"
-            : "text-text-muted hover:bg-primary/10"
-      }`}
-    >
-      <FontAwesomeIcon icon={icon} className="pointer-events-none h-4 w-4" />
-    </button>
-  );
-}
