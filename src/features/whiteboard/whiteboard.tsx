@@ -28,6 +28,7 @@ import {
   faEraser,
   faArrowPointer, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
+import { recognize } from "@/features/whiteboard/smart/recognize";
 import { useAuth } from "@/features/auth/auth-provider";
 
 interface Point {
@@ -46,6 +47,12 @@ interface Shape {
 }
 
 /* أيقونات الأدوات في الكونسول — من نظام أيقونات BacZone الموحّد */
+/* تسمية النوع التي تظهر في لسان الكائن — العنصر الثاني من توقيع BacZone */
+const KIND_LABEL: Record<Kind, string> = {
+  pen: "رسم", highlighter: "تظليل", line: "خط", arrow: "سهم",
+  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", eraser: "ممحاة",
+};
+
 const TOOL_ICON: Record<ToolId, IconName> = {
   select: "cursor", pen: "pen", highlighter: "marker", line: "line",
   arrow: "arrow", rect: "square", ellipse: "circle", text: "text", eraser: "eraser",
@@ -100,6 +107,19 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   const [size, setSize] = useState(SIZES[1]);
   // لوحة الرموز الرياضية — كانت صفًّا دائمًا، صارت تظهر عند الطلب فقط
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  // تحويل الرسم الحرّ إلى أشكال مثالية — يُعطَّل للمواد التي تحتاج رسمًا عضويًّا (الأحياء)
+  const [smartShapes, setSmartShapes] = useState(true);
+  // شارة «تراجع» بعد تحويل ناجح — الذكاء الذي لا يمكن رفضه إزعاج
+  const [snapUndo, setSnapUndo] = useState<{ shapedId: string; original: Shape } | null>(null);
+  /* سحب عنصر محدَّد: تحريك أو تحجيم من إحدى الزوايا الأربع.
+     نحتفظ بنسخة من النقاط الأصلية فتُحسب كل خطوة من الأصل لا تراكميًّا. */
+  const dragRef = useRef<{
+    mode: "move" | "resize";
+    corner?: "nw" | "ne" | "sw" | "se";
+    start: Point;
+    orig: Point[];
+    b: { x0: number; y0: number; x1: number; y1: number };
+  } | null>(null);
   const [grid, setGrid] = useState(true);
   const [stamp, setStamp] = useState<string | null>(null);
   // التحديد: الحالة للواجهة، والمرجع ليقرأه الرسم دون إعادة إنشاء الدوال
@@ -108,6 +128,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   // الطالب لا يرسم، فالاختيار عنده دائم بلا زر إضافي
   const selecting = !canDraw || tool === "select";
   const selectingRef = useRef(selecting);
+  const canDrawRef = useRef(canDraw);
   // درج الإجراءات + مؤقّت الضغط المطوّل
   const [actionsOpen, setActionsOpen] = useState(false);
   const longPress = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -137,6 +158,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   stampRef.current = stamp;
   selectingRef.current = selecting;
   selectedRef.current = selectedId;
+  canDrawRef.current = canDraw;
   marksRef.current = marks;
   followingRef.current = following;
 
@@ -257,11 +279,75 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
       const b = shape ? boundsOf(shape) : null;
       if (b) {
         const w = canvas.width, h = canvas.height;
+        const k = window.devicePixelRatio || 1;
+        const x = b.x0 * w, y = b.y0 * h;
+        const bw = (b.x1 - b.x0) * w, bh = (b.y1 - b.y0) * h;
+        const pad = 5 * k;
+        const X = x - pad, Y = y - pad, W = bw + pad * 2, H = bh + pad * 2;
+        // طول ذراع القوس: نسبة من الضلع مع حدّ أقصى، فلا يبتلع الأشكال الصغيرة
+        const arm = Math.max(6 * k, Math.min(14 * k, Math.min(W, H) * 0.28));
+
         ctx.save();
-        ctx.strokeStyle = "#2563eb";
-        ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
-        ctx.setLineDash([7 * (window.devicePixelRatio || 1), 5 * (window.devicePixelRatio || 1)]);
-        ctx.strokeRect(b.x0 * w, b.y0 * h, (b.x1 - b.x0) * w, (b.y1 - b.y0) * h);
+        ctx.strokeStyle = "#2350D9";              // أزرق BacZone
+        ctx.lineWidth = 1 * k;
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 0.35;
+        ctx.strokeRect(X, Y, W, H);               // إطار خافت
+
+        // أقواس الزوايا — التوقيع البصري لـ BacZone بدل المربّعات الأربعة
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 2.4 * k;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        // أعلى يمين
+        ctx.moveTo(X + W - arm, Y); ctx.lineTo(X + W, Y); ctx.lineTo(X + W, Y + arm);
+        // أعلى يسار
+        ctx.moveTo(X + arm, Y); ctx.lineTo(X, Y); ctx.lineTo(X, Y + arm);
+        // أسفل يمين
+        ctx.moveTo(X + W - arm, Y + H); ctx.lineTo(X + W, Y + H); ctx.lineTo(X + W, Y + H - arm);
+        // أسفل يسار
+        ctx.moveTo(X + arm, Y + H); ctx.lineTo(X, Y + H); ctx.lineTo(X, Y + H - arm);
+        ctx.stroke();
+
+        // لسان النوع فوق الإطار — يجعل اللوح مقروءًا بلا فتح شيء
+        {
+          const label = KIND_LABEL[shape.kind] ?? "عنصر";
+          const fs = 11 * k;
+          ctx.font = `600 ${fs}px system-ui, sans-serif`;
+          ctx.direction = "rtl";
+          ctx.textBaseline = "middle";
+          const padX = 7 * k;
+          const tw = ctx.measureText(label).width + padX * 2;
+          const th = 17 * k;
+          const tx = X + W - tw;            // يُحاذى إلى يمين الإطار (RTL)
+          const ty = Y - th - 4 * k;
+          const rr = 4 * k;
+          ctx.beginPath();
+          ctx.moveTo(tx + rr, ty);
+          ctx.arcTo(tx + tw, ty, tx + tw, ty + th, rr);
+          ctx.arcTo(tx + tw, ty + th, tx, ty + th, rr);
+          ctx.arcTo(tx, ty + th, tx, ty, rr);
+          ctx.arcTo(tx, ty, tx + tw, ty, rr);
+          ctx.closePath();
+          ctx.fillStyle = "#2350D9";
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "right";
+          ctx.fillText(label, tx + tw - padX, ty + th / 2);
+        }
+
+        // مقابض التحجيم — للمالك فقط (الطالب يحدّد ليقرأ لا ليعدّل)
+        if (canDrawRef.current) {
+          const r = 4 * k;
+          ctx.fillStyle = "#ffffff";
+          ctx.lineWidth = 1.6 * k;
+          for (const [cx, cy] of [[X, Y], [X + W, Y], [X, Y + H], [X + W, Y + H]]) {
+            ctx.beginPath();
+            ctx.rect(cx - r, cy - r, r * 2, r * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
         ctx.restore();
       }
     }
@@ -323,11 +409,53 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
   useEffect(() => {
     if (!selectedId) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }
+      // لا نتدخّل أثناء الكتابة في حقل
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+
+      if (e.key === "Escape") {
+        setSelectedId(null);
+        selectedRef.current = null;
+        scheduleRedraw();
+        return;
+      }
+      if (!canDrawRef.current) return;
+
+      // حذف العنصر المحدَّد
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        const id = selectedId;
+        shapes.current = shapes.current.filter((x) => x.id !== id);
+        drawnIds.current.delete(id);
+        remove(ref(rtdb, `${strokesPath}/${id}`));
+        setSelectedId(null);
+        selectedRef.current = null;
+        fullRedraw();
+        return;
+      }
+
+      // تكرار العنصر المحدَّد بإزاحة صغيرة
+      if ((e.ctrlKey || e.metaKey) && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        const src = shapes.current.find((x) => x.id === selectedId);
+        if (!src) return;
+        const OFF = 0.02;
+        const copy: Shape = {
+          ...src,
+          id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          uid: user!.uid,
+          points: src.points.map((q) => ({ x: q.x + OFF, y: q.y + OFF })),
+        };
+        commit(copy);
+        setSelectedId(copy.id);
+        selectedRef.current = copy.id;
+        fullRedraw();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId, scheduleRedraw]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, scheduleRedraw, strokesPath]);
 
   // ── تهيئة + تجاوب ──
   useEffect(() => {
@@ -462,6 +590,28 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
       const v = { w: c?.clientWidth ?? 1, h: c?.clientHeight ?? 1 };
       // هامش أوسع للمس من هامش الفأرة
       const tol = e.pointerType === "mouse" ? 10 : 18;
+
+      // ١) هل الضغطة على مقبض تحجيم للعنصر المحدَّد حاليًّا؟ (له الأولوية)
+      const curSel = selectedRef.current;
+      if (curSel && canDraw) {
+        const cur = shapes.current.find((x) => x.id === curSel);
+        const cb = cur ? boundsOf(cur) : null;
+        if (cur && cb) {
+          const corner = hitCorner(p, cb, e.pointerType === "mouse" ? 12 : 22);
+          if (corner) {
+            dragRef.current = { mode: "resize", corner, start: p, orig: cur.points.map((q) => ({ ...q })), b: cb };
+            cancelLongPress();
+            return;
+          }
+          // ٢) داخل الإطار → تحريك
+          if (p.x >= cb.x0 && p.x <= cb.x1 && p.y >= cb.y0 && p.y <= cb.y1) {
+            dragRef.current = { mode: "move", start: p, orig: cur.points.map((q) => ({ ...q })), b: cb };
+            cancelLongPress();
+            return;
+          }
+        }
+      }
+
       const hit = pickShape(shapes.current, p, v, tol);
       setSelectedId(hit ? hit.id : null);
       selectedRef.current = hit ? hit.id : null;
@@ -529,6 +679,20 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
       const d = Math.hypot(e.clientX - pressStart.current.x, e.clientY - pressStart.current.y);
       if (d > 10) cancelLongPress();
     }
+
+    // سحب عنصر محدَّد (تحريك/تحجيم) — يسبق منطق الرسم
+    if (dragRef.current) {
+      e.preventDefault();
+      const sel = selectedRef.current;
+      const shape = sel ? shapes.current.find((x) => x.id === sel) : null;
+      const pts = applyDrag(getPoint(e));
+      if (shape && pts) {
+        shape.points = pts;
+        fullRedraw();
+      }
+      return;
+    }
+
     if (!drawing.current || !currentShape.current) return;
     e.preventDefault();
     const p = getPoint(e);
@@ -553,14 +717,131 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
     }
   }
 
+  /* تحويل رسمة حرّة إلى شكل مثالي.
+     الإحداثيات مخزّنة نسبيّة (0..1)، لكن خوارزمية التعرّف تعمل بالبكسل
+     (عتبتها الدنيا 8px)، فنحوّل ذهابًا وإيابًا. */
+  /* مقابض التحجيم عند زوايا الإطار */
+  function cornersOf(b: { x0: number; y0: number; x1: number; y1: number }) {
+    return {
+      nw: { x: b.x0, y: b.y0 }, ne: { x: b.x1, y: b.y0 },
+      sw: { x: b.x0, y: b.y1 }, se: { x: b.x1, y: b.y1 },
+    } as const;
+  }
+
+  /** أي مقبض تحت النقطة؟ tol بالبكسل يُحوّل إلى نسبي */
+  function hitCorner(
+    p: Point,
+    b: { x0: number; y0: number; x1: number; y1: number },
+    tolPx: number
+  ): "nw" | "ne" | "sw" | "se" | null {
+    const c = mainRef.current;
+    const tx = tolPx / (c?.clientWidth || 1);
+    const ty = tolPx / (c?.clientHeight || 1);
+    for (const [k, pt] of Object.entries(cornersOf(b))) {
+      if (Math.abs(p.x - pt.x) <= tx && Math.abs(p.y - pt.y) <= ty) {
+        return k as "nw" | "ne" | "sw" | "se";
+      }
+    }
+    return null;
+  }
+
+  /** يطبّق التحريك/التحجيم على نقاط الشكل انطلاقًا من الأصل */
+  function applyDrag(p: Point): Point[] | null {
+    const d = dragRef.current;
+    if (!d) return null;
+    if (d.mode === "move") {
+      const dx = p.x - d.start.x;
+      const dy = p.y - d.start.y;
+      return d.orig.map((q) => ({ x: q.x + dx, y: q.y + dy }));
+    }
+    // تحجيم: الزاوية المقابلة تبقى مثبّتة
+    const { x0, y0, x1, y1 } = d.b;
+    const anchor = {
+      nw: { x: x1, y: y1 }, ne: { x: x0, y: y1 },
+      sw: { x: x1, y: y0 }, se: { x: x0, y: y0 },
+    }[d.corner || "se"];
+    const w0 = x1 - x0, h0 = y1 - y0;
+    if (w0 < 1e-6 || h0 < 1e-6) return null;
+    const MIN = 0.01; // لا نسمح بانهيار الشكل إلى نقطة
+    let sx = (p.x - anchor.x) / (d.corner === "nw" || d.corner === "sw" ? -w0 : w0);
+    let sy = (p.y - anchor.y) / (d.corner === "nw" || d.corner === "ne" ? -h0 : h0);
+    if (Math.abs(sx) < MIN) sx = sx < 0 ? -MIN : MIN;
+    if (Math.abs(sy) < MIN) sy = sy < 0 ? -MIN : MIN;
+    // الإشارة محسوبة أصلًا في المقام أعلاه — لا تُعكس مرّة ثانية
+    return d.orig.map((q) => ({
+      x: anchor.x + (q.x - anchor.x) * sx,
+      y: anchor.y + (q.y - anchor.y) * sy,
+    }));
+  }
+
+  function trySnap(s: Shape): Shape | null {
+    const c = mainRef.current;
+    if (!c) return null;
+    const w = c.clientWidth || 1;
+    const h = c.clientHeight || 1;
+    const px = s.points.map((pt) => ({ x: pt.x * w, y: pt.y * h }));
+    const r = recognize(px, { snapAngles: true });
+    // المثلّث غير مدعوم في نموذج الأشكال الحالي — نترك الرسمة كما هي
+    if (!r || r.type === "triangle") return null;
+
+    const a = { x: r.x / w, y: r.y / h };
+    const b = { x: (r.x + r.w) / w, y: (r.y + r.h) / h };
+    return {
+      id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      uid: s.uid,
+      kind: r.type as Kind,
+      color: s.color,
+      size: s.size,
+      points: [a, b],
+    };
+  }
+
+  /** استعادة الرسمة الحرّة بعد تحويل غير مرغوب */
+  function undoSnap() {
+    if (!snapUndo) return;
+    const { shapedId, original } = snapUndo;
+    setSnapUndo(null);
+    // احذف الشكل المثالي
+    shapes.current = shapes.current.filter((x) => x.id !== shapedId);
+    drawnIds.current.delete(shapedId);
+    remove(ref(rtdb, `${strokesPath}/${shapedId}`));
+    // أعد الرسمة الأصلية
+    commit(original);
+    fullRedraw();
+  }
+
   function onPointerUp() {
     cancelLongPress();
+
+    // انتهاء سحب عنصر → احفظ الموضع الجديد مرّة واحدة
+    if (dragRef.current) {
+      dragRef.current = null;
+      const sel = selectedRef.current;
+      const shape = sel ? shapes.current.find((x) => x.id === sel) : null;
+      if (shape) update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+      return;
+    }
+
     if (!drawing.current || !currentShape.current) return;
     drawing.current = false;
     const s = currentShape.current;
     currentShape.current = null;
     clearPreview();
     if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
+      // القلم فقط: حاول التعرّف على شكل مقصود قبل حفظ الرسمة الحرّة
+      if (s.kind === "pen" && smartShapes && s.points.length >= 4) {
+        const shaped = trySnap(s);
+        if (shaped) {
+          commit(shaped);
+          fullRedraw();                 // امسح أثر الرسمة الحرّة من اللوحة الحيّة
+          setSnapUndo({ shapedId: shaped.id, original: s });
+          window.setTimeout(
+            () => setSnapUndo((cur) => (cur && cur.shapedId === shaped.id ? null : cur)),
+            2600
+          );
+          return;
+        }
+      }
       // رُسمت حيّاً؛ خزّنها وادفعها
       drawnIds.current.add(s.id);
       shapes.current.push(s);
@@ -757,6 +1038,29 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
           </div>
         )}
 
+        {/* تحوّل شكل — شارة تراجع لثانيتين: الذكاء الذي لا يمكن رفضه إزعاج */}
+        {snapUndo && (
+          <div
+            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-30 flex -translate-x-1/2
+              items-center gap-2 rounded-full border py-1 pe-1 ps-3 text-[11px] font-semibold shadow-lg"
+            style={{
+              background: "rgba(255,255,255,.98)",
+              borderColor: "var(--bz-line-2)",
+              color: "var(--bz-ink-2)",
+            }}
+          >
+            <Icon name="check" size={13} style={{ color: "var(--bz-green)" }} />
+            حُوّلت إلى شكل مثالي
+            <button
+              onClick={undoSnap}
+              className="rounded-full px-2.5 py-1 text-[11px] font-bold text-white transition active:scale-95"
+              style={{ background: "var(--bz-blue)" }}
+            >
+              تراجع
+            </button>
+          </div>
+        )}
+
         {/* الطالب: عودة إلى صفحة الأستاذ */}
         {!canDraw && !following && (
           <button
@@ -799,6 +1103,12 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
                 <ConsoleButton
                   icon="sigma" label="رموز رياضية"
                   active={symbolsOpen} onClick={() => setSymbolsOpen((o) => !o)}
+                />
+                <ConsoleButton
+                  icon="shapes"
+                  label={smartShapes ? "تحويل الأشكال: مفعّل" : "تحويل الأشكال: معطّل — رسم حرّ"}
+                  active={smartShapes}
+                  onClick={() => setSmartShapes((v) => !v)}
                 />
                 <ConsoleDivider />
                 {COLORS.map((c) => (
