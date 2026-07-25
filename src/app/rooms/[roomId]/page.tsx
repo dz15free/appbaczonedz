@@ -31,11 +31,13 @@ import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
 import { ParticipantsPanel } from "@/features/rooms/participants-panel";
 import { StatusDot } from "@/components/ui/status-dot";
-import { WaitingScreen } from "@/features/rooms/waiting-screen";
+import { Icon, type IconName } from "@/components/ui/icon";
+import { ConsoleButton } from "@/components/ui/console";
 import { useTypingIndicator } from "@/features/rooms/typing-indicator";
 import type { RaisedHand } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
-import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
+import { useRoomSurface, type RoomOverlay } from "@/features/rooms/use-room-surface";
+import { RoomSurface } from "@/features/rooms/room-surface";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
@@ -60,17 +62,25 @@ const loadingTool = () => (
     <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin" />
   </div>
 );
-const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
-const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
 const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
 
 
-const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
-  { id: "welcome", label: "مرحباً", icon: faHouse },
-  { id: "video", label: "فيديو", icon: faVideo },
-  { id: "whiteboard", label: "سبورة", icon: faChalkboard },
-  { id: "files", label: "ملفات", icon: faFolderOpen },
-  { id: "notes", label: "ملاحظات", icon: faNoteSticky },
+/* طبقات الغرفة — لم تعد تبويبات تتبادل المكان، بل طبقات تعلو اللوح.
+   "سبورة" لم تعد عنصراً في القائمة: اللوح هو الغرفة، لا خيار فيها. */
+function layerLabel(o: Exclude<RoomOverlay, "none">): string {
+  return LAYERS.find((l) => l.id === o)?.label ?? "طبقة";
+}
+
+/* الأيقونتان معاً في السطر نفسه عن قصد: الغرفة الجديدة تستعمل نظام
+   أيقونات BacZone، بينما «وضع تركيز الأستاذ» ما يزال على FontAwesome
+   ولم يُعد تصميمه بعد. قائمة واحدة تُغذّي السطحين فلا تتفرّق التسميات. */
+const LAYERS: {
+  id: Exclude<RoomOverlay, "none">; label: string; icon: IconName; faIcon: typeof faHouse;
+}[] = [
+  { id: "welcome", label: "ترحيب", icon: "home", faIcon: faHouse },
+  { id: "video", label: "فيديو", icon: "video", faIcon: faVideo },
+  { id: "files", label: "ملفّات", icon: "file", faIcon: faFolderOpen },
+  { id: "notes", label: "ملاحظات", icon: "note", faIcon: faNoteSticky },
 ];
 
 interface Hand {
@@ -142,7 +152,7 @@ export default function RoomPage() {
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
   const isOwner = !!room && !!user && room.ownerId === user.uid;
-  const { tool, setTool } = useActiveTool(roomId, isOwner);
+  const { overlay, setOverlay, closeOverlay, toggleOverlay } = useRoomSurface(roomId, isOwner);
 
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
@@ -355,7 +365,7 @@ export default function RoomPage() {
     });
   }
   function currentToolLabel() {
-    return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
+    return overlay === "none" ? "اللوح" : layerLabel(overlay);
   }
   // مشاركة رابط الغرفة — يستعمله الشريط العادي ووضع التركيز معاً
   // يُسجَّل حضور الطالب مرة واحدة عند دخوله غرفة الأستاذ (أساس أهلية التقييم)
@@ -393,7 +403,47 @@ export default function RoomPage() {
     return <PaidRoomGate room={room} uid={user.uid} onUnlocked={() => setRoomAccess(true)} />;
   }
 
-  const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
+  const currentLabel = overlay === "none" ? "اللوح" : layerLabel(overlay);
+
+  /* أزرار طبقات الغرفة — تُحقن في كونسول اللوح، فالكونسول واحد.
+     الطالب لا يبدّل الطبقة: يتابع ما يعرضه الأستاذ. */
+  const consoleExtras = isOwner ? (
+    <>
+      {LAYERS.map((l) => (
+        <ConsoleButton
+          key={l.id}
+          icon={l.icon}
+          label={l.label}
+          active={overlay === l.id}
+          onClick={() => toggleOverlay(l.id)}
+        />
+      ))}
+    </>
+  ) : null;
+
+  /* سطح الغرفة يُبنى مرّة ويُستعمل في التخطيط العادي وفي وضع التركيز،
+     فلا يتفرّع السطحان كما كانا حين كُتب التبديل مرّتين. */
+  const roomSurface = (
+    <RoomSurface
+      roomId={roomId}
+      isOwner={isOwner}
+      roomName={room?.name}
+      subject={room?.subject}
+      memberCount={members.length}
+      ownerStatus={ownerStatus}
+      overlay={overlay}
+      onCloseOverlay={closeOverlay}
+      poll={activePoll}
+      /* activePoll قد يكون null: نبني اللوحة داخل الحارس لا خارجه،
+         وإلّا ضاع التضييق تماماً كما ضاع في خطأ البناء الذي أصلحناه. */
+      pollPanel={
+        activePoll ? (
+          <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
+        ) : null
+      }
+      consoleExtras={consoleExtras}
+    />
+  );
 
   return (
     <main className="flex h-[100dvh] flex-col bg-background text-text-primary">
@@ -555,21 +605,13 @@ export default function RoomPage() {
       {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
       {isOwner ? (
         <nav className="bz-glass flex items-center gap-2 border-b px-2.5 py-2 sm:px-3">
-          {/* الأدوات الأساسية — تبديل المحتوى */}
-          <div className="flex flex-1 items-center gap-1 rounded-xl bg-background p-1">
-            {TOOLS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTool(t.id)}
-                title={t.label}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                  tool === t.id ? "bg-gradient-primary text-white shadow" : "text-text-muted hover:bg-primary/10 hover:text-primary"
-                }`}
-              >
-                <FontAwesomeIcon icon={t.icon} className="h-4 w-4" />
-                <span className="hidden sm:inline">{t.label}</span>
-              </button>
-            ))}
+          {/* لا شريط تبويبات بعد اليوم: اللوح هو الغرفة، وطبقاته في الكونسول
+              أسفل الشاشة. يبقى هنا ما هو فعلاً إجراء حصّة لا تنقّل. */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
+            <span className="bz-live-dot" />
+            <span className="truncate text-[12px] font-bold text-text-muted">
+              {overlay === "none" ? "اللوح مباشر" : `تعرض الآن: ${layerLabel(overlay)}`}
+            </span>
           </div>
 
           {/* وضع التركيز — إجراء أساسي يبقى ظاهراً */}
@@ -756,25 +798,10 @@ export default function RoomPage() {
         >
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
           <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
-            {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
-            {activePoll?.open ? (
-              <RoomPollPanel
-                roomId={roomId}
-                poll={activePoll}
-                isOwner={isOwner}
-                myUid={user?.uid ?? ""}
-              />
-            ) : (
-              <>
-                {tool === "welcome" && (
-                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />
-                )}
-                {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
-                {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-                {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
-              </>
-            )}
+            {/* سطح الغرفة. حين يدخل الطالب وضع التركيز يُعرض السطح داخل
+                طبقة التركيز، فلا نرسمه هنا أيضاً: لوحان محمولان معاً
+                يعنيان مستمعَين لقاعدة البيانات ولوحَي رسم متزامنين. */}
+            {!(studentFocus && !isOwner) && roomSurface}
             {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
             {!isOwner && !studentFocus && (
               <StudentChallengeLayer
@@ -801,9 +828,9 @@ export default function RoomPage() {
                 const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
                 setOwnerStatus(roomId, next);
               }}
-              tools={TOOLS}
-              activeTool={tool}
-              onPickTool={(id) => setTool(id as RoomTool)}
+              tools={LAYERS.map((l) => ({ id: l.id, label: l.label, icon: l.faIcon }))}
+              activeTool={overlay}
+              onPickTool={(id) => setOverlay(id as RoomOverlay)}
               timerButton={<RoomTimerButton roomId={roomId} />}
               onCreatePoll={() => setShowCreatePoll(true)}
               onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
@@ -959,17 +986,7 @@ export default function RoomPage() {
           }
         >
           {/* نفس المحتوى الذي يعرضه المعلّم */}
-          {activePoll?.open ? (
-            <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
-          ) : (
-            <>
-              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />}
-              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
-              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
-            </>
-          )}
+          {roomSurface}
         </StudentFocusMode>
       )}
 
