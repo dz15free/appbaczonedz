@@ -30,6 +30,7 @@ import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
 import { ParticipantsPanel } from "@/features/rooms/participants-panel";
+import { StatusDot } from "@/components/ui/status-dot";
 import { WaitingScreen } from "@/features/rooms/waiting-screen";
 import { useTypingIndicator } from "@/features/rooms/typing-indicator";
 import type { RaisedHand } from "@/features/rooms/rooms";
@@ -347,7 +348,7 @@ export default function RoomPage() {
     const label = `${room?.name ?? "الغرفة"} — ${currentToolLabel()}`;
     saveFlashcard({
       uid: user.uid,
-      front: `📚 ${label}`,
+      front: label,
       back: "أضف التفاصيل لاحقاً من صفحة بطاقات المراجعة.",
       subject: room?.subject || "general",
       source: room?.name,
@@ -366,7 +367,7 @@ export default function RoomPage() {
   function shareRoomLink() {
     const url = window.location.href;
     navigator.clipboard?.writeText(url)
-      .then(() => alert("✅ تم نسخ رابط الغرفة!"))
+      .then(() => alert("تم نسخ رابط الغرفة"))
       .catch(() => prompt("انسخ الرابط:", url));
   }
 
@@ -377,7 +378,7 @@ export default function RoomPage() {
       itemType: "room", itemId: roomId, itemTitle: room.name,
       price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
     });
-    prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
+    prompt("كود الوصول (أعطِه للطالب بعد الدفع):", c);
   }
 
   function submitAnonQuestion(q: string) {
@@ -424,22 +425,22 @@ export default function RoomPage() {
 
               {/* نوع الغرفة — واضح للجميع */}
               {room?.type === "teacher" || room?.ownerRole === "teacher" ? (
-                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
+                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">أستاذ</span>
               ) : room?.type === "private" ? (
-                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">🔒 خاصة</span>
+                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">خاصة</span>
               ) : room ? (
-                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">🌐 عامة</span>
+                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">عامة</span>
               ) : null}
 
               {room?.isPaid && (
-                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">💳 مدفوعة</span>
+                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">مدفوعة</span>
               )}
 
               {ownerStatus !== "available" && (
                 <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
                   ownerStatus === "busy" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
                 }`}>
-                  {ownerStatus === "busy" ? "🔴 المعلّم مشغول" : "🟡 سيعود قريباً"}
+                  {ownerStatus === "busy" ? "المعلّم مشغول" : "سيعود قريباً"}
                 </span>
               )}
             </div>
@@ -704,7 +705,7 @@ export default function RoomPage() {
                   : "border-warning/40 bg-warning/10 text-warning"
               }`}
             >
-              <span className="text-xl leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
+              <StatusDot status={ownerStatus} size={12} />
               {ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}
             </button>
 
@@ -902,7 +903,7 @@ export default function RoomPage() {
             {/* قائمة المحظورين للمالك */}
             {isOwner && banned.size > 0 && (
               <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-bold text-danger">🚫 المحظورون ({banned.size})</p>
+                <p className="mb-2 text-xs font-bold text-danger">المحظورون ({banned.size})</p>
                 <div className="space-y-1.5">
                   {[...banned].map((uid) => (
                     <div key={uid} className="flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2">
@@ -982,7 +983,7 @@ export default function RoomPage() {
       <BottomSheet open={focusSheet === "cards"} onClose={() => setFocusSheet(null)} title="بطاقات المراجعة">
         <div className="px-1 py-2">
           <p className="text-sm leading-relaxed text-text-muted">
-            كل ما تحفظه من الغرفة بزرّ ⭐ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
+            كل ما تحفظه من الغرفة بزرّ الحفظ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
           </p>
           <a
             href="/tools/flashcards"
@@ -1042,7 +1043,7 @@ export default function RoomPage() {
       {isOwner && (
         <>
           <CreateChallengeSheet roomId={roomId} open={challengeCreateOpen} onClose={() => setChallengeCreateOpen(false)} />
-          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="🧠 حلول التحدي" maxHeight="88vh">
+          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="حلول التحدي" maxHeight="88vh">
             <TeacherChallengePanel roomId={roomId} memberCount={members.length} />
             <button
               onClick={() => { setChallengePanelOpen(false); setChallengeCreateOpen(true); }}
@@ -1056,7 +1057,7 @@ export default function RoomPage() {
 
       {/* درج الأسئلة المجهولة — للمالك */}
       {isOwner && (
-        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
+        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="الأسئلة المجهولة" maxHeight="80vh">
           <AnonQuestionsList roomId={roomId} questions={anonQs} />
         </BottomSheet>
       )}
@@ -1137,7 +1138,7 @@ function PaidRoomGate({ room, uid, onUnlocked }: {
 
         <button onClick={() => setShowPay(true)}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-2.5 text-sm font-bold text-white active:scale-95">
-          💬 تواصل مع الإدارة للشراء
+          تواصل مع الإدارة للشراء
         </button>
         <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
 

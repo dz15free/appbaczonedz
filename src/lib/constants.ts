@@ -62,7 +62,12 @@ export const TRACK_SUBJECTS: Record<string, string[]> = {
 export function subjectsForTrack(trackId: string | undefined | null): Subject[] {
   if (!trackId || !TRACK_SUBJECTS[trackId]) return ALL_SUBJECTS;
   const ids = TRACK_SUBJECTS[trackId];
-  return ids.map((id) => ALL_SUBJECTS.find((s) => s.id === id)!).filter(Boolean);
+  // بلا تأكيد غير آمن (!): لو حوى TRACK_SUBJECTS معرّفاً غير موجود في
+  // ALL_SUBJECTS فإنّ find تُرجع undefined. حارس النوع يُسقطها فعلياً،
+  // فيصير النوع المُعلَن مطابقاً لما يُرجَع زمن التنفيذ.
+  return ids
+    .map((id) => ALL_SUBJECTS.find((s) => s.id === id))
+    .filter((s): s is Subject => s !== undefined);
 }
 
 // مساعد: اسم المادة من معرّفها

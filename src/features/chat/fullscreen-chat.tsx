@@ -297,7 +297,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
-            placeholder="💬 شارك برأيك..."
+            placeholder="شارك برأيك..."
             enterKeyHint="send"
             className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"
             style={{ background: "rgba(255,255,255,0.15)", color: "white", WebkitTextFillColor: "white" }}

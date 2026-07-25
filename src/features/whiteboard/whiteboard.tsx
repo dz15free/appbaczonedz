@@ -264,10 +264,31 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
       ctx.globalAlpha = 0.75;
       ctx.lineWidth = 2 * dprv;
       ctx.strokeRect(mb.x0 * w, mb.y0 * h, (mb.x1 - mb.x0) * w, (mb.y1 - mb.y0) * h);
+      // شارة الوسم: مستطيل ملوّن + التسمية بالأبيض، بدل الرمز التعبيري.
+      // نفس لغة «لسان النوع» فيبقى اللوح مقروءاً بمفردات بصرية واحدة.
       ctx.globalAlpha = 1;
-      ctx.font = `${13 * dprv}px sans-serif`;
-      ctx.textBaseline = "bottom";
-      ctx.fillText(info.emoji, mb.x0 * w, Math.max(mb.y0 * h - 2 * dprv, 14 * dprv));
+      const mfs = 11 * dprv;
+      ctx.font = `600 ${mfs}px system-ui, sans-serif`;
+      ctx.direction = "rtl";
+      ctx.textBaseline = "middle";
+      const mPadX = 6 * dprv;
+      const mTw = ctx.measureText(info.label).width + mPadX * 2;
+      const mTh = 16 * dprv;
+      const mTx = mb.x1 * w - mTw;                       // مُحاذى يميناً (RTL)
+      const mTy = Math.max(mb.y0 * h - mTh - 3 * dprv, 0);
+      const mRr = 4 * dprv;
+      ctx.beginPath();
+      ctx.moveTo(mTx + mRr, mTy);
+      ctx.arcTo(mTx + mTw, mTy, mTx + mTw, mTy + mTh, mRr);
+      ctx.arcTo(mTx + mTw, mTy + mTh, mTx, mTy + mTh, mRr);
+      ctx.arcTo(mTx, mTy + mTh, mTx, mTy, mRr);
+      ctx.arcTo(mTx, mTy, mTx + mTw, mTy, mRr);
+      ctx.closePath();
+      ctx.fillStyle = info.color;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "right";
+      ctx.fillText(info.label, mTx + mTw - mPadX, mTy + mTh / 2);
       ctx.restore();
     }
 
@@ -277,7 +298,9 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
     if (sel) {
       const shape = shapes.current.find((x) => x.id === sel);
       const b = shape ? boundsOf(shape) : null;
-      if (b) {
+      // نضمّ shape إلى الشرط: التضييق داخل العامل الثلاثي أعلاه لا يمتدّ
+      // إلى هذه الكتلة، ولسان النوع أدناه يحتاج shape مؤكَّد الوجود.
+      if (shape && b) {
         const w = canvas.width, h = canvas.height;
         const k = window.devicePixelRatio || 1;
         const x = b.x0 * w, y = b.y0 * h;
@@ -397,7 +420,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
         saveFlashcard({
           uid: user.uid,
           front: m.text,
-          back: `${info.emoji} ${info.label}${roomName ? ` — ${roomName}` : ""}`,
+          back: `${info.label}${roomName ? ` — ${roomName}` : ""}`,
           subject: subject || "general",
           source: roomName ? `سبورة ${roomName}` : "السبورة",
         }).then(() => recordMarkSaved(user.uid, roomId, shapeId)).catch(() => {});
@@ -965,7 +988,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
             className="bz-radial-in pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[80%] -translate-x-1/2 items-center gap-2 rounded-full px-3.5 py-2 shadow-glass"
             style={{ background: `${tagInfo(toast.tag).color}1f`, border: `1px solid ${tagInfo(toast.tag).color}55` }}
           >
-            <span className="text-sm leading-none">{tagInfo(toast.tag).emoji}</span>
+            <Icon name={tagInfo(toast.tag).icon} size={14} style={{ color: tagInfo(toast.tag).color }} />
             <span className="truncate text-[11px] font-bold" style={{ color: tagInfo(toast.tag).color }}>
               {tagInfo(toast.tag).label}
               {toast.text ? " — حُفظت في بطاقاتك" : ""}

@@ -67,7 +67,7 @@ export function TeacherSummarySheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="📘 ملخّص الحصة" maxHeight="90vh">
+    <BottomSheet open={open} onClose={onClose} title="ملخّص الحصة" maxHeight="90vh">
       {busy && !draft ? (
         <p className="py-10 text-center text-sm text-text-muted">جارٍ تجميع ما حدث في الحصة...</p>
       ) : draft ? (
@@ -134,17 +134,17 @@ export function TeacherSummarySheet({
           <div className="mt-3 flex flex-wrap gap-1.5">
             {draft.challenges.map((c, i) => (
               <span key={i} className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-                🧠 تحدٍّ{c.bestBy ? ` — أفضل حل: ${c.bestBy}` : ""}
+                تحدٍّ{c.bestBy ? ` — أفضل حل: ${c.bestBy}` : ""}
               </span>
             ))}
             {draft.files.length > 0 && (
               <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[11px] font-bold text-secondary">
-                📎 {draft.files.length} ملف
+                {draft.files.length} ملف
               </span>
             )}
             {draft.questionCount > 0 && (
               <span className="rounded-full bg-border px-2.5 py-1 text-[11px] font-bold text-text-muted">
-                🕵️ {draft.questionCount} سؤال مجهول
+                {draft.questionCount} سؤال مجهول
               </span>
             )}
           </div>
@@ -215,7 +215,7 @@ export function SummaryViewerSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="📘 ملخّص الحصة" maxHeight="88vh">
+    <BottomSheet open={open} onClose={onClose} title="ملخّص الحصة" maxHeight="88vh">
       {!s ? (
         <p className="py-10 text-center text-sm text-text-muted">
           لم ينشر الأستاذ ملخّصاً بعد.
@@ -235,7 +235,7 @@ export function SummaryViewerSheet({
 
           {s.keyPoints.length > 0 && (
             <div className="mt-3">
-              <p className="mb-1.5 text-xs font-bold text-text-muted">أهم النقاط — اضغط ⭐ لحفظها كبطاقة</p>
+              <p className="mb-1.5 text-xs font-bold text-text-muted">أهم النقاط — اضغط نجمة الحفظ لحفظها كبطاقة</p>
               <div className="space-y-1.5">
                 {s.keyPoints.map((p, i) => (
                   <div key={i} className="flex items-start gap-2 rounded-xl border border-border p-2.5">
@@ -255,7 +255,7 @@ export function SummaryViewerSheet({
 
           {s.homework && (
             <div className="mt-3 rounded-2xl border border-warning/30 bg-warning/5 p-3.5">
-              <p className="mb-1 text-[11px] font-bold text-warning">📝 الواجب</p>
+              <p className="mb-1 text-[11px] font-bold text-warning">الواجب</p>
               <MathText text={s.homework} className="text-sm leading-relaxed text-text-primary" />
             </div>
           )}
@@ -268,7 +268,7 @@ export function SummaryViewerSheet({
                   <MathText text={c.question} className="text-sm leading-relaxed text-text-primary" />
                   {c.bestText && (
                     <div className="mt-2 border-t border-border pt-2">
-                      <p className="text-[11px] font-bold text-amber-600">🏆 أفضل حل — {c.bestBy}</p>
+                      <p className="text-[11px] font-bold text-amber-600">أفضل حل — {c.bestBy}</p>
                       <MathText text={c.bestText} className="mt-1 text-sm leading-relaxed text-text-primary" />
                     </div>
                   )}

@@ -98,7 +98,6 @@ export function RateTeacherSheet({
     }
   }
 
-  const blocked = elig && !elig.canRate;
 
   return (
     <BottomSheet open={open} onClose={onClose} title={`تقييم ${teacherName}`} maxHeight="86vh">
@@ -107,13 +106,13 @@ export function RateTeacherSheet({
           <RatingBadge stats={stats} size="md" />
         </div>
 
-        {blocked ? (
+        {elig && !elig.canRate ? (
           <div className="mt-3 rounded-2xl border border-border bg-background p-4 text-center">
             <FontAwesomeIcon icon={faShieldHalved} className="h-6 w-6 text-text-muted" />
             <p className="mt-2 text-sm font-bold text-text-primary">
-              {elig!.reason === "self"
+              {elig.reason === "self"
                 ? "لا يمكنك تقييم نفسك."
-                : elig!.reason === "not-attended"
+                : elig.reason === "not-attended"
                   ? "التقييم متاح لمن حضر حصة مع هذا الأستاذ."
                   : "التقييم يُفتح بعد حضور عشر دقائق على الأقل."}
             </p>

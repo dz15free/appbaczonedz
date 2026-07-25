@@ -89,7 +89,9 @@ export default function TrackerPage() {
     return Math.round(((done + part * 0.5) / total) * 100);
   }
 
-  const subject = SUBJECTS.find((s) => s.id === tab)!;
+  // بلا (!): لو صار tab يوماً من رابط أو تخزين محلّي بقيمة غير معروفة،
+  // كان التأكيد يُسقط الصفحة كلّها. الرجوع إلى أوّل مادّة أسلم.
+  const subject = SUBJECTS.find((s) => s.id === tab) ?? SUBJECTS[0];
   const pct = calcPercent(tab, subject.topics.length);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

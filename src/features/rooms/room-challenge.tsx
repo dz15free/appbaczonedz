@@ -7,6 +7,7 @@ import {
   faTrophy, faLock, faPenToSquare, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Icon } from "@/components/ui/icon";
 import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
@@ -111,11 +112,11 @@ export function StudentChallengeLayer({
         <span className="truncate">
           {submitted
             ? canEdit ? "سلّمت حلّك — اضغط للتعديل" : "سلّمت حلّك ✓"
-            : "🧠 تحدٍّ جديد — ابدأ الحل"}
+            : "تحدٍّ جديد — ابدأ الحل"}
         </span>
       </button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="🧠 تحدّي الحصة" maxHeight="88vh">
+      <BottomSheet open={open} onClose={() => setOpen(false)} title="تحدّي الحصة" maxHeight="88vh">
         <div className="pb-2">
           {/* السؤال */}
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
@@ -217,7 +218,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="🧠 تحدٍّ جديد" maxHeight="80vh">
+    <BottomSheet open={open} onClose={onClose} title="تحدٍّ جديد" maxHeight="80vh">
       <div className="pb-2">
         <p className="px-1 text-xs leading-relaxed text-text-muted">
           اكتب التمرين. سيحصل كل طالب على مساحة حل خاصة، وتصلك كل الحلول في لوحة واحدة.
@@ -240,7 +241,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
           </div>
         )}
         <p className="mt-2 px-1 text-[11px] text-text-muted">
-          ⚠️ بدء تحدٍّ جديد يمسح حلول التحدي السابق.
+          بدء تحدٍّ جديد يمسح حلول التحدي السابق.
         </p>
         <button
           onClick={start}
@@ -342,7 +343,7 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
                   className="flex w-full items-center gap-2 text-right"
                 >
                   <span className="min-w-0 flex-1 truncate text-sm font-bold text-text-primary">
-                    {isShowcased && "🏆 "}{a.name}
+                    {isShowcased && <Icon name="star" size={13} className="ml-1 inline text-[#D08217]" />}{a.name}
                   </span>
                   {scores[a.uid] != null && (
                     <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-bold text-amber-600">
