@@ -220,7 +220,8 @@ export default function HomePage() {
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
-    return listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));
+    const unsub = listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

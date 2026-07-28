@@ -160,11 +160,17 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   const [mobileShowPreview, setMobileShowPreview] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
-  useEffect(() => listenRoomFiles(roomId, setFiles), [roomId]);
+  useEffect(() => {
+    const unsub = listenRoomFiles(roomId, setFiles);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   // مزامنة الملف المعروض للطلاب: المالك يختار، الطلاب يتابعون
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
-  useEffect(() => listenActiveFile(roomId, setActiveFileId), [roomId]);
+  useEffect(() => {
+    const unsub = listenActiveFile(roomId, setActiveFileId);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   // عند تغيّر الملف النشط أو قائمة الملفات، طابق العرض عند الطلاب
   useEffect(() => {

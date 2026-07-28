@@ -403,7 +403,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   // ما حُفظ سابقاً في حساب الطالب — يمنع تكرار البطاقة نفسها
   useEffect(() => {
     if (!user || canDraw) return;
-    return listenSavedMarks(user.uid, roomId, (ids) => { savedMarks.current = ids; });
+    const unsub = listenSavedMarks(user.uid, roomId, (ids) => { savedMarks.current = ids; });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, canDraw, roomId]);
 
   // علامة جديدة عند الطالب: تنبيه خفيف، ونقلها إلى بطاقاته إن كانت نصاً

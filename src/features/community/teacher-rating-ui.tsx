@@ -16,7 +16,8 @@ export function useTeacherRating(teacherUid?: string) {
   const [list, setList] = useState<TeacherRating[]>([]);
   useEffect(() => {
     if (!teacherUid) return;
-    return listenTeacherRatings(teacherUid, setList);
+    const unsub = listenTeacherRatings(teacherUid, setList);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [teacherUid]);
   return { list, stats: computeStats(list) };
 }

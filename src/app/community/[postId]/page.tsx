@@ -55,12 +55,14 @@ export default function PostPage() {
 
   useEffect(() => {
     if (!user) return;
-    return listenFriends(user.uid, setFriends);
+    const unsub = listenFriends(user.uid, setFriends);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    return listenSentRequests(user.uid, setSentSet);
+    const unsub = listenSentRequests(user.uid, setSentSet);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   const friendIds = new Set(friends.map((f) => f.uid));

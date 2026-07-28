@@ -48,7 +48,10 @@ function MathBar({ taRef, onChange }: {
 /* ─────────── هوك مشترك ─────────── */
 export function useChallenge(roomId: string) {
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-  useEffect(() => listenChallenge(roomId, setChallenge), [roomId]);
+  useEffect(() => {
+    const unsub = listenChallenge(roomId, setChallenge);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
   return challenge;
 }
 
@@ -69,8 +72,14 @@ export function StudentChallengeLayer({
   const [justSaved, setJustSaved] = useState(false);
   const answerRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => listenMyAnswer(roomId, uid, setMyAnswer), [roomId, uid]);
-  useEffect(() => listenMyScore(roomId, uid, setMyScore), [roomId, uid]);
+  useEffect(() => {
+    const unsub = listenMyAnswer(roomId, uid, setMyAnswer);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId, uid]);
+  useEffect(() => {
+    const unsub = listenMyScore(roomId, uid, setMyScore);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId, uid]);
 
   // فتح مساحة الحل يبدأ من آخر نسخة سلّمها الطالب
   useEffect(() => { if (open) setDraft(myAnswer?.text ?? ""); }, [open, myAnswer?.text]);
@@ -266,8 +275,14 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => listenAllAnswers(roomId, setAnswers), [roomId]);
-  useEffect(() => listenScores(roomId, setScores), [roomId]);
+  useEffect(() => {
+    const unsub = listenAllAnswers(roomId, setAnswers);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
+  useEffect(() => {
+    const unsub = listenScores(roomId, setScores);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   const showcasedText = challenge?.showcase?.text;
   const sorted = useMemo(

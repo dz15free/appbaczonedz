@@ -40,10 +40,14 @@ export default function GroupsPage() {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
-  useEffect(() => listenGroups(setGroups), []);
+  useEffect(() => {
+    const unsub = listenGroups(setGroups);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
   useEffect(() => {
     if (!user) return;
-    return listenUserGroupIds(user.uid, setMyIds);
+    const unsub = listenUserGroupIds(user.uid, setMyIds);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

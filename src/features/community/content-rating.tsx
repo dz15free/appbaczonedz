@@ -56,7 +56,10 @@ export async function deleteContentRating(itemId: string, uid: string) {
 
 export function useContentRatings(itemId: string) {
   const [list, setList] = useState<ContentRating[]>([]);
-  useEffect(() => listenContentRatings(itemId, setList), [itemId]);
+  useEffect(() => {
+    const unsub = listenContentRatings(itemId, setList);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [itemId]);
   const count = list.length;
   const avg = count ? Math.round((list.reduce((a, r) => a + r.stars, 0) / count) * 10) / 10 : 0;
   return { list, count, avg, visible: count >= MIN_CONTENT_RATINGS };

@@ -38,7 +38,10 @@ export function useTimerState(roomId: string) {
   const [remaining, setRemaining] = useState(0);
   const alarmFired = useRef(false);
 
-  useEffect(() => listenRoomTimer(roomId, setTimer), [roomId]);
+  useEffect(() => {
+    const unsub = listenRoomTimer(roomId, setTimer);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   // نعتمد على القيم الأوّلية (primitives) لا على هوية الكائن — يمنع إعادة التشغيل المتكرّرة
   const active = timer?.active ?? false;

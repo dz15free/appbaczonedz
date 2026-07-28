@@ -250,7 +250,8 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
 
   useEffect(() => {
     if (!e.isPaid) return;
-    return listenHasAccess(uid, "library", e.id, setHasAccess);
+    const unsub = listenHasAccess(uid, "library", e.id, setHasAccess);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [uid, e.id, e.isPaid]);
 
   const icon = e.fileType === "pdf" ? faFilePdf : e.fileType === "link" ? faLink : faFileLines;

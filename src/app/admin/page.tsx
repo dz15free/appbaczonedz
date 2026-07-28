@@ -246,8 +246,14 @@ export default function AdminPage() {
 
   // عمولة الموقع + سجلّ الأكواد المالي
   const [codes, setCodes] = useState<AccessCode[]>([]);
-  useEffect(() => listenCommissionPct((p) => setCommissionPct(String(p))), []);
-  useEffect(() => listenAllCodes(setCodes), []);
+  useEffect(() => {
+    const unsub = listenCommissionPct((p) => setCommissionPct(String(p)));
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+  useEffect(() => {
+    const unsub = listenAllCodes(setCodes);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   useEffect(() => {
     setLogoUrl(settings.logoUrl ?? "");

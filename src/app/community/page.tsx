@@ -134,9 +134,18 @@ function Feed({ me, isAdmin, myRole }: { me: Person; isAdmin: boolean; myRole?: 
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  useEffect(() => listenPosts(me.uid, setPosts), [me.uid]);
-  useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
-  useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
+  useEffect(() => {
+    const unsub = listenPosts(me.uid, setPosts);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
+  useEffect(() => {
+    const unsub = listenFriends(me.uid, setFriends);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
+  useEffect(() => {
+    const unsub = listenSentRequests(me.uid, setSentSet);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
 
   const friendIds = new Set(friends.map((f) => f.uid));
 
@@ -485,9 +494,18 @@ function People({ me }: { me: Person }) {
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
 
-  useEffect(() => listenFriendRequests(me.uid, setRequests), [me.uid]);
-  useEffect(() => listenFriends(me.uid, setFriends), [me.uid]);
-  useEffect(() => listenSentRequests(me.uid, setSentSet), [me.uid]);
+  useEffect(() => {
+    const unsub = listenFriendRequests(me.uid, setRequests);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
+  useEffect(() => {
+    const unsub = listenFriends(me.uid, setFriends);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
+  useEffect(() => {
+    const unsub = listenSentRequests(me.uid, setSentSet);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
 
   // اقتراحات الأصدقاء بناءً على الشعبة
   useEffect(() => {
@@ -608,7 +626,10 @@ function People({ me }: { me: Person }) {
 function Messages({ me }: { me: Person }) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  useEffect(() => listenThreads(me.uid, setThreads), [me.uid]);
+  useEffect(() => {
+    const unsub = listenThreads(me.uid, setThreads);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [me.uid]);
 
   // نجلب الاسم الحالي لكل شخص من RTDB لضمان صحّته
   useEffect(() => {

@@ -44,7 +44,8 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!user) return;
-    return listenNotifications(user.uid, setItems);
+    const unsub = listenNotifications(user.uid, setItems);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   useEffect(() => {

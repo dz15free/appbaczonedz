@@ -58,7 +58,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    return listenFriends(user.uid, setFriends);
+    const unsub = listenFriends(user.uid, setFriends);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   function openEdit() {
@@ -301,7 +302,10 @@ export default function ProfilePage() {
 /* لوحة أرباح الأستاذ — مبيعاته وأرباحه بعد خصم العمولة */
 function TeacherEarnings({ uid }: { uid: string }) {
   const [codes, setCodes] = useState<AccessCode[]>([]);
-  useEffect(() => listenOwnerCodes(uid, setCodes), [uid]);
+  useEffect(() => {
+    const unsub = listenOwnerCodes(uid, setCodes);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [uid]);
 
   const sold = codes.filter((c) => c.redeemedBy);
   const totalGross = sold.reduce((s, c) => s + c.price, 0);

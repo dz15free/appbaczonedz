@@ -24,7 +24,8 @@ export default function TasksPage() {
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
-    return listenStudyTasks(user.uid, setTasks);
+    const unsub = listenStudyTasks(user.uid, setTasks);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

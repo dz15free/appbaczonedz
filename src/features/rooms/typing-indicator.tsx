@@ -9,7 +9,10 @@ export function useTypingIndicator(roomId: string, uid?: string, name?: string) 
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTyping = useRef(false);
 
-  useEffect(() => listenTyping(roomId, setTypers), [roomId]);
+  useEffect(() => {
+    const unsub = listenTyping(roomId, setTypers);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   function notifyTyping() {
     if (!uid || !name) return;

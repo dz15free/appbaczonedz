@@ -61,14 +61,19 @@ export default function GroupPage() {
 
   useEffect(() => {
     if (!user) return;
-    return listenUserGroupIds(user.uid, setMyIds);
+    const unsub = listenUserGroupIds(user.uid, setMyIds);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
-  useEffect(() => listenGroupMembers(groupId, setMembers), [groupId]);
+  useEffect(() => {
+    const unsub = listenGroupMembers(groupId, setMembers);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [groupId]);
 
   useEffect(() => {
-    return listenGroupMessages(groupId, (msgs) => {
+    const unsub = listenGroupMessages(groupId, (msgs) => {
       setMessages(msgs);
+    return () => { if (typeof unsub === "function") unsub(); };
       if (initialized.current && msgs.length > lastCount.current) {
         const last = msgs[msgs.length - 1];
         if (last && last.senderId !== user?.uid) playMessageSound();

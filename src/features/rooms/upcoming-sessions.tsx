@@ -39,7 +39,10 @@ export function UpcomingSessions() {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [now, setNow] = useState(Date.now());
 
-  useEffect(() => listenUpcomingSessions(setSessions), []);
+  useEffect(() => {
+    const unsub = listenUpcomingSessions(setSessions);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   // تحديث العدّاد التنازلي كل 30 ثانية
   useEffect(() => {

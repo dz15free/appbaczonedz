@@ -24,7 +24,10 @@ import {
 
 export function useSummaries(roomId: string) {
   const [list, setList] = useState<SessionSummary[]>([]);
-  useEffect(() => listenSummaries(roomId, setList), [roomId]);
+  useEffect(() => {
+    const unsub = listenSummaries(roomId, setList);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
   return list;
 }
 

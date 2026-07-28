@@ -24,7 +24,10 @@ export function GroupFiles({ groupId, isOwner, isMember }: Props) {
   const [viewer, setViewer] = useState<{ id: string; name: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
-  useEffect(() => listenGroupFiles(groupId, setFiles), [groupId]);
+  useEffect(() => {
+    const unsub = listenGroupFiles(groupId, setFiles);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [groupId]);
 
   useEffect(() => {
     if (!isDriveConfigured()) return;

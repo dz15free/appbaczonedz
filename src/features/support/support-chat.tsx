@@ -33,7 +33,8 @@ export function SupportChatSheet({
 
   useEffect(() => {
     if (!open || !user || !info.adminUid) { setList([]); return; }
-    return listenSupportMessages(user.uid, info.adminUid, kind, setList);
+    const unsub = listenSupportMessages(user.uid, info.adminUid, kind, setList);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [open, user, info.adminUid, kind]);
 
   useEffect(() => {

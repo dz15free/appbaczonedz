@@ -41,7 +41,8 @@ export function ShareSheet({ open, onClose, target }: {
 
   useEffect(() => {
     if (!open || !user) return;
-    return listenFriends(user.uid, setFriends);
+    const unsub = listenFriends(user.uid, setFriends);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [open, user]);
 
   useEffect(() => {

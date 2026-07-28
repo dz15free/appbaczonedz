@@ -96,12 +96,14 @@ export default function DMPage() {
   useEffect(() => {
     if (!user) return;
     if (isPayThread) {
-      return listenSupportMessages(otherUid, user.uid, "payment", (msgs) =>
+      const unsub = listenSupportMessages(otherUid, user.uid, "payment", (msgs) =>
         setMessages(msgs.map((m) => ({ id: m.id, senderId: m.senderId, text: m.text, createdAt: m.createdAt })))
       );
+      return () => { if (typeof unsub === "function") unsub(); };
     }
-    return listenDM(user.uid, otherUid, (msgs) => {
+    const unsub = listenDM(user.uid, otherUid, (msgs) => {
       setMessages(msgs);
+    return () => { if (typeof unsub === "function") unsub(); };
       if (initialized.current && msgs.length > lastCount.current) {
         const latest = msgs[msgs.length - 1];
         if (latest && latest.senderId !== user.uid) playMessageSound();

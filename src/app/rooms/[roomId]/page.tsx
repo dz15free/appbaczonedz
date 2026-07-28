@@ -114,8 +114,9 @@ export default function RoomPage() {
   useEffect(() => { chatOpenRef.current = chatOpen; if (chatOpen) setUnreadChat(0); }, [chatOpen]);
 
   useEffect(() => {
-    return listenMessages(roomId, (msgs) => {
+    const unsub = listenMessages(roomId, (msgs) => {
       const textMsgs = msgs.filter((m) => m.type === "text");
+    return () => { if (typeof unsub === "function") unsub(); };
       if (!chatInit.current) {
         chatInit.current = true;
         lastMsgCount.current = textMsgs.length;
@@ -272,27 +273,39 @@ export default function RoomPage() {
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
-  useEffect(() => listenMods(roomId, setMods), [roomId]);
-  useEffect(() => listenBanned(roomId, setBanned), [roomId]);
-  useEffect(() => listenPoll(roomId, setActivePoll), [roomId]);
+  useEffect(() => {
+    const unsub = listenMods(roomId, setMods);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
+  useEffect(() => {
+    const unsub = listenBanned(roomId, setBanned);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
+  useEffect(() => {
+    const unsub = listenPoll(roomId, setActivePoll);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
   // الأسئلة المجهولة — للمالك فقط
   useEffect(() => {
     if (!isOwner) return;
-    return listenAnonQuestions(roomId, (qs) => {
+    const unsub = listenAnonQuestions(roomId, (qs) => {
       const unanswered = qs.filter((q) => !q.answered).length;
       if (unanswered > prevAnon.current) { try { playHandRaiseSound(); } catch {} }
       prevAnon.current = unanswered;
       setAnonQs(qs);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, isOwner]);
   useEffect(() => {
     if (!room?.isPaid || !user) return;
-    return listenHasAccess(user.uid, "room", roomId, setRoomAccess);
+    const unsub = listenHasAccess(user.uid, "room", roomId, setRoomAccess);
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [room?.isPaid, user, roomId]);
   useEffect(() => {
     if (!user) return;
-    return listenKicked(roomId, user.uid, (kicked) => {
+    const unsub = listenKicked(roomId, user.uid, (kicked) => {
       if (kicked) router.replace("/rooms");
+    return () => { if (typeof unsub === "function") unsub(); };
     });
   }, [roomId, user, router]);
   useEffect(() => {
@@ -312,7 +325,10 @@ export default function RoomPage() {
   // رفع اليد + إشعار صوتي للمالك
   const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
   const [ownerStatus, setOwnerStatusState] = useState<OwnerStatus>("available");
-  useEffect(() => listenOwnerStatus(roomId, setOwnerStatusState), [roomId]);
+  useEffect(() => {
+    const unsub = listenOwnerStatus(roomId, setOwnerStatusState);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
   useEffect(() => {
     const r = ref(rtdb, `roomLive/${roomId}/hands`);
     const unsub = onValue(r, (snap) => {
