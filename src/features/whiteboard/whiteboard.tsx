@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { pickShape, boundsOf, describeShape } from "@/features/whiteboard/shape-geometry";
 import { ShapeActionsSheet } from "@/features/whiteboard/shape-actions";
 import {
@@ -85,8 +85,12 @@ const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
   { id: "eraser", icon: faEraser, label: "ممحاة" },
 ];
 
-export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
+export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleExtras }: {
   roomId: string; canDraw?: boolean; roomName?: string; subject?: string | null;
+  /* منطقة إضافية تُحقن في كونسول اللوح من صفحة الغرفة.
+     الكونسول واحد في التصميم: اللوح يملكه، والغرفة تُسلّمه منطقتها،
+     فلا يُبنى كونسولان فوق بعضهما. اختيارية — القيمة الغائبة لا تُصيّر شيئاً. */
+  consoleExtras?: ReactNode;
 }) {
   const { user } = useAuth();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -1151,6 +1155,14 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject }: {
               </>
             )}
           </ConsoleZone>
+
+          {/* منطقة الغرفة — تُملأ من صفحة الغرفة إن وُجدت */}
+          {consoleExtras ? (
+            <>
+              <ConsoleDivider />
+              <ConsoleZone scroll>{consoleExtras}</ConsoleZone>
+            </>
+          ) : null}
         </FloatingConsole>
       </div>
 
