@@ -171,7 +171,7 @@ function MiniLeaderboard() {
   const [top, setTop] = useState<MiniPlayer[]>([]);
   useEffect(() => {
     const q = query(ref(rtdb, "users"), orderByChild("points"), limitToLast(20));
-    return onValue(q, (snap) => {
+    const unsub = onValue(q, (snap) => {
       const val = (snap.val() as Record<string, any>) ?? {};
       const list = Object.entries(val)
         .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin")
@@ -180,6 +180,7 @@ function MiniLeaderboard() {
         .slice(0, 5);
       setTop(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   if (top.length === 0) return null;

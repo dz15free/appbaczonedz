@@ -69,7 +69,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
 
   /* ── استمع لتغيّرات الحالة ── */
   useEffect(() => {
-    return onValue(ref(rtdb, statePath), (snap) => {
+    const unsub = onValue(ref(rtdb, statePath), (snap) => {
       const raw = snap.val() as any;
       if (!raw) return;
       if (!raw.sourceType) raw.sourceType = raw.videoId ? "youtube" : "direct";
@@ -79,6 +79,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       setState(s);
       syncToPlayer(s, prev);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 

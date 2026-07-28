@@ -69,9 +69,10 @@ export default function TrackerPage() {
 
   useEffect(() => {
     if (!user) return;
-    return onValue(ref(rtdb, `studyProgress/${user.uid}`), (snap) => {
+    const unsub = onValue(ref(rtdb, `studyProgress/${user.uid}`), (snap) => {
       setProgress(snap.val() ?? {});
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   function toggle(subjectId: string, topicIdx: number) {

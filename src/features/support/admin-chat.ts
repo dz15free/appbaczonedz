@@ -48,7 +48,7 @@ export function supportThreadId(uid: string, adminUid: string, kind: SupportKind
 export function useSupportInfo(): SupportInfo {
   const [info, setInfo] = useState<SupportInfo>({ ...SUPPORT_DEFAULTS });
   useEffect(() => {
-    return onValue(ref(rtdb, "settings/support"), (snap) => {
+    const unsub = onValue(ref(rtdb, "settings/support"), (snap) => {
       const v = (snap.val() as Partial<SupportInfo> | null) ?? {};
       setInfo({
         adminUid: v.adminUid,
@@ -56,6 +56,7 @@ export function useSupportInfo(): SupportInfo {
         adminEmail: v.adminEmail || SUPPORT_DEFAULTS.adminEmail,
       });
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
   return info;
 }

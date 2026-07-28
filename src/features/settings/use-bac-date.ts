@@ -12,9 +12,10 @@ export function useBacExamDate() {
   const [dateStr, setDateStr] = useState<string | null>(null);
 
   useEffect(() => {
-    return onValue(ref(rtdb, "settings/bacExamDate"), (snap) => {
+    const unsub = onValue(ref(rtdb, "settings/bacExamDate"), (snap) => {
       setDateStr((snap.val() as string | null) ?? null);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   return dateStr;
@@ -28,9 +29,10 @@ export async function setBacExamDate(dateStr: string) {
 export function useBacResultsDate() {
   const [dateStr, setDateStr] = useState<string | null>(null);
   useEffect(() => {
-    return onValue(ref(rtdb, "settings/bacResultsDate"), (snap) => {
+    const unsub = onValue(ref(rtdb, "settings/bacResultsDate"), (snap) => {
       setDateStr((snap.val() as string | null) ?? null);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
   return dateStr;
 }
@@ -77,9 +79,10 @@ export function useSiteBanner() {
   const [banner, setBanner] = useState<SiteBanner | null>(null);
 
   useEffect(() => {
-    return onValue(ref(rtdb, "settings/siteBanner"), (snap) => {
+    const unsub = onValue(ref(rtdb, "settings/siteBanner"), (snap) => {
       setBanner((snap.val() as SiteBanner | null) ?? null);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   return banner;

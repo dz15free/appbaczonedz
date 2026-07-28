@@ -68,11 +68,12 @@ export default function LibraryPage() {
 
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
-    return onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(200)), (snap) => {
+    const unsub = onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(200)), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, e]: [string, any]) => ({ id, ...e })) as LibEntry[];
       setEntries(list.sort((a, b) => b.createdAt - a.createdAt));
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

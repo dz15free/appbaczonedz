@@ -284,7 +284,7 @@ export default function AdminPage() {
   // Reports
   useEffect(() => {
     if (!user || profile?.role !== "admin") return;
-    return onValue(query(ref(rtdb, "reports"), limitToLast(100)), async (snap) => {
+    const unsub = onValue(query(ref(rtdb, "reports"), limitToLast(100)), async (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([key, r]: [string, any]) => ({ firebaseKey: key, ...r })) as Report[];
       list.sort((a, b) => b.createdAt - a.createdAt);
@@ -299,6 +299,7 @@ export default function AdminPage() {
       }));
       setReports(withContent);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile]);
 
   // Stats
@@ -314,19 +315,20 @@ export default function AdminPage() {
   // Users tab
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "users") return;
-    return onValue(ref(rtdb, "users"), (snap) => {
+    const unsub = onValue(ref(rtdb, "users"), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([uid, u]: [string, any]) => ({ uid, ...u })) as AppUser[];
       list.sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
       setAppUsers(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile, tab]);
 
   // Active rooms tab
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "rooms") return;
     // Rooms list from /rooms
-    return onValue(ref(rtdb, "rooms"), (snap) => {
+    const unsub = onValue(ref(rtdb, "rooms"), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, r]: [string, any]) => ({
         id, name: r.name ?? id, ownerId: r.ownerId ?? "", ownerName: r.ownerName,
@@ -334,28 +336,31 @@ export default function AdminPage() {
       })) as ActiveRoom[];
       setActiveRooms(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile, tab]);
 
   // Library tab
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "library") return;
-    return onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(100)), (snap) => {
+    const unsub = onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(100)), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, e]: [string, any]) => ({ id, ...e }));
       list.sort((a: any, b: any) => b.createdAt - a.createdAt);
       setLibraryEntries(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile, tab]);
 
   // Posts tab
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "posts") return;
-    return onValue(query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(40)), (snap) => {
+    const unsub = onValue(query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(40)), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, p]: [string, any]) => ({ id, ...p, myVote: 0, score: p.score ?? 0 })) as Post[];
       list.sort((a, b) => b.createdAt - a.createdAt);
       setPosts(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile, tab]);
 
   if (loading || !user || !profile) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

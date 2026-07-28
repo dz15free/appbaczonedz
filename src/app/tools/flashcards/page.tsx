@@ -87,12 +87,13 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     if (!user) return;
-    return onValue(ref(rtdb, `flashcards/${user.uid}`), (snap) => {
+    const unsub = onValue(ref(rtdb, `flashcards/${user.uid}`), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, c]: any) => ({ id, ...c })) as Card[];
       list.sort((a, b) => b.createdAt - a.createdAt);
       setCards(list);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   const filtered = subject === "all" ? cards : cards.filter((c) => c.subject === subject);

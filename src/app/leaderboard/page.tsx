@@ -44,7 +44,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     const q = query(ref(rtdb, "users"), orderByChild("points"), limitToLast(50));
-    return onValue(q, (snap) => {
+    const unsub = onValue(q, (snap) => {
       const val = (snap.val() as Record<string, any>) ?? {};
       const list = Object.entries(val)
         .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin") // الطلاب فقط
@@ -59,6 +59,7 @@ export default function LeaderboardPage() {
         setMyRank(idx >= 0 ? idx + 1 : null);
       }
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;

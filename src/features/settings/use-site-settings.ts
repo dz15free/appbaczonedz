@@ -202,11 +202,12 @@ export function useSiteSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    return onValue(ref(rtdb, "settings"), (snap) => {
+    const unsub = onValue(ref(rtdb, "settings"), (snap) => {
       const val = snap.val() as SiteSettings | null;
       setSettings({ ...DEFAULTS, ...(val ?? {}) });
       setLoaded(true);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   return { settings, loaded };

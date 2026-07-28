@@ -68,10 +68,11 @@ export function SyncedPdfViewer({ roomId, fileId, src, isOwner }: {
   // مزامنة الصفحة: الطلاب يتبعون المعلّم
   useEffect(() => {
     if (isOwner) return;
-    return onValue(ref(rtdb, pagePath), (snap) => {
+    const unsub = onValue(ref(rtdb, pagePath), (snap) => {
       const p = snap.val() as number | null;
       if (typeof p === "number" && p > 0) setPage(p);
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [pagePath, isOwner]);
 
   // رسم الصفحة الحالية
