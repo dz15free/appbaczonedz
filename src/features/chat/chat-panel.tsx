@@ -96,9 +96,8 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
   const lastCount = useRef(0);
   const { othersTyping, notifyTyping, stopTyping } = useTypingIndicator(roomId, user?.uid, user?.displayName ?? undefined);
 
-  useEffect(
-    () =>
-      listenMessages(roomId, (msgs) => {
+  useEffect(() => {
+    const unsub = listenMessages(roomId, (msgs) => {
         setMessages(msgs);
         if (initialized.current && msgs.length > lastCount.current) {
           const latest = msgs[msgs.length - 1];
@@ -106,11 +105,13 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
         }
         lastCount.current = msgs.length;
         initialized.current = true;
-      }),
-    [roomId, user?.uid]
-  );
+      });
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId, user?.uid]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function handleSend() {
     const trimmed = text.trim();

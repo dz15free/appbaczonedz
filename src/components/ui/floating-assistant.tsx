@@ -49,7 +49,9 @@ export function FloatingAssistant({
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;

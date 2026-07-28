@@ -100,7 +100,9 @@ export default function AibotPage() {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, thinking]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, thinking]);
 
   // ضبط ارتفاع حقل الإدخال تلقائياً
   function autoGrow() {

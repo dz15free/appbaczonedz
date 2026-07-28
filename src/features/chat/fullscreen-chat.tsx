@@ -77,11 +77,14 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
   const initRef   = useRef(false);
   const lastRef   = useRef(0);
 
-  useEffect(() => listenMessages(roomId, (msgs) => {
+  useEffect(() => {
+    const unsub = listenMessages(roomId, (msgs) => {
     setMessages(msgs);
     initRef.current = true;
     lastRef.current = msgs.length;
-  }), [roomId]);
+  });
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   // تمرير للأسفل عند رسائل جديدة (desktop فقط)
   useEffect(() => {

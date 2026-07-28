@@ -76,9 +76,12 @@ export function RoomNotes({ roomId, isOwner, roomName }: { roomId: string; isOwn
   const previewRef = useRef<HTMLDivElement>(null);
   const katexReady = useKatex();
 
-  useEffect(() => listenRoomNotes(roomId, (t) => {
+  useEffect(() => {
+    const unsub = listenRoomNotes(roomId, (t) => {
     if (!isTyping.current) setLocalNotes(t);
-  }), [roomId]);
+  });
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   useEffect(() => {
     if (!katexReady || !previewRef.current || !window.renderMathInElement) return;

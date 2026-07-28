@@ -31,7 +31,9 @@ export function BottomSheet({
   const startY = useRef<number | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // قفل تمرير الخلفية أثناء فتح اللوح
   useEffect(() => {

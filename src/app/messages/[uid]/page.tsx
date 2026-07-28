@@ -113,7 +113,9 @@ export default function DMPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user, otherUid]);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function send() {
     if (!text.trim() || !user) return;
