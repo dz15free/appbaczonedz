@@ -1,13 +1,20 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGraduationCap, faVideo, faChalkboard, faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import { faGraduationCap, faVideo, faChalkboard, faBookOpen, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 
 /**
  * شاشة انتظار أنيقة تظهر للطلاب قبل أن يبدأ الأستاذ بعرض محتوى.
  * فيها حركات لطيفة + نصائح + حالة الانتظار.
  */
-export function WaitingScreen({ isOwner, roomName, memberCount, ownerStatus }: { isOwner: boolean; roomName: string; memberCount: number; ownerStatus?: "available" | "busy" | "brb" }) {
+export function WaitingScreen({
+  isOwner, roomName, memberCount, ownerStatus, onPick,
+}: {
+  isOwner: boolean; roomName: string; memberCount: number;
+  ownerStatus?: "available" | "busy" | "brb";
+  /** يختار المالك ما يُعرض مباشرة من هذه الشاشة */
+  onPick?: (tool: "video" | "whiteboard" | "files" | "notes") => void;
+}) {
   return (
     <div className="relative flex flex-1 items-center justify-center overflow-hidden p-6">
       {/* خلفية متوهّجة متحرّكة */}
@@ -31,18 +38,32 @@ export function WaitingScreen({ isOwner, roomName, memberCount, ownerStatus }: {
         {isOwner ? (
           <>
             <p className="mt-2 text-sm leading-relaxed text-text-muted">
-              أنت المضيف — اختر ما تعرضه من الشريط الجانبي لتبدأ الحصّة ويراها الجميع.
+              أنت المضيف — اختر ما تعرضه لتبدأ الحصّة ويراها الجميع.
             </p>
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            {/* كانت هذه بطاقات عرض فقط، والنصّ يحيل المستخدم إلى الشريط
+                الجانبي. البطاقة التي تصف إجراءً يجب أن تكون هي الإجراء —
+                وإلّا كانت زينة تشرح مكاناً آخر. صارت أزراراً حقيقية،
+                وأُضيفت «مشاركة ملف» قبل الملاحظات. */}
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { icon: faVideo, label: "فيديو" },
-                { icon: faChalkboard, label: "سبورة" },
-                { icon: faBookOpen, label: "ملاحظات" },
+                { icon: faVideo, label: "فيديو", tool: "video" as const },
+                { icon: faChalkboard, label: "سبورة", tool: "whiteboard" as const },
+                { icon: faFolderOpen, label: "مشاركة ملف", tool: "files" as const },
+                { icon: faBookOpen, label: "ملاحظات", tool: "notes" as const },
               ].map((t) => (
-                <div key={t.label} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4 backdrop-blur-sm">
+                <button
+                  key={t.label}
+                  type="button"
+                  onClick={() => onPick?.(t.tool)}
+                  disabled={!onPick}
+                  title={`اعرض: ${t.label}`}
+                  className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface p-4
+                    transition hover:-translate-y-0.5 hover:border-[var(--bz-blue-100)] hover:bg-[var(--bz-blue-050)]
+                    hover:shadow-md active:translate-y-0 active:scale-[.98] disabled:pointer-events-none disabled:opacity-60"
+                >
                   <FontAwesomeIcon icon={t.icon} className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-semibold text-text-muted">{t.label}</span>
-                </div>
+                  <span className="text-xs font-semibold text-text-muted group-hover:text-[var(--bz-blue-700)]">{t.label}</span>
+                </button>
               ))}
             </div>
           </>

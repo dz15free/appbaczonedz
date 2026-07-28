@@ -81,7 +81,10 @@ export function BarButton({
         ? "border-[#F3C9C6] bg-[var(--bz-red-050,#FDEEED)] text-[var(--bz-red)] hover:brightness-95"
         : active
           ? "border-[var(--bz-blue-100)] bg-[var(--bz-blue-050)] text-[var(--bz-blue-700)]"
-          : "border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] text-[var(--bz-ink-2)] hover:bg-[var(--bz-canvas)]";
+          /* الخلفية هنا **canvas** لا surface: الشريط نفسه أبيض، فزرّ أبيض
+             عليه يختفي ولا يفصله إلا حدّ باهت — وهو ما جعل «إجراءات
+             الحصة» يبدو غير موجود. */
+          : "border-[var(--bz-line)] bg-[var(--bz-canvas)] text-[var(--bz-ink-2)] hover:bg-[var(--bz-blue-050)] hover:text-[var(--bz-blue-700)] hover:border-[var(--bz-blue-100)]";
   return (
     <button
       type="button"
@@ -218,7 +221,10 @@ export function SideDock({
   return (
     <aside
       aria-label="لوحة الصفّ"
-      className="hidden w-[272px] shrink-0 flex-col overflow-hidden border-r border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] xl:flex"
+      /* كان `xl:flex` (1280px+). بين 1024 و1280 كان زرّ الدردشة مخفيّاً
+        (lg:hidden) واللوحة غير ظاهرة — فلا دردشة إطلاقاً في هذا المدى،
+        وهو مقاس أغلب شاشات المحمول. صار `lg:flex` فانسدّت الفجوة. */
+      className="hidden w-[272px] shrink-0 flex-col overflow-hidden border-r border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] lg:flex"
     >
       <div role="tablist" className="flex shrink-0 gap-px border-b border-[var(--bz-line)] px-2 pt-2">
         {tabs.map((t) => {

@@ -16,7 +16,7 @@ import {
   FloatingConsole, ConsoleZone, ConsoleDivider, ConsoleButton, ContextBar, ContextButton,
   ConsoleSwatch, StageIndicator,
 } from "@/components/ui/console";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import {
   faPen,
   faHighlighter,
@@ -31,6 +31,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { recognize } from "@/features/whiteboard/smart/recognize";
 import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-provider";
 
 interface Point {
@@ -88,7 +89,6 @@ const TEXT_SIZE_LABEL = ["صغير", "عادي", "كبير", "عنوان"];
    ويُوسَّط داخل المساحة المتاحة، فما يراه الأستاذ هو ما يراه الطالب بالضبط. */
 const BOARD_AR = 16 / 10;
 
-
 /* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
    فلا يتسرّب إلى قاعدة البيانات ولا يُخزَّن كشكل. */
 type ToolId = Kind | "select";
@@ -114,6 +114,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   consoleExtras?: ReactNode;
 }) {
   const { user } = useAuth();
+  const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLCanvasElement>(null);
@@ -588,6 +589,99 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
   /* الحفظ كبطاقة مراجعة — الإجراء الأشيع للطالب، فصار ضغطة واحدة.
      نُعلّم المعرّف محليّاً حتى لا يُنشئ الطالب نسختين بضغطتين متتاليتين. */
+  /* ── Math Write: من خطّ اليد إلى معادلة ──
+     نقصّ **مستطيل التحديد وحده** من لوح الرسم (لا اللوح كلّه): أخفّ على
+     شبكة الطالب وأدقّ في القراءة. ثم نُرسله إلى Gemini ونضع الناتج
+     كعنصر معادلة أسفل ما كُتب بخطّ اليد — كما في المرجع الذي أرسلته. */
+  const [mathBusy, setMathBusy] = useState(false);
+
+  /* اللوح يرسم النصّ بـ fillText، وهو لا يفهم LaTeX. فبدل أن تظهر
+     المعادلة حرفياً `x^{2}` نحوّل الشائع منها إلى رموز يونيكود حقيقية،
+     فتُقرأ رياضياً على اللوح فوراً.
+     النصّ الأصلي بصيغة LaTeX يبقى محفوظاً في الحقل `text` للعرض
+     المنسّق لاحقاً في الملاحظات وبطاقات المراجعة عبر KaTeX. */
+  function latexToUnicode(x: string): string {
+    const SUP: Record<string, string> = {
+      "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+      "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+      "+": "⁺", "-": "⁻", n: "ⁿ", i: "ⁱ",
+    };
+    const SUB: Record<string, string> = {
+      "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+      "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+    };
+    let t = x;
+    t = t.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, "($1)/($2)");
+    t = t.replace(/\\sqrt\{([^{}]*)\}/g, "√($1)");
+    t = t.replace(/\^\{([^{}]+)\}/g, (_m, g: string) =>
+      [...g].map((ch) => SUP[ch] ?? `^${ch}`).join(""));
+    t = t.replace(/\^(\w)/g, (_m, g: string) => SUP[g] ?? `^${g}`);
+    t = t.replace(/_\{([^{}]+)\}/g, (_m, g: string) =>
+      [...g].map((ch) => SUB[ch] ?? `_${ch}`).join(""));
+    t = t.replace(/_(\w)/g, (_m, g: string) => SUB[g] ?? `_${g}`);
+    const SYM: [RegExp, string][] = [
+      [/\\times/g, "×"], [/\\div/g, "÷"], [/\\pm/g, "±"],
+      [/\\leq/g, "≤"], [/\\geq/g, "≥"], [/\\neq/g, "≠"],
+      [/\\approx/g, "≈"], [/\\infty/g, "∞"], [/\\int/g, "∫"],
+      [/\\sum/g, "∑"], [/\\prod/g, "∏"], [/\\partial/g, "∂"],
+      [/\\alpha/g, "α"], [/\\beta/g, "β"], [/\\theta/g, "θ"],
+      [/\\lambda/g, "λ"], [/\\mu/g, "μ"], [/\\pi/g, "π"],
+      [/\\Delta/g, "Δ"], [/\\Omega/g, "Ω"], [/\\rightarrow/g, "→"],
+      [/\\cdot/g, "·"], [/\\ln/g, "ln"], [/\\log/g, "log"], [/\\lim/g, "lim"],
+    ];
+    for (const [re, ch] of SYM) t = t.replace(re, ch);
+    return t.replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  async function mathWrite() {
+    if (mathBusy || multiRef.current.size === 0) return;
+    const b = multiBounds();
+    const src = mainRef.current;   // الطبقة المثبّتة: كل ما رُسم فعلاً
+    if (!b || !src) return;
+
+    setMathBusy(true);
+    try {
+      const pad = 10;
+      const x = Math.max(0, b.x0 * src.width - pad);
+      const y = Math.max(0, b.y0 * src.height - pad);
+      const w = Math.min(src.width - x, (b.x1 - b.x0) * src.width + pad * 2);
+      const h = Math.min(src.height - y, (b.y1 - b.y0) * src.height + pad * 2);
+      if (w < 8 || h < 8) return;
+
+      const cut = document.createElement("canvas");
+      cut.width = Math.round(w);
+      cut.height = Math.round(h);
+      const cx = cut.getContext("2d");
+      if (!cx) return;
+      // خلفية بيضاء: اللوح شفّاف، والنموذج يقرأ الخطّ الداكن أفضل على أبيض
+      cx.fillStyle = "#ffffff";
+      cx.fillRect(0, 0, cut.width, cut.height);
+      cx.drawImage(src, x, y, w, h, 0, 0, cut.width, cut.height);
+
+      const res = await fetch("/api/ocr-math", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: cut.toDataURL("image/png") }),
+      });
+      const data = (await res.json()) as { latex?: string; error?: string };
+      if (!res.ok || !data.latex) {
+        setToast({ tag: "mistake", text: data.error ?? "تعذّر التعرّف" });
+        return;
+      }
+      // تُوضع أسفل خطّ اليد مباشرة، فيرى الطالب الأصل والنتيجة معاً
+      const sh = newShape("text", { x: b.x0, y: Math.min(b.y1 + 0.02, 0.97) }, latexToUnicode(data.latex));
+      sh.size = TEXT_SIZES[1];
+      sh.color = "#2350D9";   // المعادلة المُستخرَجة بالأزرق لتُميَّز عن خطّ اليد
+      commit(sh);
+      clearMulti();
+      fullRedraw();
+    } catch {
+      setToast({ tag: "mistake", text: "تعذّر الاتصال" });
+    } finally {
+      setMathBusy(false);
+    }
+  }
+
   /** حذف كل ما التقطه الإطار — كتابة واحدة لكل عنصر ثم إعادة رسم واحدة */
   function deleteMulti() {
     if (!canDrawRef.current || multiRef.current.size === 0) return;
@@ -1295,6 +1389,13 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
               <>
                 <ContextButton icon="target" label="مهم" tone="red" onClick={() => markMulti("important")} />
                 <ContextButton icon="star" label="للحفظ" tone="amber" onClick={() => markMulti("memorize")} />
+                <ContextButton
+                  icon="sigma"
+                  label={mathBusy ? "..." : "معادلة"}
+                  tone="primary"
+                  disabled={mathBusy}
+                  onClick={mathWrite}
+                />
                 <ContextButton icon="trash" label="حذف" tone="red" onClick={deleteMulti} />
               </>
             )}
@@ -1325,7 +1426,17 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
                   onClick={() => setActionsOpen(true)}
                 />
               )}
-              <ContextButton icon="ai" label="اسأل" onClick={() => setActionsOpen(true)} />
+              {/* كان يفتح درج «علّم» نفسه — زرّان بفعل واحد. الآن يسأل فعلاً.
+                  ويُعطَّل على الرسم الخالص لأنّ الخبّاشة تحتاج نصّاً. */}
+              <ContextButton
+                icon="ai"
+                label="اسأل"
+                disabled={!shape.text?.trim()}
+                onClick={() => {
+                  const t = shape.text?.trim();
+                  if (t) router.push(`/aibot?q=${encodeURIComponent(`اشرح لي هذا: ${t}`)}`);
+                }}
+              />
               {canDraw && (
                 <ContextButton
                   icon="copy"

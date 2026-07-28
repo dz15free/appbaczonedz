@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import {
-  faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers,
-  faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis,
-  faChalkboard, faBrain, faFileLines,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers, faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis, faChalkboard, faBrain } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { StatusDot } from "@/components/ui/status-dot";
 import { useTimerLabel } from "@/features/rooms/room-timer";
@@ -43,7 +39,6 @@ export interface TeacherFocusProps {
   timerButton: ReactNode;          // زر المؤقّت الحالي (يُعاد استعماله كما هو)
   onCreatePoll: () => void;
   onChallenge: () => void;         // إنشاء تحدٍّ أو فتح لوحته
-  onSummary: () => void;           // ملخّص الحصة
   hasChallenge: boolean;
   challengePanel: ReactNode;
   onShare: () => void;
@@ -187,7 +182,6 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
       <div className="space-y-2 pb-2">
         <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
         <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
-        <SheetRow icon={faFileLines} label="ملخّص الحصة" onClick={() => { setSheet(null); props.onSummary(); }} />
         <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
         <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
         <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />

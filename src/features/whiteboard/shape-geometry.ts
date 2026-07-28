@@ -32,6 +32,18 @@ const PAD = 0.012;
 export function boundsOf(s: GeoShape): Bounds | null {
   if (!s.points?.length) return null;
 
+  if (s.kind === "note") {
+    /* البطاقة تُرسم من نقطتها **يساراً** بعرض ثابت 190px وارتفاع يتبع
+       عدد الأسطر. كانت تسقط في المسار العامّ الذي يعرف النقطة وحدها،
+       فيظهر إطار التحديد خارج البطاقة تماماً. */
+    const a = s.points[0];
+    const W = 190 / 1600;                       // عرض البطاقة معياريّاً
+    const px = Math.max(11, s.size * 7) / 900;
+    const perLine = Math.max(1, Math.ceil(((s.text ?? "").length * px * 0.55) / W));
+    const H = perLine * px * 1.45 + (16 / 900);
+    return { x0: a.x - W - PAD, y0: a.y - PAD, x1: a.x + PAD, y1: a.y + H + PAD };
+  }
+
   if (s.kind === "text") {
     // النص يُرسم من نقطته إلى اليمين والأسفل. نقدّر عرضه من عدد الحروف
     // لأن القياس الحقيقي يحتاج سياق رسم، ولا نريد ربط الهندسة بالـ canvas.

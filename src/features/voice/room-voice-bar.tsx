@@ -104,13 +104,33 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
 
      تظهر فقط حين: انضممنا فعلاً + هناك متحدّث + اللوحة الموسّعة مغلقة
      (وإلّا كرّرنا المعلومة نفسها مرّتين على الشاشة). */
+  /* ── ارتفاع الشريط يُعلَن للواجهة ──
+     الزرّ العائم كان يرتفع 84 بكسل **مخمّنة**، وارتفاع هذا الشريط يتغيّر
+     (منضمّ / غير منضمّ / لوحة موسّعة) فيتراكبان على الهاتف.
+     الآن يقيس الشريط نفسه ويكتب ارتفاعه في متغيّر CSS، فيتبعه كل ما
+     يطفو فوقه بدقّة مهما تغيّر. */
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--bz-voicebar-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--bz-voicebar-h");
+    };
+  }, []);
+
   const speakerUid = joined
     ? participants.find((p) => speaking[p.uid] && !p.muted)?.uid ?? null
     : null;
   const speaker = speakerUid ? participants.find((p) => p.uid === speakerUid) ?? null : null;
 
   return (
-    <div className="border-t border-border bg-surface">
+    <div ref={barRef} className="border-t border-border bg-surface">
       {Object.entries(streams).map(([uid, stream]) => (
         <AudioSink key={uid} stream={stream} />
       ))}

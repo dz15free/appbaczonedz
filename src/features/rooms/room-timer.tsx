@@ -87,19 +87,20 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
   return (
     <>
       <button onClick={() => setShowSetup(true)}
-        title="مؤقّت الدرس"
+        title="مؤقّت للطلاب — يظهر لهم عدّاً تنازلياً لوقت التمرين"
         className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
           timer ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"
         }`}>
         <FontAwesomeIcon icon={faClock} className="h-4 w-4" />
-        <span className="hidden sm:inline">مؤقّت</span>
+        <span className="hidden sm:inline">وقت التمرين</span>
       </button>
 
       {showSetup && createPortal(
         <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowSetup(false)}>
           <div className="w-full max-w-xs rounded-2xl bg-surface p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-bold">ضبط المؤقّت</h3>
+              <h3 className="font-bold">وقت التمرين</h3>
+        <p className="mb-1 text-[11px] leading-relaxed text-text-muted">اختر مدّة، فيظهر عدّ تنازلي لكل الطلاب ويُنبَّهون عند انتهائه.</p>
               <button onClick={() => setShowSetup(false)} className="text-text-muted hover:text-danger"><FontAwesomeIcon icon={faXmark} className="h-4 w-4" /></button>
             </div>
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="وصف المهمة (اختياري)"

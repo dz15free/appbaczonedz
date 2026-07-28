@@ -103,8 +103,10 @@ export function FloatingAssistant({
         ref={rootRef}
         className={`fixed z-[10055] flex-col items-start gap-2 ${hideOnDesktop ? "flex lg:hidden" : "flex"}`}
         style={{
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)",
-          [side]: "16px",
+          // يتبع ارتفاع شريط الصوت الحقيقي بدل رقم مخمّن
+          bottom:
+            "calc(env(safe-area-inset-bottom, 0px) + var(--bz-voicebar-h, 0px) + 14px)",
+          [side]: "14px",
         }}
       >
         {open &&

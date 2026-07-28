@@ -5,37 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faHouse,
-  faVideo,
-  faChalkboard,
-  faFolderOpen,
-  faXmark,
-  faUnlock,
-  faCircleCheck,
-  faChartBar,
-  faShareNodes,
-  faNoteSticky,
-  faSpinner,
-  faLock,
-  faKey,
-  faBrain,
-  faFileLines,
-  faUserSecret,
-  faTrash,
-} from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
-import {
-  getRoom, type Room,
-  promoteToMod, demoteMod,
-  kickUser, banUser, unbanUser,
-  listenMods, listenKicked, listenBanned,
-  listenPoll, type RoomPoll,
-  listenMessages,
-  setOwnerStatus, listenOwnerStatus, type OwnerStatus,
-} from "@/features/rooms/rooms";
+import { getRoom, type Room, promoteToMod, demoteMod, kickUser, unbanUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
@@ -55,7 +29,6 @@ import { saveFlashcard } from "@/features/study/save-flashcard";
 import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
 import { TeacherFocusMode } from "@/features/rooms/teacher-focus-mode";
 import { StudentChallengeLayer, CreateChallengeSheet, TeacherChallengePanel, useChallenge } from "@/features/rooms/room-challenge";
-import { TeacherSummarySheet, SummaryViewerSheet, useSummaries } from "@/features/rooms/room-summary";
 import { RateTeacherSheet } from "@/features/community/teacher-rating-ui";
 import { SupportChatSheet } from "@/features/support/support-chat";
 import { markAttendance } from "@/features/community/teacher-rating";
@@ -80,7 +53,6 @@ const loadingTool = () => (
 const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
 const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
 const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
-
 
 const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
   { id: "welcome", label: "مرحباً", icon: faHouse },
@@ -275,8 +247,6 @@ export default function RoomPage() {
   const [challengePanelOpen, setChallengePanelOpen] = useState(false);
   const challenge = useChallenge(roomId);
   // ملخّص الحصة
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const summaries = useSummaries(roomId);
   // تقييم الأستاذ
   const [rateOpen, setRateOpen] = useState(false);
   // تقييم الغرفة المدفوعة (لمن اشترى)
@@ -627,14 +597,6 @@ export default function RoomPage() {
             </button>
 
             <button
-              onClick={() => { setSummaryOpen(true); setMoreOpen(false); }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <FontAwesomeIcon icon={faFileLines} className="h-5 w-5 text-primary" />
-              ملخّص الحصة
-            </button>
-
-            <button
               onClick={() => {
                 const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
                 setOwnerStatus(roomId, next);
@@ -724,7 +686,7 @@ export default function RoomPage() {
             ) : (
               <>
                 {tool === "welcome" && (
-                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />
+                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />
                 )}
                 {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
                 {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
@@ -764,7 +726,6 @@ export default function RoomPage() {
               timerButton={<RoomTimerButton roomId={roomId} />}
               onCreatePoll={() => setShowCreatePoll(true)}
               onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
-              onSummary={() => setSummaryOpen(true)}
               hasChallenge={!!challenge}
               challengePanel={<TeacherChallengePanel roomId={roomId} memberCount={members.length} />}
               onShare={shareRoomLink}
@@ -955,7 +916,6 @@ export default function RoomPage() {
           onOpenFiles={() => setFocusSheet("files")}
           onOpenNotes={() => setFocusSheet("notes")}
           onOpenCards={() => setFocusSheet("cards")}
-          onOpenSummary={summaries.length > 0 ? () => setSummaryOpen(true) : undefined}
           onRateTeacher={() => setRateOpen(true)}
           unreadChat={unreadChat}
           roomId={roomId}
@@ -975,7 +935,7 @@ export default function RoomPage() {
             <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
           ) : (
             <>
-              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />}
+              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />}
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
@@ -1032,25 +992,8 @@ export default function RoomPage() {
         />
       )}
 
-      {/* ملخّص الحصة */}
-      {isOwner ? (
-        <TeacherSummarySheet
-          roomId={roomId}
-          roomName={room?.name ?? "الغرفة"}
-          teacherName={user.displayName || "الأستاذ"}
-          open={summaryOpen}
-          onClose={() => setSummaryOpen(false)}
-        />
-      ) : (
-        <SummaryViewerSheet
-          roomId={roomId}
-          roomName={room?.name ?? "الغرفة"}
-          uid={user.uid}
-          subject={room?.subject}
-          open={summaryOpen}
-          onClose={() => setSummaryOpen(false)}
-        />
-      )}
+      {/* حُذف «ملخّص الحصة»: الملاحظات تؤدّي الغرض نفسه، وميزتان
+          تفعلان الشيء ذاته تُربكان الأستاذ ولا تخدمانه. */}
 
       {/* أدراج التحدي — للمالك */}
       {isOwner && (

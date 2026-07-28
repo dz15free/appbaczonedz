@@ -209,12 +209,24 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder={uploading ? "جارٍ الرفع..." : "اكتب رسالتك..."}
           disabled={uploading}
-          className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-primary disabled:opacity-50"
+          className="h-[38px] min-w-0 flex-1 rounded-lg border border-[var(--bz-line)] bg-[var(--bz-canvas)] px-3
+            text-sm text-text-primary placeholder:text-text-muted outline-none
+            transition focus:border-[var(--bz-blue)] focus:bg-[var(--bz-surface,#fff)]
+            focus:ring-2 focus:ring-[var(--bz-blue-100)] disabled:opacity-50"
         />
         <button
           onClick={handleSend}
           aria-label="إرسال"
-          className="grid h-10 w-10 place-items-center rounded-md bg-gradient-primary text-white transition hover:opacity-90"
+          disabled={uploading || !text.trim()}
+          title="إرسال"
+          /* كان تدرّجاً بنفسجياً من الهوية القديمة بمقاس ثابت h-10 w-10
+             لا يتبع ارتفاع حقل الكتابة، فيبدو مائلاً بجانبه.
+             الآن: أزرق النظام · مربّع يطابق ارتفاع الحقل بالضبط ·
+             حالة تعطيل حقيقية حين لا يوجد نصّ. */
+          className="grid h-[38px] w-[38px] shrink-0 place-items-center self-stretch rounded-lg
+            bg-[var(--bz-blue)] text-white transition
+            hover:brightness-110 active:scale-95
+            disabled:cursor-not-allowed disabled:bg-[var(--bz-line-2)] disabled:active:scale-100"
         >
           <FontAwesomeIcon
             icon={uploading ? faSpinner : faPaperPlane}

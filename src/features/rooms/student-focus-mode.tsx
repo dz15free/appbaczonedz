@@ -2,12 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCompress, faHand, faComments, faStar,
-  faUserSecret, faPaperPlane, faFolderOpen, faNoteSticky, faLayerGroup,
-  faClock,
-  faFileLines,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCompress, faHand, faComments, faStar, faUserSecret, faPaperPlane, faClock } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Icon } from "@/components/ui/icon";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -34,7 +29,6 @@ export interface StudentFocusProps {
   onOpenFiles: () => void;
   onOpenNotes: () => void;
   onOpenCards: () => void;
-  onOpenSummary?: () => void;     // لا يظهر إلا إن نشر الأستاذ ملخّصاً
   onRateTeacher?: () => void;     // تقييم الأستاذ
   unreadChat: number;
   children: ReactNode;            // المحتوى الرئيسي (سبورة/PDF/فيديو)
@@ -76,9 +70,6 @@ export function StudentFocusMode(props: StudentFocusProps) {
     { id: "cards", icon: "layers", label: "بطاقاتي", onClick: props.onOpenCards, tone: "primary" },
     ...(props.onRateTeacher
       ? [{ id: "rate", icon: "star" as const, label: "تقييم الأستاذ", onClick: props.onRateTeacher, tone: "amber" as const }]
-      : []),
-    ...(props.onOpenSummary
-      ? [{ id: "summary", icon: "page" as const, label: "ملخّص الحصة", onClick: props.onOpenSummary, tone: "primary" as const }]
       : []),
   ];
 
