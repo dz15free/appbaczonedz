@@ -674,3 +674,50 @@ html { scrollbar-gutter: stable; }
   .bz-pip { animation: none }
   .bz-wave-1, .bz-wave-2, .bz-wave-3 { animation: none }
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   منصّة اللوح
+
+   اللوح محبوس على نسبة 16:10 عمداً (يمنع تمطيط الرسم بين الأجهزة —
+   إصلاح الدفعة 18). لكنّ ذلك يترك شريطين حول اللوح، وكانا رماديّين
+   مسطّحين فيبدوان كخلل في التخطيط لا كقرار تصميم.
+
+   الحلّ: نجعل المحيط «مكتباً» — تدرّج خفيف جداً + إضاءة علوية، فيُقرأ
+   اللوح كورقة موضوعة على سطح، وهو ما تفعله البرامج المهنية.
+   ════════════════════════════════════════════════════════════ */
+.bz-stage {
+  background:
+    radial-gradient(120% 80% at 50% 0%, #F7F9FC 0%, #EDF0F5 55%, #E7EBF2 100%);
+}
+.dark .bz-stage {
+  background:
+    radial-gradient(120% 80% at 50% 0%, #1B1F27 0%, #14171D 55%, #101319 100%);
+}
+
+/* حافة داخلية دقيقة تفصل سطح الكتابة عن الظلّ */
+.bz-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+/* الرصيف العائم: زجاج حقيقي فوق اللوح بدل مستطيل معتم يبدو ملتصقاً */
+.bz-dock {
+  background: rgba(255, 255, 255, .82);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow:
+    0 0 0 1px rgba(19, 23, 34, .06),
+    0 2px 6px rgba(19, 23, 34, .06),
+    0 16px 40px -12px rgba(19, 23, 34, .22);
+}
+.dark .bz-dock {
+  background: rgba(30, 34, 43, .82);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .07),
+    0 16px 40px -12px rgba(0, 0, 0, .5);
+}

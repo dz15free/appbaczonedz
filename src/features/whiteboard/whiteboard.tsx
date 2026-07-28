@@ -981,14 +981,15 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
       <div
         ref={wrapRef}
-        className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#EDF0F5] p-1.5 sm:p-2"
+        className="bz-stage relative flex flex-1 items-center justify-center overflow-hidden p-2 sm:p-3"
       >
         {/* اللوح — نسبة ثابتة، موسّط، وما حوله هامش محايد بدل تمطيط المحتوى */}
         <div
           ref={boardRef}
-          className="relative shrink-0 overflow-hidden rounded-md bg-white ring-1 ring-black/5"
+          className="bz-board relative shrink-0 overflow-hidden rounded-xl bg-white"
           style={{
-            boxShadow: "0 1px 2px rgba(19,23,34,.05), 0 8px 24px rgba(19,23,34,.07)",
+            boxShadow:
+              "0 0 0 1px rgba(19,23,34,.07), 0 1px 3px rgba(19,23,34,.05), 0 12px 32px -8px rgba(19,23,34,.14)",
             ...(grid
               ? {
                   backgroundImage:

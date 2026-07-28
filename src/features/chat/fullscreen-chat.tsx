@@ -43,7 +43,7 @@ function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
   return (
     <a href={dataUrl} download={msg.fileName || "ملف"}
       className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20">
-      <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-indigo-300" />
+      <FontAwesomeIcon icon={faFile} className="h-4 w-4 text-[var(--bz-ink-3)]" />
       <span className="truncate max-w-[140px]">{msg.fileName || "ملف"}</span>
       <span className="text-xs text-white/50">تنزيل</span>
     </a>
@@ -150,7 +150,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-2.5"
           style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon={faComments} className="h-4 w-4 text-indigo-400" />
+            <FontAwesomeIcon icon={faComments} className="h-4 w-4 text-[var(--bz-blue)]" />
             <span className="text-sm font-bold text-white">الدردشة</span>
           </div>
           <button onClick={() => setSidebarOpen(false)}
@@ -184,7 +184,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
                 </span>
                 {m.text && (
                   <p className={`rounded-xl px-3 py-1.5 text-sm leading-snug text-white ${
-                    isMe ? "bg-indigo-600/70" : "bg-white/10"
+                    isMe ? "bg-[var(--bz-blue)]" : "bg-white/10"
                   }`}>
                     <Linkify text={m.text ?? ""} />
                   </p>
@@ -220,7 +220,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
             style={{ background: "rgba(255,255,255,0.08)", color: "white", WebkitTextFillColor: "white" }}
           />
           <button onClick={send} disabled={!text.trim()}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-indigo-500 text-white disabled:opacity-30 hover:bg-indigo-400 transition">
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--bz-blue)] text-white disabled:opacity-30 hover:brightness-110 transition">
             <FontAwesomeIcon icon={faPaperPlane} className="h-3.5 w-3.5 -scale-x-100" />
           </button>
         </div>
@@ -229,7 +229,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
       {/* زر إعادة فتح الشريط — حاسوب */}
       {!sidebarOpen && (
         <button onClick={() => setSidebarOpen(true)}
-          className="pointer-events-auto absolute bottom-20 right-3 z-[100] hidden lg:flex items-center gap-2 rounded-full bg-indigo-500/80 px-3 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-sm hover:bg-indigo-500">
+          className="pointer-events-auto absolute bottom-20 right-3 z-[100] hidden lg:flex items-center gap-2 rounded-full bg-[var(--bz-blue)]/90 px-3 py-2 text-sm font-bold text-white shadow-lg backdrop-blur-sm hover:brightness-110">
           <FontAwesomeIcon icon={faComments} className="h-4 w-4" />
           الدردشة
         </button>
@@ -300,7 +300,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); send(); } }}
-            placeholder="💬 شارك برأيك..."
+            placeholder="شارك برأيك..."
             enterKeyHint="send"
             className="flex-1 rounded-full py-2.5 px-4 text-sm outline-none"
             style={{ background: "rgba(255,255,255,0.15)", color: "white", WebkitTextFillColor: "white" }}

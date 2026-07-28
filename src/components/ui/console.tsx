@@ -63,13 +63,8 @@ export function Console({
   return (
     <div
       onPointerEnter={() => setDim(false)}
-      className={`pointer-events-auto flex items-center gap-0.5 rounded-[13px] border p-[5px]
+      className={`bz-dock pointer-events-auto flex items-center gap-0.5 rounded-[14px] p-[5px]
         transition-opacity duration-200 ${dim ? "opacity-45" : "opacity-100"} ${className}`}
-      style={{
-        background: "rgba(255,255,255,.98)",
-        borderColor: "var(--bz-line-2)",
-        boxShadow: "0 2px 4px rgba(19,23,34,.05), 0 14px 34px rgba(19,23,34,.12)",
-      }}
     >
       {children}
     </div>

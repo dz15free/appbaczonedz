@@ -191,7 +191,7 @@ export function CreatePollModal({
           disabled={loading || !question.trim() || options.filter((o) => o.trim()).length < 2}
           className="w-full rounded-md bg-gradient-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
         >
-          {loading ? "جارٍ الإنشاء..." : "🚀 إطلاق الاستفتاء"}
+          {loading ? "جارٍ الإنشاء..." : "إطلاق الاستفتاء"}
         </button>
       </div>
     </div>,

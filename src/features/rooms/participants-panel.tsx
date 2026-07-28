@@ -141,7 +141,7 @@ export function ParticipantsPanel({
                 <div className="flex items-center gap-1">
                   {isRoomOwner ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-1.5 py-0.5 text-[9px] font-bold text-warning">
-                      👑 المضيف
+                      المضيف
                     </span>
                   ) : isMod ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">

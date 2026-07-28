@@ -12,7 +12,7 @@ import { faLock, faToggleOn, faToggleOff } from "@fortawesome/free-solid-svg-ico
 const TYPES: { id: RoomType; label: string }[] = [
   { id: "public", label: "عامة" },
   { id: "private", label: "خاصة" },
-  { id: "teacher", label: "👨‍🏫 أستاذ" },
+  { id: "teacher", label: "أستاذ" },
 ];
 
 export const ROOM_SUBJECTS = [

@@ -99,7 +99,7 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
         <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowSetup(false)}>
           <div className="w-full max-w-xs rounded-2xl bg-surface p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-bold">⏱️ ضبط المؤقّت</h3>
+              <h3 className="font-bold">ضبط المؤقّت</h3>
               <button onClick={() => setShowSetup(false)} className="text-text-muted hover:text-danger"><FontAwesomeIcon icon={faXmark} className="h-4 w-4" /></button>
             </div>
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="وصف المهمة (اختياري)"
@@ -124,7 +124,7 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
               </button>
             )}
             <button onClick={() => start(preset ?? (parseFloat(customMin) || 15) * 60)}
-              className="w-full rounded-md bg-gradient-primary py-2.5 text-sm font-bold text-white">🚀 ابدأ للجميع</button>
+              className="w-full rounded-md bg-gradient-primary py-2.5 text-sm font-bold text-white">ابدأ للجميع</button>
           </div>
         </div>,
         document.body
@@ -181,7 +181,7 @@ export function RoomTimerDisplay({ roomId, isOwner, hidden = false }: { roomId: 
       <div className="min-w-0">
         {timer.label && <p className="truncate text-xs font-semibold text-white/90 max-w-[120px]">{timer.label}</p>}
         <p className={`text-[11px] font-bold ${done ? "text-secondary" : "text-white/60"}`}>
-          {done ? "انتهى الوقت! 🎉" : danger ? "الوقت ينفد!" : "مؤقّت الدرس"}
+          {done ? "انتهى الوقت!" : danger ? "الوقت ينفد!" : "مؤقّت الدرس"}
         </p>
         {isOwner && (
           <div className="mt-1 flex gap-1">

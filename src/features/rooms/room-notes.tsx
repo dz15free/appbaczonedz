@@ -156,8 +156,8 @@ u{text-decoration-color:#2563eb;text-decoration-thickness:2px}
 .foot{margin-top:40px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;color:#94a3b8;font-size:.75rem}
 @media print{body{padding:24px}}
 </style></head><body>
-<div class="head"><h1>📝 ملاحظات الدرس</h1><span class="brand">BacZone</span></div>
-<div class="meta">📚 ${roomName} · 📅 ${dateStr}</div>
+<div class="head"><h1>ملاحظات الدرس</h1><span class="brand">BacZone</span></div>
+<div class="meta">${roomName} · ${dateStr}</div>
 <div class="content">${body}</div>
 <div class="foot">تمّ إنشاؤه عبر منصّة BacZone</div>
 <script>window.onload=function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],throwOnError:false});setTimeout(function(){window.print();},400);};</script>
@@ -215,7 +215,7 @@ u{text-decoration-color:#2563eb;text-decoration-thickness:2px}
 
       {isOwner && !preview ? (
         <textarea ref={taRef} value={localNotes} onChange={(e) => handleChange(e.target.value)}
-          placeholder={"اكتب ملخّص الدرس... استعمل شريط الأدوات للتنسيق 📝\n\n# عنوان رئيسي\n## عنوان ثانوي\n- نقطة مهمّة\n**عريض**  __مُسطّر__  ==مُظلّل==\n\nمعادلة: $E = mc^2$\n$$ \\frac{a}{b} = c $$"}
+          placeholder={"اكتب ملخّص الدرس... استعمل شريط الأدوات للتنسيق\n\n# عنوان رئيسي\n## عنوان ثانوي\n- نقطة مهمّة\n**عريض**  __مُسطّر__  ==مُظلّل==\n\nمعادلة: $E = mc^2$\n$$ \\frac{a}{b} = c $$"}
           className="flex-1 resize-none bg-transparent p-4 text-sm leading-relaxed text-text-primary outline-none" dir="auto" style={{ caretColor: "rgb(var(--bz-primary, 37 99 235))" }} />
       ) : (
         <div className="flex-1 overflow-y-auto p-4">

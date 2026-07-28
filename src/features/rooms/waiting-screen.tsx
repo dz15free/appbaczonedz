@@ -31,7 +31,7 @@ export function WaitingScreen({ isOwner, roomName, memberCount, ownerStatus }: {
         {isOwner ? (
           <>
             <p className="mt-2 text-sm leading-relaxed text-text-muted">
-              أنت المضيف 👑 — اختر أداة من الأعلى لتبدأ الحصّة ويراها الجميع.
+              أنت المضيف — اختر ما تعرضه من الشريط الجانبي لتبدأ الحصّة ويراها الجميع.
             </p>
             <div className="mt-6 grid grid-cols-3 gap-3">
               {[

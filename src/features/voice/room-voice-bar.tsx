@@ -203,7 +203,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
           <button
             onClick={join}
             disabled={connecting}
-            className="shadow-glow flex items-center gap-2 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+            className="shadow-glow flex items-center gap-2 rounded-xl bg-[var(--bz-blue)] hover:brightness-110 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
           >
             <FontAwesomeIcon icon={faPhone} className="h-4 w-4" />
             {connecting ? "جارٍ الاتصال..." : "انضمام صوتي"}

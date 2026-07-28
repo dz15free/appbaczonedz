@@ -38,12 +38,17 @@ export function FloatingAssistant({
   side = "left",
   label = "الوظائف",
   hidden = false,
+  hideOnDesktop = false,
 }: {
   actions: RadialAction[];
   side?: "left" | "right";
   label?: string;
   /** يُخفى حين تحتاج الشاشة كلّها — وضع الامتحان مثلاً */
   hidden?: boolean;
+  /** يُخفى على الحاسوب (حيث يوجد الشريط الجانبي وشريط الأيقونات).
+      لا يكفي لفّ المكوّن بـ lg:hidden: المحتوى يُركَّب على body عبر
+      createPortal فيهرب من الغلاف تماماً — يجب أن يحمله هو. */
+  hideOnDesktop?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -88,7 +93,7 @@ export function FloatingAssistant({
     <>
       {open && (
         <div
-          className="fixed inset-0 z-[10054] bg-[rgba(19,23,34,.22)]"
+          className={`fixed inset-0 z-[10054] bg-[rgba(19,23,34,.22)] ${hideOnDesktop ? "lg:hidden" : ""}`}
           aria-hidden="true"
           onPointerDown={() => setOpen(false)}
         />
@@ -96,7 +101,7 @@ export function FloatingAssistant({
 
       <div
         ref={rootRef}
-        className="fixed z-[10055] flex flex-col items-start gap-2"
+        className={`fixed z-[10055] flex-col items-start gap-2 ${hideOnDesktop ? "flex lg:hidden" : "flex"}`}
         style={{
           bottom: "calc(env(safe-area-inset-bottom, 0px) + 84px)",
           [side]: "16px",

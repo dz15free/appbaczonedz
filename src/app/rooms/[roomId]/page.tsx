@@ -6,12 +6,23 @@ import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faHouse, faVideo, faChalkboard, faFolderOpen,
-  faComments, faArrowRight, faXmark, faHand, faRightFromBracket,
-  faUsers, faUnlock, faCircleCheck,
-  faExpand, faCompress, faChartBar, faShareNodes,
-  faNoteSticky, faSpinner, faLock, faKey, faBrain, faFileLines,
-  faUserSecret, faTrash, faEllipsis, faStar,
+  faHouse,
+  faVideo,
+  faChalkboard,
+  faFolderOpen,
+  faXmark,
+  faUnlock,
+  faCircleCheck,
+  faChartBar,
+  faShareNodes,
+  faNoteSticky,
+  faSpinner,
+  faLock,
+  faKey,
+  faBrain,
+  faFileLines,
+  faUserSecret,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -52,11 +63,13 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import {
-  WorkspaceBar, WorkspaceTitle, LiveBadge, BarButton, Segmented,
-  IconRail, RailButton, RailDivider, RailSpacer, SideDock, DockPanel,
+  WorkspaceBar, LiveBadge, BarButton, Segmented,
+  IconRail, RailButton, RailDivider, RailSpacer, SideDock,
 } from "@/components/ui/workspace";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
 import { FloatingAssistant } from "@/components/ui/floating-assistant";
+import { StatusDot } from "@/components/ui/status-dot";
+import { Icon } from "@/components/ui/icon";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -372,7 +385,7 @@ export default function RoomPage() {
     const label = `${room?.name ?? "الغرفة"} — ${currentToolLabel()}`;
     saveFlashcard({
       uid: user.uid,
-      front: `📚 ${label}`,
+      front: label,
       back: "أضف التفاصيل لاحقاً من صفحة بطاقات المراجعة.",
       subject: room?.subject || "general",
       source: room?.name,
@@ -391,7 +404,7 @@ export default function RoomPage() {
   function shareRoomLink() {
     const url = window.location.href;
     navigator.clipboard?.writeText(url)
-      .then(() => alert("✅ تم نسخ رابط الغرفة!"))
+      .then(() => alert("تم نسخ رابط الغرفة"))
       .catch(() => prompt("انسخ الرابط:", url));
   }
 
@@ -402,7 +415,7 @@ export default function RoomPage() {
       itemType: "room", itemId: roomId, itemTitle: room.name,
       price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
     });
-    prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
+    prompt("كود الوصول (أعطِه للطالب بعد الدفع):", c);
   }
 
   function submitAnonQuestion(q: string) {
@@ -421,175 +434,54 @@ export default function RoomPage() {
 
   return (
     <main className="flex h-[100dvh] flex-col bg-background text-text-primary">
-      {/* الشريط العلوي */}
-      <header className="bz-glass relative z-20 flex items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-          <button
-            onClick={() => router.push("/rooms")}
-            aria-label="رجوع"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary"
-          >
-            <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" />
-          </button>
-
-          {/* شعار الغرفة */}
-          <span className="shadow-glow grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white sm:h-10 sm:w-10">
-            {(room?.name ?? "").charAt(0) || "B"}
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-bold leading-tight sm:text-base">{room?.name ?? "..."}</h1>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              <span className="flex items-center gap-1">
-                <span className="bz-live-dot" />
-                <span className="whitespace-nowrap text-[11px] font-semibold text-text-muted">
-                  {members.length} متصل
-                </span>
-              </span>
-
-              {/* نوع الغرفة — واضح للجميع */}
-              {room?.type === "teacher" || room?.ownerRole === "teacher" ? (
-                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
-              ) : room?.type === "private" ? (
-                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">🔒 خاصة</span>
-              ) : room ? (
-                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">🌐 عامة</span>
-              ) : null}
-
-              {room?.isPaid && (
-                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">💳 مدفوعة</span>
-              )}
-
-              {ownerStatus !== "available" && (
-                <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                  ownerStatus === "busy" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
-                }`}>
-                  {ownerStatus === "busy" ? "🔴 المعلّم مشغول" : "🟡 سيعود قريباً"}
-                </span>
-              )}
-            </div>
-
-            {/* صاحب الغرفة — قابل للضغط + تقييم الغرفة المدفوعة */}
-            {room?.ownerId && (
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <Link
-                  href={`/u/${room.ownerId}`}
-                  className="truncate text-[11px] font-semibold text-primary hover:underline"
-                >
-                  {room.ownerName || "صاحب الغرفة"}
-                </Link>
-                {room.isPaid && <ContentRatingBadge itemId={roomId} showEmpty />}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {/* رفع اليد: للطلاب */}
-          {!isOwner && (
-            <button
-              onClick={toggleHand}
-              aria-label="رفع اليد"
-              title="رفع اليد"
-              className={`grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${myHand ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-            >
-              <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-            </button>
-          )}
-
-          {/* الأيدي المرفوعة: للمالك */}
-          {isOwner && (
-            <button
-              onClick={() => setHandsOpen((o) => !o)}
-              aria-label="الأيدي المرفوعة"
-              title="الأيدي المرفوعة"
-              className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 ${hands.length ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-            >
-              <FontAwesomeIcon icon={faHand} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-              {hands.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white ring-2 ring-background">
-                  {hands.length}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* المشاركون: للجميع (إدارة للمالك/المشرف) */}
-          <button
-            onClick={() => setShowParticipants((s) => !s)}
-            aria-label="المشاركون"
-            title="المشاركون"
-            className={`relative grid h-9 w-9 place-items-center rounded-xl border transition sm:h-10 sm:w-10 xl:hidden ${showParticipants ? "border-secondary/40 bg-secondary/10 text-secondary" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"}`}
-          >
-            <FontAwesomeIcon icon={faUsers} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-            <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white ring-2 ring-background">
-              {members.length}
-            </span>
-          </button>
-
-          {/* الدردشة — جوال */}
-          <button
-            onClick={() => setChatOpen(true)}
-            className="relative grid h-9 w-9 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary lg:hidden sm:h-10 sm:w-10"
-            aria-label="الدردشة"
-          >
-            <FontAwesomeIcon icon={faComments} className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-            {unreadChat > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white ring-2 ring-background">
-                {unreadChat > 9 ? "9+" : unreadChat}
-              </span>
-            )}
-          </button>
-
-          {/* زر الخروج من الغرفة */}
-          <button
-            onClick={() => router.push("/rooms")}
-            className="flex h-9 items-center gap-1.5 rounded-xl bg-danger/10 px-2.5 text-sm font-bold text-danger transition hover:bg-danger/20 sm:h-10 sm:px-3"
-            aria-label="مغادرة الغرفة"
-          >
-            <FontAwesomeIcon icon={faRightFromBracket} className="h-4 w-4" />
-            <span className="hidden sm:inline">خروج</span>
-          </button>
-        </div>
-      </header>
-
-      {/* قائمة الأيدي المرفوعة (للمالك) */}
-      {isOwner && handsOpen && hands.length > 0 && (
-        <div className="bz-glass border-b px-4 py-2.5">
-          <span className="text-[11px] font-bold text-text-muted">
-            طلاب رفعوا أيديهم
-          </span>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {hands.map((h) => (
-              <button
-                key={h.uid}
-                onClick={() => lowerHand(h.uid)}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-amber-300"
-                style={{ background: "rgba(251,191,36,0.12)" }}
-              >
-                <FontAwesomeIcon icon={faHand} className="h-3 w-3" />
-                {h.name}
-                <FontAwesomeIcon icon={faXmark} className="h-3 w-3 opacity-60" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ══ شريط مساحة الدراسة ══
-          حلّ محلّ شريط التبويبات الخماسي. لا يبدّل المحتوى: يعرض هويّة
-          الحصّة وحالتها وإجراءاتها. تبديل المحتوى انتقل إلى شريط
-          الأيقونات الجانبي، فلا يبقى في الأعلى ما يُضغط كثيراً — الأعلى
-          بعيد عن الإبهام في الهاتف. */}
+      {/* ══════════ شريط الغرفة الموحّد ══════════
+          كان هنا شريطان فوق بعضهما: رأس الغرفة القديم ثم شريط مساحة
+          الدراسة. كلاهما يعرض الاسم والعدد و«مباشر» — ازدواج يأكل 56
+          بكسل من ارتفاع اللوح ويعطي مظهر لوحة تحكّم قديمة.
+          صارا شريطاً واحداً بارتفاع 52px، بترتيب ثابت:
+          هويّة الحصّة | حالة الغرفة | إجراءات. */}
       <WorkspaceBar>
-        <WorkspaceTitle
-          title={room?.name ?? "الغرفة"}
-          subtitle={isOwner ? (room?.subject ?? undefined) : room?.ownerName ? `الأستاذ ${room.ownerName}` : undefined}
-        />
+        <button
+          onClick={() => router.push("/rooms")}
+          aria-label="رجوع إلى الغرف"
+          title="رجوع إلى الغرف"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--bz-ink-3)] transition hover:bg-[var(--bz-canvas)] hover:text-[var(--bz-ink)]"
+        >
+          <Icon name="chevRight" size={17} />
+        </button>
+
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bz-blue)] text-[13px] font-extrabold text-white">
+          {(room?.name ?? "").charAt(0) || "B"}
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[13.5px] font-extrabold leading-tight text-[var(--bz-ink)]">
+              {room?.name ?? "..."}
+            </span>
+            {room?.isPaid && (
+              <>
+                <span className="shrink-0 rounded-md bg-[var(--bz-amber-050)] px-1.5 text-[9.5px] font-bold text-[var(--bz-amber)]">
+                  مدفوعة
+                </span>
+                {/* تقييم الغرفة — كان في الرأس القديم، أُعيد بعد الدمج */}
+                <ContentRatingBadge itemId={roomId} showEmpty />
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-[10.5px] leading-tight text-[var(--bz-ink-3)]">
+            <StatusDot status={ownerStatus} size={6} />
+            <span className="truncate">
+              {room?.subject ? `${room.subject} · ` : ""}
+              {members.length} متصل
+            </span>
+          </div>
+        </div>
+
         <LiveBadge />
 
-        {/* حالات الغرفة — المالك يقرّر والطالب يرى */}
-        <div className="hidden sm:block">
+        {/* حالة الغرفة — وسط الشريط، المالك يقرّر والطالب يرى */}
+        <div className="mx-auto hidden md:block">
           <Segmented
             items={ROOM_STATES}
             value={roomState}
@@ -599,7 +491,17 @@ export default function RoomPage() {
           />
         </div>
 
-        <span className="flex-1" />
+        <span className="flex-1 md:hidden" />
+
+        {isOwner && (
+          <BarButton
+            icon="hand"
+            title="الأيدي المرفوعة"
+            badge={hands.length}
+            active={hands.length > 0}
+            onClick={() => setHandsOpen((o) => !o)}
+          />
+        )}
 
         <BarButton
           icon="users"
@@ -609,21 +511,28 @@ export default function RoomPage() {
           onClick={() => setParticipantsOpen(true)}
         />
 
+        <span className="lg:hidden">
+          <BarButton
+            icon="chat"
+            title="الدردشة"
+            badge={unreadChat}
+            onClick={() => setChatOpen(true)}
+          />
+        </span>
+
         {isOwner ? (
           <>
             <BarButton
               icon={fullscreen ? "collapse" : "expand"}
-              label="تركيز"
-              tone={fullscreen ? "default" : "primary"}
+              title={fullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
               active={fullscreen}
-              title={fullscreen ? "خروج من وضع التركيز" : "وضع التركيز — أكبر مساحة للشرح"}
               onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
             />
             <BarButton
               icon="more"
               title="إجراءات الحصة"
               badge={anonQs.filter((q) => !q.answered).length}
-              active={anonQs.some((q) => !q.answered) || Boolean(challenge)}
+              active={Boolean(challenge)}
               onClick={() => setMoreOpen(true)}
             />
           </>
@@ -637,13 +546,20 @@ export default function RoomPage() {
             )}
             <BarButton
               icon="expand"
-              label="تركيز"
-              tone="primary"
               title="وضع التركيز"
+              tone="primary"
               onClick={() => setStudentFocus(true)}
             />
           </>
         )}
+
+        <BarButton
+          icon="exit"
+          label="خروج"
+          tone="danger"
+          title="مغادرة الغرفة"
+          onClick={() => router.push("/rooms")}
+        />
       </WorkspaceBar>
 
       {/* درج الحاضرين — الهاتف لا يتّسع للشريط الجانبي، فالورقة السفلية
@@ -729,7 +645,7 @@ export default function RoomPage() {
                   : "border-warning/40 bg-warning/10 text-warning"
               }`}
             >
-              <span className="text-xl leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
+              <StatusDot status={ownerStatus} size={12} />
               {ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}
             </button>
 
@@ -932,9 +848,10 @@ export default function RoomPage() {
           اللوحي فقط (lg:hidden) لأنّ الحاسوب يملك الشريط الجانبي.
           ويُخفى في وضع التركيز لأنّ له مساعده الخاص. */}
       {!studentFocus && !fullscreen && (
-        <div className="lg:hidden">
+        <div>
           <FloatingAssistant
             side="left"
+            hideOnDesktop
             actions={[
               { id: "files", icon: "file", label: "الملفّات", tone: "primary",
                 onClick: () => isOwner ? setTool("files") : setFocusSheet("files") },
@@ -998,7 +915,7 @@ export default function RoomPage() {
             {/* قائمة المحظورين للمالك */}
             {isOwner && banned.size > 0 && (
               <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-bold text-danger">🚫 المحظورون ({banned.size})</p>
+                <p className="mb-2 text-xs font-bold text-danger">المحظورون ({banned.size})</p>
                 <div className="space-y-1.5">
                   {[...banned].map((uid) => (
                     <div key={uid} className="flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2">
@@ -1079,7 +996,7 @@ export default function RoomPage() {
       <BottomSheet open={focusSheet === "cards"} onClose={() => setFocusSheet(null)} title="بطاقات المراجعة">
         <div className="px-1 py-2">
           <p className="text-sm leading-relaxed text-text-muted">
-            كل ما تحفظه من الغرفة بزرّ ⭐ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
+            كل ما تحفظه من الغرفة بزرّ الحفظ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
           </p>
           <a
             href="/tools/flashcards"
@@ -1139,7 +1056,7 @@ export default function RoomPage() {
       {isOwner && (
         <>
           <CreateChallengeSheet roomId={roomId} open={challengeCreateOpen} onClose={() => setChallengeCreateOpen(false)} />
-          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="🧠 حلول التحدي" maxHeight="88vh">
+          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="حلول التحدي" maxHeight="88vh">
             <TeacherChallengePanel roomId={roomId} memberCount={members.length} />
             <button
               onClick={() => { setChallengePanelOpen(false); setChallengeCreateOpen(true); }}
@@ -1153,7 +1070,7 @@ export default function RoomPage() {
 
       {/* درج الأسئلة المجهولة — للمالك */}
       {isOwner && (
-        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
+        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="الأسئلة المجهولة" maxHeight="80vh">
           <AnonQuestionsList roomId={roomId} questions={anonQs} />
         </BottomSheet>
       )}
@@ -1234,7 +1151,7 @@ function PaidRoomGate({ room, uid, onUnlocked }: {
 
         <button onClick={() => setShowPay(true)}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-2.5 text-sm font-bold text-white active:scale-95">
-          💬 تواصل مع الإدارة للشراء
+          تواصل مع الإدارة للشراء
         </button>
         <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
 
