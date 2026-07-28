@@ -721,3 +721,13 @@ html { scrollbar-gutter: stable; }
     0 0 0 1px rgba(255, 255, 255, .07),
     0 16px 40px -12px rgba(0, 0, 0, .5);
 }
+
+
+/* نزول بطاقة الاستفتاء — 200ms: محسوس بما يكفي ليلفت النظر، وقصير
+   بما يكفي ألّا يؤخّر إجابة الطالب. */
+.bz-poll-in { animation: bz-poll-in 200ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bz-poll-in {
+  from { opacity: 0; transform: translateY(-14px) scale(.98) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+@media (prefers-reduced-motion: reduce) { .bz-poll-in { animation: none } }

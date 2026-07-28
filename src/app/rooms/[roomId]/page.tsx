@@ -675,24 +675,57 @@ export default function RoomPage() {
         >
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
           <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
-            {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
-            {activePoll?.open ? (
-              <RoomPollPanel
-                roomId={roomId}
-                poll={activePoll}
-                isOwner={isOwner}
-                myUid={user?.uid ?? ""}
-              />
-            ) : (
-              <>
-                {tool === "welcome" && (
-                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />
-                )}
-                {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
-                {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-                {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
-              </>
+            {/* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */}
+            <>
+              {tool === "welcome" && (
+                <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />
+              )}
+              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
+              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+            </>
+
+            {/* ══ الاستفتاء يعلو المحتوى ولا يحلّ محلّه ══
+                كان يُزيل اللوح تماماً، فيفقد الطالب السياق الذي يُسأل
+                عنه — وهو أسوأ لحظة لإخفائه. الآن بطاقة تنزل من أعلى
+                المنصّة والمحتوى باقٍ خلفها ومقروء.
+                لا نُعتّم الخلفية كثيراً لأنّ السؤال غالباً عمّا عليها. */}
+            {activePoll?.open && (
+              <div className="pointer-events-none absolute inset-0 z-30 flex items-start justify-center p-3 sm:p-4">
+                <div
+                  className="bz-poll-in pointer-events-auto w-full max-w-lg overflow-hidden rounded-2xl border"
+                  style={{
+                    background: "rgba(255,255,255,.97)",
+                    borderColor: "var(--bz-blue-100)",
+                    backdropFilter: "saturate(180%) blur(12px)",
+                    WebkitBackdropFilter: "saturate(180%) blur(12px)",
+                    boxShadow:
+                      "0 0 0 1px rgba(19,23,34,.05), 0 18px 44px -12px rgba(19,23,34,.28)",
+                  }}
+                >
+                  <div className="flex items-center gap-2 border-b border-[var(--bz-line)] bg-[var(--bz-blue-050)] px-3.5 py-2">
+                    <Icon name="poll" size={14} className="text-[var(--bz-blue)]" />
+                    <span className="text-[12px] font-extrabold text-[var(--bz-blue-700)]">
+                      استفتاء مباشر
+                    </span>
+                    <span className="flex-1" />
+                    {isOwner && (
+                      <span className="text-[10.5px] font-bold text-[var(--bz-ink-3)]">
+                        أنت صاحب الاستفتاء — لا تصوّت فيه
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-[52vh] overflow-y-auto">
+                    <RoomPollPanel
+                      roomId={roomId}
+                      poll={activePoll}
+                      isOwner={isOwner}
+                      myUid={user?.uid ?? ""}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
             {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
             {!isOwner && !studentFocus && (
