@@ -73,7 +73,6 @@ export default function GroupPage() {
   useEffect(() => {
     const unsub = listenGroupMessages(groupId, (msgs) => {
       setMessages(msgs);
-    return () => { if (typeof unsub === "function") unsub(); };
       if (initialized.current && msgs.length > lastCount.current) {
         const last = msgs[msgs.length - 1];
         if (last && last.senderId !== user?.uid) playMessageSound();
@@ -81,6 +80,7 @@ export default function GroupPage() {
       lastCount.current = msgs.length;
       initialized.current = true;
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [groupId, user?.uid]);
 
   useEffect(() => {

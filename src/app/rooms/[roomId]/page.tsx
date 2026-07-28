@@ -116,7 +116,6 @@ export default function RoomPage() {
   useEffect(() => {
     const unsub = listenMessages(roomId, (msgs) => {
       const textMsgs = msgs.filter((m) => m.type === "text");
-    return () => { if (typeof unsub === "function") unsub(); };
       if (!chatInit.current) {
         chatInit.current = true;
         lastMsgCount.current = textMsgs.length;
@@ -143,6 +142,7 @@ export default function RoomPage() {
       }
       lastMsgCount.current = textMsgs.length;
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, user?.uid]);
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
@@ -307,6 +307,7 @@ export default function RoomPage() {
       if (kicked) router.replace("/rooms");
     return () => { if (typeof unsub === "function") unsub(); };
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, user, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && fullscreen) exitFullscreen(); };
@@ -344,7 +345,7 @@ export default function RoomPage() {
       if (isOwner && list.length > prevHands.current) playHandRaiseSound();
       prevHands.current = list.length;
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, isOwner, user]);
 
   function toggleHand() {

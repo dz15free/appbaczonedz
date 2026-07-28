@@ -50,7 +50,7 @@ export function useRoomState(roomId: string, isOwner: boolean) {
     if (!roomId) return;
     const r = ref(rtdb, `roomLive/${roomId}/roomState`);
     const unsub = onValue(r, (snap) => setState(parse(snap.val())));
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
   const setRoomState = useCallback(

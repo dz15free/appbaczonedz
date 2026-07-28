@@ -33,7 +33,7 @@ export function RoleBadge({ uid, role }: { uid?: string; role?: string }) {
       roleCache.set(uid, r);
       setLiveRole(r);
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
 
   const r = liveRole ?? role ?? "student";

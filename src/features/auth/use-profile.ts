@@ -28,7 +28,7 @@ export function useProfile(uid?: string) {
     const unsub = onValue(ref(rtdb, `users/${uid}`), (snap) => {
       setProfile((snap.val() as Profile) ?? null);
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
 
   return profile;

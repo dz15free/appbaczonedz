@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u ?? null);
       setLoading(false);
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
   // فرض إيقاف الحساب: إن كان platformBan=true نُخرجه فوراً
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut(auth).catch(() => {});
       }
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (banned) {

@@ -16,7 +16,7 @@ export function useActiveTool(roomId: string, isOwner: boolean) {
       const v = snap.val() as RoomTool | null;
       if (v) setToolState(v);
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
   // المالك فقط يغيّر الأداة للجميع

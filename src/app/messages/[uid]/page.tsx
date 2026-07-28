@@ -103,7 +103,6 @@ export default function DMPage() {
     }
     const unsub = listenDM(user.uid, otherUid, (msgs) => {
       setMessages(msgs);
-    return () => { if (typeof unsub === "function") unsub(); };
       if (initialized.current && msgs.length > lastCount.current) {
         const latest = msgs[msgs.length - 1];
         if (latest && latest.senderId !== user.uid) playMessageSound();
@@ -111,6 +110,7 @@ export default function DMPage() {
       lastCount.current = msgs.length;
       initialized.current = true;
     });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [user, otherUid]);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);

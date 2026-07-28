@@ -34,7 +34,7 @@ export function LiveAvatar({
       avatarCache.set(uid, url);
       setAvatarUrl(url);
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
 
   return <UserAvatar name={name} avatarUrl={avatarUrl} size={size} className={className} />;

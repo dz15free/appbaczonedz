@@ -397,7 +397,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   // العلامات لهذه الصفحة
   useEffect(() => {
     const unsub = listenMarks(roomId, activePage, (m) => { setMarks(m); scheduleRedraw(); });
-    return () => { unsub(); seenMarks.current = new Set(); };
+    return () => { if (typeof unsub === "function") unsub(); seenMarks.current = new Set(); };
   }, [roomId, activePage, scheduleRedraw]);
 
   // ما حُفظ سابقاً في حساب الطالب — يمنع تكرار البطاقة نفسها
@@ -598,7 +598,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         }
       }
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, activePage]);
 
@@ -614,7 +614,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         if (canDraw || followingRef.current) setActivePage(m.activePage);
       }
     });
-    return () => unsub();
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
   function getPoint(e: React.PointerEvent): Point {
