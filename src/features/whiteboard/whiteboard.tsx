@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { pickShape, boundsOf, describeShape } from "@/features/whiteboard/shape-geometry";
+import { pickShape, boundsOf, describeShape, type Bounds } from "@/features/whiteboard/shape-geometry";
 import { ShapeActionsSheet } from "@/features/whiteboard/shape-actions";
 import {
   listenMarks, listenSavedMarks, recordMarkSaved, tagInfo,
@@ -26,7 +26,9 @@ import {
   faCircle,
   faFont,
   faEraser,
-  faArrowPointer, } from "@fortawesome/free-solid-svg-icons";
+  faArrowPointer,
+  faNoteSticky,
+} from "@fortawesome/free-solid-svg-icons";
 import { recognize } from "@/features/whiteboard/smart/recognize";
 import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -35,7 +37,7 @@ interface Point {
   x: number;
   y: number;
 }
-type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "eraser";
+type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "note" | "eraser";
 interface Shape {
   id: string;
   uid: string;
@@ -50,16 +52,35 @@ interface Shape {
 /* تسمية النوع التي تظهر في لسان الكائن — العنصر الثاني من توقيع BacZone */
 const KIND_LABEL: Record<Kind, string> = {
   pen: "رسم", highlighter: "تظليل", line: "خط", arrow: "سهم",
-  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", eraser: "ممحاة",
+  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", note: "بطاقة", eraser: "ممحاة",
 };
 
 const TOOL_ICON: Record<ToolId, IconName> = {
   select: "cursor", pen: "pen", highlighter: "marker", line: "line",
-  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", eraser: "eraser",
+  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", note: "note", eraser: "eraser",
 };
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
 const SIZES = [2, 4, 8];
+
+/* مقاسات النصّ منفصلة عن سماكة القلم عمداً.
+   كان النصّ يستعمل سماكة القلم (2/4/8) وتُضرب في 8 → 16 و32 و64 بكسل.
+   64 بكسل يملأ ثلث اللوح بكلمة واحدة، وهو ما جعل النصّ يظهر ضخماً.
+   القيم هنا تُعطي 14 · 18 · 24 · 34 بكسل، والافتراضي 18 — مقاس قراءة
+   حقيقي على اللوح. */
+/* ── ألوان البطاقة اللاصقة ──
+   ليست ألواناً للزينة: كل لون يحمل معنى ثابتاً في نظام BacZone، فيتعلّم
+   الطالب قراءة اللوح بلمحة. الكهرماني أوّلاً لأنّه لون «ما يخصّ الطالب»
+   في التصميم كلّه، وهو الأشيع في الالتقاط. */
+const NOTE_COLORS: { bg: string; ink: string; label: string }[] = [
+  { bg: "#FDF4E7", ink: "#8A5A12", label: "للحفظ" },
+  { bg: "#EDF2FE", ink: "#1A3FB0", label: "فكرة" },
+  { bg: "#FDEEED", ink: "#A3322B", label: "خطأ شائع" },
+  { bg: "#EAF6F1", ink: "#146344", label: "خلاصة" },
+];
+
+const TEXT_SIZES = [1.75, 2.25, 3, 4.25];
+const TEXT_SIZE_LABEL = ["صغير", "عادي", "كبير", "عنوان"];
 /* نسبة اللوح الثابتة.
    كانت اللوحة تأخذ شكل الحاوية أيًّا كان، والإحداثيات محفوظة نسبيّة (0..1) —
    فالدائرة المرسومة على الحاسوب (نسبة ١٫٦٧) تصل الهاتف (نسبة ٠٫٥٨) بيضاويّةً
@@ -81,6 +102,7 @@ const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
   { id: "rect", icon: faSquare, label: "مستطيل" },
   { id: "ellipse", icon: faCircle, label: "دائرة" },
   { id: "text", icon: faFont, label: "نص" },
+  { id: "note", icon: faNoteSticky, label: "بطاقة لاصقة" },
   { id: "eraser", icon: faEraser, label: "ممحاة" },
 ];
 
@@ -237,6 +259,50 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
+    } else if (s.kind === "note" && s.text) {
+      /* بطاقة لاصقة: مستطيل ملوّن + نصّ ملفوف.
+         نلفّ الكلمات يدوياً لأنّ الكانفاس لا يلفّ النصّ تلقائياً —
+         بدونه تخرج البطاقة الطويلة عن حافّة اللوح. */
+      const a = P(pts[0]);
+      const k = dpr();
+      const px = Math.max(11, s.size * 7) * k;
+      const padX = 9 * k, padY = 8 * k;
+      const maxW = 190 * k;
+      ctx.font = `600 ${px}px system-ui, sans-serif`;
+      ctx.direction = "rtl";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
+      const words = s.text.split(/\s+/);
+      const lines: string[] = [];
+      let cur = "";
+      for (const w of words) {
+        const t = cur ? `${cur} ${w}` : w;
+        if (ctx.measureText(t).width > maxW - padX * 2 && cur) { lines.push(cur); cur = w; }
+        else cur = t;
+      }
+      if (cur) lines.push(cur);
+      const lh = px * 1.45;
+      const boxW = maxW;
+      const boxH = lines.length * lh + padY * 2;
+      const ink = NOTE_COLORS.find((c) => c.bg === s.color)?.ink ?? "#333";
+      // ظلّ خفيف يرفع البطاقة عن اللوح
+      ctx.save();
+      ctx.shadowColor = "rgba(19,23,34,.14)";
+      ctx.shadowBlur = 8 * k;
+      ctx.shadowOffsetY = 2 * k;
+      ctx.fillStyle = s.color;
+      const rr = 6 * k;
+      ctx.beginPath();
+      ctx.moveTo(a.x - boxW + rr, a.y);
+      ctx.arcTo(a.x, a.y, a.x, a.y + boxH, rr);
+      ctx.arcTo(a.x, a.y + boxH, a.x - boxW, a.y + boxH, rr);
+      ctx.arcTo(a.x - boxW, a.y + boxH, a.x - boxW, a.y, rr);
+      ctx.arcTo(a.x - boxW, a.y, a.x, a.y, rr);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = ink;
+      lines.forEach((ln, i) => ctx.fillText(ln, a.x - padX, a.y + padY + i * lh));
     } else if (s.kind === "text" && s.text) {
       const a = P(pts[0]);
       const px = s.size * 8 * dpr();
@@ -293,6 +359,63 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       ctx.textAlign = "right";
       ctx.fillText(info.label, mTx + mTw - mPadX, mTy + mTh / 2);
       ctx.restore();
+    }
+
+    // ── إطار التحديد أثناء السحب ──
+    if (marquee.current) {
+      const { a, b } = marquee.current;
+      const w = canvas.width, h = canvas.height;
+      const k = window.devicePixelRatio || 1;
+      const X = Math.min(a.x, b.x) * w, Y = Math.min(a.y, b.y) * h;
+      const W = Math.abs(b.x - a.x) * w, H = Math.abs(b.y - a.y) * h;
+      ctx.save();
+      ctx.fillStyle = "rgba(35,80,217,.08)";
+      ctx.fillRect(X, Y, W, H);
+      ctx.strokeStyle = "#2350D9";
+      ctx.lineWidth = 1.5 * k;
+      ctx.setLineDash([5 * k, 4 * k]);
+      ctx.strokeRect(X, Y, W, H);
+      ctx.restore();
+    }
+
+    // ── الإطار الجامع للعناصر المحدَّدة بالإطار ──
+    if (multiRef.current.size > 0) {
+      const mb2 = multiBounds();
+      if (mb2) {
+        const w = canvas.width, h = canvas.height;
+        const k = window.devicePixelRatio || 1;
+        const pad = 6 * k;
+        const X = mb2.x0 * w - pad, Y = mb2.y0 * h - pad;
+        const W = (mb2.x1 - mb2.x0) * w + pad * 2, H = (mb2.y1 - mb2.y0) * h + pad * 2;
+        ctx.save();
+        ctx.fillStyle = "rgba(35,80,217,.05)";
+        ctx.fillRect(X, Y, W, H);
+        ctx.strokeStyle = "rgba(35,80,217,.55)";
+        ctx.lineWidth = 1.5 * k;
+        ctx.strokeRect(X, Y, W, H);
+        // شارة العدد — تؤكّد للمستخدم كم عنصراً التقط الإطار
+        const lbl = `${multiRef.current.size} عنصراً`;
+        ctx.font = `600 ${11 * k}px system-ui, sans-serif`;
+        ctx.direction = "rtl";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        const tw = ctx.measureText(lbl).width + 12 * k;
+        const th = 17 * k;
+        const tx = X + W - tw, ty = Math.max(Y - th - 3 * k, 0);
+        ctx.fillStyle = "#2350D9";
+        ctx.beginPath();
+        const rr = 4 * k;
+        ctx.moveTo(tx + rr, ty);
+        ctx.arcTo(tx + tw, ty, tx + tw, ty + th, rr);
+        ctx.arcTo(tx + tw, ty + th, tx, ty + th, rr);
+        ctx.arcTo(tx, ty + th, tx, ty, rr);
+        ctx.arcTo(tx, ty, tx + tw, ty, rr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.fillText(lbl, tx + tw - 6 * k, ty + th / 2);
+        ctx.restore();
+      }
     }
 
     // إطار العنصر المحدَّد — يُرسم هنا لا على طبقة منفصلة، فيبقى
@@ -465,6 +588,29 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
   /* الحفظ كبطاقة مراجعة — الإجراء الأشيع للطالب، فصار ضغطة واحدة.
      نُعلّم المعرّف محليّاً حتى لا يُنشئ الطالب نسختين بضغطتين متتاليتين. */
+  /** حذف كل ما التقطه الإطار — كتابة واحدة لكل عنصر ثم إعادة رسم واحدة */
+  function deleteMulti() {
+    if (!canDrawRef.current || multiRef.current.size === 0) return;
+    for (const id of multiRef.current) {
+      drawnIds.current.delete(id);
+      remove(ref(rtdb, `${strokesPath}/${id}`));
+    }
+    shapes.current = shapes.current.filter((x) => !multiRef.current.has(x.id));
+    clearMulti();
+    fullRedraw();
+  }
+
+  /** وسم كل ما التقطه الإطار — هذا جوهر طلبه: أحدّد معادلة كاملة ثم أعلّمها مهمّة */
+  function markMulti(tag: MarkTag) {
+    if (!canDrawRef.current || multiRef.current.size === 0) return;
+    for (const id of multiRef.current) {
+      const sh = shapes.current.find((x) => x.id === id);
+      setMark(roomId, activePage, id, tag, sh?.text);
+    }
+    clearMulti();
+    fullRedraw();
+  }
+
   const captureCard = useCallback((shape: Shape) => {
     if (!user) return;
     if (savedIds.has(shape.id)) return;
@@ -681,8 +827,16 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       }
 
       const hit = pickShape(shapes.current, p, v, tol);
+
+      // فراغ → نبدأ إطار تحديد بدل أن نكتفي بإلغاء التحديد
+      if (!hit) {
+        clearMulti();
+        marquee.current = { a: p, b: p };
+      }
+
       setSelectedId(hit ? hit.id : null);
       selectedRef.current = hit ? hit.id : null;
+      if (hit) clearMulti();
       scheduleRedraw();
 
       // ضغط مطوّل على عنصر → درج الإجراءات (بديل النقر الأيمن على الهاتف)
@@ -703,9 +857,10 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       return;
     }
     // نص حرّ
-    if (t === "text") {
-      const txt = window.prompt("النص:");
-      if (txt) commit(newShape("text", p, txt));
+    if (t === "text" || t === "note") {
+      setEditor({ x: p.x, y: p.y, value: "", note: t === "note" });
+      // نؤجّل التركيز دورة: الحقل لم يُصيَّر بعد
+      setTimeout(() => editorInput.current?.focus(), 0);
       return;
     }
     // أدوات الرسم — "select" استُبعد أعلاه، والحارس يوثّق ذلك للمترجم
@@ -749,6 +904,13 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     }
 
     // سحب عنصر محدَّد (تحريك/تحجيم) — يسبق منطق الرسم
+    if (marquee.current) {
+      e.preventDefault();
+      marquee.current.b = getPoint(e);
+      fullRedraw();
+      return;
+    }
+
     if (dragRef.current) {
       e.preventDefault();
       const sel = selectedRef.current;
@@ -757,6 +919,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       if (shape && pts) {
         shape.points = pts;
         fullRedraw();
+        streamDrag(shape);
       }
       return;
     }
@@ -814,6 +977,96 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   }
 
   /** يطبّق التحريك/التحجيم على نقاط الشكل انطلاقًا من الأصل */
+  /* ── بثّ التحريك أثناء السحب ──
+     كان الموضع يُكتب **عند الإفلات فقط**، فيرى الطلاب العنصر يقفز إلى
+     مكانه الجديد بدل أن يتحرّك. الآن نبثّ أثناء السحب.
+
+     لماذا خنق 80ms وليس كل حركة: مؤشّر الفأرة يُطلق ~120 حدثاً في
+     الثانية، وكل واحد كتابة في قاعدة البيانات — ذلك يستهلك حصّة Spark
+     المجانية في دقائق. 80ms = ~12 كتابة/ثانية، وهي أنعم من معدّل
+     تحديث العين ولا تُرهق الحصّة.
+
+     نكتب `points` وحدها (كتابة على مستوى الحقل) فلا نمسّ بقيّة العنصر. */
+  const dragBeat = useRef(0);
+
+  /* ── محرّر النصّ على اللوح ──
+     كان النصّ يُكتب في `window.prompt` — نافذة نظام تقطع الشرح، ولا
+     ترى فيها أين سيقع النصّ ولا بأيّ مقاس. الآن حقل يظهر **في مكانه
+     على اللوح** بنفس الخطّ والمقاس واللون، فما تكتبه هو ما تراه. */
+  const [editor, setEditor] = useState<{ x: number; y: number; value: string; note?: boolean } | null>(null);
+  const [textSize, setTextSize] = useState(TEXT_SIZES[1]);
+  const [noteColor, setNoteColor] = useState(0);
+  const noteColorRef = useRef(noteColor);
+  noteColorRef.current = noteColor;
+  const textSizeRef = useRef(textSize);
+  textSizeRef.current = textSize;
+  const editorInput = useRef<HTMLInputElement>(null);
+
+  /* ── التحديد بإطار (marquee) ──
+     «أرسم معادلة فأحدّدها كاملة عبر إطار يغطّيها».
+     المعادلة المكتوبة بخطّ اليد ليست عنصراً واحداً بل عشرات الضربات؛
+     النقر يلتقط ضربة واحدة فقط. الإطار يلتقطها كلّها.
+
+     نختار كل عنصر **يتقاطع** مع الإطار لا الذي يقع داخله بالكامل:
+     ذيل الحرف أو امتداد الأس كثيراً ما يخرج قليلاً عن الإطار الذي
+     يرسمه المستخدم بسرعة، والاشتراط الصارم كان سيُسقطه. */
+  const marquee = useRef<{ a: Point; b: Point } | null>(null);
+  const multiRef = useRef<Set<string>>(new Set());
+  const [multiCount, setMultiCount] = useState(0);
+
+  function clearMulti() {
+    if (multiRef.current.size === 0) return;
+    multiRef.current = new Set();
+    setMultiCount(0);
+  }
+
+  /** الإطار الجامع لكل العناصر المحدَّدة — يُستعمل للرسم وللإجراءات */
+  function multiBounds(): Bounds | null {
+    let x0 = 1, y0 = 1, x1 = 0, y1 = 0, found = false;
+    for (const id of multiRef.current) {
+      const sh = shapes.current.find((x) => x.id === id);
+      const b = sh ? boundsOf(sh) : null;
+      if (!b) continue;
+      found = true;
+      x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0);
+      x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1);
+    }
+    return found ? { x0, y0, x1, y1 } : null;
+  }
+
+  function streamDrag(shape: Shape) {
+    const now = Date.now();
+    if (now - dragBeat.current < 80) return;
+    dragBeat.current = now;
+    update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+  }
+
+  /* تثبيت ما كُتب في الحقل — نصّاً عادياً أو بطاقة لاصقة.
+     البطاقة تُحفظ فوراً في بطاقات المراجعة، وهذا نصّ طلبه:
+     «هاته البطاقات هي من تضاف كبطاقات مراجعة». */
+  function commitTyped(v: string, ed: { x: number; y: number; note?: boolean }) {
+    if (ed.note) {
+      const c = NOTE_COLORS[noteColorRef.current] ?? NOTE_COLORS[0];
+      const sh = newShape("note", { x: ed.x, y: ed.y }, v);
+      sh.color = c.bg;
+      sh.size = textSizeRef.current;
+      commit(sh);
+      if (user) {
+        void saveFlashcard({
+          uid: user.uid,
+          front: c.label,
+          back: v,
+          subject: subject ?? undefined,
+          source: roomName ? `غرفة ${roomName}` : undefined,
+        }).catch(() => {});
+      }
+      return;
+    }
+    const sh = newShape("text", { x: ed.x, y: ed.y }, v);
+    sh.size = textSizeRef.current;
+    commit(sh);
+  }
+
   function applyDrag(p: Point): Point[] | null {
     const d = dragRef.current;
     if (!d) return null;
@@ -881,12 +1134,42 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   function onPointerUp() {
     cancelLongPress();
 
+    // إغلاق إطار التحديد → التقاط كل عنصر يتقاطع معه
+    if (marquee.current) {
+      const { a, b } = marquee.current;
+      marquee.current = null;
+      const r = {
+        x0: Math.min(a.x, b.x), y0: Math.min(a.y, b.y),
+        x1: Math.max(a.x, b.x), y1: Math.max(a.y, b.y),
+      };
+      // إطار أصغر من 1.5% يعني نقرة لا سحباً — لا نُحوّلها إلى تحديد
+      if (r.x1 - r.x0 > 0.015 || r.y1 - r.y0 > 0.015) {
+        const picked = new Set<string>();
+        for (const sh of shapes.current) {
+          const sb = boundsOf(sh);
+          if (!sb) continue;
+          const overlaps = sb.x0 <= r.x1 && sb.x1 >= r.x0 && sb.y0 <= r.y1 && sb.y1 >= r.y0;
+          if (overlaps) picked.add(sh.id);
+        }
+        multiRef.current = picked;
+        setMultiCount(picked.size);
+        setSelectedId(null);
+        selectedRef.current = null;
+      }
+      fullRedraw();
+      return;
+    }
+
     // انتهاء سحب عنصر → احفظ الموضع الجديد مرّة واحدة
     if (dragRef.current) {
       dragRef.current = null;
       const sel = selectedRef.current;
       const shape = sel ? shapes.current.find((x) => x.id === sel) : null;
-      if (shape) update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+      // كتابة أخيرة مضمونة: آخر حركة قد تكون سقطت داخل نافذة الخنق
+      if (shape) {
+        dragBeat.current = 0;
+        update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+      }
       return;
     }
 
@@ -1005,6 +1288,19 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
             صار شريط إجراءات حقيقياً فوق الرصيف مباشرة: الإجراء الأشيع
             (الحفظ كبطاقة) صار ضغطة واحدة بدل ضغطتين، وموضعه قرب الإبهام
             لا في أبعد نقطة عنه. */}
+        {/* شريط سياقي للتحديد بالإطار — إجراءات تُطبَّق على المجموعة كلّها */}
+        {multiCount > 0 && (
+          <ContextBar label={`${multiCount} عنصراً محدَّداً`} onClose={() => { clearMulti(); fullRedraw(); }}>
+            {canDraw && (
+              <>
+                <ContextButton icon="target" label="مهم" tone="red" onClick={() => markMulti("important")} />
+                <ContextButton icon="star" label="للحفظ" tone="amber" onClick={() => markMulti("memorize")} />
+                <ContextButton icon="trash" label="حذف" tone="red" onClick={deleteMulti} />
+              </>
+            )}
+          </ContextBar>
+        )}
+
         {selectedId && (() => {
           const shape = shapes.current.find((x) => x.id === selectedId);
           if (!shape) return null;
@@ -1099,6 +1395,44 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           onPointerCancel={canDraw || selecting ? onPointerUp : undefined}
           onContextMenu={canDraw || selecting ? onContextMenu : undefined}
         />
+
+        {/* ── محرّر النصّ في مكانه على اللوح ──
+            موضعه بالنِّسَب (%) لا بالبكسل: اللوح يتغيّر حجمه مع النافذة،
+            والنسبة تُبقي الحقل مثبّتاً على النقطة نفسها من اللوح. */}
+        {editor && canDraw && (
+          <input
+            ref={editorInput}
+            value={editor.value}
+            onChange={(e) => setEditor({ ...editor, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const v = editor.value.trim();
+                if (v) commitTyped(v, editor);
+                setEditor(null);
+              } else if (e.key === "Escape") {
+                setEditor(null);
+              }
+              e.stopPropagation();
+            }}
+            onBlur={() => {
+              const v = editor.value.trim();
+              if (v) commitTyped(v, editor);
+              setEditor(null);
+            }}
+            dir="auto"
+            placeholder="اكتب ثم Enter"
+            className="absolute z-30 min-w-[120px] rounded-md border-2 bg-white/95 px-1.5 py-0.5 font-bold outline-none"
+            style={{
+              left: `${editor.x * 100}%`,
+              top: `${editor.y * 100}%`,
+              borderColor: "var(--bz-blue)",
+              color: colorRef.current,
+              fontSize: `${textSize * 8}px`,
+              lineHeight: 1.2,
+              maxWidth: `calc(100% - ${editor.x * 100}% - 8px)`,
+            }}
+          />
+        )}
         </div>
 
         {/* لوحة الرموز الرياضية — سياقية، تظهر فوق الكونسول عند الطلب */}
@@ -1246,7 +1580,52 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
                   />
                 ))}
                 <ConsoleDivider />
-                {SIZES.map((sz) => (
+
+                {/* ألوان البطاقة اللاصقة — كل لون معنى لا زينة */}
+                {tool === "note" &&
+                  NOTE_COLORS.map((c, i) => (
+                    <button
+                      key={c.bg}
+                      onClick={() => setNoteColor(i)}
+                      title={`بطاقة: ${c.label}`}
+                      aria-label={`بطاقة: ${c.label}`}
+                      aria-pressed={noteColor === i}
+                      className="grid h-[30px] w-[26px] shrink-0 place-items-center rounded-lg transition hover:bg-[var(--bz-blue-050)]"
+                    >
+                      <span
+                        className="block h-[18px] w-[18px] rounded-[5px]"
+                        style={{
+                          background: c.bg,
+                          boxShadow:
+                            noteColor === i
+                              ? `0 0 0 2px var(--bz-blue)`
+                              : `inset 0 0 0 1px ${c.ink}33`,
+                        }}
+                      />
+                    </button>
+                  ))}
+
+                {/* مقاس النصّ — يحلّ محلّ سماكة القلم حين تكون أداة
+                    النصّ نشطة، فلا يزدحم الرصيف بمجموعتين معاً. */}
+                {tool === "text"
+                  ? TEXT_SIZES.map((ts, i) => (
+                      <button
+                        key={ts}
+                        onClick={() => setTextSize(ts)}
+                        title={`مقاس النصّ: ${TEXT_SIZE_LABEL[i]}`}
+                        aria-label={`مقاس النصّ: ${TEXT_SIZE_LABEL[i]}`}
+                        aria-pressed={textSize === ts}
+                        className={`grid h-[30px] min-w-[30px] shrink-0 place-items-center rounded-lg px-1 font-bold transition ${
+                          textSize === ts
+                            ? "bg-[var(--bz-blue)] text-white"
+                            : "text-[var(--bz-ink-2)] hover:bg-[var(--bz-blue-050)]"
+                        }`}
+                        style={{ fontSize: 9 + i * 2.5 }}
+                      >
+                        أ
+                      </button>
+                    ))
+                  : SIZES.map((sz) => (
                   <button
                     key={sz} onClick={() => setSize(sz)} title={`سماكة ${sz}`} aria-label={`سماكة ${sz}`}
                     className="grid h-[30px] w-[26px] shrink-0 place-items-center rounded-lg transition
@@ -1260,7 +1639,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
                       }}
                     />
                   </button>
-                ))}
+                  ))}
               </ConsoleZone>
             </>
           )}
