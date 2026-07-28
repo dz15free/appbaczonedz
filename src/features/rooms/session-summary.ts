@@ -118,7 +118,7 @@ export function listenSummaries(roomId: string, cb: (list: SessionSummary[]) => 
 /** نصّ جاهز للنسخ أو المشاركة خارج المنصّة */
 export function summaryToText(s: SessionSummary, roomName: string): string {
   const d = new Date(s.at).toLocaleDateString("ar-DZ");
-  const out: string[] = [`ملخّص حصة: ${roomName} — ${d}`, ""];
+  const out: string[] = [`📘 ملخّص حصة: ${roomName} — ${d}`, ""];
   if (s.covered) out.push("ما تم شرحه:", s.covered, "");
   if (s.keyPoints.length) {
     out.push("أهم النقاط:");

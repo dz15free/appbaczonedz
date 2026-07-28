@@ -21,7 +21,6 @@ import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog"
 import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
 import { AppShell } from "@/components/app-shell";
 import { Input, Button } from "@/components/ui/field";
-import { Icon } from "@/components/ui/icon";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function RoomsPage() {
@@ -189,7 +188,7 @@ export default function RoomsPage() {
                           )}
                           {r.isPaid && (
                             <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                              <Icon name="lock" size={10} className="inline align-[-1px]" /> {r.price} دج
+                              🔒 {r.price} دج
                             </span>
                           )}
                         </div>

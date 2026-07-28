@@ -134,7 +134,7 @@ export async function countAnswers(roomId: string): Promise<number> {
 
 /** حفظ التحدي وحلّه في بطاقات المراجعة لاحقاً — يبني نصّ البطاقة */
 export function challengeToCard(question: string, answer: string) {
-  return { front: question, back: answer };
+  return { front: `🧠 ${question}`, back: answer };
 }
 
 // مُصدَّر للاستعمال المستقبلي في سجلّ التحديات داخل ملخّص الحصة

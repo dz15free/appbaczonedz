@@ -34,10 +34,10 @@ const config: Config = {
       },
       boxShadow: {
         glass: "0 8px 32px 0 rgba(31,38,135,0.08)",
-        glow: "0 0 24px rgba(79,70,229,0.28)",
+        glow: "0 0 24px rgba(37,99,235,0.28)",
       },
       backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)",
+        "gradient-primary": "linear-gradient(135deg, #2563EB 0%, #0EA5E9 100%)",
       },
       keyframes: {
         "fade-up": {

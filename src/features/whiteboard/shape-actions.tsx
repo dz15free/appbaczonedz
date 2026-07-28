@@ -7,7 +7,6 @@ import {
   faLayerGroup, faCopy, faRobot, faTrash, faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { Icon } from "@/components/ui/icon";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { describeShape, type GeoShape } from "@/features/whiteboard/shape-geometry";
 import { TAGS, tagInfo, type MarkTag } from "@/features/whiteboard/marks";
@@ -121,7 +120,7 @@ export function ShapeActionsSheet({
                   return (
                     <button
                       key={t.id}
-                      onClick={() => { onMark(active ? null : t.id); flash(active ? "أُزيلت العلامة" : t.label); }}
+                      onClick={() => { onMark(active ? null : t.id); flash(active ? "أُزيلت العلامة" : `${t.emoji} ${t.label}`); }}
                       className="flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95"
                       style={
                         active
@@ -129,7 +128,7 @@ export function ShapeActionsSheet({
                           : { borderColor: "var(--bz-border)", color: "var(--bz-text-muted)" }
                       }
                     >
-                      <Icon name={t.icon} size={13} />
+                      <span className="leading-none">{t.emoji}</span>
                       {t.label}
                     </button>
                   );

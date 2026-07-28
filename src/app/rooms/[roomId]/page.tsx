@@ -30,14 +30,10 @@ import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
 import { ParticipantsPanel } from "@/features/rooms/participants-panel";
-import { StatusDot } from "@/components/ui/status-dot";
-import { Icon, type IconName } from "@/components/ui/icon";
-import { ConsoleButton } from "@/components/ui/console";
-import { useTypingIndicator } from "@/features/rooms/typing-indicator";
+import { WaitingScreen } from "@/features/rooms/waiting-screen";
 import type { RaisedHand } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
-import { useRoomSurface, type RoomOverlay } from "@/features/rooms/use-room-surface";
-import { RoomSurface } from "@/features/rooms/room-surface";
+import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
@@ -55,6 +51,11 @@ import { markAttendance } from "@/features/community/teacher-rating";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import {
+  WorkspaceBar, WorkspaceTitle, LiveBadge, BarButton, Segmented,
+  IconRail, RailButton, RailDivider, RailSpacer, SideDock, DockPanel,
+} from "@/components/ui/workspace";
+import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -62,25 +63,17 @@ const loadingTool = () => (
     <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin" />
   </div>
 );
+const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
+const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
 const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
 
 
-/* طبقات الغرفة — لم تعد تبويبات تتبادل المكان، بل طبقات تعلو اللوح.
-   "سبورة" لم تعد عنصراً في القائمة: اللوح هو الغرفة، لا خيار فيها. */
-function layerLabel(o: Exclude<RoomOverlay, "none">): string {
-  return LAYERS.find((l) => l.id === o)?.label ?? "طبقة";
-}
-
-/* الأيقونتان معاً في السطر نفسه عن قصد: الغرفة الجديدة تستعمل نظام
-   أيقونات BacZone، بينما «وضع تركيز الأستاذ» ما يزال على FontAwesome
-   ولم يُعد تصميمه بعد. قائمة واحدة تُغذّي السطحين فلا تتفرّق التسميات. */
-const LAYERS: {
-  id: Exclude<RoomOverlay, "none">; label: string; icon: IconName; faIcon: typeof faHouse;
-}[] = [
-  { id: "welcome", label: "ترحيب", icon: "home", faIcon: faHouse },
-  { id: "video", label: "فيديو", icon: "video", faIcon: faVideo },
-  { id: "files", label: "ملفّات", icon: "file", faIcon: faFolderOpen },
-  { id: "notes", label: "ملاحظات", icon: "note", faIcon: faNoteSticky },
+const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
+  { id: "welcome", label: "مرحباً", icon: faHouse },
+  { id: "video", label: "فيديو", icon: faVideo },
+  { id: "whiteboard", label: "سبورة", icon: faChalkboard },
+  { id: "files", label: "ملفات", icon: faFolderOpen },
+  { id: "notes", label: "ملاحظات", icon: faNoteSticky },
 ];
 
 interface Hand {
@@ -152,13 +145,16 @@ export default function RoomPage() {
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
   const isOwner = !!room && !!user && room.ownerId === user.uid;
-  const { overlay, setOverlay, closeOverlay, toggleOverlay } = useRoomSurface(roomId, isOwner);
+  const { tool, setTool } = useActiveTool(roomId, isOwner);
+  const { state: roomState, setRoomState } = useRoomState(roomId, isOwner);
 
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
   const [showParticipants, setShowParticipants] = useState(false);
   // قائمة «المزيد» — تجمع إجراءات الحصة الثانوية فلا يزدحم الشريط
   const [moreOpen, setMoreOpen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [dockTab, setDockTab] = useState("chat");
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -358,14 +354,14 @@ export default function RoomPage() {
     const label = `${room?.name ?? "الغرفة"} — ${currentToolLabel()}`;
     saveFlashcard({
       uid: user.uid,
-      front: label,
+      front: `📚 ${label}`,
       back: "أضف التفاصيل لاحقاً من صفحة بطاقات المراجعة.",
       subject: room?.subject || "general",
       source: room?.name,
     });
   }
   function currentToolLabel() {
-    return overlay === "none" ? "اللوح" : layerLabel(overlay);
+    return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
   }
   // مشاركة رابط الغرفة — يستعمله الشريط العادي ووضع التركيز معاً
   // يُسجَّل حضور الطالب مرة واحدة عند دخوله غرفة الأستاذ (أساس أهلية التقييم)
@@ -377,7 +373,7 @@ export default function RoomPage() {
   function shareRoomLink() {
     const url = window.location.href;
     navigator.clipboard?.writeText(url)
-      .then(() => alert("تم نسخ رابط الغرفة"))
+      .then(() => alert("✅ تم نسخ رابط الغرفة!"))
       .catch(() => prompt("انسخ الرابط:", url));
   }
 
@@ -388,7 +384,7 @@ export default function RoomPage() {
       itemType: "room", itemId: roomId, itemTitle: room.name,
       price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
     });
-    prompt("كود الوصول (أعطِه للطالب بعد الدفع):", c);
+    prompt("🔑 كود الوصول (أعطِه للطالب بعد الدفع):", c);
   }
 
   function submitAnonQuestion(q: string) {
@@ -403,47 +399,7 @@ export default function RoomPage() {
     return <PaidRoomGate room={room} uid={user.uid} onUnlocked={() => setRoomAccess(true)} />;
   }
 
-  const currentLabel = overlay === "none" ? "اللوح" : layerLabel(overlay);
-
-  /* أزرار طبقات الغرفة — تُحقن في كونسول اللوح، فالكونسول واحد.
-     الطالب لا يبدّل الطبقة: يتابع ما يعرضه الأستاذ. */
-  const consoleExtras = isOwner ? (
-    <>
-      {LAYERS.map((l) => (
-        <ConsoleButton
-          key={l.id}
-          icon={l.icon}
-          label={l.label}
-          active={overlay === l.id}
-          onClick={() => toggleOverlay(l.id)}
-        />
-      ))}
-    </>
-  ) : null;
-
-  /* سطح الغرفة يُبنى مرّة ويُستعمل في التخطيط العادي وفي وضع التركيز،
-     فلا يتفرّع السطحان كما كانا حين كُتب التبديل مرّتين. */
-  const roomSurface = (
-    <RoomSurface
-      roomId={roomId}
-      isOwner={isOwner}
-      roomName={room?.name}
-      subject={room?.subject}
-      memberCount={members.length}
-      ownerStatus={ownerStatus}
-      overlay={overlay}
-      onCloseOverlay={closeOverlay}
-      poll={activePoll}
-      /* activePoll قد يكون null: نبني اللوحة داخل الحارس لا خارجه،
-         وإلّا ضاع التضييق تماماً كما ضاع في خطأ البناء الذي أصلحناه. */
-      pollPanel={
-        activePoll ? (
-          <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
-        ) : null
-      }
-      consoleExtras={consoleExtras}
-    />
-  );
+  const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
 
   return (
     <main className="flex h-[100dvh] flex-col bg-background text-text-primary">
@@ -475,22 +431,22 @@ export default function RoomPage() {
 
               {/* نوع الغرفة — واضح للجميع */}
               {room?.type === "teacher" || room?.ownerRole === "teacher" ? (
-                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">أستاذ</span>
+                <span className="whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">👨‍🏫 أستاذ</span>
               ) : room?.type === "private" ? (
-                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">خاصة</span>
+                <span className="whitespace-nowrap rounded-full bg-text-muted/10 px-1.5 py-0.5 text-[9px] font-bold text-text-muted">🔒 خاصة</span>
               ) : room ? (
-                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">عامة</span>
+                <span className="whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">🌐 عامة</span>
               ) : null}
 
               {room?.isPaid && (
-                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">مدفوعة</span>
+                <span className="whitespace-nowrap rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">💳 مدفوعة</span>
               )}
 
               {ownerStatus !== "available" && (
                 <span className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
                   ownerStatus === "busy" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
                 }`}>
-                  {ownerStatus === "busy" ? "المعلّم مشغول" : "سيعود قريباً"}
+                  {ownerStatus === "busy" ? "🔴 المعلّم مشغول" : "🟡 سيعود قريباً"}
                 </span>
               )}
             </div>
@@ -602,89 +558,97 @@ export default function RoomPage() {
         </div>
       )}
 
-      {/* الأدوات: المالك يتحكّم، الطالب يرى الأداة الحالية فقط */}
-      {isOwner ? (
-        <nav className="bz-glass flex items-center gap-2 border-b px-2.5 py-2 sm:px-3">
-          {/* لا شريط تبويبات بعد اليوم: اللوح هو الغرفة، وطبقاته في الكونسول
-              أسفل الشاشة. يبقى هنا ما هو فعلاً إجراء حصّة لا تنقّل. */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
-            <span className="bz-live-dot" />
-            <span className="truncate text-[12px] font-bold text-text-muted">
-              {overlay === "none" ? "اللوح مباشر" : `تعرض الآن: ${layerLabel(overlay)}`}
-            </span>
-          </div>
+      {/* ══ شريط مساحة الدراسة ══
+          حلّ محلّ شريط التبويبات الخماسي. لا يبدّل المحتوى: يعرض هويّة
+          الحصّة وحالتها وإجراءاتها. تبديل المحتوى انتقل إلى شريط
+          الأيقونات الجانبي، فلا يبقى في الأعلى ما يُضغط كثيراً — الأعلى
+          بعيد عن الإبهام في الهاتف. */}
+      <WorkspaceBar>
+        <WorkspaceTitle
+          title={room?.name ?? "الغرفة"}
+          subtitle={isOwner ? (room?.subject ?? undefined) : room?.ownerName ? `الأستاذ ${room.ownerName}` : undefined}
+        />
+        <LiveBadge />
 
-          {/* وضع التركيز — إجراء أساسي يبقى ظاهراً */}
-          <button
-            onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
-            title={fullscreen ? "خروج من وضع التركيز" : "وضع التركيز — أكبر مساحة للشرح"}
-            className={`flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition active:scale-95 ${
-              fullscreen ? "bg-primary/10 text-primary" : "bg-gradient-primary text-white shadow-glow"
-            }`}
-          >
-            <FontAwesomeIcon icon={fullscreen ? faCompress : faExpand} className="h-4 w-4" />
-            <span className="hidden sm:inline">تركيز</span>
-          </button>
-
-          {/* المزيد — يجمع إجراءات الحصة الثانوية */}
-          <button
-            onClick={() => setMoreOpen(true)}
-            title="إجراءات الحصة"
-            aria-label="إجراءات الحصة"
-            className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border transition ${
-              anonQs.some((q) => !q.answered) || challenge
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"
-            }`}
-          >
-            <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
-            {anonQs.some((q) => !q.answered) && (
-              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
-                {anonQs.filter((q) => !q.answered).length}
-              </span>
-            )}
-          </button>
-        </nav>
-      ) : (
-        <div className="bz-glass flex items-center gap-2 border-b px-3 py-2 sm:px-4">
-          <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm">
-            <span className="bz-live-dot" />
-            <span className="text-text-muted">يعرض المعلّم الآن</span>
-            <span className="font-bold" >{currentLabel}</span>
-          </div>
-          {/* تقييم الغرفة المدفوعة — لمن اشترى الدخول */}
-          {room?.isPaid && roomAccess && user && (
-            <button
-              onClick={() => setRateRoomOpen(true)}
-              title="قيّم الغرفة"
-              aria-label="قيّم الغرفة"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:bg-primary/10 hover:text-primary active:scale-95"
-            >
-              <FontAwesomeIcon icon={faChalkboard} className="h-4 w-4" />
-            </button>
-          )}
-          {/* تقييم الأستاذ — إجراء مفيد للطالب */}
-          {room?.ownerId && room?.ownerRole === "teacher" && (
-            <button
-              onClick={() => setRateOpen(true)}
-              title="قيّم الأستاذ"
-              aria-label="قيّم الأستاذ"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-amber-400/40 bg-amber-400/10 text-amber-600 transition active:scale-95"
-            >
-              <FontAwesomeIcon icon={faStar} className="h-4 w-4" />
-            </button>
-          )}
-          {/* وضع التركيز للطالب — بيئة دراسة نظيفة */}
-          <button
-            onClick={() => setStudentFocus(true)}
-            title="وضع التركيز"
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-primary px-3 text-sm font-bold text-white shadow-glow transition active:scale-95"
-          >
-            <FontAwesomeIcon icon={faExpand} className="h-4 w-4" />
-            <span className="hidden sm:inline">تركيز</span>
-          </button>
+        {/* حالات الغرفة — المالك يقرّر والطالب يرى */}
+        <div className="hidden sm:block">
+          <Segmented
+            items={ROOM_STATES}
+            value={roomState}
+            onChange={isOwner ? setRoomState : undefined}
+            disabled={!isOwner}
+            compact
+          />
         </div>
-      )}
+
+        <span className="flex-1" />
+
+        <BarButton
+          icon="users"
+          label={String(members.length)}
+          hideLabelOnMobile={false}
+          title={`الحاضرون: ${members.length}`}
+          onClick={() => setParticipantsOpen(true)}
+        />
+
+        {isOwner ? (
+          <>
+            <BarButton
+              icon={fullscreen ? "collapse" : "expand"}
+              label="تركيز"
+              tone={fullscreen ? "default" : "primary"}
+              active={fullscreen}
+              title={fullscreen ? "خروج من وضع التركيز" : "وضع التركيز — أكبر مساحة للشرح"}
+              onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
+            />
+            <BarButton
+              icon="more"
+              title="إجراءات الحصة"
+              badge={anonQs.filter((q) => !q.answered).length}
+              active={anonQs.some((q) => !q.answered) || Boolean(challenge)}
+              onClick={() => setMoreOpen(true)}
+            />
+          </>
+        ) : (
+          <>
+            {room?.isPaid && roomAccess && user && (
+              <BarButton icon="star" title="قيّم الغرفة" onClick={() => setRateRoomOpen(true)} />
+            )}
+            {room?.ownerId && room?.ownerRole === "teacher" && (
+              <BarButton icon="star" title="قيّم الأستاذ" onClick={() => setRateOpen(true)} />
+            )}
+            <BarButton
+              icon="expand"
+              label="تركيز"
+              tone="primary"
+              title="وضع التركيز"
+              onClick={() => setStudentFocus(true)}
+            />
+          </>
+        )}
+      </WorkspaceBar>
+
+      {/* درج الحاضرين — الهاتف لا يتّسع للشريط الجانبي، فالورقة السفلية
+          هي البديل الصحيح (وهي ما طلبته في الملاحظات بدل النوافذ). */}
+      <BottomSheet
+        open={participantsOpen}
+        onClose={() => setParticipantsOpen(false)}
+        title={`الحاضرون (${members.length})`}
+      >
+        <div className="max-h-[60vh] overflow-y-auto">
+          <ParticipantsPanel
+            members={members}
+            hands={handsQueue}
+            mods={mods}
+            ownerId={room?.ownerId ?? ""}
+            myUid={user?.uid}
+            isOwner={isOwner}
+            onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+            onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+            onGrantMic={isOwner ? grantMic : undefined}
+          />
+        </div>
+      </BottomSheet>
 
       {/* درج «إجراءات الحصة» — للمالك */}
       {isOwner && (
@@ -747,7 +711,7 @@ export default function RoomPage() {
                   : "border-warning/40 bg-warning/10 text-warning"
               }`}
             >
-              <StatusDot status={ownerStatus} size={12} />
+              <span className="text-xl leading-none">{ownerStatus === "available" ? "🟢" : ownerStatus === "busy" ? "🔴" : "🟡"}</span>
               {ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}
             </button>
 
@@ -774,21 +738,38 @@ export default function RoomPage() {
 
       {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}
       <div className="flex flex-1 overflow-hidden">
-        {/* عمود المشاركون — حاسوب فقط، غير ظاهر في الشاشة الكاملة أو وضع التركيز */}
+        {/* ══ شريط الأيقونات ══
+            تبديل المحتوى انتقل إلى هنا من شريط التبويبات المحذوف.
+            أيقونة بلا تسمية: لا يزيد الازدحام البصري، والتسمية في
+            الـtooltip وفي aria-label لقارئ الشاشة. */}
         {!fullscreen && (
-          <aside className="hidden w-64 shrink-0 border-l border-border bg-surface xl:block">
-            <ParticipantsPanel
-              members={members}
-              hands={handsQueue}
-              mods={mods}
-              ownerId={room?.ownerId ?? ""}
-              myUid={user?.uid}
-              isOwner={isOwner}
-              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
-              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
-              onGrantMic={isOwner ? grantMic : undefined}
-            />
-          </aside>
+          <IconRail>
+            <RailButton icon="home" label="مرحباً" active={tool === "welcome"}
+              onClick={() => isOwner && setTool("welcome")} />
+            <RailButton icon="video" label="فيديو" active={tool === "video"}
+              onClick={() => isOwner && setTool("video")} />
+            <RailButton icon="layers" label="السبورة" active={tool === "whiteboard"}
+              onClick={() => isOwner && setTool("whiteboard")} />
+            <RailButton icon="file" label="ملفّات" active={tool === "files"}
+              onClick={() => isOwner && setTool("files")} />
+            <RailButton icon="note" label="ملاحظات" active={tool === "notes"}
+              onClick={() => isOwner && setTool("notes")} />
+            {isOwner && (
+              <>
+                <RailDivider />
+                <RailButton icon="poll" label="استفتاء"
+                  onClick={() => setShowCreatePoll(true)} />
+                <RailButton icon="target" label={challenge ? "لوحة التحدّي" : "تحدٍّ"}
+                  active={Boolean(challenge)}
+                  onClick={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))} />
+                <RailButton icon="anon" label="الأسئلة المجهولة"
+                  badge={anonQs.filter((q) => !q.answered).length}
+                  onClick={() => setMoreOpen(true)} />
+              </>
+            )}
+            <RailSpacer />
+            <RailButton icon="more" label="المزيد" onClick={() => setMoreOpen(true)} />
+          </IconRail>
         )}
 
         <section
@@ -798,10 +779,25 @@ export default function RoomPage() {
         >
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
           <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
-            {/* سطح الغرفة. حين يدخل الطالب وضع التركيز يُعرض السطح داخل
-                طبقة التركيز، فلا نرسمه هنا أيضاً: لوحان محمولان معاً
-                يعنيان مستمعَين لقاعدة البيانات ولوحَي رسم متزامنين. */}
-            {!(studentFocus && !isOwner) && roomSurface}
+            {/* الاستفتاء النشط يحلّ محلّ الأداة الحالية */}
+            {activePoll?.open ? (
+              <RoomPollPanel
+                roomId={roomId}
+                poll={activePoll}
+                isOwner={isOwner}
+                myUid={user?.uid ?? ""}
+              />
+            ) : (
+              <>
+                {tool === "welcome" && (
+                  <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />
+                )}
+                {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+                {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
+                {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+                {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+              </>
+            )}
             {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
             {!isOwner && !studentFocus && (
               <StudentChallengeLayer
@@ -828,9 +824,9 @@ export default function RoomPage() {
                 const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
                 setOwnerStatus(roomId, next);
               }}
-              tools={LAYERS.map((l) => ({ id: l.id, label: l.label, icon: l.faIcon }))}
-              activeTool={overlay}
-              onPickTool={(id) => setOverlay(id as RoomOverlay)}
+              tools={TOOLS}
+              activeTool={tool}
+              onPickTool={(id) => setTool(id as RoomTool)}
               timerButton={<RoomTimerButton roomId={roomId} />}
               onCreatePoll={() => setShowCreatePoll(true)}
               onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
@@ -876,10 +872,36 @@ export default function RoomPage() {
           />
         </section>
 
+        {/* ══ الشريط الجانبي الواحد ══
+            كان عمودين منفصلين (مشاركون w-64 + دردشة w-96) يأكلان 360px
+            من العرض دائماً. صارا لوحة واحدة بتبويبات — «Sidebar واحدة
+            تحتوي Tabs» من الملاحظات — فرَبِحت المنصّة المساحة. */}
         {!fullscreen && (
-          <aside className="hidden w-96 border-r border-border lg:block">
-            <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
-          </aside>
+          <SideDock
+            tabs={[
+              { id: "chat", label: "الدردشة" },
+              { id: "class", label: "الصفّ", badge: handsQueue.length },
+            ]}
+            active={dockTab}
+            onSelect={setDockTab}
+            padded={false}
+          >
+            {dockTab === "chat" ? (
+              <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
+            ) : (
+              <ParticipantsPanel
+              members={members}
+              hands={handsQueue}
+              mods={mods}
+              ownerId={room?.ownerId ?? ""}
+              myUid={user?.uid}
+              isOwner={isOwner}
+              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+              onGrantMic={isOwner ? grantMic : undefined}
+            />
+            )}
+          </SideDock>
         )}
       </div>
 
@@ -930,7 +952,7 @@ export default function RoomPage() {
             {/* قائمة المحظورين للمالك */}
             {isOwner && banned.size > 0 && (
               <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-bold text-danger">المحظورون ({banned.size})</p>
+                <p className="mb-2 text-xs font-bold text-danger">🚫 المحظورون ({banned.size})</p>
                 <div className="space-y-1.5">
                   {[...banned].map((uid) => (
                     <div key={uid} className="flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2">
@@ -986,7 +1008,17 @@ export default function RoomPage() {
           }
         >
           {/* نفس المحتوى الذي يعرضه المعلّم */}
-          {roomSurface}
+          {activePoll?.open ? (
+            <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
+          ) : (
+            <>
+              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} />}
+              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
+              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
+              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+            </>
+          )}
         </StudentFocusMode>
       )}
 
@@ -1000,7 +1032,7 @@ export default function RoomPage() {
       <BottomSheet open={focusSheet === "cards"} onClose={() => setFocusSheet(null)} title="بطاقات المراجعة">
         <div className="px-1 py-2">
           <p className="text-sm leading-relaxed text-text-muted">
-            كل ما تحفظه من الغرفة بزرّ الحفظ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
+            كل ما تحفظه من الغرفة بزرّ ⭐ يُضاف مباشرة إلى بطاقات المراجعة. راجعها في أي وقت من صفحة البطاقات.
           </p>
           <a
             href="/tools/flashcards"
@@ -1060,7 +1092,7 @@ export default function RoomPage() {
       {isOwner && (
         <>
           <CreateChallengeSheet roomId={roomId} open={challengeCreateOpen} onClose={() => setChallengeCreateOpen(false)} />
-          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="حلول التحدي" maxHeight="88vh">
+          <BottomSheet open={challengePanelOpen} onClose={() => setChallengePanelOpen(false)} title="🧠 حلول التحدي" maxHeight="88vh">
             <TeacherChallengePanel roomId={roomId} memberCount={members.length} />
             <button
               onClick={() => { setChallengePanelOpen(false); setChallengeCreateOpen(true); }}
@@ -1074,7 +1106,7 @@ export default function RoomPage() {
 
       {/* درج الأسئلة المجهولة — للمالك */}
       {isOwner && (
-        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="الأسئلة المجهولة" maxHeight="80vh">
+        <BottomSheet open={anonOpen} onClose={() => setAnonOpen(false)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
           <AnonQuestionsList roomId={roomId} questions={anonQs} />
         </BottomSheet>
       )}
@@ -1155,7 +1187,7 @@ function PaidRoomGate({ room, uid, onUnlocked }: {
 
         <button onClick={() => setShowPay(true)}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-2.5 text-sm font-bold text-white active:scale-95">
-          تواصل مع الإدارة للشراء
+          💬 تواصل مع الإدارة للشراء
         </button>
         <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
 

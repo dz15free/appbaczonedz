@@ -247,6 +247,12 @@
           "$qid": {
             ".write": "auth != null && (!data.exists() || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)"
           }
+        },
+        "challenge": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "marks": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
       }
     },
@@ -280,7 +286,72 @@
     "userAccess": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        "$itemType": {
+          "$itemId": {
+            ".write": "auth != null && ((auth.uid === $uid && !data.exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
+            ".validate": "!newData.exists() || (newData.isString() && root.child('accessCodes').child(newData.val()).child('redeemedBy').val() === auth.uid && root.child('accessCodes').child(newData.val()).child('itemId').val() === $itemId)"
+          }
+        }
+      }
+    },
+    "roomChallengeAnswers": {
+      "$roomId": {
+        ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['name','text','at'])"
+        }
+      }
+    },
+    "roomChallengeScores": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+      }
+    },
+    "roomSummaries": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+      }
+    },
+    "attendance": {
+      "$teacherUid": {
+        ".read": "auth != null",
+        "$studentUid": {
+          ".write": "auth != null && auth.uid === $studentUid && !data.exists()",
+          ".validate": "newData.hasChild('at')"
+        }
+      }
+    },
+    "teacherRatings": {
+      "$teacherUid": {
+        ".read": "auth != null",
+        "$studentUid": {
+          ".write": "auth != null && ((auth.uid === $studentUid && $studentUid !== $teacherUid && root.child('attendance').child($teacherUid).child(auth.uid).child('at').exists() && root.child('attendance').child($teacherUid).child(auth.uid).child('at').val() < (now - 600000)) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['stars','studentName','at']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 5 && (!newData.hasChild('comment') || newData.child('comment').val().length <= 500))"
+        }
+      }
+    },
+    "purchases": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$itemType": {
+          "$itemId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".validate": "root.child('accessCodes').child(newData.val()).child('redeemedBy').val() === auth.uid && root.child('accessCodes').child(newData.val()).child('itemId').val() === $itemId"
+          }
+        }
+      }
+    },
+    "contentRatings": {
+      "$itemId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === $uid && root.child('purchases').child(auth.uid).child('library').child($itemId).exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['stars','name','at']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 5 && (!newData.hasChild('comment') || newData.child('comment').val().length <= 500))"
+        }
       }
     }
   }

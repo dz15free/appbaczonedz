@@ -9,7 +9,6 @@ import {
   faChalkboard, faBrain, faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { StatusDot } from "@/components/ui/status-dot";
 import { useTimerLabel } from "@/features/rooms/room-timer";
 import type { OwnerStatus, RaisedHand } from "@/features/rooms/rooms";
 
@@ -176,6 +175,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
   const hidden = idle && !mobile;
   const chromeCls = `bz-tfocus-chrome${hidden ? " bz-tfocus-idle" : ""}`;
 
+  const statusDot = props.ownerStatus === "available" ? "🟢" : props.ownerStatus === "busy" ? "🔴" : "🟡";
   const statusText = props.ownerStatus === "available" ? "متفرّغ" : props.ownerStatus === "busy" ? "مشغول" : "سأعود";
 
   /* ═══════════ الشريط العلوي (مشترك) ═══════════ */
@@ -202,7 +202,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
         title="تغيير حالتك"
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[11px] font-bold text-text-primary transition hover:bg-primary/10"
       >
-        <StatusDot status={props.ownerStatus} size={9} />
+        <span className="text-xs leading-none">{statusDot}</span>
         <span className="hidden sm:inline">{statusText}</span>
       </button>
     </div>
@@ -265,7 +265,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           <div className="mt-2 h-[46vh] border-t border-border pt-2">{props.participantsPanel}</div>
         </BottomSheet>
 
-        <BottomSheet open={sheet === "questions"} onClose={() => setSheet(null)} title="الأسئلة المجهولة" maxHeight="80vh">
+        <BottomSheet open={sheet === "questions"} onClose={() => setSheet(null)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
           <div className="max-h-[66vh]">{props.questionsPanel}</div>
         </BottomSheet>
 

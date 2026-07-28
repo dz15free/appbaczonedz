@@ -48,8 +48,8 @@ export function StudentFocusMode(props: StudentFocusProps) {
   const [savedFlash, setSavedFlash] = useState(false);
 
   const statusLabel =
-    props.ownerStatus === "busy" ? "مشغول" :
-    props.ownerStatus === "brb" ? "سيعود" : "يشرح الآن";
+    props.ownerStatus === "busy" ? "🔴 مشغول" :
+    props.ownerStatus === "brb" ? "🟡 سيعود" : "🟢 يشرح الآن";
 
   function quickSave() {
     props.onSaveToCards();
@@ -115,7 +115,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
         {/* تأكيد الحفظ السريع */}
         {savedFlash && (
           <div className="pointer-events-none absolute left-1/2 top-4 z-[60] -translate-x-1/2 rounded-full bg-secondary px-4 py-2 text-xs font-bold text-white shadow-lg bz-radial-in">
-            حُفظت في بطاقات المراجعة
+            ⭐ حُفظت في بطاقات المراجعة
           </div>
         )}
 
@@ -169,7 +169,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
       </BottomSheet>
 
       {/* ═══ درج السؤال المجهول ═══ */}
-      <BottomSheet open={askOpen} onClose={() => setAskOpen(false)} title="سؤال مجهول">
+      <BottomSheet open={askOpen} onClose={() => setAskOpen(false)} title="سؤال مجهول 🕵️">
         <p className="mb-3 px-1 text-xs leading-relaxed text-text-muted">
           سيصل سؤالك للأستاذ دون إظهار اسمك. اكتب سؤالك بوضوح.
         </p>

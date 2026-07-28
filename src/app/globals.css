@@ -43,7 +43,9 @@
   --bz-amber-050:#FDF4E7;
   --bz-amber-200:#F2DFC0;
   --bz-red:#D2453C;         /* تصحيح · مهم · تمرين */
+  --bz-red-050:#FDEEED;
   --bz-green:#1E8A5F;       /* صحيح · يتكلّم الآن */
+  --bz-green-050:#EAF6F1;
   --bz-board-grid:#EDF0F5;
 
 }
@@ -66,6 +68,10 @@
   --bz-ink-3:#6B7585;
   --bz-blue-050:#1B2540;
   --bz-blue-100:#233156;
+  /* التلوينات الخفيفة تُعتَم في الوضع الداكن وإلّا وهجت كالمصابيح */
+  --bz-red-050:#3A1E1D;
+  --bz-green-050:#14291F;
+  --bz-amber-050:#332415;
 
 }
 
@@ -628,3 +634,10 @@ html { scrollbar-gutter: stable; }
 @media (min-width: 1024px) {
   .bz-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 }
+
+
+/* نبضة نقطة البثّ داخل شارة «مباشر» — النقطة نفسها يرسمها العنصر،
+   وهذا يحرّك شفافيّتها فقط. تحترم تفضيل تقليل الحركة. */
+.bz-live-pulse { animation: bz-badge-pulse 1.8s ease-in-out infinite; }
+@keyframes bz-badge-pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+@media (prefers-reduced-motion: reduce) { .bz-live-pulse { animation: none } }

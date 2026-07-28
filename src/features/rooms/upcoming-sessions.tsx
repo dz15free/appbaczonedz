@@ -11,7 +11,6 @@ import {
   listenUpcomingSessions, deleteScheduledSession, type ScheduledSession,
 } from "@/features/rooms/rooms";
 import { ROOM_SUBJECTS } from "@/features/rooms/create-room-dialog";
-import { Icon } from "@/components/ui/icon";
 
 const JOIN_EARLY_MS = 10 * 60 * 1000; // يمكن الدخول 10 دقائق قبل الموعد
 
@@ -75,7 +74,7 @@ export function UpcomingSessions() {
                   )}
                   {s.isPaid && (
                     <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                      <Icon name="lock" size={10} className="inline align-[-1px]" /> {s.price} دج
+                      🔒 {s.price} دج
                     </span>
                   )}
                 </div>

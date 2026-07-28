@@ -78,7 +78,7 @@ export function RoomActivityToasts({ members, hands, mods, activePoll, isOwner, 
     for (const uid of mods) {
       if (!prevMods.current.has(uid)) {
         const name = members.find((m) => m.uid === uid)?.name ?? "عضو";
-        push({ icon: faUserShield, text: `${name} أصبح مشرفاً`, accent: "primary" });
+        push({ icon: faUserShield, text: `${name} أصبح مشرفاً 🛡️`, accent: "primary" });
       }
     }
     prevMods.current = new Set(mods);

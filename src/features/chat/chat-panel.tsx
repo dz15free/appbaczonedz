@@ -145,7 +145,7 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
     <div className="flex h-full flex-col">
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
-          <p className="mt-8 text-center text-sm text-text-muted">لا رسائل بعد — كن أول من يكتب</p>
+          <p className="mt-8 text-center text-sm text-text-muted">لا رسائل بعد — كن أول من يكتب 👋</p>
         )}
         {messages.map((m) => {
           const mine = m.userId === user?.uid;
