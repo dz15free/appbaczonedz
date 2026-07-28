@@ -96,11 +96,58 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
     };
   }, []);
 
+  /* ── بطاقة الصوت العائمة (PIP) ──
+     من الصورة المرجعية: بطاقة صغيرة تطفو فوق المحتوى تُظهر من يتحدّث
+     الآن. بُنيت **هنا** عمداً لا كمكوّن منفصل: حالة الصوت (المشاركون،
+     من يتحدّث، الاتصال) تعيش في هذا المكوّن، ومكوّن مستقلّ كان سيحتاج
+     VoiceManager ثانياً — أي اتصال WebRTC ثانياً لكل طالب.
+
+     تظهر فقط حين: انضممنا فعلاً + هناك متحدّث + اللوحة الموسّعة مغلقة
+     (وإلّا كرّرنا المعلومة نفسها مرّتين على الشاشة). */
+  const speakerUid = joined
+    ? participants.find((p) => speaking[p.uid] && !p.muted)?.uid ?? null
+    : null;
+  const speaker = speakerUid ? participants.find((p) => p.uid === speakerUid) ?? null : null;
+
   return (
     <div className="border-t border-border bg-surface">
       {Object.entries(streams).map(([uid, stream]) => (
         <AudioSink key={uid} stream={stream} />
       ))}
+
+      {speaker && !expanded && (
+        <div
+          className="bz-pip pointer-events-none fixed z-[10040] flex items-center gap-2 rounded-xl border px-2 py-1.5 shadow-lg"
+          style={{
+            top: "calc(env(safe-area-inset-top, 0px) + 62px)",
+            insetInlineEnd: "12px",
+            background: "var(--bz-surface, #fff)",
+            borderColor: "var(--bz-line)",
+          }}
+        >
+          <span className="relative grid h-7 w-7 place-items-center">
+            <LiveAvatar uid={speaker.uid} name={speaker.name || "ط"} size="md" className="h-7 w-7" />
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{ boxShadow: "0 0 0 2px var(--bz-green)" }}
+            />
+          </span>
+          <span className="min-w-0">
+            <span className="block max-w-[110px] truncate text-[10.5px] font-bold leading-tight text-[var(--bz-ink)]">
+              {speaker.uid === user?.uid ? "أنت" : speaker.name}
+            </span>
+            <span className="block text-[9px] font-bold leading-tight text-[var(--bz-green)]">
+              يتحدّث الآن
+            </span>
+          </span>
+          {/* موجة صغيرة — إشارة بصرية أنّ الصوت حيّ، لا مجرّد اسم ثابت */}
+          <span className="flex items-end gap-[2px]" aria-hidden="true">
+            <span className="bz-wave-1 block w-[2px] rounded bg-[var(--bz-green)]" style={{ height: 5 }} />
+            <span className="bz-wave-2 block w-[2px] rounded bg-[var(--bz-green)]" style={{ height: 10 }} />
+            <span className="bz-wave-3 block w-[2px] rounded bg-[var(--bz-green)]" style={{ height: 7 }} />
+          </span>
+        </div>
+      )}
 
       {/* اللوحة الموسّعة (المشاركون + أدوات المالك) */}
       {joined && expanded && (

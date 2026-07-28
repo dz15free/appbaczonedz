@@ -29,23 +29,34 @@ export function Console({
 }) {
   const [dim, setDim] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touch = useRef(false);
 
   useEffect(() => {
     if (!idleDim) return;
-    const wake = () => {
+    const arm = () => {
+      if (timer.current) clearTimeout(timer.current);
+      // على اللمس لا نُخفّت أبداً: الهاتف لا يُطلق pointermove، فالمؤقّت
+      // كان يعيد التخفيت كل 3 ثوانٍ بلا نهاية وتبقى الأدوات باهتة دائماً.
+      if (touch.current) return;
+      timer.current = setTimeout(() => setDim(true), 3000);
+    };
+    const wake = () => { setDim(false); arm(); };
+    const onTouch = () => {
+      touch.current = true;
       setDim(false);
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setDim(true), 3000);
     };
     wake();
     window.addEventListener("pointermove", wake, { passive: true });
     window.addEventListener("pointerdown", wake, { passive: true });
     window.addEventListener("keydown", wake);
+    window.addEventListener("touchstart", onTouch, { passive: true });
     return () => {
       if (timer.current) clearTimeout(timer.current);
       window.removeEventListener("pointermove", wake);
       window.removeEventListener("pointerdown", wake);
       window.removeEventListener("keydown", wake);
+      window.removeEventListener("touchstart", onTouch);
     };
   }, [idleDim]);
 
@@ -303,6 +314,83 @@ export function ConsoleAvatars({
           +{extra}
         </span>
       )}
+    </button>
+  );
+}
+
+
+/* ─────────── الشريط السياقي ───────────
+   يظهر فوق الرصيف مباشرة عند تحديد عنصر، ويحمل إجراءات ذلك العنصر
+   وحده. هذا هو «Contextual UI» من ملاحظاتك: لا نزيد الأزرار الظاهرة،
+   بل نُظهر ما يخصّ اللحظة الحالية فقط ثم يختفي.
+
+   موضعه أسفل الشاشة مقصود — قرب الإبهام، والسابق كان أعلى اللوح. */
+
+export function ContextBar({
+  label, children, onClose,
+}: {
+  label: string;
+  children: ReactNode;
+  onClose?: () => void;
+}) {
+  return (
+    <div className="pointer-events-none absolute bottom-[68px] left-1/2 z-30 max-w-[calc(100%-16px)] -translate-x-1/2">
+      <div
+        className="bz-ctx-in pointer-events-auto flex items-center gap-1 rounded-xl border p-1 ps-2"
+        style={{
+          background: "rgba(255,255,255,.98)",
+          borderColor: "var(--bz-blue-100)",
+          boxShadow: "0 2px 4px rgba(19,23,34,.05), 0 10px 26px rgba(19,23,34,.12)",
+        }}
+      >
+        <span className="shrink-0 truncate text-[10.5px] font-bold text-[var(--bz-blue-700)]">
+          {label}
+        </span>
+        <span className="mx-1 h-4 w-px shrink-0 bg-[var(--bz-line)]" />
+        <div className="flex items-center gap-1 overflow-x-auto bz-noscroll">{children}</div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            title="إلغاء التحديد"
+            aria-label="إلغاء التحديد"
+            className="ms-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[var(--bz-ink-3)] transition hover:bg-[var(--bz-canvas)] hover:text-[var(--bz-ink-2)]"
+          >
+            <Icon name="close" size={13} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** زرّ داخل الشريط السياقي — أصغر من زرّ الرصيف لأنّ السياق مؤقّت */
+export function ContextButton({
+  icon, label, tone = "default", onClick, disabled,
+}: {
+  icon: IconName; label: string;
+  tone?: "default" | "amber" | "red" | "primary";
+  onClick?: () => void; disabled?: boolean;
+}) {
+  const tones =
+    tone === "amber"
+      ? "text-[var(--bz-amber)] hover:bg-[var(--bz-amber-050)]"
+      : tone === "red"
+        ? "text-[var(--bz-red)] hover:bg-[var(--bz-red-050)]"
+        : tone === "primary"
+          ? "text-[var(--bz-blue)] hover:bg-[var(--bz-blue-050)]"
+          : "text-[var(--bz-ink-2)] hover:bg-[var(--bz-canvas)]";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[11px] font-bold transition active:scale-95 disabled:opacity-35 ${tones}`}
+    >
+      <Icon name={icon} size={13} />
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }

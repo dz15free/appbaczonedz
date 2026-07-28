@@ -9,6 +9,8 @@ import {
   faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { Icon } from "@/components/ui/icon";
+import { StatusDot } from "@/components/ui/status-dot";
 import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-assistant";
 import { useTimerLabel } from "@/features/rooms/room-timer";
 
@@ -47,9 +49,11 @@ export function StudentFocusMode(props: StudentFocusProps) {
   const [question, setQuestion] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
 
+  // النقطة عنصر ملوّن لا رمز تعبيري: شكل الإيموجي يختلف بين الأجهزة،
+  // ولا يمكن ضبط حجمه مع السطر، ولا يقرؤه قارئ الشاشة بوضوح.
   const statusLabel =
-    props.ownerStatus === "busy" ? "🔴 مشغول" :
-    props.ownerStatus === "brb" ? "🟡 سيعود" : "🟢 يشرح الآن";
+    props.ownerStatus === "busy" ? "مشغول" :
+    props.ownerStatus === "brb" ? "سيعود" : "يشرح الآن";
 
   function quickSave() {
     props.onSaveToCards();
@@ -67,14 +71,14 @@ export function StudentFocusMode(props: StudentFocusProps) {
 
   // وظائف ثانوية داخل المساعد العائم (FAB)
   const radialActions: RadialAction[] = [
-    { id: "files", icon: faFolderOpen, label: "الملفات", onClick: props.onOpenFiles, tone: "primary" },
-    { id: "notes", icon: faNoteSticky, label: "الملاحظات", onClick: props.onOpenNotes, tone: "amber" },
-    { id: "cards", icon: faLayerGroup, label: "بطاقاتي", onClick: props.onOpenCards, tone: "primary" },
+    { id: "files", icon: "file", label: "الملفات", onClick: props.onOpenFiles, tone: "primary" },
+    { id: "notes", icon: "note", label: "الملاحظات", onClick: props.onOpenNotes, tone: "amber" },
+    { id: "cards", icon: "layers", label: "بطاقاتي", onClick: props.onOpenCards, tone: "primary" },
     ...(props.onRateTeacher
-      ? [{ id: "rate", icon: faStar, label: "تقييم الأستاذ", onClick: props.onRateTeacher, tone: "amber" as const }]
+      ? [{ id: "rate", icon: "star" as const, label: "تقييم الأستاذ", onClick: props.onRateTeacher, tone: "amber" as const }]
       : []),
     ...(props.onOpenSummary
-      ? [{ id: "summary", icon: faFileLines, label: "ملخّص الحصة", onClick: props.onOpenSummary, tone: "primary" as const }]
+      ? [{ id: "summary", icon: "page" as const, label: "ملخّص الحصة", onClick: props.onOpenSummary, tone: "primary" as const }]
       : []),
   ];
 
@@ -93,7 +97,9 @@ export function StudentFocusMode(props: StudentFocusProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <h1 className="truncate text-[13px] font-bold leading-tight">{props.roomName}</h1>
-            <span className="shrink-0 text-[10px] font-bold text-text-muted">{statusLabel}</span>
+            <span className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-text-muted">
+              <StatusDot status={props.ownerStatus} size={7} />{statusLabel}
+            </span>
           </div>
           {props.ownerName && (
             <p className="truncate text-[10px] leading-tight text-text-muted">
@@ -115,7 +121,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
         {/* تأكيد الحفظ السريع */}
         {savedFlash && (
           <div className="pointer-events-none absolute left-1/2 top-4 z-[60] -translate-x-1/2 rounded-full bg-secondary px-4 py-2 text-xs font-bold text-white shadow-lg bz-radial-in">
-            ⭐ حُفظت في بطاقات المراجعة
+            <Icon name="star" size={13} className="ms-1 inline align-[-2px]" /> حُفظت في بطاقات المراجعة
           </div>
         )}
 
@@ -169,7 +175,7 @@ export function StudentFocusMode(props: StudentFocusProps) {
       </BottomSheet>
 
       {/* ═══ درج السؤال المجهول ═══ */}
-      <BottomSheet open={askOpen} onClose={() => setAskOpen(false)} title="سؤال مجهول 🕵️">
+      <BottomSheet open={askOpen} onClose={() => setAskOpen(false)} title="سؤال مجهول">
         <p className="mb-3 px-1 text-xs leading-relaxed text-text-muted">
           سيصل سؤالك للأستاذ دون إظهار اسمك. اكتب سؤالك بوضوح.
         </p>

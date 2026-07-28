@@ -641,3 +641,36 @@ html { scrollbar-gutter: stable; }
 .bz-live-pulse { animation: bz-badge-pulse 1.8s ease-in-out infinite; }
 @keyframes bz-badge-pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
 @media (prefers-reduced-motion: reduce) { .bz-live-pulse { animation: none } }
+
+
+/* شريط تمرير مخفيّ — للصفوف الأفقية داخل الأشرطة العائمة */
+.bz-noscroll { scrollbar-width: none; -ms-overflow-style: none; }
+.bz-noscroll::-webkit-scrollbar { display: none; }
+
+/* دخول الشريط السياقي — قصير جداً (140ms) فلا يقطع تركيز الشرح */
+.bz-ctx-in { animation: bz-ctx-in 140ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bz-ctx-in {
+  from { opacity: 0; transform: translateY(6px) scale(.98) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+@media (prefers-reduced-motion: reduce) { .bz-ctx-in { animation: none } }
+
+
+/* عناصر المساعد العائم — تتفتّح صعوداً بتتالٍ خفيف */
+.bz-fab-item { animation: bz-fab-item 160ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bz-fab-item {
+  from { opacity: 0; transform: translateY(10px) scale(.94) }
+  to   { opacity: 1; transform: translateY(0) scale(1) }
+}
+@media (prefers-reduced-motion: reduce) { .bz-fab-item { animation: none } }
+
+
+/* بطاقة الصوت العائمة + موجتها */
+.bz-pip { animation: bz-ctx-in 160ms cubic-bezier(.2,.8,.2,1) both; }
+.bz-wave-1, .bz-wave-2, .bz-wave-3 { animation: bz-wave .9s ease-in-out infinite; transform-origin: bottom }
+.bz-wave-2 { animation-delay: .15s } .bz-wave-3 { animation-delay: .3s }
+@keyframes bz-wave { 0%,100% { transform: scaleY(.5) } 50% { transform: scaleY(1) } }
+@media (prefers-reduced-motion: reduce) {
+  .bz-pip { animation: none }
+  .bz-wave-1, .bz-wave-2, .bz-wave-3 { animation: none }
+}

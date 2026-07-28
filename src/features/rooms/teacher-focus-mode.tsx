@@ -9,6 +9,7 @@ import {
   faChalkboard, faBrain, faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { StatusDot } from "@/components/ui/status-dot";
 import { useTimerLabel } from "@/features/rooms/room-timer";
 import type { OwnerStatus, RaisedHand } from "@/features/rooms/rooms";
 
@@ -175,8 +176,27 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
   const hidden = idle && !mobile;
   const chromeCls = `bz-tfocus-chrome${hidden ? " bz-tfocus-idle" : ""}`;
 
-  const statusDot = props.ownerStatus === "available" ? "🟢" : props.ownerStatus === "busy" ? "🔴" : "🟡";
   const statusText = props.ownerStatus === "available" ? "متفرّغ" : props.ownerStatus === "busy" ? "مشغول" : "سأعود";
+
+  /* درج «أدوات الحصة» — مشترك بين الهاتف والحاسوب.
+     كان داخل فرع الهاتف وحده؛ ولمّا نقلنا الإجراءات النادرة إليه في
+     الحاسوب أيضاً صار الزرّ يفتح لا شيء. تعريفه هنا يجعله يعمل في
+     السطحين من مصدر واحد. */
+  const moreSheet = (
+    <BottomSheet open={sheet === "more"} onClose={() => setSheet(null)} title="أدوات الحصة">
+      <div className="space-y-2 pb-2">
+        <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
+        <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
+        <SheetRow icon={faFileLines} label="ملخّص الحصة" onClick={() => { setSheet(null); props.onSummary(); }} />
+        <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
+        <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
+        <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />
+        {props.onGenerateCode && (
+          <SheetRow icon={faKey} label="توليد كود وصول" onClick={() => { setSheet(null); props.onGenerateCode!(); }} />
+        )}
+      </div>
+    </BottomSheet>
+  );
 
   /* ═══════════ الشريط العلوي (مشترك) ═══════════ */
   const topBar = (
@@ -202,7 +222,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
         title="تغيير حالتك"
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[11px] font-bold text-text-primary transition hover:bg-primary/10"
       >
-        <span className="text-xs leading-none">{statusDot}</span>
+        <StatusDot status={props.ownerStatus} size={9} />
         <span className="hidden sm:inline">{statusText}</span>
       </button>
     </div>
@@ -214,11 +234,13 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
       id: `tool-${t.id}`, icon: t.icon, label: t.label,
       onClick: () => props.onPickTool(t.id), active: props.activeTool === t.id,
     })),
+    /* الشريط العائم يحمل ما يُستعمل **أثناء الشرح** فقط.
+       «لا أريد Toolbar طويلة» — فملخّص الحصة والمشاركة وكود الوصول
+       إجراءات تُستعمل مرّة في الحصّة، لا تستحقّ زرّاً دائماً أمام العين؛
+       انتقلت إلى درج «المزيد» الموجود أصلاً. وفّر ذلك ثلاثة أزرار. */
     { id: "challenge", icon: faBrain, label: props.hasChallenge ? "لوحة التحدي" : "تحدٍّ جديد", onClick: props.onChallenge, active: props.hasChallenge },
     { id: "poll", icon: faChartBar, label: "استفتاء", onClick: props.onCreatePoll },
-    { id: "summary", icon: faFileLines, label: "ملخّص الحصة", onClick: props.onSummary },
-    { id: "share", icon: faShareNodes, label: "مشاركة الرابط", onClick: props.onShare },
-    ...(props.onGenerateCode ? [{ id: "code", icon: faKey, label: "كود وصول", onClick: props.onGenerateCode }] : []),
+    { id: "more", icon: faEllipsis, label: "أدوات الحصة", onClick: () => setSheet("more") },
   ];
 
   const vertical = side !== "bottom";
@@ -265,23 +287,11 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           <div className="mt-2 h-[46vh] border-t border-border pt-2">{props.participantsPanel}</div>
         </BottomSheet>
 
-        <BottomSheet open={sheet === "questions"} onClose={() => setSheet(null)} title="🕵️ الأسئلة المجهولة" maxHeight="80vh">
+        <BottomSheet open={sheet === "questions"} onClose={() => setSheet(null)} title="الأسئلة المجهولة" maxHeight="80vh">
           <div className="max-h-[66vh]">{props.questionsPanel}</div>
         </BottomSheet>
 
-        <BottomSheet open={sheet === "more"} onClose={() => setSheet(null)} title="أدوات الحصة">
-          <div className="space-y-2 pb-2">
-            <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
-            <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
-            <SheetRow icon={faFileLines} label="ملخّص الحصة" onClick={() => { setSheet(null); props.onSummary(); }} />
-            <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
-            <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
-            <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />
-            {props.onGenerateCode && (
-              <SheetRow icon={faKey} label="توليد كود وصول" onClick={() => { setSheet(null); props.onGenerateCode!(); }} />
-            )}
-          </div>
-        </BottomSheet>
+        {moreSheet}
 
         <BottomSheet open={sheet === "files"} onClose={() => setSheet(null)} title="ملفات الغرفة" maxHeight="80vh">
           <div className="h-[66vh]">{props.filesPanel}</div>
@@ -379,6 +389,14 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           </div>
         </aside>
       )}
+
+      {/* الأدراج المشتركة — الحاسوب يحتاجها الآن بعدما انتقلت الإجراءات
+          النادرة من الشريط العائم إلى «المزيد». بدونها كان الزرّ
+          يفتح لا شيء على الحاسوب. */}
+      {moreSheet}
+      <BottomSheet open={sheet === "files"} onClose={() => setSheet(null)} title="ملفات الغرفة" maxHeight="80vh">
+        <div className="h-[66vh]">{props.filesPanel}</div>
+      </BottomSheet>
     </>
   );
 }

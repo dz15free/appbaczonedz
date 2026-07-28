@@ -56,6 +56,7 @@ import {
   IconRail, RailButton, RailDivider, RailSpacer, SideDock, DockPanel,
 } from "@/components/ui/workspace";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
+import { FloatingAssistant } from "@/components/ui/floating-assistant";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -908,6 +909,34 @@ export default function RoomPage() {
       {/* الشريط الصوتي الدائم (يبقى في كل الأدوات) */}
       <RoomVoiceBar roomId={roomId} isOwner={isOwner} />
 
+      {/* ══ المساعد العائم ══
+          الهاتف لا يتّسع لشريط الأيقونات الجانبي، فالوظائف الثانوية
+          تُجمع هنا في زرّ واحد بدل أن تختفي. يظهر على الهاتف والجهاز
+          اللوحي فقط (lg:hidden) لأنّ الحاسوب يملك الشريط الجانبي.
+          ويُخفى في وضع التركيز لأنّ له مساعده الخاص. */}
+      {!studentFocus && !fullscreen && (
+        <div className="lg:hidden">
+          <FloatingAssistant
+            side="left"
+            actions={[
+              { id: "files", icon: "file", label: "الملفّات", tone: "primary",
+                onClick: () => isOwner ? setTool("files") : setFocusSheet("files") },
+              { id: "notes", icon: "note", label: "الملاحظات", tone: "amber",
+                onClick: () => isOwner ? setTool("notes") : setFocusSheet("notes") },
+              { id: "class", icon: "users", label: "الحاضرون",
+                badge: handsQueue.length,
+                onClick: () => setParticipantsOpen(true) },
+              ...(isOwner
+                ? [{ id: "actions", icon: "more" as const, label: "إجراءات الحصة",
+                     badge: anonQs.filter((q) => !q.answered).length,
+                     onClick: () => setMoreOpen(true) }]
+                : [{ id: "focus", icon: "target" as const, label: "وضع التركيز", tone: "primary" as const,
+                     onClick: () => setStudentFocus(true) }]),
+            ]}
+          />
+        </div>
+      )}
+
       {/* درج الدردشة على الجوال */}
       {chatOpen && (
         <div
@@ -1022,7 +1051,8 @@ export default function RoomPage() {
         </StudentFocusMode>
       )}
 
-      {/* أدراج الوظائف الثانوية داخل وضع التركيز */}
+      {/* أدراج الوظائف الثانوية — على مستوى الصفحة عمداً: يفتحها المساعد
+          العائم في الغرفة العادية أيضاً، لا في وضع التركيز وحده. */}
       <BottomSheet open={focusSheet === "files"} onClose={() => setFocusSheet(null)} title="ملفات الغرفة" maxHeight="80vh">
         <div className="h-[68vh]"><RoomFiles roomId={roomId} isOwner={isOwner} /></div>
       </BottomSheet>

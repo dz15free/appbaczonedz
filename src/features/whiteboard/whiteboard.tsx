@@ -13,7 +13,7 @@ import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { Icon, type IconName } from "@/components/ui/icon";
 import {
-  FloatingConsole, ConsoleZone, ConsoleDivider, ConsoleButton,
+  FloatingConsole, ConsoleZone, ConsoleDivider, ConsoleButton, ContextBar, ContextButton,
   ConsoleSwatch, StageIndicator,
 } from "@/components/ui/console";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -26,9 +26,9 @@ import {
   faCircle,
   faFont,
   faEraser,
-  faArrowPointer, faXmark,
-} from "@fortawesome/free-solid-svg-icons";
+  faArrowPointer, } from "@fortawesome/free-solid-svg-icons";
 import { recognize } from "@/features/whiteboard/smart/recognize";
+import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
 import { useAuth } from "@/features/auth/auth-provider";
 
 interface Point {
@@ -67,7 +67,6 @@ const SIZES = [2, 4, 8];
    ويُوسَّط داخل المساحة المتاحة، فما يراه الأستاذ هو ما يراه الطالب بالضبط. */
 const BOARD_AR = 16 / 10;
 
-const SYMBOLS = ["+", "−", "×", "÷", "=", "√", "π", "²", "³", "≤", "≥", "→", "∞", "∫", "Σ", "θ", "α", "Δ"];
 
 /* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
    فلا يتسرّب إلى قاعدة البيانات ولا يُخزَّن كشكل. */
@@ -111,6 +110,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   const [size, setSize] = useState(SIZES[1]);
   // لوحة الرموز الرياضية — كانت صفًّا دائمًا، صارت تظهر عند الطلب فقط
   const [symbolsOpen, setSymbolsOpen] = useState(false);
+  const [formulaGroupId, setFormulaGroupId] = useState<FormulaGroupId>("math");
   // تحويل الرسم الحرّ إلى أشكال مثالية — يُعطَّل للمواد التي تحتاج رسمًا عضويًّا (الأحياء)
   const [smartShapes, setSmartShapes] = useState(true);
   // شارة «تراجع» بعد تحويل ناجح — الذكاء الذي لا يمكن رفضه إزعاج
@@ -269,9 +269,29 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       ctx.lineWidth = 2 * dprv;
       ctx.strokeRect(mb.x0 * w, mb.y0 * h, (mb.x1 - mb.x0) * w, (mb.y1 - mb.y0) * h);
       ctx.globalAlpha = 1;
-      ctx.font = `${13 * dprv}px sans-serif`;
-      ctx.textBaseline = "bottom";
-      ctx.fillText(info.emoji, mb.x0 * w, Math.max(mb.y0 * h - 2 * dprv, 14 * dprv));
+      // شارة ملوّنة + التسمية بالأبيض بدل الرمز التعبيري — نفس لغة لسان النوع
+      const mfs = 11 * dprv;
+      ctx.font = `600 ${mfs}px system-ui, sans-serif`;
+      ctx.direction = "rtl";
+      ctx.textBaseline = "middle";
+      const mPadX = 6 * dprv;
+      const mTw = ctx.measureText(info.label).width + mPadX * 2;
+      const mTh = 16 * dprv;
+      const mTx = mb.x1 * w - mTw;
+      const mTy = Math.max(mb.y0 * h - mTh - 3 * dprv, 0);
+      const mRr = 4 * dprv;
+      ctx.beginPath();
+      ctx.moveTo(mTx + mRr, mTy);
+      ctx.arcTo(mTx + mTw, mTy, mTx + mTw, mTy + mTh, mRr);
+      ctx.arcTo(mTx + mTw, mTy + mTh, mTx, mTy + mTh, mRr);
+      ctx.arcTo(mTx, mTy + mTh, mTx, mTy, mRr);
+      ctx.arcTo(mTx, mTy, mTx + mTw, mTy, mRr);
+      ctx.closePath();
+      ctx.fillStyle = info.color;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "right";
+      ctx.fillText(info.label, mTx + mTw - mPadX, mTy + mTh / 2);
       ctx.restore();
     }
 
@@ -403,13 +423,70 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         saveFlashcard({
           uid: user.uid,
           front: m.text,
-          back: `${info.emoji} ${info.label}${roomName ? ` — ${roomName}` : ""}`,
+          back: `${info.label}${roomName ? ` — ${roomName}` : ""}`,
           subject: subject || "general",
           source: roomName ? `سبورة ${roomName}` : "السبورة",
         }).then(() => recordMarkSaved(user.uid, roomId, shapeId)).catch(() => {});
       }
     }
   }, [marks, canDraw, user, roomId, roomName, subject]);
+
+  /* ── إجراءات العنصر ──
+     مشتركة بين الشريط السياقي واختصارات لوحة المفاتيح، فلا يتفرّق
+     السلوكان: الحذف بالزرّ هو الحذف بـ Delete حرفياً. */
+
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
+
+  const deleteShape = useCallback((id: string) => {
+    if (!canDrawRef.current) return;
+    shapes.current = shapes.current.filter((x) => x.id !== id);
+    drawnIds.current.delete(id);
+    remove(ref(rtdb, `${strokesPath}/${id}`));
+    setSelectedId(null);
+    selectedRef.current = null;
+    fullRedraw();
+  }, [strokesPath, fullRedraw]);
+
+  const duplicateShape = useCallback((src: Shape) => {
+    if (!canDrawRef.current || !user) return;
+    const OFF = 0.02;
+    const copy: Shape = {
+      ...src,
+      id: `${user.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      uid: user.uid,
+      points: src.points.map((q) => ({ x: q.x + OFF, y: q.y + OFF })),
+    };
+    commit(copy);
+    setSelectedId(copy.id);
+    selectedRef.current = copy.id;
+    fullRedraw();
+  }, [user, fullRedraw]);
+
+  /* الحفظ كبطاقة مراجعة — الإجراء الأشيع للطالب، فصار ضغطة واحدة.
+     نُعلّم المعرّف محليّاً حتى لا يُنشئ الطالب نسختين بضغطتين متتاليتين. */
+  const captureCard = useCallback((shape: Shape) => {
+    if (!user) return;
+    if (savedIds.has(shape.id)) return;
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      next.add(shape.id);
+      return next;
+    });
+    void saveFlashcard({
+      uid: user.uid,
+      front: describeShape(shape),
+      back: shape.text?.trim() || describeShape(shape),
+      subject: subject ?? undefined,
+      source: roomName ? `غرفة ${roomName}` : undefined,
+    }).catch(() => {
+      // فشل الحفظ يعيد الحالة حتى يستطيع الطالب المحاولة ثانية
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(shape.id);
+        return next;
+      });
+    });
+  }, [user, savedIds, subject, roomName]);
 
   // Escape يلغي التحديد — سلوك متوقّع في كل محرّر
   useEffect(() => {
@@ -430,13 +507,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       // حذف العنصر المحدَّد
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
-        const id = selectedId;
-        shapes.current = shapes.current.filter((x) => x.id !== id);
-        drawnIds.current.delete(id);
-        remove(ref(rtdb, `${strokesPath}/${id}`));
-        setSelectedId(null);
-        selectedRef.current = null;
-        fullRedraw();
+        deleteShape(selectedId);
         return;
       }
 
@@ -445,17 +516,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         e.preventDefault();
         const src = shapes.current.find((x) => x.id === selectedId);
         if (!src) return;
-        const OFF = 0.02;
-        const copy: Shape = {
-          ...src,
-          id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          uid: user!.uid,
-          points: src.points.map((q) => ({ x: q.x + OFF, y: q.y + OFF })),
-        };
-        commit(copy);
-        setSelectedId(copy.id);
-        selectedRef.current = copy.id;
-        fullRedraw();
+        duplicateShape(src);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -937,31 +998,53 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           }}
         >
           <canvas ref={mainRef} className="pointer-events-none absolute inset-0" />
-        {/* شريط التحديد — يؤكّد للمستخدم ما التقطه، ويسهّل الإفلات.
-            هذا هو المرساة التي ستُعلَّق عليها إجراءات الخطوة الثالثة. */}
+        {/* ══ الشريط السياقي ══
+            كان شريط تحديد في أعلى اللوح يحمل زرّ «إجراءات» يفتح درجاً.
+            صار شريط إجراءات حقيقياً فوق الرصيف مباشرة: الإجراء الأشيع
+            (الحفظ كبطاقة) صار ضغطة واحدة بدل ضغطتين، وموضعه قرب الإبهام
+            لا في أبعد نقطة عنه. */}
         {selectedId && (() => {
           const shape = shapes.current.find((x) => x.id === selectedId);
+          if (!shape) return null;
+          const tag = marks[selectedId]?.tag ?? null;
           return (
-            <div className="pointer-events-auto absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-primary/30 bg-surface px-3 py-1.5 shadow-glass">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-              <span className="max-w-[45vw] truncate text-[11px] font-bold text-text-primary">
-                {shape ? describeShape(shape) : "عنصر"}
-              </span>
-              <button
-                onClick={() => setActionsOpen(true)}
-                aria-label="إجراءات العنصر"
-                className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary transition hover:bg-primary/20"
-              >
-                إجراءات
-              </button>
-              <button
-                onClick={() => { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }}
-                aria-label="إلغاء التحديد"
-                className="grid h-5 w-5 place-items-center rounded-full text-text-muted transition hover:bg-danger/10 hover:text-danger"
-              >
-                <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
-              </button>
-            </div>
+            <ContextBar
+              label={describeShape(shape)}
+              onClose={() => { setSelectedId(null); selectedRef.current = null; scheduleRedraw(); }}
+            >
+              <ContextButton
+                icon="star"
+                label={savedIds.has(selectedId) ? "محفوظة" : "بطاقة"}
+                tone="amber"
+                disabled={savedIds.has(selectedId)}
+                onClick={() => captureCard(shape)}
+              />
+              {canDraw && (
+                <ContextButton
+                  icon="target"
+                  label={tag ? tagInfo(tag).label : "علّم"}
+                  tone={tag ? "red" : "default"}
+                  onClick={() => setActionsOpen(true)}
+                />
+              )}
+              <ContextButton icon="ai" label="اسأل" onClick={() => setActionsOpen(true)} />
+              {canDraw && (
+                <ContextButton
+                  icon="copy"
+                  label="تكرار"
+                  onClick={() => duplicateShape(shape)}
+                />
+              )}
+              {canDraw && (
+                <ContextButton
+                  icon="trash"
+                  label="حذف"
+                  tone="red"
+                  onClick={() => deleteShape(selectedId)}
+                />
+              )}
+              <ContextButton icon="more" label="المزيد" onClick={() => setActionsOpen(true)} />
+            </ContextBar>
           );
         })()}
 
@@ -971,7 +1054,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
             className="bz-radial-in pointer-events-none absolute left-1/2 top-3 z-30 flex max-w-[80%] -translate-x-1/2 items-center gap-2 rounded-full px-3.5 py-2 shadow-glass"
             style={{ background: `${tagInfo(toast.tag).color}1f`, border: `1px solid ${tagInfo(toast.tag).color}55` }}
           >
-            <span className="text-sm leading-none">{tagInfo(toast.tag).emoji}</span>
+            <Icon name={tagInfo(toast.tag).icon} size={14} style={{ color: tagInfo(toast.tag).color }} />
             <span className="truncate text-[11px] font-bold" style={{ color: tagInfo(toast.tag).color }}>
               {tagInfo(toast.tag).label}
               {toast.text ? " — حُفظت في بطاقاتك" : ""}
@@ -1027,20 +1110,39 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
               boxShadow: "0 10px 28px rgba(19,23,34,.14)",
             }}
           >
-            {SYMBOLS.map((sym) => (
-              <button
-                key={sym}
-                onClick={() => setStamp((cur) => (cur === sym ? null : sym))}
-                className={`grid h-7 min-w-7 place-items-center rounded-md px-1.5 text-sm font-bold transition ${
-                  stamp === sym
-                    ? "text-white"
-                    : "hover:bg-[var(--bz-blue-050)]"
-                }`}
-                style={stamp === sym ? { background: "var(--bz-blue)" } : { color: "var(--bz-ink)" }}
-              >
-                {sym}
-              </button>
-            ))}
+            {/* تبويبات المواد — تُظهر رموز المادّة الحالية فقط */}
+            <div className="mb-1 flex w-full shrink-0 items-center gap-1 border-b border-[var(--bz-line)] pb-1">
+              {FORMULA_GROUPS.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => setFormulaGroupId(g.id)}
+                  aria-pressed={formulaGroupId === g.id}
+                  className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${
+                    formulaGroupId === g.id
+                      ? "bg-[var(--bz-blue-050)] text-[var(--bz-blue-700)]"
+                      : "text-[var(--bz-ink-3)] hover:bg-[var(--bz-canvas)]"
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="bz-noscroll flex max-h-[104px] w-full flex-wrap items-center justify-center gap-1 overflow-y-auto">
+              {formulaGroup(formulaGroupId).symbols.map((sym) => (
+                <button
+                  key={sym}
+                  onClick={() => setStamp((cur) => (cur === sym ? null : sym))}
+                  title={`ختم الرمز ${sym}`}
+                  className={`grid h-7 min-w-7 place-items-center rounded-md px-1.5 text-sm font-bold transition ${
+                    stamp === sym ? "text-white" : "hover:bg-[var(--bz-blue-050)]"
+                  }`}
+                  style={stamp === sym ? { background: "var(--bz-blue)" } : { color: "var(--bz-ink)" }}
+                >
+                  {sym}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1067,15 +1169,33 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           </div>
         )}
 
-        {/* الطالب: عودة إلى صفحة الأستاذ */}
-        {!canDraw && !following && (
+        {/* ══ متابعة الأستاذ ══
+            «إذا الأستاذ انتقل، الطالب ينتقل معه — لكن يمكنه إيقاف ذلك».
+            كان الإيقاف **ضمنياً** فقط: يحدث حين يتصفّح الطالب صفحة أخرى،
+            ولا مؤشّر يقول له إنّه متابع أصلاً. صار مفتاحاً صريحاً يعرض
+            الحالة دائماً، فيعرف الطالب لماذا تقفز الصفحة تحته. */}
+        {!canDraw && (
           <button
-            onClick={() => { setFollowing(true); setActivePage(teacherPage); }}
-            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-20 -translate-x-1/2 rounded-full
-              px-3 py-1 text-[11px] font-bold text-white shadow-lg transition active:scale-95"
-            style={{ background: "var(--bz-blue)" }}
+            onClick={() => {
+              if (following) { setFollowing(false); return; }
+              setFollowing(true);
+              setActivePage(teacherPage);
+            }}
+            aria-pressed={following}
+            title={following ? "أنت تتابع صفحة الأستاذ — اضغط للتصفّح بحرّية" : "عُد إلى صفحة الأستاذ وتابعه"}
+            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-20 flex -translate-x-1/2
+              items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold shadow-lg
+              transition active:scale-95"
+            style={
+              following
+                ? { background: "var(--bz-surface, #fff)", borderColor: "var(--bz-line)", color: "var(--bz-ink-2)" }
+                : { background: "var(--bz-blue)", borderColor: "var(--bz-blue)", color: "#fff" }
+            }
           >
-            عُد إلى صفحة الأستاذ ({teacherPage + 1})
+            <Icon name={following ? "eye" : "target"} size={12} />
+            {following
+              ? `تتابع الأستاذ (${teacherPage + 1})`
+              : `عُد إلى صفحة الأستاذ (${teacherPage + 1})`}
           </button>
         )}
 

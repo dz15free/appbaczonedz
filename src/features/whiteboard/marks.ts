@@ -14,6 +14,8 @@ import { rtdb } from "@/lib/firebase/config";
    ويُفسد مراجعة زملائه. هنا الكتابة لصاحب الغرفة وحده.
 ════════════════════════════════════════════════════════════ */
 
+import type { IconName } from "@/components/ui/icon";
+
 export type MarkTag = "important" | "memorize" | "expected" | "mistake" | "core";
 
 export interface ShapeMark {
@@ -24,12 +26,17 @@ export interface ShapeMark {
   text?: string;
 }
 
-export const TAGS: { id: MarkTag; label: string; emoji: string; color: string }[] = [
-  { id: "important", label: "مهم جدًا",     emoji: "⭐", color: "#f59e0b" },
-  { id: "memorize",  label: "للحفظ",         emoji: "🧠", color: "#8b5cf6" },
-  { id: "expected",  label: "سؤال متوقّع",   emoji: "🎯", color: "#2563eb" },
-  { id: "mistake",   label: "خطأ شائع",      emoji: "⚠️", color: "#dc2626" },
-  { id: "core",      label: "فكرة أساسية",   emoji: "🔑", color: "#16a34a" },
+/* الوسم يحمل أيقونة من نظام BacZone بدل رمز تعبيري.
+   السبب الأهمّ ليس شكل الواجهة: نصّ الوسم يُكتب داخل **بطاقة المراجعة**
+   وتبقى في مجموعة الطالب سنوات. الإيموجي يُرسم بخطّ النظام فيختلف بين
+   الأجهزة، وقد يظهر مربّعاً فارغاً في جهاز قديم — داخل بيانات محفوظة
+   لا مجرّد واجهة. */
+export const TAGS: { id: MarkTag; label: string; icon: IconName; color: string }[] = [
+  { id: "important", label: "مهم جدًا",     icon: "star",   color: "#D08217" },
+  { id: "memorize",  label: "للحفظ",         icon: "book",   color: "#6D4AC4" },
+  { id: "expected",  label: "سؤال متوقّع",   icon: "target", color: "#2350D9" },
+  { id: "mistake",   label: "خطأ شائع",      icon: "close",  color: "#D2453C" },
+  { id: "core",      label: "فكرة أساسية",   icon: "ai",     color: "#1E8A5F" },
 ];
 
 export function tagInfo(tag: MarkTag) {
