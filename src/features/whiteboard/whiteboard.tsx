@@ -899,6 +899,33 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       // هامش أوسع للمس من هامش الفأرة
       const tol = e.pointerType === "mouse" ? 10 : 18;
 
+      // ٠) الضغط داخل إطار المجموعة → سحب الجميع معاً
+      if (multiRef.current.size > 0 && canDraw) {
+        const gb = multiBounds();
+        if (gb) {
+          const snap = () => {
+            const m = new Map<string, Point[]>();
+            for (const id of multiRef.current) {
+              const sh = shapes.current.find((x) => x.id === id);
+              if (sh) m.set(id, sh.points.map((q) => ({ ...q })));
+            }
+            return m;
+          };
+          // مقبض زاوية على إطار المجموعة → تحجيم (له الأولوية على التحريك)
+          const gc = hitCorner(p, gb, e.pointerType === "mouse" ? 12 : 22);
+          if (gc) {
+            groupDrag.current = { mode: "resize", corner: gc, start: p, b: gb, orig: snap() };
+            cancelLongPress();
+            return;
+          }
+          if (p.x >= gb.x0 && p.x <= gb.x1 && p.y >= gb.y0 && p.y <= gb.y1) {
+            groupDrag.current = { mode: "move", start: p, b: gb, orig: snap() };
+            cancelLongPress();
+            return;
+          }
+        }
+      }
+
       // ١) هل الضغطة على مقبض تحجيم للعنصر المحدَّد حاليًّا؟ (له الأولوية)
       const curSel = selectedRef.current;
       if (curSel && canDraw) {
@@ -998,6 +1025,55 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     }
 
     // سحب عنصر محدَّد (تحريك/تحجيم) — يسبق منطق الرسم
+    if (groupDrag.current) {
+      e.preventDefault();
+      const p = getPoint(e);
+      const g = groupDrag.current;
+
+      if (g.mode === "resize" && g.corner) {
+        /* التحجيم يثبّت الزاوية المقابلة ويقيس النسبة من الإطار الأصلي.
+           MIN يمنع الانهيار إلى نقطة — ولولاه لصار عكس الاتجاه مسحاً
+           فعلياً للمجموعة، ولا سبيل للرجوع. */
+        const MIN = 0.02;
+        const { x0, y0, x1, y1 } = g.b;
+        // نقطة الارتكاز = الزاوية المقابلة للمقبض المسحوب
+        const ax = g.corner === "nw" || g.corner === "sw" ? x1 : x0;
+        const ay = g.corner === "nw" || g.corner === "ne" ? y1 : y0;
+        // الزاوية المتحرّكة نفسها
+        const mx = g.corner.includes("w") ? x0 : x1;
+        const my = g.corner.startsWith("n") ? y0 : y1;
+        /* النسبة **مُوقَّعة** لا مطلقة: القيمة المطلقة تُفقد الاتجاه،
+           فتعمل زاوية se وحدها وتنكسر الثلاث الأخرى — وهو ما كشفه
+           الاختبار قبل الشحن. الإشارة السالبة تعني قلباً حول المحور،
+           وهو سلوك صحيح ومتوقّع في كل محرّر. */
+        const ow = mx - ax;
+        const oh = my - ay;
+        let sx = Math.abs(ow) < 1e-6 ? 1 : (p.x - ax) / ow;
+        let sy = Math.abs(oh) < 1e-6 ? 1 : (p.y - ay) / oh;
+        // حارس الانهيار: يمنع السحق إلى نقطة بلا رجعة، ويحفظ الإشارة
+        if (Math.abs(sx) < MIN) sx = (sx < 0 ? -1 : 1) * MIN;
+        if (Math.abs(sy) < MIN) sy = (sy < 0 ? -1 : 1) * MIN;
+        for (const [id, orig] of g.orig) {
+          const sh = shapes.current.find((x) => x.id === id);
+          if (sh) sh.points = orig.map((q) => ({
+            x: ax + (q.x - ax) * sx,
+            y: ay + (q.y - ay) * sy,
+          }));
+        }
+        fullRedraw();
+        return;
+      }
+
+      const dx = p.x - g.start.x;
+      const dy = p.y - g.start.y;
+      for (const [id, orig] of g.orig) {
+        const sh = shapes.current.find((x) => x.id === id);
+        if (sh) sh.points = orig.map((q) => ({ x: q.x + dx, y: q.y + dy }));
+      }
+      fullRedraw();
+      return;
+    }
+
     if (marquee.current) {
       e.preventDefault();
       marquee.current.b = getPoint(e);
@@ -1107,6 +1183,18 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   const marquee = useRef<{ a: Point; b: Point } | null>(null);
   const multiRef = useRef<Set<string>>(new Set());
   const [multiCount, setMultiCount] = useState(0);
+
+  /* سحب المجموعة: نلتقط لقطة من نقاط **كل** عنصر محدَّد عند بدء السحب،
+     ثم نزيح الجميع بالفرق نفسه. نبني من اللقطة الأصلية في كل حركة لا
+     من الموضع السابق — وإلّا تراكمت أخطاء الفاصلة العائمة وانحرفت
+     العناصر عن بعضها تدريجياً. */
+  const groupDrag = useRef<{
+    mode: "move" | "resize";
+    corner?: "nw" | "ne" | "sw" | "se";
+    start: Point;
+    b: Bounds;
+    orig: Map<string, Point[]>;
+  } | null>(null);
 
   function clearMulti() {
     if (multiRef.current.size === 0) return;
@@ -1227,6 +1315,16 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
   function onPointerUp() {
     cancelLongPress();
+
+    // نهاية سحب المجموعة → كتابة واحدة لكل عنصر
+    if (groupDrag.current) {
+      for (const id of groupDrag.current.orig.keys()) {
+        const sh = shapes.current.find((x) => x.id === id);
+        if (sh) update(ref(rtdb, `${strokesPath}/${id}`), { points: sh.points });
+      }
+      groupDrag.current = null;
+      return;
+    }
 
     // إغلاق إطار التحديد → التقاط كل عنصر يتقاطع معه
     if (marquee.current) {
