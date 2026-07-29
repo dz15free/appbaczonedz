@@ -28,6 +28,7 @@ import {
   faEraser,
   faArrowPointer,
   faNoteSticky,
+  faCompass,
 } from "@fortawesome/free-solid-svg-icons";
 import { recognize } from "@/features/whiteboard/smart/recognize";
 import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
@@ -38,7 +39,7 @@ interface Point {
   x: number;
   y: number;
 }
-type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "note" | "eraser";
+type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "note" | "arc" | "eraser";
 interface Shape {
   id: string;
   uid: string;
@@ -53,12 +54,12 @@ interface Shape {
 /* تسمية النوع التي تظهر في لسان الكائن — العنصر الثاني من توقيع BacZone */
 const KIND_LABEL: Record<Kind, string> = {
   pen: "رسم", highlighter: "تظليل", line: "خط", arrow: "سهم",
-  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", note: "بطاقة", eraser: "ممحاة",
+  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", note: "بطاقة", arc: "قوس", eraser: "ممحاة",
 };
 
 const TOOL_ICON: Record<ToolId, IconName> = {
   select: "cursor", pen: "pen", highlighter: "marker", line: "line",
-  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", note: "note", eraser: "eraser",
+  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", note: "note", arc: "compass", eraser: "eraser",
 };
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
@@ -103,6 +104,7 @@ const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
   { id: "ellipse", icon: faCircle, label: "دائرة" },
   { id: "text", icon: faFont, label: "نص" },
   { id: "note", icon: faNoteSticky, label: "بطاقة لاصقة" },
+  { id: "arc", icon: faCompass, label: "مدوّر" },
   { id: "eraser", icon: faEraser, label: "ممحاة" },
 ];
 
@@ -279,6 +281,27 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         ctx.beginPath();
         ctx.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, Math.abs(b.x - a.x) / 2, Math.abs(b.y - a.y) / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
+      }
+    } else if (s.kind === "arc") {
+      const [c, a, b] = pts;
+      if (c && a && b) {
+        const C = P(c), A = P(a), B = P(b);
+        const r = Math.hypot(A.x - C.x, A.y - C.y);
+        const a0 = Math.atan2(A.y - C.y, A.x - C.x);
+        const a1 = Math.atan2(B.y - C.y, B.x - C.x);
+        ctx.beginPath();
+        // فرق ضئيل جداً = دائرة كاملة، وإلّا اختفى القوس عند 360°
+        if (Math.abs(a1 - a0) < 1e-4) ctx.arc(C.x, C.y, r, 0, Math.PI * 2);
+        else ctx.arc(C.x, C.y, r, a0, a1);
+        ctx.stroke();
+        // نقطة المركز: أثر الإبرة، تُساعد على البناء الهندسي التالي
+        ctx.save();
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, Math.max(1.5, s.size * 0.6) * dpr(), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
     } else if (s.kind === "note" && s.text) {
       /* بطاقة لاصقة: مستطيل ملوّن + نصّ ملفوف.
@@ -1046,9 +1069,22 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     if (t === "text" || t === "note") {
       setEditor({ x: p.x, y: p.y, value: "", note: t === "note" });
       // نؤجّل التركيز دورة: الحقل لم يُصيَّر بعد
-      setTimeout(() => editorInput.current?.focus(), 0);
+      setTimeout(() => (t === "note" ? editorArea.current : editorInput.current)?.focus(), 0);
       return;
     }
+    /* ── المدوّر ──
+       كالمدوّر الحقيقي: الضغطة تغرز الإبرة، والسحب يضبط **نصف القطر
+       وزاوية القوس معاً** — لا قطراً واحداً ولا زاوية ثابتة.
+       نخزّن ثلاث نقاط: المركز · بداية القوس · نهايته. */
+    if (t === "arc") {
+      drawing.current = true;
+      const sh = newShape("arc", p);
+      sh.points = [p, p, p];
+      currentShape.current = sh;
+      arcStart.current = null;
+      return;
+    }
+
     // أدوات الرسم — "select" استُبعد أعلاه، والحارس يوثّق ذلك للمترجم
     if (t === "select") return;
     drawing.current = true;
@@ -1181,6 +1217,44 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     const p = getPoint(e);
     const s = currentShape.current;
 
+    if (s.kind === "arc") {
+      /* المسافة = نصف القطر · الزاوية = مدى القوس.
+         نتراكم على المدى بدل أن نأخذ الفرق الخام، وإلّا انقلب القوس
+         فجأة عند عبور ±π (حدّ atan2) فقفز من 359° إلى 1°. */
+      const c = s.points[0];
+      const r = Math.hypot(p.x - c.x, p.y - c.y);
+      const ang = Math.atan2(p.y - c.y, p.x - c.x);
+      if (arcStart.current === null) {
+        if (r < 0.004) return;            // اهتزاز اليد لا نيّة رسم
+        arcStart.current = ang;
+        arcSweep.current = 0;
+        arcPrev.current = ang;
+      } else {
+        let d = ang - (arcPrev.current ?? ang);
+        if (d > Math.PI) d -= 2 * Math.PI;      // عبور الحدّ
+        if (d < -Math.PI) d += 2 * Math.PI;
+        arcSweep.current = Math.max(-2 * Math.PI, Math.min(2 * Math.PI, (arcSweep.current ?? 0) + d));
+        arcPrev.current = ang;
+      }
+      const a0 = arcStart.current;
+      const a1 = a0 + (arcSweep.current ?? 0);
+      s.points = [
+        c,
+        { x: c.x + r * Math.cos(a0), y: c.y + r * Math.sin(a0) },
+        { x: c.x + r * Math.cos(a1), y: c.y + r * Math.sin(a1) },
+      ];
+      setArcHint({
+        r,
+        deg: Math.round(Math.abs((arcSweep.current ?? 0) * 180) / Math.PI),
+      });
+      const pc = previewRef.current?.getContext("2d");
+      if (pc) {
+        pc.clearRect(0, 0, previewRef.current!.width, previewRef.current!.height);
+        drawShape(s, pc);
+      }
+      return;
+    }
+
     if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
       const last = s.points[s.points.length - 1];
       if (Math.hypot(p.x - last.x, p.y - last.y) < 0.003) return;
@@ -1240,6 +1314,13 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
      نكتب `points` وحدها (كتابة على مستوى الحقل) فلا نمسّ بقيّة العنصر. */
   const dragBeat = useRef(0);
+  /* أوّل زاوية بعد غرز الإبرة = بداية القوس. نلتقطها مرّة واحدة فلا
+     تتغيّر بينما يدور المستخدم، وإلّا لدار القوس معه ولم ينمُ أبداً. */
+  const arcStart = useRef<number | null>(null);
+  const arcPrev = useRef<number | null>(null);
+  const arcSweep = useRef<number>(0);
+  /** قراءة حيّة لنصف القطر والزاوية — كالمدوّر الحقيقي الذي تقرأ عليه */
+  const [arcHint, setArcHint] = useState<{ r: number; deg: number } | null>(null);
 
   /* ── محرّر النصّ على اللوح ──
      كان النصّ يُكتب في `window.prompt` — نافذة نظام تقطع الشرح، ولا
@@ -1253,6 +1334,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   const textSizeRef = useRef(textSize);
   textSizeRef.current = textSize;
   const editorInput = useRef<HTMLInputElement>(null);
+  const editorArea = useRef<HTMLTextAreaElement>(null);
 
   /* ── التحديد بإطار (marquee) ──
      «أرسم معادلة فأحدّدها كاملة عبر إطار يغطّيها».
@@ -1467,6 +1549,12 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     if (!drawing.current || !currentShape.current) return;
     drawing.current = false;
     const s = currentShape.current;
+    if (s.kind === "arc") {
+      arcStart.current = null;
+      arcPrev.current = null;
+      arcSweep.current = 0;
+      setArcHint(null);
+    }
     currentShape.current = null;
     clearPreview();
     if (s.kind === "pen" || s.kind === "highlighter" || s.kind === "eraser") {
@@ -1707,7 +1795,51 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         {/* ── محرّر النصّ في مكانه على اللوح ──
             موضعه بالنِّسَب (%) لا بالبكسل: اللوح يتغيّر حجمه مع النافذة،
             والنسبة تُبقي الحقل مثبّتاً على النقطة نفسها من اللوح. */}
-        {editor && canDraw && (
+        {editor && canDraw && editor.note && (
+          /* البطاقة تُحرَّر **بشكلها النهائي**: نفس العرض ونفس اللون ونفس
+             اللفّ. كان يُستعمل حقل سطر واحد، فالنصّ الطويل يخرج من إطار
+             البطاقة أثناء الكتابة ثم ينضغط داخلها بعد التثبيت — فما ترى
+             ليس ما تحصل عليه. */
+          <textarea
+            ref={editorArea}
+            value={editor.value}
+            onChange={(e) => setEditor({ ...editor, value: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const v = editor.value.trim();
+                if (v) commitTyped(v, editor);
+                setEditor(null);
+              } else if (e.key === "Escape") {
+                setEditor(null);
+              }
+              e.stopPropagation();
+            }}
+            onBlur={() => {
+              const v = editor.value.trim();
+              if (v) commitTyped(v, editor);
+              setEditor(null);
+            }}
+            dir="auto"
+            rows={3}
+            placeholder="اكتب… ثم Enter"
+            className="absolute z-30 resize-none overflow-hidden rounded-md border p-2 font-bold leading-snug outline-none"
+            style={{
+              // يُرسم من نقطته يساراً، فنطابق ذلك بالضبط
+              left: `calc(${editor.x * 100}% - 190px)`,
+              top: `${editor.y * 100}%`,
+              width: 190,
+              minHeight: 64,
+              background: (NOTE_COLORS[noteColor] ?? NOTE_COLORS[0]).bg,
+              borderColor: (NOTE_COLORS[noteColor] ?? NOTE_COLORS[0]).ink,
+              color: (NOTE_COLORS[noteColor] ?? NOTE_COLORS[0]).ink,
+              fontSize: `${Math.max(11, textSize * 7)}px`,
+              boxShadow: "0 2px 8px rgba(19,23,34,.14)",
+            }}
+          />
+        )}
+
+        {editor && canDraw && !editor.note && (
           <input
             ref={editorInput}
             value={editor.value}

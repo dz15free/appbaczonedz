@@ -23,10 +23,12 @@ export type IconName =
   | "page" | "more" | "mic" | "micOff" | "chat" | "hand" | "anon" | "users"
   | "target" | "star" | "book" | "ai" | "timer" | "lock" | "search" | "share"
   | "copy" | "trash" | "check" | "close" | "download" | "expand" | "collapse"
-  | "eye" | "exit" | "send" | "clip" | "grid" | "home";
+  | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass";
 
 /** مسارات الأيقونات — كلّها على شبكة 24×24 */
 const PATHS: Record<IconName, string[]> = {
+  // مدوّر: ساقان من مفصل واحد + قوس مرسوم
+  compass: ["M12 3v2", "M12 5l-4 9", "M12 5l4 9", "M8 14a5.5 5.5 0 0 0 8 0"],
   cursor:    ["M5.5 3.2 19 10.6l-6.3 1.6-2.3 6.2z"],
   pen:       ["M4 20l4.2-1L18.6 8.6a2.2 2.2 0 0 0-3.2-3.2L5 15.8z", "M14.5 6.5l3 3"],
   marker:    ["M5 20h5l9-9a2.5 2.5 0 0 0-3.5-3.5l-9 9z", "M14 8.5l3 3", "M4 20h6"],

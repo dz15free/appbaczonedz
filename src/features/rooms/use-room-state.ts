@@ -56,7 +56,15 @@ export function useRoomState(roomId: string, isOwner: boolean) {
   const setRoomState = useCallback(
     (next: RoomState) => {
       if (!isOwner || !roomId) return;
-      set(ref(rtdb, `roomLive/${roomId}/roomState`), next);
+      /* تحديث متفائل: نعرض الحالة فوراً بدل انتظار رحلة الخادم، وإلّا
+         تأخّرت الاستجابة بقدر زمن الشبكة على 3G. */
+      setState(next);
+      set(ref(rtdb, `roomLive/${roomId}/roomState`), next).catch((e) => {
+        /* «تُطبَّق ثم تعود» = رفض من قواعد قاعدة البيانات:
+           Firebase يكتب محلّياً أوّلاً، فيرفض الخادم، فيتراجع العميل.
+           نُظهر السبب بدل أن يبدو الزرّ مجنوناً. */
+        console.error("[BacZone] رُفضت كتابة حالة الغرفة — راجع قواعد roomLive:", e);
+      });
     },
     [isOwner, roomId],
   );

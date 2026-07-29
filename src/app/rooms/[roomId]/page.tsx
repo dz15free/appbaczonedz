@@ -467,8 +467,7 @@ export default function RoomPage() {
             )}
           </div>
           <div className="flex items-center gap-1.5 text-[10.5px] leading-tight text-[var(--bz-ink-3)]">
-            <StatusDot status={ownerStatus} size={6} />
-            <span className="truncate">
+              <span className="truncate">
               {room?.subject ? `${room.subject} · ` : ""}
               {members.length} متصل
             </span>
@@ -634,6 +633,16 @@ export default function RoomPage() {
             {/* وقت التمرين — زرّ بنفس شكل بقيّة الإجراءات.
                 لا يُصيَّر المؤقّت نفسه هنا: كان داخل هذا الدرج، فإغلاق
                 الدرج يُفكّك المكوّن ويقتل حالته، فيختفي الاثنان معاً. */}
+            {/* الميكروفون: في الشاشة الكاملة على الهاتف يختفي شريط الصوت،
+                فلم يكن للأستاذ سبيل إلى الميكروفون إطلاقاً. */}
+            <button
+              onClick={() => { setMoreOpen(false); document.getElementById("bz-voice-join")?.click(); }}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <Icon name="mic" size={20} className="text-primary" />
+              الميكروفون
+            </button>
+
             <button
               onClick={() => { setTimerOpen(true); setMoreOpen(false); }}
               className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
@@ -943,7 +952,9 @@ export default function RoomPage() {
           شريط الأيقونات الجانبي يختفي تحت lg، فبدونه لا يجد طالب الهاتف
           الفيديو ولا الملفّات. يرتفع فوق شريط الصوت بالمتغيّر الذي ينشره
           الشريط نفسه، فلا يغطّي «انضمام صوتي» كما كان يفعل سابقاً. */}
-      {!studentFocus && !fullscreen && (
+      {/* للمالك وحده: الطالب يتابع ما يعرضه الأستاذ ولا يبدّله، فإظهار
+          الأزرار له يوهمه بتحكّم لا يملكه. */}
+      {isOwner && !studentFocus && !fullscreen && (
         <PhoneToolStrip>
           <PhoneToolButton icon="home" label="مرحباً" active={tool === "welcome"}
             onClick={() => isOwner && setTool("welcome")} />

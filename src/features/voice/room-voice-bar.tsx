@@ -221,6 +221,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
       <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
         {!joined ? (
           <button
+            id="bz-voice-join"
             onClick={join}
             disabled={connecting}
             className="shadow-glow flex items-center gap-2 rounded-xl bg-[var(--bz-blue)] hover:brightness-110 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
