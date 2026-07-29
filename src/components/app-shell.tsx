@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -172,7 +173,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/home" className="hidden items-center gap-2 lg:flex">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZone"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
-            <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
+            <span className="inline-flex items-start gap-1">
+              <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
+              <BetaBadge />
+            </span>
           </Link>
         </div>
 
@@ -181,7 +185,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/home" className="pointer-events-auto flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZone"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
+            <span className="inline-flex items-start gap-1">
+              <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
+              <BetaBadge />
+            </span>
           </Link>
         </div>
 

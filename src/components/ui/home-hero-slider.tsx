@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { quoteOfDay } from "@/features/study/quotes";
 import { faFire, faChevronLeft, faChevronRight, faAward, faBolt } from "@fortawesome/free-solid-svg-icons";
 import { useBacExamDate, useBacResultsDate, useCountdownTo } from "@/features/settings/use-bac-date";
 
@@ -132,9 +133,9 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
               نصيحة اليوم
             </p>
             <h2 className="mt-1.5 max-w-md font-display text-xl font-extrabold leading-relaxed text-white sm:text-2xl">
-              النجاح هو مجموع جهودٍ صغيرة تتكرّر كل يوم
+              {quoteOfDay().text}
             </h2>
-            <p className="mt-2 text-xs text-white/50">ابدأ بمراجعة 25 دقيقة الآن — خطوة صغيرة تصنع الفرق.</p>
+            <p className="mt-2 text-xs text-white/50">{quoteOfDay().hint}</p>
           </div>
         )}
         </div>

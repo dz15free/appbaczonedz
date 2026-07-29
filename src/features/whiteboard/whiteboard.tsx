@@ -159,22 +159,6 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   const [formulaGroupId, setFormulaGroupId] = useState<FormulaGroupId>("math");
   // تحويل الرسم الحرّ إلى أشكال مثالية — يُعطَّل للمواد التي تحتاج رسمًا عضويًّا (الأحياء)
   const [smartShapes, setSmartShapes] = useState(true);
-  /* «الكوس»: يقيّد الخطّ والسهم إلى مضاعفات 15° — وهذا ما يفعله الكوس
-     الحقيقي: يمنحك زاوية مضبوطة لا يد ثابتة. 15° تغطّي 30 و45 و60 و90
-     وهي زوايا البكالوريا كلّها. */
-  const [angleSnap, setAngleSnap] = useState(false);
-  const angleSnapRef = useRef(angleSnap);
-  angleSnapRef.current = angleSnap;
-
-  function snapTo15(a: Point, b: Point): Point {
-    if (!angleSnapRef.current) return b;
-    const dx = b.x - a.x, dy = b.y - a.y;
-    const r = Math.hypot(dx, dy);
-    if (r < 1e-6) return b;
-    const step = Math.PI / 12;                    // 15°
-    const ang = Math.round(Math.atan2(dy, dx) / step) * step;
-    return { x: a.x + r * Math.cos(ang), y: a.y + r * Math.sin(ang) };
-  }
   // شارة «تراجع» بعد تحويل ناجح — الذكاء الذي لا يمكن رفضه إزعاج
   const [snapUndo, setSnapUndo] = useState<{ shapedId: string; original: Shape } | null>(null);
   /* سحب عنصر محدَّد: تحريك أو تحجيم من إحدى الزوايا الأربع.
@@ -1348,8 +1332,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     } else {
       /* الكوس يقيّد الخطّ والسهم وحدهما — المستطيل والدائرة يُرسمان
          بزاويتين متقابلتين فلا معنى لتقييد اتجاههما. */
-      s.points[1] =
-        s.kind === "line" || s.kind === "arrow" ? snapTo15(s.points[0], p) : p;
+      s.points[1] = p;
       clearPreview();
       const ctx = previewRef.current?.getContext("2d");
       if (ctx) drawShape(s, ctx);
@@ -2087,12 +2070,6 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
                 <ConsoleButton
                   icon="sigma" label="رموز رياضية"
                   active={symbolsOpen} onClick={() => setSymbolsOpen((o) => !o)}
-                />
-                <ConsoleButton
-                  icon="ruler"
-                  label={angleSnap ? "الكوس: مفعّل — زوايا 15°" : "الكوس: معطّل — زاوية حرّة"}
-                  active={angleSnap}
-                  onClick={() => setAngleSnap((v) => !v)}
                 />
                 <ConsoleButton
                   icon="shapes"

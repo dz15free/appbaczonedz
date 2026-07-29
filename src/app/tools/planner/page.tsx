@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
+import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 
 type Template = "daily" | "weekly" | "exam" | "goals";
@@ -16,12 +17,8 @@ const TEMPLATES: { id: Template; label: string; emoji: string; desc: string }[] 
   { id: "goals", label: "أهدافي", emoji: "🎯", desc: "أهداف ومتابعة التقدّم" },
 ];
 
-const TIPS = [
-  "النجاح هو مجموع جهودٍ صغيرة تتكرّر كل يوم",
-  "ساعة تركيز أفضل من خمس ساعات تشتّت",
-  "ابدأ بالأصعب وأنت في قمّة نشاطك",
-  "المراجعة المنتظمة تهزم الحفظ المتأخّر",
-];
+// مصدر واحد للحِكَم — كانت مكرّرة هنا وفي الصفحة الرئيسية فتتفرّقان
+const TIPS = STUDY_QUOTES.map((q) => q.text);
 
 export default function PlannerPage() {
   const { settings } = useSiteSettings();

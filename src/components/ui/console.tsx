@@ -63,7 +63,7 @@ export function Console({
   return (
     <div
       onPointerEnter={() => setDim(false)}
-      className={`bz-dock pointer-events-auto flex items-center gap-0.5 rounded-[14px] p-[5px]
+      className={`bz-console-dock pointer-events-auto flex items-center gap-0.5 rounded-[14px] p-[5px]
         transition-opacity duration-200 ${dim ? "opacity-45" : "opacity-100"} ${className}`}
     >
       {children}

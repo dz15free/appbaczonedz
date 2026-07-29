@@ -130,7 +130,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   const speaker = speakerUid ? participants.find((p) => p.uid === speakerUid) ?? null : null;
 
   return (
-    <div ref={barRef} className="border-t border-border bg-surface">
+    <div ref={barRef} className="bz-voicebar border-t border-border bg-surface">
       {Object.entries(streams).map(([uid, stream]) => (
         <AudioSink key={uid} stream={stream} />
       ))}

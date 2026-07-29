@@ -123,7 +123,32 @@ export function hitTest(s: GeoShape, p: GeoPoint, v: Viewport, tolPx = 12): bool
 
   switch (s.kind) {
     case "text":
-      return true;                                // الحدود كافية للنص
+    case "note":
+      /* البطاقة والنصّ **كتلتان مصمتتان**: كل ما داخل حدودهما قابل
+         للإصابة. وبدون هذه الحالة تسقط البطاقة إلى المسار العامّ الذي
+         يقيس المسافة إلى قطعة مستقيمة — وللبطاقة نقطة واحدة لا قطعة،
+         فتصير قابلة للنقر ضمن 14 بكسل من نقطتها فقط بينما صندوقها
+         190 بكسل مرسوم يساراً. لهذا استعصى تحديدها. */
+      return true;
+
+    case "arc": {
+      /* القوس: المسافة إلى **محيطه** لا إلى مركزه، وإلّا صار قرصاً
+         مصمتاً يبتلع كل ما تحته. */
+      if (pts.length < 2) return false;
+      const [c, a] = pts;
+      const r = Math.hypot((a.x - c.x) * v.w, (a.y - c.y) * v.h);
+      const d = Math.hypot((p.x - c.x) * v.w, (p.y - c.y) * v.h);
+      return Math.abs(d - r) <= tol;
+    }
+
+    case "angle": {
+      // الزاوية: إصابة أيّ من شعاعيها
+      if (pts.length < 3) return false;
+      const [vx, r1, r2] = pts;
+      return (
+        distToSegment(p, vx, r1, v) <= tol || distToSegment(p, vx, r2, v) <= tol
+      );
+    }
 
     case "rect": {
       // الإطار وحده قابل للإصابة، لا داخله — وإلا التقط مستطيلٌ كبير كل ما تحته
@@ -183,6 +208,9 @@ export function pickShape<T extends GeoShape>(
 export function describeShape(s: GeoShape): string {
   switch (s.kind) {
     case "text": return s.text ? `نص: ${s.text.slice(0, 24)}` : "نص";
+    case "note": return s.text ? `بطاقة: ${s.text.slice(0, 24)}` : "بطاقة";
+    case "arc": return "قوس";
+    case "angle": return "زاوية";
     case "rect": return "مستطيل";
     case "ellipse": return "دائرة";
     case "line": return "خط";
