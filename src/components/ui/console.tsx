@@ -77,7 +77,14 @@ export function FloatingConsole({ children, idleDim }: { children: ReactNode; id
     /* الرصيف يتجاوز عرض الشاشة على الشاشات الضيّقة وخارج الوضع الكامل
        أيضاً — لا في الهاتف وحده. التمرير الأفقي هنا لا داخل منطقة
        واحدة، فتبقى كل الأدوات قابلة للوصول مهما ضاق العرض. */
-    <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto bz-hide-scrollbar">
+    /* يرتفع فوق شريط أدوات الهاتف الثابت.
+       الشريط `fixed` فيغطّي أسفل المنصّة، فكان الرصيف مختفياً تحته على
+       الهاتف خارج الشاشة الكاملة. المتغيّر يحمل ارتفاعه الحقيقي (ويكون
+       صفراً حيث لا شريط)، فلا رقم مخمّن. */
+    <div
+      className="pointer-events-none absolute left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto bz-hide-scrollbar"
+      style={{ bottom: "calc(0.75rem + var(--bz-toolstrip-h, 0px))" }}
+    >
       <Console idleDim={idleDim}>{children}</Console>
     </div>
   );

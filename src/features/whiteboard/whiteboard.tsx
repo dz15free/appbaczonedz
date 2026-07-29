@@ -793,10 +793,18 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       next.add(shape.id);
       return next;
     });
+    /* بطاقة الأستاذ اللاصقة يحفظها **الطالب** بنصّها لا بصورتها:
+       النصّ يُبحَث ويُراجَع ويُقرأ على أي شاشة، والصورة لا تفعل شيئاً
+       من ذلك — ولا تُقرأ أصلاً على هاتف صغير.
+       ووجه البطاقة = معنى لون الملاحظة، فتصل إلى الطالب مصنّفة. */
+    const noteMeaning =
+      shape.kind === "note"
+        ? (NOTE_COLORS.find((c) => c.bg === shape.color)?.label ?? "بطاقة")
+        : null;
     void saveFlashcard({
       uid: user.uid,
-      front: describeShape(shape),
-      back: shape.text?.trim() || describeShape(shape),
+      front: noteMeaning ?? describeShape(shape),
+      back: shape.text?.trim() || describeShape(shape),   // النصّ نفسه
       subject: subject ?? undefined,
       source: roomName ? `غرفة ${roomName}` : undefined,
     }).catch(() => {
@@ -1188,23 +1196,32 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       e.preventDefault();
       const sel = selectedRef.current;
       const shape = sel ? shapes.current.find((x) => x.id === sel) : null;
-      const pts = applyDrag(getPoint(e));
+      const dp = getPoint(e);
+      const pts = applyDrag(dp);
       if (shape && pts) {
         shape.points = pts;
         /* البطاقة والنصّ لهما **نقطة واحدة**، فتحجيم النقاط لا يغيّر
            شيئاً مرئياً — لهذا لم تكن البطاقة تكبر ولا تصغر. حجمهما
            يعيش في `size`، فنُحجّمه هو. */
         if ((shape.kind === "note" || shape.kind === "text") && dragRef.current?.mode === "resize") {
-          const b0 = dragRef.current.b;
-          const nb = boundsOf(shape);
-          if (nb) {
-            const w0 = b0.x1 - b0.x0;
-            const w1 = nb.x1 - nb.x0;
-            if (w0 > 1e-6 && w1 > 1e-6) {
-              const f = Math.max(0.35, Math.min(4, w1 / w0));
-              shape.size = Math.max(0.8, Math.min(12, (dragRef.current.origSize ?? shape.size) * f));
-            }
+          /* كان يُقاس من الحدود الجديدة — ومنطق دائري: حدود البطاقة
+             تُشتقّ من `size` الذي لم يتغيّر بعد، فالنسبة 1 دائماً
+             والبطاقة لا تكبر أبداً.
+             الآن نقيس من **موضع المؤشّر** نسبةً إلى الزاوية المقابلة،
+             تماماً كتحجيم المجموعة. */
+          const d = dragRef.current;
+          const b0 = d.b;
+          const corner = d.corner ?? "se";
+          const ax = corner.includes("w") ? b0.x1 : b0.x0;
+          const mx = corner.includes("w") ? b0.x0 : b0.x1;
+          const ow = mx - ax;
+          if (Math.abs(ow) > 1e-6) {
+            const f = Math.max(0.35, Math.min(4, Math.abs((dp.x - ax) / ow)));
+            shape.size = Math.max(0.8, Math.min(12, (d.origSize ?? shape.size) * f));
           }
+          /* البطاقة والنصّ يُرسمان من نقطة واحدة: نُثبّتها ونغيّر الحجم
+             وحده، وإلّا انزلقت البطاقة أثناء التحجيم. */
+          shape.points = d.orig.map((q) => ({ ...q }));
         }
         fullRedraw();
         streamDrag(shape);

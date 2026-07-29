@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCompress, faHand, faComments, faStar, faUserSecret, faPaperPlane, faClock } from "@fortawesome/free-solid-svg-icons";
+import { faCompress, faHand, faComments, faUserSecret, faPaperPlane, faClock, faMicrophone } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Icon } from "@/components/ui/icon";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -142,11 +142,13 @@ export function StudentFocusMode(props: StudentFocusProps) {
             label="سؤال مجهول"
             onClick={() => setAskOpen(true)}
           />
+          {/* كان «حفظ». في الشاشة الكاملة يختفي شريط الصوت، فلا سبيل
+              إلى الميكروفون إطلاقاً — وهو أمسّ حاجةً من زرّ حفظ يوجد
+              أصلاً بالضغط المطوّل على أي عنصر. */}
           <FocusBtn
-            icon={faStar}
-            label="حفظ"
-            tone="amber"
-            onClick={quickSave}
+            icon={faMicrophone}
+            label="ميكروفون"
+            onClick={() => document.getElementById("bz-voice-join")?.click()}
           />
           <FocusBtn
             icon={faComments}

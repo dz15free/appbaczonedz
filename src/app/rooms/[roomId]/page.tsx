@@ -477,15 +477,15 @@ export default function RoomPage() {
         <LiveBadge />
 
         {/* حالة الغرفة — وسط الشريط، المالك يقرّر والطالب يرى */}
-        <div className="mx-auto hidden md:block">
-          <Segmented
-            items={ROOM_STATES}
-            value={roomState}
-            onChange={isOwner ? setRoomState : undefined}
-            disabled={!isOwner}
-            compact
-          />
-        </div>
+        {/* حالات الغرفة قرار الأستاذ: تُغيّر ما يراه الجميع.
+            الطالب يرى **أثرها** في الشريط الأزرق أسفل، لا أزرارها
+            معطّلة — الزرّ الذي لا يعمل يُربك ولا يُفيد. */}
+        {isOwner && (
+          <div className="mx-auto hidden md:block">
+            <Segmented items={ROOM_STATES} value={roomState} onChange={setRoomState} compact />
+          </div>
+        )}
+        {!isOwner && <span className="mx-auto" />}
 
         <span className="flex-1 md:hidden" />
 
@@ -726,7 +726,9 @@ export default function RoomPage() {
             تبديل المحتوى انتقل إلى هنا من شريط التبويبات المحذوف.
             أيقونة بلا تسمية: لا يزيد الازدحام البصري، والتسمية في
             الـtooltip وفي aria-label لقارئ الشاشة. */}
-        {!fullscreen && roomState !== "focus" && (
+        {/* شريط الأيقونات يُبدّل ما يراه **الجميع** — فهو أداة تحكّم
+            للأستاذ وحده. كان يظهر للطالب معطّلاً: تحكّم يوهم ولا يعمل. */}
+        {isOwner && !fullscreen && roomState !== "focus" && (
           <IconRail>
             <RailButton icon="home" label="مرحباً" active={tool === "welcome"}
               onClick={() => isOwner && setTool("welcome")} />
