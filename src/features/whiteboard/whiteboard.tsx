@@ -161,6 +161,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
      نحتفظ بنسخة من النقاط الأصلية فتُحسب كل خطوة من الأصل لا تراكميًّا. */
   const dragRef = useRef<{
     mode: "move" | "resize";
+    origSize?: number;
     corner?: "nw" | "ne" | "sw" | "se";
     start: Point;
     orig: Point[];
@@ -327,6 +328,13 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const a = P(pts[0]);
       const px = s.size * 8 * dpr();
       ctx.font = `bold ${px}px sans-serif`;
+      /* نُثبّت الاتجاه والمحاذاة صراحةً.
+         البطاقة ولسان النوع وشارة الوسم تضبط `rtl`/`right`؛ ولو تسرّبت
+         أيٌّ منها إلى هنا لرُسم النصّ **يساراً** من نقطته، بينما يحسب
+         boundsOf مداه يميناً — فيظهر إطار التحديد بجانب النصّ لا حوله،
+         وهو بالضبط ما ظهر في لقطة الشاشة. */
+      ctx.direction = "ltr";
+      ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText(s.text, a.x, a.y);
     }
@@ -961,7 +969,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         if (cur && cb) {
           const corner = hitCorner(p, cb, e.pointerType === "mouse" ? 12 : 22);
           if (corner) {
-            dragRef.current = { mode: "resize", corner, start: p, orig: cur.points.map((q) => ({ ...q })), b: cb };
+            dragRef.current = { mode: "resize", corner, start: p, orig: cur.points.map((q) => ({ ...q })), b: cb, origSize: cur.size };
             cancelLongPress();
             return;
           }
@@ -1117,6 +1125,21 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const pts = applyDrag(getPoint(e));
       if (shape && pts) {
         shape.points = pts;
+        /* البطاقة والنصّ لهما **نقطة واحدة**، فتحجيم النقاط لا يغيّر
+           شيئاً مرئياً — لهذا لم تكن البطاقة تكبر ولا تصغر. حجمهما
+           يعيش في `size`، فنُحجّمه هو. */
+        if ((shape.kind === "note" || shape.kind === "text") && dragRef.current?.mode === "resize") {
+          const b0 = dragRef.current.b;
+          const nb = boundsOf(shape);
+          if (nb) {
+            const w0 = b0.x1 - b0.x0;
+            const w1 = nb.x1 - nb.x0;
+            if (w0 > 1e-6 && w1 > 1e-6) {
+              const f = Math.max(0.35, Math.min(4, w1 / w0));
+              shape.size = Math.max(0.8, Math.min(12, (dragRef.current.origSize ?? shape.size) * f));
+            }
+          }
+        }
         fullRedraw();
         streamDrag(shape);
       }
@@ -1249,7 +1272,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     const now = Date.now();
     if (now - dragBeat.current < 80) return;
     dragBeat.current = now;
-    update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+    // نبثّ `size` أيضاً: تحجيم البطاقة والنصّ يعيش فيه لا في النقاط
+    update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points, size: shape.size });
   }
 
   /* بثّ المجموعة أثناء السحب/التحجيم.
@@ -1405,7 +1429,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       // كتابة أخيرة مضمونة: آخر حركة قد تكون سقطت داخل نافذة الخنق
       if (shape) {
         dragBeat.current = 0;
-        update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
+        update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points, size: shape.size });
       }
       return;
     }

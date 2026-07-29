@@ -70,14 +70,22 @@ export function useTimerState(roomId: string) {
 /* ═══════════════════════════════════════════════
    1) زر إعداد المؤقّت — يظهر في شريط أدوات المالك فقط
 ═══════════════════════════════════════════════ */
-export function RoomTimerButton({ roomId, onOpen }: {
+export function RoomTimerButton({ roomId, onOpen, open, onOpenChange, hideTrigger }: {
   roomId: string;
+  /* يمكن التحكّم فيه من الخارج: الزرّ يعيش في درج، والمؤقّت نفسه على
+     مستوى الصفحة — وإلّا فُكِّك مع الدرج وضاعت حالته. */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  /** يُخفي الزرّ ويُبقي النافذة — للاستعمال المتحكَّم فيه */
+  hideTrigger?: boolean;
   /* يُستدعى قبل فتح إعداد المؤقّت. الزرّ قد يكون داخل درج آخر
      («إجراءات الحصة»)، ودرجان فوق بعضهما يربكان الإغلاق: الخروج من
      العلوي كان يُسقط الاثنين. فيُغلق المستدعي درجه أوّلاً. */
   onOpen?: () => void;
 }) {
-  const [showSetup, setShowSetup] = useState(false);
+  const [ownSetup, setOwnSetup] = useState(false);
+  const showSetup = open ?? ownSetup;
+  const setShowSetup = (v: boolean) => (onOpenChange ? onOpenChange(v) : setOwnSetup(v));
   const [customMin, setCustomMin] = useState("15");
   const [label, setLabel] = useState("");
   const [preset, setPreset] = useState<number | null>(null);
@@ -92,6 +100,7 @@ export function RoomTimerButton({ roomId, onOpen }: {
 
   return (
     <>
+      {!hideTrigger && (
       <button onClick={() => { onOpen?.(); setShowSetup(true); }}
         title="مؤقّت للطلاب — يظهر لهم عدّاً تنازلياً لوقت التمرين"
         className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
@@ -100,6 +109,7 @@ export function RoomTimerButton({ roomId, onOpen }: {
         <FontAwesomeIcon icon={faClock} className="h-4 w-4" />
         <span className="hidden sm:inline">وقت التمرين</span>
       </button>
+      )}
 
       {showSetup && createPortal(
         <div className="fixed inset-0 z-[10050] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowSetup(false)}>

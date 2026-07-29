@@ -242,6 +242,7 @@ export default function RoomPage() {
   // الأسئلة المجهولة (يراها المالك)
   const [anonQs, setAnonQs] = useState<AnonQuestion[]>([]);
   const [anonOpen, setAnonOpen] = useState(false);
+  const [timerOpen, setTimerOpen] = useState(false);
   // Live Problem — تحدّي الحصة
   const [challengeCreateOpen, setChallengeCreateOpen] = useState(false);
   const [challengePanelOpen, setChallengePanelOpen] = useState(false);
@@ -499,7 +500,7 @@ export default function RoomPage() {
               onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
             />
             <BarButton
-              icon="more"
+              icon="grid"
               title="إجراءات الحصة"
               badge={anonQs.filter((q) => !q.answered).length}
               active={Boolean(challenge)}
@@ -554,14 +555,25 @@ export default function RoomPage() {
         </div>
       </BottomSheet>
 
+      {/* المؤقّت على مستوى الصفحة — مستقلّ عن أي درج فلا يُفكَّك معه */}
+      {isOwner && (
+        <RoomTimerButton roomId={roomId} open={timerOpen} onOpenChange={setTimerOpen} hideTrigger />
+      )}
+
       {/* درج «إجراءات الحصة» — للمالك */}
       {isOwner && (
         <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة">
           <div className="grid grid-cols-2 gap-2.5 p-1 sm:grid-cols-3">
-            {/* مؤقّت الدرس */}
-            <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-2">
-              <RoomTimerButton roomId={roomId} onOpen={() => setMoreOpen(false)} />
-            </div>
+            {/* وقت التمرين — زرّ بنفس شكل بقيّة الإجراءات.
+                لا يُصيَّر المؤقّت نفسه هنا: كان داخل هذا الدرج، فإغلاق
+                الدرج يُفكّك المكوّن ويقتل حالته، فيختفي الاثنان معاً. */}
+            <button
+              onClick={() => { setTimerOpen(true); setMoreOpen(false); }}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <Icon name="timer" size={20} className="text-primary" />
+              وقت التمرين
+            </button>
 
             <button
               onClick={() => { setShowCreatePoll(true); setMoreOpen(false); }}
@@ -660,11 +672,11 @@ export default function RoomPage() {
                   onClick={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))} />
                 <RailButton icon="anon" label="الأسئلة المجهولة"
                   badge={anonQs.filter((q) => !q.answered).length}
-                  onClick={() => setMoreOpen(true)} />
+                  onClick={() => setAnonOpen(true)} />
               </>
             )}
             <RailSpacer />
-            <RailButton icon="more" label="المزيد" onClick={() => setMoreOpen(true)} />
+            <RailButton icon="grid" label="إجراءات الحصة" onClick={() => setMoreOpen(true)} />
           </IconRail>
         )}
 

@@ -42,7 +42,7 @@ function measureTextPx(text: string, px: number): number {
         : document.createElement("canvas").getContext("2d");
   }
   if (!measureCtx) return text.length * px * 0.62;
-  measureCtx.font = `bold ${px}px sans-serif`;
+  measureCtx.font = `bold ${px}px sans-serif`;   // مطابق تماماً لخطّ الرسم
   return measureCtx.measureText(text).width;
 }
 
