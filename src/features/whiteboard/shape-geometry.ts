@@ -29,6 +29,23 @@ export interface Viewport { w: number; h: number }
 /** مساحة إضافية حول الشكل حتى لا يكون الاختيار عسيراً على الإصبع */
 const PAD = 0.012;
 
+/* سياق قياس مخفيّ: يُنشأ مرّة واحدة ويُعاد استعماله لكل القياسات.
+   إنشاء canvas لكل قياس كان سيُثقل إعادة الرسم بشدّة. وعلى الخادم
+   (حيث لا document) نرجع إلى تقدير الحروف بدل أن ننهار. */
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+
+function measureTextPx(text: string, px: number): number {
+  if (measureCtx === undefined) {
+    measureCtx =
+      typeof document === "undefined"
+        ? null
+        : document.createElement("canvas").getContext("2d");
+  }
+  if (!measureCtx) return text.length * px * 0.62;
+  measureCtx.font = `bold ${px}px sans-serif`;
+  return measureCtx.measureText(text).width;
+}
+
 export function boundsOf(s: GeoShape): Bounds | null {
   if (!s.points?.length) return null;
 
@@ -38,22 +55,29 @@ export function boundsOf(s: GeoShape): Bounds | null {
        فيظهر إطار التحديد خارج البطاقة تماماً. */
     const a = s.points[0];
     const W = 190 / 1600;                       // عرض البطاقة معياريّاً
-    const px = Math.max(11, s.size * 7) / 900;
-    const perLine = Math.max(1, Math.ceil(((s.text ?? "").length * px * 0.55) / W));
+    const fpx = Math.max(11, s.size * 7);
+    const px = fpx / 900;
+    // نفس لفّ الكلمات المستعمل في الرسم: العرض الحقيقي مقسوماً على عرض البطاقة
+    const textW = measureTextPx(s.text ?? "", fpx) / 1600;
+    const perLine = Math.max(1, Math.ceil(textW / (W * 0.88)));
     const H = perLine * px * 1.45 + (16 / 900);
     return { x0: a.x - W - PAD, y0: a.y - PAD, x1: a.x + PAD, y1: a.y + H + PAD };
   }
 
   if (s.kind === "text") {
-    // النص يُرسم من نقطته إلى اليمين والأسفل. نقدّر عرضه من عدد الحروف
-    // لأن القياس الحقيقي يحتاج سياق رسم، ولا نريد ربط الهندسة بالـ canvas.
+    /* كان العرض يُقدَّر من **عدد الحروف** (`chars * 0.62`) — تقدير يخطئ
+       بشدّة: الحروف العربية والرموز الرياضية والأسس تختلف عرضاً كثيراً،
+       فيظهر إطار التحديد أوسع من النصّ أو أضيق منه.
+       الآن نقيس العرض الحقيقي بـ`measureText` على سياق مخفيّ يُنشأ مرّة
+       واحدة ويُعاد استعماله. */
     const a = s.points[0];
-    const chars = (s.text ?? "").length || 1;
-    const em = (s.size * 8) / 900;              // ارتفاع تقريبي معياري
+    const px = s.size * 8;
+    const w = measureTextPx(s.text ?? "", px) / 1600;   // عرض معياري
+    const em = px / 900;
     return {
       x0: a.x - PAD,
       y0: a.y - PAD,
-      x1: a.x + em * chars * 0.62 + PAD,
+      x1: a.x + w + PAD,
       y1: a.y + em * 1.25 + PAD,
     };
   }

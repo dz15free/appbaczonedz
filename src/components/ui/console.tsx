@@ -74,7 +74,10 @@ export function Console({
 /** الكونسول عائمًا فوق اللوح — الوضع الافتراضي على الحاسوب */
 export function FloatingConsole({ children, idleDim }: { children: ReactNode; idleDim?: boolean }) {
   return (
-    <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2">
+    /* الرصيف يتجاوز عرض الشاشة على الشاشات الضيّقة وخارج الوضع الكامل
+       أيضاً — لا في الهاتف وحده. التمرير الأفقي هنا لا داخل منطقة
+       واحدة، فتبقى كل الأدوات قابلة للوصول مهما ضاق العرض. */
+    <div className="pointer-events-none absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto bz-hide-scrollbar">
       <Console idleDim={idleDim}>{children}</Console>
     </div>
   );

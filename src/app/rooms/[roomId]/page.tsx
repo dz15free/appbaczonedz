@@ -560,7 +560,7 @@ export default function RoomPage() {
           <div className="grid grid-cols-2 gap-2.5 p-1 sm:grid-cols-3">
             {/* مؤقّت الدرس */}
             <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-2">
-              <RoomTimerButton roomId={roomId} />
+              <RoomTimerButton roomId={roomId} onOpen={() => setMoreOpen(false)} />
             </div>
 
             <button

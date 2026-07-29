@@ -70,7 +70,13 @@ export function useTimerState(roomId: string) {
 /* ═══════════════════════════════════════════════
    1) زر إعداد المؤقّت — يظهر في شريط أدوات المالك فقط
 ═══════════════════════════════════════════════ */
-export function RoomTimerButton({ roomId }: { roomId: string }) {
+export function RoomTimerButton({ roomId, onOpen }: {
+  roomId: string;
+  /* يُستدعى قبل فتح إعداد المؤقّت. الزرّ قد يكون داخل درج آخر
+     («إجراءات الحصة»)، ودرجان فوق بعضهما يربكان الإغلاق: الخروج من
+     العلوي كان يُسقط الاثنين. فيُغلق المستدعي درجه أوّلاً. */
+  onOpen?: () => void;
+}) {
   const [showSetup, setShowSetup] = useState(false);
   const [customMin, setCustomMin] = useState("15");
   const [label, setLabel] = useState("");
@@ -86,7 +92,7 @@ export function RoomTimerButton({ roomId }: { roomId: string }) {
 
   return (
     <>
-      <button onClick={() => setShowSetup(true)}
+      <button onClick={() => { onOpen?.(); setShowSetup(true); }}
         title="مؤقّت للطلاب — يظهر لهم عدّاً تنازلياً لوقت التمرين"
         className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-2 text-sm font-semibold transition ${
           timer ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-text-muted hover:bg-primary/10 hover:text-primary"

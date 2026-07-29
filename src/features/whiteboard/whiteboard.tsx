@@ -122,6 +122,25 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
   const shapes = useRef<Shape[]>([]);
   const drawnIds = useRef<Set<string>>(new Set());
+
+  /* بصمة العنصر — لكشف **التعديل** لا الإضافة والحذف وحدهما.
+     المستمع كان يعالج حالتين فقط: عنصر جديد، أو عنصر محذوف. أمّا تغيّر
+     نقاط عنصر موجود (تحريك · تحجيم · تحرير نصّ) فكان يمرّ دون أثر،
+     لأنّ معرّفه في drawnIds أصلاً — فلا يرى الطلاب أيّ حركة.
+     نقارن الطول وأوّل نقطة وآخرها والخصائص المرئية: يكشف الإزاحة
+     والتحجيم بيقين، وأرخص بكثير من مقارنة مصفوفة النقاط كاملة. */
+  const sigs = useRef<Map<string, string>>(new Map());
+
+  function shapeSig(s: Shape): string {
+    const a = s.points[0];
+    const z = s.points[s.points.length - 1];
+    return [
+      s.points.length,
+      a ? `${a.x.toFixed(5)},${a.y.toFixed(5)}` : "",
+      z ? `${z.x.toFixed(5)},${z.y.toFixed(5)}` : "",
+      s.size, s.color, s.kind, s.text ?? "",
+    ].join("|");
+  }
   const redoStack = useRef<Shape[]>([]);
   const redrawScheduled = useRef(false);
 
@@ -819,11 +838,17 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const val = (snap.val() as Record<string, Omit<Shape, "id">>) ?? {};
       const ids = Object.keys(val);
       const present = new Set(ids);
-      // حذف؟ أعد البناء كاملاً
+      // حذف أو **تعديل**؟ أعد البناء كاملاً
       const removed = shapes.current.some((s) => !present.has(s.id));
-      if (removed) {
+      const changed = !removed && ids.some((id) => {
+        if (!drawnIds.current.has(id)) return false;      // جديد لا معدَّل
+        const next = shapeSig({ id, ...val[id] } as Shape);
+        return sigs.current.get(id) !== next;
+      });
+      if (removed || changed) {
         shapes.current = ids.map((id) => ({ id, ...val[id] }));
         drawnIds.current = new Set(ids);
+        sigs.current = new Map(shapes.current.map((s) => [s.id, shapeSig(s)]));
         scheduleRedraw();
         return;
       }
@@ -833,6 +858,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         if (!drawnIds.current.has(id)) {
           const s = { id, ...val[id] } as Shape;
           drawnIds.current.add(id);
+          sigs.current.set(id, shapeSig(s));
           shapes.current.push(s);
           if (ctx) drawShape(s, ctx);
         }
@@ -864,6 +890,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
   function commit(s: Shape) {
     drawnIds.current.add(s.id);
+    sigs.current.set(s.id, shapeSig(s));
     shapes.current.push(s);
     redoStack.current = [];
     const ctx = mainRef.current?.getContext("2d");
@@ -1061,6 +1088,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           }));
         }
         fullRedraw();
+        streamGroup(g.orig.keys());
         return;
       }
 
@@ -1071,6 +1099,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         if (sh) sh.points = orig.map((q) => ({ x: q.x + dx, y: q.y + dy }));
       }
       fullRedraw();
+      streamGroup(g.orig.keys());
       return;
     }
 
@@ -1223,6 +1252,25 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     update(ref(rtdb, `${strokesPath}/${shape.id}`), { points: shape.points });
   }
 
+  /* بثّ المجموعة أثناء السحب/التحجيم.
+     كنت أكتب عند الإفلات فقط خوفاً على الحصّة، فكانت المجموعة تقفز عند
+     الطلاب بدل أن تتحرّك. الحلّ ليس المنع بل **الخنق الأبطأ**: 140ms
+     للمجموعة بدل 80 للعنصر المفرد، وكتابة واحدة مجمّعة (`update` على
+     المسار الأب) بدل كتابة لكل عنصر — فعشرون عنصراً تكلّف طلباً واحداً. */
+  const groupBeat = useRef(0);
+
+  function streamGroup(ids: Iterable<string>, force = false) {
+    const now = Date.now();
+    if (!force && now - groupBeat.current < 140) return;
+    groupBeat.current = now;
+    const patch: Record<string, Point[]> = {};
+    for (const id of ids) {
+      const sh = shapes.current.find((x) => x.id === id);
+      if (sh) patch[`${id}/points`] = sh.points;
+    }
+    if (Object.keys(patch).length) update(ref(rtdb, strokesPath), patch);
+  }
+
   /* تثبيت ما كُتب في الحقل — نصّاً عادياً أو بطاقة لاصقة.
      البطاقة تُحفظ فوراً في بطاقات المراجعة، وهذا نصّ طلبه:
      «هاته البطاقات هي من تضاف كبطاقات مراجعة». */
@@ -1318,10 +1366,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
     // نهاية سحب المجموعة → كتابة واحدة لكل عنصر
     if (groupDrag.current) {
-      for (const id of groupDrag.current.orig.keys()) {
-        const sh = shapes.current.find((x) => x.id === id);
-        if (sh) update(ref(rtdb, `${strokesPath}/${id}`), { points: sh.points });
-      }
+      streamGroup(groupDrag.current.orig.keys(), true);   // كتابة أخيرة مضمونة
       groupDrag.current = null;
       return;
     }
