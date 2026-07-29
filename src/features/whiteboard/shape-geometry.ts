@@ -50,18 +50,17 @@ export function boundsOf(s: GeoShape): Bounds | null {
   if (!s.points?.length) return null;
 
   if (s.kind === "note") {
-    /* البطاقة تُرسم من نقطتها **يساراً** بعرض ثابت 190px وارتفاع يتبع
-       عدد الأسطر. كانت تسقط في المسار العامّ الذي يعرف النقطة وحدها،
-       فيظهر إطار التحديد خارج البطاقة تماماً. */
+    /* البطاقة صندوق من نقطتين — فحدودها **هي** نقطتاها، بلا أي تقدير.
+       كانت تُحسب من `size` وعرض ثابت، فيختلف الإطار عن الصندوق المرسوم.
+       الآن يتطابقان بالضرورة لأنّهما المصدر نفسه. */
     const a = s.points[0];
-    const W = 190 / 1600;                       // عرض البطاقة معياريّاً
-    const fpx = Math.max(11, s.size * 7);
-    const px = fpx / 900;
-    // نفس لفّ الكلمات المستعمل في الرسم: العرض الحقيقي مقسوماً على عرض البطاقة
-    const textW = measureTextPx(s.text ?? "", fpx) / 1600;
-    const perLine = Math.max(1, Math.ceil(textW / (W * 0.88)));
-    const H = perLine * px * 1.45 + (16 / 900);
-    return { x0: a.x - W - PAD, y0: a.y - PAD, x1: a.x + PAD, y1: a.y + H + PAD };
+    const b = s.points[1] ?? { x: a.x - 190 / 1600, y: a.y + 84 / 1000 };
+    return {
+      x0: Math.min(a.x, b.x) - PAD,
+      y0: Math.min(a.y, b.y) - PAD,
+      x1: Math.max(a.x, b.x) + PAD,
+      y1: Math.max(a.y, b.y) + PAD,
+    };
   }
 
   if (s.kind === "text") {

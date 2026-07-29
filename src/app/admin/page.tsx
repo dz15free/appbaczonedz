@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CurriculumEditor } from "@/features/admin/curriculum-editor";
 import { useRouter } from "next/navigation";
 import { ref, onValue, remove, query, orderByChild, limitToLast, get, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -159,6 +160,7 @@ const TABS = [
   { id: "users",     label: "المستخدمون", icon: faUsers },
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
+  { id: "curriculum", label: "المنهج",   icon: faBookOpen },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
   { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
@@ -468,6 +470,8 @@ export default function AdminPage() {
         </div>
 
         {/* ════ إحصائيات ════ */}
+        {tab === "curriculum" && <CurriculumEditor />}
+
         {tab === "overview" && (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-3">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { quoteOfDay } from "@/features/study/quotes";
+import { nextQuote, quoteOfDay } from "@/features/study/quotes";
 import { faFire, faChevronLeft, faChevronRight, faAward, faBolt } from "@fortawesome/free-solid-svg-icons";
 import { useBacExamDate, useBacResultsDate, useCountdownTo } from "@/features/settings/use-bac-date";
 
@@ -32,6 +32,13 @@ function FullCountdown({ d }: { d: { days: number; hours: number; minutes: numbe
 }
 
 export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTitle?: string }) {
+  /* نبدأ بحكمة اليوم لأنّها متطابقة على الخادم والمتصفّح، ثم نُبدّلها
+     بحكمة الزيارة بعد التركيب — فلا تحذير Hydration ولا وميض. */
+  const [quote, setQuote] = useState(() => quoteOfDay());
+  useEffect(() => {
+    setQuote(nextQuote());
+  }, []);
+
   const examDate = useBacExamDate();
   const resultsDate = useBacResultsDate();
   const bac = useCountdownTo(examDate, 5, 15);
@@ -133,9 +140,9 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
               نصيحة اليوم
             </p>
             <h2 className="mt-1.5 max-w-md font-display text-xl font-extrabold leading-relaxed text-white sm:text-2xl">
-              {quoteOfDay().text}
+              {quote.text}
             </h2>
-            <p className="mt-2 text-xs text-white/50">{quoteOfDay().hint}</p>
+            <p className="mt-2 text-xs text-white/50">{quote.hint}</p>
           </div>
         )}
         </div>

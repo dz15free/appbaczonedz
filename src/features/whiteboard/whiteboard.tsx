@@ -340,49 +340,64 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         ctx.restore();
       }
     } else if (s.kind === "note" && s.text) {
-      /* بطاقة لاصقة: مستطيل ملوّن + نصّ ملفوف.
-         نلفّ الكلمات يدوياً لأنّ الكانفاس لا يلفّ النصّ تلقائياً —
-         بدونه تخرج البطاقة الطويلة عن حافّة اللوح. */
+      /* الصندوق من نقطتيه — لا عرض ثابت ولا خطّ يتضخّم.
+         النصّ يلتفّ داخل عرض الصندوق، ويصغر تلقائياً إن ضاق الصندوق
+         عن استيعاب أسطره: هذا معنى «النصّ يكبر معه» — يتبع الصندوق. */
       const a = P(pts[0]);
+      const b = pts[1] ? P(pts[1]) : { x: a.x - 190 * dpr(), y: a.y + 84 * dpr() };
+      const x0 = Math.min(a.x, b.x), y0 = Math.min(a.y, b.y);
+      const bw = Math.abs(b.x - a.x), bh = Math.abs(b.y - a.y);
       const k = dpr();
-      const px = Math.max(11, s.size * 7) * k;
-      const padX = 9 * k, padY = 8 * k;
-      const maxW = 190 * k;
-      ctx.font = `600 ${px}px system-ui, sans-serif`;
-      ctx.direction = "rtl";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "top";
-      const words = s.text.split(/\s+/);
-      const lines: string[] = [];
-      let cur = "";
-      for (const w of words) {
-        const t = cur ? `${cur} ${w}` : w;
-        if (ctx.measureText(t).width > maxW - padX * 2 && cur) { lines.push(cur); cur = w; }
-        else cur = t;
-      }
-      if (cur) lines.push(cur);
-      const lh = px * 1.45;
-      const boxW = maxW;
-      const boxH = lines.length * lh + padY * 2;
-      const ink = NOTE_COLORS.find((c) => c.bg === s.color)?.ink ?? "#333";
-      // ظلّ خفيف يرفع البطاقة عن اللوح
+      const rr = 6 * k;
+
       ctx.save();
       ctx.shadowColor = "rgba(19,23,34,.14)";
       ctx.shadowBlur = 8 * k;
       ctx.shadowOffsetY = 2 * k;
       ctx.fillStyle = s.color;
-      const rr = 6 * k;
       ctx.beginPath();
-      ctx.moveTo(a.x - boxW + rr, a.y);
-      ctx.arcTo(a.x, a.y, a.x, a.y + boxH, rr);
-      ctx.arcTo(a.x, a.y + boxH, a.x - boxW, a.y + boxH, rr);
-      ctx.arcTo(a.x - boxW, a.y + boxH, a.x - boxW, a.y, rr);
-      ctx.arcTo(a.x - boxW, a.y, a.x, a.y, rr);
+      ctx.moveTo(x0 + rr, y0);
+      ctx.arcTo(x0 + bw, y0, x0 + bw, y0 + bh, rr);
+      ctx.arcTo(x0 + bw, y0 + bh, x0, y0 + bh, rr);
+      ctx.arcTo(x0, y0 + bh, x0, y0, rr);
+      ctx.arcTo(x0, y0, x0 + bw, y0, rr);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+
+      const ink = NOTE_COLORS.find((c) => c.bg === s.color)?.ink ?? "#333";
+      const padX = 9 * k, padY = 8 * k;
+      const maxW = Math.max(20, bw - padX * 2);
+
+      // نبحث عن أكبر مقاس يجعل النصّ يستوعب داخل الصندوق
+      let px = Math.max(10 * k, Math.min(s.size * 7 * k, bh * 0.5));
+      let lines: string[] = [];
+      for (let guard = 0; guard < 14; guard++) {
+        ctx.font = `600 ${px}px system-ui, sans-serif`;
+        lines = [];
+        let cur = "";
+        for (const w of s.text.split(/\s+/)) {
+          const t = cur ? `${cur} ${w}` : w;
+          if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; }
+          else cur = t;
+        }
+        if (cur) lines.push(cur);
+        if (lines.length * px * 1.4 + padY * 2 <= bh || px <= 10 * k) break;
+        px = Math.max(10 * k, px * 0.9);
+      }
+
+      ctx.save();
+      ctx.beginPath();                    // لا يفيض حرف واحد خارج الصندوق
+      ctx.rect(x0, y0, bw, bh);
+      ctx.clip();
       ctx.fillStyle = ink;
-      lines.forEach((ln, i) => ctx.fillText(ln, a.x - padX, a.y + padY + i * lh));
+      ctx.font = `600 ${px}px system-ui, sans-serif`;
+      ctx.direction = "rtl";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
+      const lh = px * 1.4;
+      lines.forEach((ln, i) => ctx.fillText(ln, x0 + bw - padX, y0 + padY + i * lh));
+      ctx.restore();
     } else if (s.kind === "text" && s.text) {
       const a = P(pts[0]);
       const px = s.size * 8 * dpr();
@@ -1250,12 +1265,11 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         /* البطاقة والنصّ لهما **نقطة واحدة**، فتحجيم النقاط لا يغيّر
            شيئاً مرئياً — لهذا لم تكن البطاقة تكبر ولا تصغر. حجمهما
            يعيش في `size`، فنُحجّمه هو. */
-        if ((shape.kind === "note" || shape.kind === "text") && dragRef.current?.mode === "resize") {
-          /* كان يُقاس من الحدود الجديدة — ومنطق دائري: حدود البطاقة
-             تُشتقّ من `size` الذي لم يتغيّر بعد، فالنسبة 1 دائماً
-             والبطاقة لا تكبر أبداً.
-             الآن نقيس من **موضع المؤشّر** نسبةً إلى الزاوية المقابلة،
-             تماماً كتحجيم المجموعة. */
+        /* البطاقة صندوق بنقطتين، فتحجيمها يمرّ بمسار تحجيم النقاط
+           العادي — لا حاجة لتكبير الخطّ يدوياً كما كنت أفعل، وهو ما كان
+           يُفيض النصّ خارج الصندوق. النصّ يتبع الصندوق عند الرسم.
+           أمّا النصّ الحرّ فله نقطة واحدة، فيُحجَّم بمقاسه. */
+        if (shape.kind === "text" && dragRef.current?.mode === "resize") {
           const d = dragRef.current;
           const b0 = d.b;
           const corner = d.corner ?? "se";
@@ -1266,8 +1280,6 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
             const f = Math.max(0.35, Math.min(4, Math.abs((dp.x - ax) / ow)));
             shape.size = Math.max(0.8, Math.min(12, (d.origSize ?? shape.size) * f));
           }
-          /* البطاقة والنصّ يُرسمان من نقطة واحدة: نُثبّتها ونغيّر الحجم
-             وحده، وإلّا انزلقت البطاقة أثناء التحجيم. */
           shape.points = d.orig.map((q) => ({ ...q }));
         }
         fullRedraw();
@@ -1391,7 +1403,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
      كان النصّ يُكتب في `window.prompt` — نافذة نظام تقطع الشرح، ولا
      ترى فيها أين سيقع النصّ ولا بأيّ مقاس. الآن حقل يظهر **في مكانه
      على اللوح** بنفس الخطّ والمقاس واللون، فما تكتبه هو ما تراه. */
-  const [editor, setEditor] = useState<{ x: number; y: number; value: string; note?: boolean } | null>(null);
+  const [editor, setEditor] = useState<{ x: number; y: number; value: string; note?: boolean; editId?: string } | null>(null);
   const [textSize, setTextSize] = useState(TEXT_SIZES[1]);
   const [noteColor, setNoteColor] = useState(0);
   const noteColorRef = useRef(noteColor);
@@ -1475,10 +1487,29 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   /* تثبيت ما كُتب في الحقل — نصّاً عادياً أو بطاقة لاصقة.
      البطاقة تُحفظ فوراً في بطاقات المراجعة، وهذا نصّ طلبه:
      «هاته البطاقات هي من تضاف كبطاقات مراجعة». */
-  function commitTyped(v: string, ed: { x: number; y: number; note?: boolean }) {
+  function commitTyped(v: string, ed: { x: number; y: number; note?: boolean; editId?: string }) {
+    /* تعديل عنصر قائم: نُحدّث نصّه ولا نُنشئ عنصراً ثانياً — وإلّا
+       تكرّرت البطاقة وبقيت القديمة تحتها. */
+    if (ed.editId) {
+      const sh = shapes.current.find((x) => x.id === ed.editId);
+      if (sh) {
+        sh.text = v;
+        update(ref(rtdb, `${strokesPath}/${sh.id}`), { text: v });
+        fullRedraw();
+        return;
+      }
+    }
     if (ed.note) {
       const c = NOTE_COLORS[noteColorRef.current] ?? NOTE_COLORS[0];
       const sh = newShape("note", { x: ed.x, y: ed.y }, v);
+      /* البطاقة **صندوق** لا نقطة: نخزّن زاويتين.
+         كان لها نقطة واحدة وعرض ثابت 190px، والتحجيم يُكبّر **الخطّ** —
+         فيفيض النصّ خارج الصندوق ويختلف موضع الثلاثة (الصندوق والنصّ
+         والإطار) كما في لقطتك.
+         بنقطتين: التحجيم يُكبّر الصندوق والنصّ يلتفّ داخله، وحدود
+         التحديد تطابقه بالضبط لأنّها هي نفسها. */
+      const W = 190 / 1600, H = 84 / 1000;
+      sh.points = [{ x: ed.x, y: ed.y }, { x: ed.x - W, y: ed.y + H }];
       sh.color = c.bg;
       sh.size = textSizeRef.current;
       commit(sh);
@@ -1778,6 +1809,30 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
               )}
               {/* كان يفتح درج «علّم» نفسه — زرّان بفعل واحد. الآن يسأل فعلاً.
                   ويُعطَّل على الرسم الخالص لأنّ الخبّاشة تحتاج نصّاً. */}
+              {canDraw && (shape.kind === "note" || shape.kind === "text") && (
+                /* لم تكن هناك أيّ طريقة لتعديل نصّ كُتب — يُحذف ويُكتب
+                   من جديد. الآن يُفتح المحرّر نفسه على النصّ الحالي،
+                   وعند التثبيت نُحدّث العنصر مكانه بدل إنشاء آخر. */
+                <ContextButton
+                  icon="pen"
+                  label="تعديل"
+                  tone="primary"
+                  onClick={() => {
+                    const a = shape.points[0];
+                    if (!a) return;
+                    setEditor({
+                      x: a.x, y: a.y,
+                      value: shape.text ?? "",
+                      note: shape.kind === "note",
+                      editId: shape.id,
+                    });
+                    setTimeout(
+                      () => (shape.kind === "note" ? editorArea.current : editorInput.current)?.focus(),
+                      0,
+                    );
+                  }}
+                />
+              )}
               <ContextButton
                 icon="ai"
                 label="اسأل"

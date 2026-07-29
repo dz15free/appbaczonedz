@@ -50,3 +50,30 @@ export function quoteOfDay(offset = 0): { text: string; hint: string } {
   const i = (((day + offset) % STUDY_QUOTES.length) + STUDY_QUOTES.length) % STUDY_QUOTES.length;
   return STUDY_QUOTES[i] ?? STUDY_QUOTES[0];
 }
+
+/**
+ * حكمة تتغيّر مع **كل زيارة** — وهذا ما طلبتَه.
+ *
+ * `quoteOfDay` تثبت يوماً كاملاً، فيرى الزائر نفس الحكمة في كل صفحة
+ * ويظنّها واحدة ثابتة. هذه تتقدّم عدّاداً محفوظاً في الجلسة، فتتغيّر
+ * عند كل دخول وتبقى ثابتة أثناء التنقّل في نفس الجلسة — فلا ترتجف مع
+ * كل إعادة تصيير ولا تختلف بين الخادم والمتصفّح.
+ */
+export function nextQuote(): { text: string; hint: string } {
+  const KEY = "bz-quote-i";
+  let i = 0;
+  try {
+    const raw = sessionStorage.getItem(KEY);
+    if (raw === null) {
+      // أوّل زيارة في الجلسة: نبدأ من موضع عشوائي فلا يرى الجميع الأولى
+      i = Math.floor(Math.random() * STUDY_QUOTES.length);
+    } else {
+      i = (Number(raw) + 1) % STUDY_QUOTES.length;
+    }
+    sessionStorage.setItem(KEY, String(i));
+  } catch {
+    // تخزين الجلسة قد يكون معطّلاً — نرجع إلى حكمة اليوم بدل الانهيار
+    return quoteOfDay();
+  }
+  return STUDY_QUOTES[i] ?? STUDY_QUOTES[0];
+}
