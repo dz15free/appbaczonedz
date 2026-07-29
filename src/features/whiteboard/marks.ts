@@ -24,6 +24,10 @@ export interface ShapeMark {
   at: number;
   /** نصّ العنصر وقت التعليم — نحفظه لأن الشكل قد يُمسح لاحقاً */
   text?: string;
+  /** أعضاء المجموعة حين يكون الوسم على تحديد كامل.
+      بدونها كان كل ضربة تأخذ شارتها الخاصّة: معادلة من تسع ضربات
+      تُنتج تسع شارات «للحفظ» متراكبة فوق بعضها ولا تُقرأ. */
+  members?: string[];
 }
 
 /* الوسم يحمل أيقونة من نظام BacZone بدل رمز تعبيري.
@@ -46,10 +50,13 @@ export function tagInfo(tag: MarkTag) {
 const path = (roomId: string, page: number) => `roomLive/${roomId}/marks/${page}`;
 
 export async function setMark(
-  roomId: string, page: number, shapeId: string, tag: MarkTag, text?: string
+  roomId: string, page: number, shapeId: string, tag: MarkTag,
+  text?: string, members?: string[]
 ) {
   const data: Record<string, unknown> = { tag, at: Date.now() };
   if (text) data.text = text.slice(0, 300);
+  // نحفظ الأعضاء لترسم الشارة حول المجموعة كلّها مرّة واحدة
+  if (members && members.length > 1) data.members = members;
   await set(ref(rtdb, `${path(roomId, page)}/${shapeId}`), data);
 }
 

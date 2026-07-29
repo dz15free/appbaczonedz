@@ -38,6 +38,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 import {
   WorkspaceBar, LiveBadge, BarButton, Segmented,
   IconRail, RailButton, RailDivider, RailSpacer, SideDock,
+  PhoneToolStrip, PhoneToolButton,
 } from "@/components/ui/workspace";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
 import { FloatingAssistant } from "@/components/ui/floating-assistant";
@@ -134,6 +135,27 @@ export default function RoomPage() {
   const isOwner = !!room && !!user && room.ownerId === user.uid;
   const { tool, setTool } = useActiveTool(roomId, isOwner);
   const { state: roomState, setRoomState } = useRoomState(roomId, isOwner);
+
+  /* ── ما تفعله حالة الغرفة فعلاً ──
+     كانت الأزرار الأربعة تضبط قيمة **لا يقرؤها أحد** — زينة محضة، ولهذا
+     لم يكن معناها مفهوماً. لكل حالة الآن أثر حقيقي يراه الجميع:
+
+       دراسة      → كل شيء متاح (الافتراضي)
+       تركيز      → تُطوى الأعمدة الجانبية، المحتوى وحده
+       امتحان     → تُغلق الدردشة للجميع ويظهر وقت التمرين
+       مراجعة ملفّ → يُعرض الملفّ ويُطوى الشريط الجانبي
+
+     مُشتقّة لا مُخزَّنة: حالة واحدة مصدرها `roomState` المُزامن، فلا
+     يمكن أن تتناقض النسخ بين الأجهزة. */
+  const stateHidesSidePanels = roomState === "focus" || roomState === "review";
+  const stateHidesChat = roomState === "exam" || roomState === "focus";
+
+  /* «مراجعة ملفّ» تعرض الملفّات فعلاً بدل أن تكون تسمية بلا أثر.
+     للمالك وحده: الطالب يتبع ما يعرضه الأستاذ. */
+  useEffect(() => {
+    if (roomState === "review" && isOwner && tool !== "files") setTool("files");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomState, isOwner]);
 
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
@@ -404,7 +426,11 @@ export default function RoomPage() {
   const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
 
   return (
-    <main className="flex h-[100dvh] flex-col bg-background text-text-primary">
+    /* `overflow-x-hidden` + `w-full`: أزرار الشريط العلوي `shrink-0`،
+       فمجموعها على شاشة أندرويد الضيّقة يتجاوز العرض ويدفع **الصفحة
+       كلّها** جانباً — فتُقصّ الحوافّ يميناً ويساراً كما في لقطتك.
+       iOS يخفي ذلك لاختلاف تعامله مع الفيض. */
+    <main className="flex h-[100dvh] w-full flex-col overflow-x-hidden bg-background text-text-primary">
       {/* ══════════ شريط الغرفة الموحّد ══════════
           كان هنا شريطان فوق بعضهما: رأس الغرفة القديم ثم شريط مساحة
           الدراسة. كلاهما يعرض الاسم والعدد و«مباشر» — ازدواج يأكل 56
@@ -533,6 +559,47 @@ export default function RoomPage() {
         />
       </WorkspaceBar>
 
+      {/* الأيدي المرفوعة — كان الزرّ يضبط `handsOpen` ولا شيء يُصيَّرها،
+          فيبدو معطّلاً. سقط الدرج عند دمج الشريطين. */}
+      <BottomSheet
+        open={handsOpen}
+        onClose={() => setHandsOpen(false)}
+        title={`الأيدي المرفوعة (${handsQueue.length})`}
+      >
+        <div className="max-h-[60vh] overflow-y-auto pb-2">
+          {handsQueue.length === 0 ? (
+            <p className="py-8 text-center text-sm text-text-muted">لا أحد رفع يده الآن.</p>
+          ) : (
+            <div className="space-y-2">
+              {handsQueue.map((h, i) => (
+                <div key={h.uid} className="flex items-center gap-2.5 rounded-xl border border-border bg-surface p-2.5">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--bz-blue-050)] text-[11px] font-extrabold text-[var(--bz-blue-700)]">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{h.name}</span>
+                  {isOwner && (
+                    <>
+                      <button
+                        onClick={() => grantMic(h.uid)}
+                        className="rounded-lg bg-[var(--bz-blue-050)] px-2.5 py-1 text-[11px] font-bold text-[var(--bz-blue-700)]"
+                      >
+                        أعطه الميكروفون
+                      </button>
+                      <button
+                        onClick={() => lowerHand(h.uid)}
+                        className="rounded-lg px-2 py-1 text-[11px] font-bold text-text-muted hover:text-danger"
+                      >
+                        إنزال
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </BottomSheet>
+
       {/* درج الحاضرين — الهاتف لا يتّسع للشريط الجانبي، فالورقة السفلية
           هي البديل الصحيح (وهي ما طلبته في الملاحظات بدل النوافذ). */}
       <BottomSheet
@@ -650,7 +717,7 @@ export default function RoomPage() {
             تبديل المحتوى انتقل إلى هنا من شريط التبويبات المحذوف.
             أيقونة بلا تسمية: لا يزيد الازدحام البصري، والتسمية في
             الـtooltip وفي aria-label لقارئ الشاشة. */}
-        {!fullscreen && (
+        {!fullscreen && roomState !== "focus" && (
           <IconRail>
             <RailButton icon="home" label="مرحباً" active={tool === "welcome"}
               onClick={() => isOwner && setTool("welcome")} />
@@ -687,6 +754,26 @@ export default function RoomPage() {
         >
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
           <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
+            {/* شريط يشرح الحالة غير الافتراضية.
+                الحالة تُغيّر ما يراه الطالب، فلا يجوز أن تتغيّر الشاشة
+                تحته دون تفسير — وإلّا بدت الغرفة معطوبة. */}
+            {roomState !== "study" && (
+              <div className="flex shrink-0 items-center gap-2 border-b border-[var(--bz-blue-100)] bg-[var(--bz-blue-050)] px-3 py-1.5">
+                <Icon
+                  name={roomState === "exam" ? "timer" : roomState === "review" ? "file" : "target"}
+                  size={13}
+                  className="text-[var(--bz-blue)]"
+                />
+                <span className="text-[11.5px] font-bold text-[var(--bz-blue-700)]">
+                  {roomState === "focus"
+                    ? "وضع التركيز — أُخفيت الأعمدة الجانبية ليبقى المحتوى وحده"
+                    : roomState === "exam"
+                      ? "وضع الامتحان — الدردشة مغلقة، ركّز على ورقتك"
+                      : "مراجعة ملفّ — الملفّ معروض والشريط الجانبي مطويّ"}
+                </span>
+              </div>
+            )}
+
             {/* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */}
             <>
               {tool === "welcome" && (
@@ -816,17 +903,21 @@ export default function RoomPage() {
             كان عمودين منفصلين (مشاركون w-64 + دردشة w-96) يأكلان 360px
             من العرض دائماً. صارا لوحة واحدة بتبويبات — «Sidebar واحدة
             تحتوي Tabs» من الملاحظات — فرَبِحت المنصّة المساحة. */}
-        {!fullscreen && (
+        {!fullscreen && !stateHidesSidePanels && (
           <SideDock
-            tabs={[
-              { id: "chat", label: "الدردشة" },
-              { id: "class", label: "الصفّ", badge: handsQueue.length },
-            ]}
+            tabs={
+              stateHidesChat
+                ? [{ id: "class", label: "الصفّ", badge: handsQueue.length }]
+                : [
+                    { id: "chat", label: "الدردشة" },
+                    { id: "class", label: "الصفّ", badge: handsQueue.length },
+                  ]
+            }
             active={dockTab}
             onSelect={setDockTab}
             padded={false}
           >
-            {dockTab === "chat" ? (
+            {dockTab === "chat" && !stateHidesChat ? (
               <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
             ) : (
               <ParticipantsPanel
@@ -847,6 +938,30 @@ export default function RoomPage() {
 
       {/* الشريط الصوتي الدائم (يبقى في كل الأدوات) */}
       <RoomVoiceBar roomId={roomId} isOwner={isOwner} />
+
+      {/* ══ شريط الأدوات على الهاتف ══
+          شريط الأيقونات الجانبي يختفي تحت lg، فبدونه لا يجد طالب الهاتف
+          الفيديو ولا الملفّات. يرتفع فوق شريط الصوت بالمتغيّر الذي ينشره
+          الشريط نفسه، فلا يغطّي «انضمام صوتي» كما كان يفعل سابقاً. */}
+      {!studentFocus && !fullscreen && (
+        <PhoneToolStrip>
+          <PhoneToolButton icon="home" label="مرحباً" active={tool === "welcome"}
+            onClick={() => isOwner && setTool("welcome")} />
+          <PhoneToolButton icon="video" label="فيديو" active={tool === "video"}
+            onClick={() => isOwner && setTool("video")} />
+          <PhoneToolButton icon="layers" label="سبورة" active={tool === "whiteboard"}
+            onClick={() => isOwner && setTool("whiteboard")} />
+          <PhoneToolButton icon="file" label="ملفّات" active={tool === "files"}
+            onClick={() => isOwner && setTool("files")} />
+          <PhoneToolButton icon="note" label="ملاحظات" active={tool === "notes"}
+            onClick={() => isOwner && setTool("notes")} />
+          {isOwner && (
+            <PhoneToolButton icon="grid" label="إجراءات"
+              badge={anonQs.filter((q) => !q.answered).length}
+              onClick={() => setMoreOpen(true)} />
+          )}
+        </PhoneToolStrip>
+      )}
 
       {/* ══ المساعد العائم ══
           الهاتف لا يتّسع لشريط الأيقونات الجانبي، فالوظائف الثانوية

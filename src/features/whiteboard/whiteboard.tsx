@@ -352,8 +352,19 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     // خفيف عمداً: الملاحظات تقول ألّا يقطع التعليم تركيز الطالب.
     const dprv = window.devicePixelRatio || 1;
     for (const [shapeId, m] of Object.entries(marksRef.current)) {
-      const shape = shapes.current.find((x) => x.id === shapeId);
-      const mb = shape ? boundsOf(shape) : null;
+      /* وسم المجموعة: نرسم إطاراً واحداً حول أعضائها كلّهم بدل إطار
+         لكل ضربة — وهو سبب تراكم الشارات في لقطتك. */
+      const ids = m.members && m.members.length > 1 ? m.members : [shapeId];
+      let mb: Bounds | null = null;
+      for (const id of ids) {
+        const sh = shapes.current.find((x) => x.id === id);
+        const b2 = sh ? boundsOf(sh) : null;
+        if (!b2) continue;
+        mb = mb
+          ? { x0: Math.min(mb.x0, b2.x0), y0: Math.min(mb.y0, b2.y0),
+              x1: Math.max(mb.x1, b2.x1), y1: Math.max(mb.y1, b2.y1) }
+          : b2;
+      }
       if (!mb) continue;
       const info = tagInfo(m.tag);
       const w = canvas.width, h = canvas.height;
@@ -724,11 +735,30 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   /** وسم كل ما التقطه الإطار — هذا جوهر طلبه: أحدّد معادلة كاملة ثم أعلّمها مهمّة */
   function markMulti(tag: MarkTag) {
     if (!canDrawRef.current || multiRef.current.size === 0) return;
-    for (const id of multiRef.current) {
-      const sh = shapes.current.find((x) => x.id === id);
-      setMark(roomId, activePage, id, tag, sh?.text);
+    const ids = [...multiRef.current];
+
+    /* علامة **واحدة** للمجموعة كلّها، لا علامة لكل ضربة.
+       معادلة من تسع ضربات كانت تُنتج تسع شارات متراكبة لا تُقرأ. */
+    const anchor = ids[0];
+    if (!anchor) return;
+
+    // ضغط الوسم نفسه مرّة أخرى يُزيله — لم يكن هناك سبيل للتراجع
+    const cur = marks[anchor];
+    if (cur && cur.tag === tag) {
+      for (const id of ids) clearMark(roomId, activePage, id);
+      clearMulti();
+      fullRedraw();
+      return;
     }
-    clearMulti();
+
+    // ننظّف أي وسوم مفردة قديمة على الأعضاء حتى لا تبقى شارات يتيمة
+    for (const id of ids) if (id !== anchor && marks[id]) clearMark(roomId, activePage, id);
+
+    const text = ids
+      .map((id) => shapes.current.find((x) => x.id === id)?.text)
+      .filter(Boolean)
+      .join(" ");
+    setMark(roomId, activePage, anchor, tag, text || undefined, ids);
     fullRedraw();
   }
 

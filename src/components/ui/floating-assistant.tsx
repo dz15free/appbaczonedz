@@ -104,8 +104,10 @@ export function FloatingAssistant({
         className={`fixed z-[10055] flex-col items-start gap-2 ${hideOnDesktop ? "flex lg:hidden" : "flex"}`}
         style={{
           // يتبع ارتفاع شريط الصوت الحقيقي بدل رقم مخمّن
+          /* فوق شريط الصوت **وشريط أدوات الهاتف** معاً — كلاهما ينشر
+             ارتفاعه، فلا يتراكب الثلاثة مهما تغيّرت الحالة. */
           bottom:
-            "calc(env(safe-area-inset-bottom, 0px) + var(--bz-voicebar-h, 0px) + 14px)",
+            "calc(env(safe-area-inset-bottom, 0px) + var(--bz-voicebar-h, 0px) + var(--bz-toolstrip-h, 0px) + 14px)",
           [side]: "14px",
         }}
       >

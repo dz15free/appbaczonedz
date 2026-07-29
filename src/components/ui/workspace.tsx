@@ -20,7 +20,9 @@ import { Icon, type IconName } from "@/components/ui/icon";
 
 export function WorkspaceBar({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] px-2.5 sm:px-3.5">
+    /* `min-w-0` + `overflow-x-auto`: الشريط يمرّر أفقياً عند الضيق بدل
+       أن يفرض عرضه على الصفحة. وبدونهما كان يكسر التخطيط كلّه. */
+    <div className="bz-hide-scrollbar flex h-12 w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] px-2.5 sm:px-3.5">
       {children}
     </div>
   );
@@ -344,4 +346,104 @@ export function useIdleDim(delayMs = 4000) {
   }, [delayMs]);
 
   return idle;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   شريط الأدوات على الهاتف
+
+   شريط الأيقونات الجانبي مخفيّ تحت `lg`، فكان طالب الهاتف **لا يجد
+   الفيديو ولا الملفّات ولا الملاحظات إطلاقاً** — لا مجرّد صعوبة، بل
+   انعدام وصول.
+
+   القائمة السابقة كانت تغطّي زرّ «انضمام صوتي». الحلّ ليس إعادتها فوقه
+   بل **رفعها عنه**: ترتفع بارتفاع شريط الصوت الحقيقي عبر المتغيّر الذي
+   ينشره الشريط نفسه (`--bz-voicebar-h`)، فلا تتراكبان مهما تغيّر
+   ارتفاعه — منضمّاً كان أو غير منضمّ.
+
+   وتُخفى في الشاشة الكاملة لأنّ الغرض منها إخلاء الشاشة للمحتوى.
+════════════════════════════════════════════════════════════ */
+
+export function PhoneToolStrip({ children, hidden = false }: {
+  children: ReactNode;
+  hidden?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  /* ينشر ارتفاعه كما يفعل شريط الصوت، فيرتفع فوقه المساعد العائم بدقّة.
+     نُصفّره عند الإخفاء أو التفكيك، وإلّا بقي الزرّ العائم معلّقاً في
+     الهواء بعد اختفاء الشريط. */
+  useEffect(() => {
+    const el = ref.current;
+    const root = document.documentElement;
+    if (hidden || !el) {
+      root.style.setProperty("--bz-toolstrip-h", "0px");
+      return;
+    }
+    const publish = () => root.style.setProperty("--bz-toolstrip-h", `${el.offsetHeight + 8}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.setProperty("--bz-toolstrip-h", "0px");
+    };
+  }, [hidden]);
+
+  if (hidden) return null;
+  return (
+    <div
+      ref={ref}
+      className="pointer-events-none fixed inset-x-0 z-[40] flex justify-center px-2 lg:hidden"
+      style={{
+        bottom:
+          "calc(env(safe-area-inset-bottom, 0px) + var(--bz-voicebar-h, 0px) + 8px)",
+      }}
+    >
+      <div
+        className="bz-hide-scrollbar pointer-events-auto flex max-w-full items-center gap-1
+          overflow-x-auto rounded-2xl border border-[var(--bz-line)] p-1"
+        style={{
+          background: "rgba(255,255,255,.94)",
+          WebkitBackdropFilter: "saturate(180%) blur(14px)",
+          backdropFilter: "saturate(180%) blur(14px)",
+          boxShadow:
+            "0 0 0 1px rgba(19,23,34,.05), 0 10px 28px -10px rgba(19,23,34,.28)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** زرّ داخل شريط الهاتف — أيقونة فوق تسمية، مقاس لمس 56×48 */
+export function PhoneToolButton({
+  icon, label, active = false, badge, onClick,
+}: {
+  icon: IconName; label: string; active?: boolean; badge?: number; onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={active || undefined}
+      className={`relative flex h-12 min-w-[58px] shrink-0 flex-col items-center justify-center gap-0.5
+        rounded-xl px-2 text-[10px] font-bold transition active:scale-95 ${
+          active
+            ? "bg-[var(--bz-blue)] text-white"
+            : "text-[var(--bz-ink-2)] hover:bg-[var(--bz-canvas)]"
+        }`}
+    >
+      <Icon name={icon} size={17} />
+      <span className="leading-none">{label}</span>
+      {typeof badge === "number" && badge > 0 && (
+        <span className="absolute right-1 top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border-2 border-white bg-[var(--bz-red)] px-[3px] text-[8px] font-extrabold text-white">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
+    </button>
+  );
 }

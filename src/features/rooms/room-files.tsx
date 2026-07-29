@@ -252,7 +252,10 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   const desktopView = (
     <div className="hidden h-full lg:flex">
       {/* القائمة — ثابتة العرض */}
-      <div className="flex w-64 shrink-0 flex-col border-l border-border">
+      {/* كان `w-64` ثابتاً (256px). داخل الشاشة الكاملة مع لوحة جانبية
+          مفتوحة تنكمش المعاينة إلى شريط ضيّق على اليسار — وهو ما ظهر
+          عندك. الآن نسبة من العرض بحدّ أدنى وأقصى، فتتنفّس المعاينة. */}
+      <div className="flex w-[min(38%,16rem)] min-w-[168px] shrink-0 flex-col border-l border-border">
         <FileListPane
           files={files}
           isOwner={isOwner}
@@ -275,10 +278,10 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
         {selected ? (
           <InlinePreview file={selected} roomId={roomId} isOwner={isOwner} onClose={() => setSelected(null)} />
         ) : (
-          <div className="grid h-full place-items-center text-center text-sm text-text-muted p-8">
+          <div className="grid h-full place-items-center p-4 text-center text-sm text-text-muted sm:p-8">
             <div>
               <FontAwesomeIcon icon={faFile} className="h-12 w-12 opacity-20" />
-              <p className="mt-3">اختر ملفاً من القائمة لعرضه هنا</p>
+              <p className="mt-3 text-balance">اختر ملفاً من القائمة لعرضه هنا</p>
             </div>
           </div>
         )}

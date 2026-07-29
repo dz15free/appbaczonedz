@@ -180,7 +180,8 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
   const moreSheet = (
     <BottomSheet open={sheet === "more"} onClose={() => setSheet(null)} title="أدوات الحصة">
       <div className="space-y-2 pb-2">
-        <div className="flex flex-wrap items-center gap-2">{props.timerButton}</div>
+        {/* المؤقّت ليس هنا: هو في الشريط الأيمن أصلاً، ووجوده في
+            الاثنين كان يفتحه **خلف** هذه القائمة فيبدو غير مستجيب. */}
         <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
         <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
         <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
@@ -226,7 +227,11 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
   const actions: { id: string; icon: IconDefinition; label: string; onClick: () => void; badge?: number; active?: boolean }[] = [
     ...props.tools.map((t) => ({
       id: `tool-${t.id}`, icon: t.icon, label: t.label,
-      onClick: () => props.onPickTool(t.id), active: props.activeTool === t.id,
+      /* اختيار أداة يُغلق اللوحة الجانبية.
+         كان على الأستاذ أن يضغط أيقونة اللوحة نفسها ليغلقها — والمتوقّع
+         أنّ الانتقال إلى محتوى آخر يُنهي ما قبله. */
+      onClick: () => { setTab(null); props.onPickTool(t.id); },
+      active: props.activeTool === t.id,
     })),
     /* الشريط العائم يحمل ما يُستعمل **أثناء الشرح** فقط.
        «لا أريد Toolbar طويلة» — فملخّص الحصة والمشاركة وكود الوصول
