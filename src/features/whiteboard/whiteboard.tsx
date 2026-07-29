@@ -29,6 +29,7 @@ import {
   faArrowPointer,
   faNoteSticky,
   faCompass,
+  faRulerCombined,
 } from "@fortawesome/free-solid-svg-icons";
 import { recognize } from "@/features/whiteboard/smart/recognize";
 import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
@@ -39,7 +40,7 @@ interface Point {
   x: number;
   y: number;
 }
-type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "note" | "arc" | "eraser";
+type Kind = "pen" | "highlighter" | "line" | "arrow" | "rect" | "ellipse" | "text" | "note" | "arc" | "angle" | "eraser";
 interface Shape {
   id: string;
   uid: string;
@@ -54,12 +55,12 @@ interface Shape {
 /* تسمية النوع التي تظهر في لسان الكائن — العنصر الثاني من توقيع BacZone */
 const KIND_LABEL: Record<Kind, string> = {
   pen: "رسم", highlighter: "تظليل", line: "خط", arrow: "سهم",
-  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", note: "بطاقة", arc: "قوس", eraser: "ممحاة",
+  rect: "مستطيل", ellipse: "دائرة", text: "نصّ", note: "بطاقة", arc: "قوس", angle: "زاوية", eraser: "ممحاة",
 };
 
 const TOOL_ICON: Record<ToolId, IconName> = {
   select: "cursor", pen: "pen", highlighter: "marker", line: "line",
-  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", note: "note", arc: "compass", eraser: "eraser",
+  arrow: "arrow", rect: "square", ellipse: "circle", text: "text", note: "note", arc: "compass", angle: "ruler", eraser: "eraser",
 };
 
 const COLORS = ["#111827", "#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#8b5cf6"];
@@ -105,6 +106,7 @@ const TOOLS: { id: ToolId; icon: typeof faPen; label: string }[] = [
   { id: "text", icon: faFont, label: "نص" },
   { id: "note", icon: faNoteSticky, label: "بطاقة لاصقة" },
   { id: "arc", icon: faCompass, label: "مدوّر" },
+  { id: "angle", icon: faRulerCombined, label: "منقلة" },
   { id: "eraser", icon: faEraser, label: "ممحاة" },
 ];
 
@@ -157,6 +159,22 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   const [formulaGroupId, setFormulaGroupId] = useState<FormulaGroupId>("math");
   // تحويل الرسم الحرّ إلى أشكال مثالية — يُعطَّل للمواد التي تحتاج رسمًا عضويًّا (الأحياء)
   const [smartShapes, setSmartShapes] = useState(true);
+  /* «الكوس»: يقيّد الخطّ والسهم إلى مضاعفات 15° — وهذا ما يفعله الكوس
+     الحقيقي: يمنحك زاوية مضبوطة لا يد ثابتة. 15° تغطّي 30 و45 و60 و90
+     وهي زوايا البكالوريا كلّها. */
+  const [angleSnap, setAngleSnap] = useState(false);
+  const angleSnapRef = useRef(angleSnap);
+  angleSnapRef.current = angleSnap;
+
+  function snapTo15(a: Point, b: Point): Point {
+    if (!angleSnapRef.current) return b;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const r = Math.hypot(dx, dy);
+    if (r < 1e-6) return b;
+    const step = Math.PI / 12;                    // 15°
+    const ang = Math.round(Math.atan2(dy, dx) / step) * step;
+    return { x: a.x + r * Math.cos(ang), y: a.y + r * Math.sin(ang) };
+  }
   // شارة «تراجع» بعد تحويل ناجح — الذكاء الذي لا يمكن رفضه إزعاج
   const [snapUndo, setSnapUndo] = useState<{ shapedId: string; original: Shape } | null>(null);
   /* سحب عنصر محدَّد: تحريك أو تحجيم من إحدى الزوايا الأربع.
@@ -301,6 +319,40 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         ctx.beginPath();
         ctx.arc(C.x, C.y, Math.max(1.5, s.size * 0.6) * dpr(), 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+      }
+    } else if (s.kind === "angle") {
+      const [v, a, b] = pts;
+      if (v && a && b) {
+        const V = P(v), A = P(a), B = P(b);
+        const r = Math.hypot(A.x - V.x, A.y - V.y);
+        const a0 = Math.atan2(A.y - V.y, A.x - V.x);
+        const a1 = Math.atan2(B.y - V.y, B.x - V.x);
+        // الشعاعان
+        ctx.beginPath();
+        ctx.moveTo(V.x, V.y); ctx.lineTo(A.x, A.y);
+        ctx.moveTo(V.x, V.y); ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        // قوس القياس عند ثلث الشعاع — لا يزاحم الرأس ولا يبتلع الشكل
+        const ar = Math.max(14 * dpr(), r * 0.32);
+        ctx.save();
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        ctx.arc(V.x, V.y, ar, a0, a1);
+        ctx.stroke();
+        // القيمة بالدرجات — الغرض من المنقلة أن تقرأ رقماً
+        let deg = Math.abs((a1 - a0) * 180 / Math.PI);
+        if (deg > 360) deg = 360;
+        if (deg > 180) deg = 360 - deg;
+        const mid = (a0 + a1) / 2;
+        const lr = ar + 13 * dpr();
+        ctx.globalAlpha = 1;
+        ctx.font = `600 ${12 * dpr()}px system-ui, sans-serif`;
+        ctx.direction = "ltr";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = s.color;
+        ctx.fillText(`${Math.round(deg)}°`, V.x + lr * Math.cos(mid), V.y + lr * Math.sin(mid));
         ctx.restore();
       }
     } else if (s.kind === "note" && s.text) {
@@ -1084,6 +1136,17 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
        كالمدوّر الحقيقي: الضغطة تغرز الإبرة، والسحب يضبط **نصف القطر
        وزاوية القوس معاً** — لا قطراً واحداً ولا زاوية ثابتة.
        نخزّن ثلاث نقاط: المركز · بداية القوس · نهايته. */
+    if (t === "angle") {
+      /* المنقلة بنفس إيماءة المدوّر المُختبَرة: الضغطة تضع الرأس،
+         واتجاه أوّل حركة هو الشعاع الأوّل، والدوران يفتح الزاوية. */
+      drawing.current = true;
+      const sh = newShape("angle", p);
+      sh.points = [p, p, p];
+      currentShape.current = sh;
+      arcStart.current = null;
+      return;
+    }
+
     if (t === "arc") {
       drawing.current = true;
       const sh = newShape("arc", p);
@@ -1234,7 +1297,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     const p = getPoint(e);
     const s = currentShape.current;
 
-    if (s.kind === "arc") {
+    if (s.kind === "arc" || s.kind === "angle") {
       /* المسافة = نصف القطر · الزاوية = مدى القوس.
          نتراكم على المدى بدل أن نأخذ الفرق الخام، وإلّا انقلب القوس
          فجأة عند عبور ±π (حدّ atan2) فقفز من 359° إلى 1°. */
@@ -1283,8 +1346,10 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         drawShape(tmp, ctx);
       }
     } else {
-      // أشكال: معاينة على الطبقة العلوية
-      s.points[1] = p;
+      /* الكوس يقيّد الخطّ والسهم وحدهما — المستطيل والدائرة يُرسمان
+         بزاويتين متقابلتين فلا معنى لتقييد اتجاههما. */
+      s.points[1] =
+        s.kind === "line" || s.kind === "arrow" ? snapTo15(s.points[0], p) : p;
       clearPreview();
       const ctx = previewRef.current?.getContext("2d");
       if (ctx) drawShape(s, ctx);
@@ -2022,6 +2087,12 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
                 <ConsoleButton
                   icon="sigma" label="رموز رياضية"
                   active={symbolsOpen} onClick={() => setSymbolsOpen((o) => !o)}
+                />
+                <ConsoleButton
+                  icon="ruler"
+                  label={angleSnap ? "الكوس: مفعّل — زوايا 15°" : "الكوس: معطّل — زاوية حرّة"}
+                  active={angleSnap}
+                  onClick={() => setAngleSnap((v) => !v)}
                 />
                 <ConsoleButton
                   icon="shapes"
