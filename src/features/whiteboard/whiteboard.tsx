@@ -915,11 +915,12 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const r = wrap.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return;
 
-      // احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في الحاوية
-      let bw = r.width;
-      let bh = bw / BOARD_AR;
-      if (bh > r.height) { bh = r.height; bw = bh * BOARD_AR; }
-      bw = Math.floor(bw); bh = Math.floor(bh);
+      /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في الحاوية.
+         نأخذ **الأصغر** من القيدين صراحةً بدل تصحيح بعديّ — أوضح، ولا
+         يمكن أن يتجاوز أيّاً منهما مهما كانت أبعاد الحاوية. */
+      const bw0 = Math.min(r.width, r.height * BOARD_AR);
+      let bw = Math.floor(Math.max(1, bw0));
+      let bh = Math.floor(Math.max(1, bw / BOARD_AR));
 
       board.style.width = `${bw}px`;
       board.style.height = `${bh}px`;
@@ -1739,7 +1740,11 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
       <div
         ref={wrapRef}
-        className="bz-stage relative flex flex-1 items-center justify-center overflow-hidden p-2 sm:p-3"
+        /* `min-w-0` و`min-h-0` ضروريّتان: القيمة الافتراضية في flexbox هي
+           `min-width: auto`، فيستطيع العنصر **تجاوز حاويته** حين يكون
+           محتواه عريضاً. فتُقاس المنصّة أوسع من الشاشة على الهاتف،
+           ويُبنى اللوح على ذلك القياس فيظهر مقصوصاً. */
+        className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-3"
       >
         {/* اللوح — نسبة ثابتة، موسّط، وما حوله هامش محايد بدل تمطيط المحتوى */}
         <div

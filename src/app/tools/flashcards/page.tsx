@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ref, push, remove, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
+import { STREAMS } from "@/features/study/curriculum";
+import { listenCustomLessons, mergeLessons, type CustomLesson } from "@/features/study/curriculum-store";
 import { AppShell } from "@/components/app-shell";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -13,17 +15,16 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 
-const SUBJECTS = [
-  { id: "all",       name: "الكل" },
-  { id: "math",      name: "الرياضيات" },
-  { id: "sciences",  name: "العلوم" },
-  { id: "physics",   name: "الفيزياء والكيمياء" },
-  { id: "arabic",    name: "العربية" },
-  { id: "french",    name: "الفرنسية" },
-  { id: "philosophy",name: "الفلسفة" },
-  { id: "history",   name: "التاريخ والجغرافيا" },
-  { id: "english",   name: "الإنجليزية" },
-];
+/* 🐛 كانت هنا قائمة **مكتوبة في الشيفرة** بمعرّفات إنجليزية
+   (`math` · `physics` …)، بينما البطاقة المحفوظة من السبورة تحمل
+   **اسم المادّة العربي** من المنهج (`الرياضيات` · `العلوم الفيزيائية`).
+   فلا يتطابقان أبداً: كل بطاقة تُحفظ من الغرفة تختفي من كل فلتر إلا
+   «الكل» — والطالب لا يعرف لماذا.
+
+   الآن المواد تُشتقّ من **شعبة الطالب** في المنهج، **مع ضمّ أي مادّة
+   موجودة فعلاً في بطاقاته** — فلا تسقط بطاقة من مادّة قديمة أو من
+   شعبة أخرى. */
+const STREAM_KEY = "bz-stream";
 
 interface Card { id: string; front: string; back: string; subject: string; createdAt: number; }
 
@@ -69,6 +70,17 @@ export default function FlashcardsPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [tab, setTab] = useState<Tab>("study");
   const [subject, setSubject] = useState("all");
+  const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
+  const [custom, setCustom] = useState<CustomLesson[]>([]);
+
+  useEffect(() => {
+    try { const v = localStorage.getItem(STREAM_KEY); if (v) setStream(v); } catch { /* معطّل */ }
+  }, []);
+
+  useEffect(() => {
+    const unsub = listenCustomLessons(setCustom);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [newSubject, setNewSubject] = useState("math");
@@ -95,6 +107,16 @@ export default function FlashcardsPage() {
     });
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
+
+  /* مواد الشعبة + كل مادّة لها بطاقات فعلاً. الضمّ ضروري: بطاقة من
+     شعبة سابقة أو مادّة حُذفت من المنهج يجب أن تبقى قابلة للوصول. */
+  const SUBJECTS = useMemo(() => {
+    const all = mergeLessons(custom);
+    const fromCurriculum = [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))];
+    const fromCards = [...new Set(cards.map((c) => c.subject).filter(Boolean))];
+    const names = [...new Set([...fromCurriculum, ...fromCards])];
+    return [{ id: "all", name: "الكل" }, ...names.map((n) => ({ id: n, name: n }))];
+  }, [custom, stream, cards]);
 
   const filtered = subject === "all" ? cards : cards.filter((c) => c.subject === subject);
 
@@ -132,7 +154,7 @@ export default function FlashcardsPage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
-  const subjectName = (id: string) => SUBJECTS.find((s) => s.id === id)?.name ?? id;
+  const subjectName = (id: string) => (SUBJECTS.find((s) => s.id === id)?.name ?? id) || "عامّ";
 
   return (
     <AppShell>

@@ -76,10 +76,14 @@ export default function LibraryPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
-  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
-
+  /* 🐛 React #310 — كان هذا الخطّاف **تحت** الخروج المبكّر.
+     أثناء التحميل تُنفَّذ خطّافات أقلّ، وبعده تُنفَّذ خطّافة إضافية،
+     فتشتكي React: «رُصدت خطّافات أكثر من التصيير السابق».
+     كل الخطّافات يجب أن تسبق أيّ `return`. */
   // عنصر مشارَك عبر رابط: نتجاهل الفلاتر ونرفعه إلى الأعلى ونبرزه
   const sharedId = useQueryParam("item");
+
+  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   const filtered = entries
     .filter((e) => {

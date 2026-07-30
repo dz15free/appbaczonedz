@@ -17,11 +17,25 @@ export interface ChallengeShowcase {
   text: string;
 }
 
+/** مرفق التمرين: صورة أو مستند يراه الطلاب مع السؤال */
+export interface ChallengeAttachment {
+  /** رابط العرض المباشر */
+  url: string;
+  name: string;
+  /** صورة تُعرض داخل البطاقة · مستند يُفتح في تبويب */
+  kind: "image" | "doc";
+}
+
 export interface Challenge {
   question: string;
   createdAt: number;
   open: boolean;
   showcase?: ChallengeShowcase;
+  attachment?: ChallengeAttachment;
+  /** لحظة انتهاء الوقت — مُطلقة لا مدّة.
+      المدّة تحتاج معرفة «متى بدأ» عند كل جهاز، وساعات الأجهزة تختلف؛
+      اللحظة المطلقة تُحسب مرّة واحدة عند الأستاذ فيتّفق الجميع عليها. */
+  deadline?: number;
 }
 
 export interface ChallengeAnswer {
@@ -36,17 +50,35 @@ const MAX_QUESTION = 2000;
 
 /* ═══════════ الأستاذ ═══════════ */
 
-export async function createChallenge(roomId: string, question: string) {
+export async function createChallenge(
+  roomId: string,
+  question: string,
+  opts?: { attachment?: ChallengeAttachment; minutes?: number },
+) {
   const q = question.trim();
-  if (!q) return;
+  // السؤال قد يكون فارغاً إن كان المرفق هو التمرين نفسه (صورة تمرين)
+  if (!q && !opts?.attachment) return;
   // تحدٍّ جديد يبدأ بصفحة نظيفة: نمسح حلول التحدي السابق
   await remove(ref(rtdb, `roomChallengeAnswers/${roomId}`));
   await remove(ref(rtdb, `roomChallengeScores/${roomId}`));
-  await set(ref(rtdb, `roomLive/${roomId}/challenge`), {
+  /* قاعدة البيانات ترفض `undefined` وتُسقط الكتابة كلّها، فنبني
+     الكائن حقلاً حقلاً بدل تمرير خصائص قد تكون غير معرّفة. */
+  const data: Record<string, unknown> = {
     question: q.slice(0, MAX_QUESTION),
     createdAt: Date.now(),
     open: true,
-  });
+  };
+  if (opts?.attachment?.url) {
+    data.attachment = {
+      url: opts.attachment.url,
+      name: opts.attachment.name.slice(0, 120),
+      kind: opts.attachment.kind,
+    };
+  }
+  const m = Number(opts?.minutes);
+  if (Number.isFinite(m) && m > 0) data.deadline = Date.now() + m * 60_000;
+
+  await set(ref(rtdb, `roomLive/${roomId}/challenge`), data);
 }
 
 /** إغلاق التسليم مع إبقاء الحلول ظاهرة للأستاذ */
@@ -143,4 +175,16 @@ export async function archiveChallenge(roomId: string, challenge: Challenge) {
     question: challenge.question,
     at: challenge.createdAt,
   });
+}
+
+
+/** هل انتهى الوقت؟ يُحسب من اللحظة المطلقة فيتّفق عليه كل الأجهزة. */
+export function isChallengeExpired(c: Challenge | null | undefined): boolean {
+  return Boolean(c?.deadline && Date.now() >= c.deadline);
+}
+
+/** ما تبقّى بالثواني — سالب يعني انتهى */
+export function challengeSecondsLeft(c: Challenge | null | undefined): number | null {
+  if (!c?.deadline) return null;
+  return Math.round((c.deadline - Date.now()) / 1000);
 }

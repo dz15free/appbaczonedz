@@ -8,12 +8,14 @@ import {
   faTrophy, faLock, faPenToSquare, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
+import { uploadToDrive } from "@/lib/drive";
 import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
   type Challenge, type ChallengeAnswer,
   listenChallenge, listenMyAnswer, listenMyScore, listenAllAnswers, listenScores,
   submitAnswer, createChallenge, closeChallenge, endChallenge,
+  type ChallengeAttachment, challengeSecondsLeft,
   showcaseAnswer, setAnswerScore, challengeToCard,
 } from "@/features/rooms/challenge";
 
@@ -59,6 +61,29 @@ export function useChallenge(roomId: string) {
 /* ═══════════════════════════════════════════
    1) طبقة الطالب — شريط دعوة + مساحة الحل
 ═══════════════════════════════════════════ */
+/* عدّاد الوقت — يُحسب من اللحظة المطلقة، فيتّفق كل الأجهزة عليه مهما
+   اختلفت ساعاتها. يتحوّل إلى أحمر في آخر دقيقة، ويقول «انتهى الوقت»
+   بدل أن يختفي: اختفاء العدّاد يترك الطالب لا يدري ماذا جرى. */
+function ChallengeCountdown({ deadline }: { deadline: number }) {
+  const [left, setLeft] = useState(() => Math.round((deadline - Date.now()) / 1000));
+  useEffect(() => {
+    const t = setInterval(() => setLeft(Math.round((deadline - Date.now()) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  const over = left <= 0;
+  const urgent = !over && left <= 60;
+  const mm = Math.floor(Math.abs(left) / 60);
+  const ss = Math.abs(left) % 60;
+  return (
+    <div className={`mt-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold ${
+      over || urgent ? "bg-[var(--bz-red-050)] text-[var(--bz-red)]" : "bg-[var(--bz-blue-050)] text-[var(--bz-blue-700)]"
+    }`}>
+      <Icon name="timer" size={14} />
+      {over ? "انتهى الوقت" : `متبقٍّ ${mm}:${String(ss).padStart(2, "0")}`}
+    </div>
+  );
+}
+
 export function StudentChallengeLayer({
   roomId, uid, name, subject, roomName,
 }: {
@@ -130,6 +155,27 @@ export function StudentChallengeLayer({
           {/* السؤال */}
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
             <MathText text={challenge.question} className="text-sm font-semibold leading-relaxed text-text-primary" />
+
+            {/* المرفق: الصورة تُعرض داخل البطاقة (التمرين نفسه غالباً)،
+                والمستند يُفتح في تبويب — لا نُحمّل PDF داخل بطاقة صغيرة. */}
+            {challenge.attachment && (
+              challenge.attachment.kind === "image" ? (
+                <a href={challenge.attachment.url} target="_blank" rel="noreferrer" className="mt-2 block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={challenge.attachment.url} alt={challenge.attachment.name}
+                    className="max-h-64 w-full rounded-xl border border-border object-contain" />
+                </a>
+              ) : (
+                <a href={challenge.attachment.url} target="_blank" rel="noreferrer"
+                  className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-background p-2.5 text-xs font-bold text-primary">
+                  <Icon name="file" size={15} />
+                  <span className="min-w-0 flex-1 truncate">{challenge.attachment.name}</span>
+                  <Icon name="download" size={14} />
+                </a>
+              )
+            )}
+
+            {challenge.deadline && <ChallengeCountdown deadline={challenge.deadline} />}
           </div>
 
           {/* تقييم الأستاذ إن وُجد */}
@@ -215,14 +261,39 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
 }) {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const [minutes, setMinutes] = useState(0);
+  const [att, setAtt] = useState<ChallengeAttachment | null>(null);
+  const [upErr, setUpErr] = useState("");
   const qRef = useRef<HTMLTextAreaElement>(null);
 
-  async function start() {
-    if (!q.trim() || busy) return;
+  /* التمرين قد يكون **صورة** لا نصّاً — تصوير تمرين من الكتاب أشيع بكثير
+     من إعادة كتابته. فنقبل البدء بمرفق وحده. */
+  async function pickFile(f: File | null | undefined) {
+    if (!f) return;
+    setUpErr("");
+    if (f.size > 8 * 1024 * 1024) { setUpErr("الملفّ أكبر من 8 ميغابايت."); return; }
     setBusy(true);
-    await createChallenge(roomId, q);
+    try {
+      const up = await uploadToDrive(f);
+      setAtt({
+        url: `https://drive.google.com/uc?export=view&id=${up.id}`,
+        name: up.name || f.name,
+        kind: f.type.startsWith("image/") ? "image" : "doc",
+      });
+    } catch {
+      setUpErr("تعذّر رفع الملفّ. جرّب مرّة أخرى.");
+    } finally { setBusy(false); }
+  }
+
+  async function start() {
+    if ((!q.trim() && !att) || busy) return;
+    setBusy(true);
+    await createChallenge(roomId, q, {
+      attachment: att ?? undefined,
+      minutes: minutes || undefined,
+    });
     setBusy(false);
-    setQ("");
+    setQ(""); setAtt(null); setMinutes(0);
     onClose();
   }
 
@@ -243,6 +314,50 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
           className="mt-2 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-primary"
         />
         <MathBar taRef={qRef} onChange={setQ} />
+
+        {/* المرفق */}
+        <div className="mt-3 rounded-xl border border-border p-3">
+          <p className="mb-2 text-[11px] font-bold text-text-muted">
+            أرفق صورة التمرين أو ملفّاً (اختياري)
+          </p>
+          {att ? (
+            <div className="flex items-center gap-2 rounded-lg bg-background p-2">
+              <Icon name={att.kind === "image" ? "image" : "file"} size={15} className="text-primary" />
+              <span className="min-w-0 flex-1 truncate text-xs font-semibold">{att.name}</span>
+              <button onClick={() => setAtt(null)} aria-label="إزالة المرفق"
+                className="text-text-muted hover:text-danger">
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-text-muted hover:border-primary hover:text-primary">
+              <Icon name="clip" size={15} />
+              اختر صورة · PDF · Word
+              <input type="file" hidden accept="image/*,.pdf,.doc,.docx"
+                onChange={(e) => pickFile(e.target.files?.[0])} />
+            </label>
+          )}
+          {upErr && <p className="mt-1 text-[11px] font-bold text-danger">{upErr}</p>}
+        </div>
+
+        {/* المؤقّت — مدمج مع التحدّي كما طلبت */}
+        <div className="mt-3 rounded-xl border border-border p-3">
+          <p className="mb-2 text-[11px] font-bold text-text-muted">
+            وقت الحلّ (اختياري) — يظهر عدّ تنازلي لكل الطلاب
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {[0, 5, 10, 15, 20, 30, 45].map((m) => (
+              <button key={m} onClick={() => setMinutes(m)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  minutes === m
+                    ? "bg-[var(--bz-blue)] text-white"
+                    : "border border-border text-text-muted hover:border-primary hover:text-primary"
+                }`}>
+                {m === 0 ? "بلا وقت" : `${m} د`}
+              </button>
+            ))}
+          </div>
+        </div>
         {q.includes("$") && (
           <div className="mt-2 rounded-xl border border-border bg-background p-3">
             <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة كما سيراها الطلاب</p>

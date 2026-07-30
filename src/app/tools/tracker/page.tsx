@@ -1,201 +1,233 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ref, set, onValue } from "firebase/database";
+import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
-import { AppShell } from "@/components/app-shell";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faCircleCheck, faCircleHalfStroke, faCircle } from "@fortawesome/free-solid-svg-icons";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { AppShell } from "@/components/app-shell";
+import { Icon } from "@/components/ui/icon";
+import { STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
+import { listenCustomLessons, mergeLessons, type CustomLesson } from "@/features/study/curriculum-store";
+
+/* ════════════════════════════════════════════════════════════
+   تقدّمي الدراسي — على المنهج الرسمي
+
+   كانت الصفحة تحمل قائمة مواد **مكتوبة في الشيفرة**، وتُخزّن التقدّم
+   **بفهرس الدرس** (`t0` · `t1` …). فأيّ إضافة أو حذف في القائمة يُزيح
+   الفهارس، فيجد الطالب علاماته على دروس أخرى — أسوأ من فقدانها لأنّه
+   لا يلاحظها.
+
+   الآن: المواد من المنهج، والتقدّم مفتاحه **معرّف الدرس** — مستقرّ مهما
+   تغيّرت القائمة أو ترتيبها. ولهذا جعلت معرّفات المحرّر مشتقّة من
+   المحتوى لا من الوقت.
+════════════════════════════════════════════════════════════ */
 
 type Status = "todo" | "partial" | "done";
 
-const SUBJECTS: { id: string; name: string; color: string; topics: string[] }[] = [
-  {
-    id: "math", name: "الرياضيات", color: "text-primary",
-    topics: ["النهايات والاستمرارية", "المشتقات", "التكامل", "الأعداد المركّبة", "المتتاليات", "الاحتمالات", "الهندسة في الفضاء"],
-  },
-  {
-    id: "sciences", name: "العلوم الطبيعية", color: "text-secondary",
-    topics: ["الخلية وتنظيمها", "الوراثة والتكاثر", "الجهاز العصبي", "التوازن الهرموني", "المناعة", "البيئة والتوازنات"],
-  },
-  {
-    id: "physics", name: "الفيزياء والكيمياء", color: "text-warning",
-    topics: ["الميكانيك", "الكهرباء", "الضوء والموجات", "التحولات النووية", "الكيمياء العضوية", "الكيمياء الجزيئية"],
-  },
-  {
-    id: "arabic", name: "اللغة العربية", color: "text-danger",
-    topics: ["التعبير والإنشاء", "فهم المكتوب", "الشعر والنثر", "النحو والصرف", "البلاغة والعروض"],
-  },
-  {
-    id: "french", name: "اللغة الفرنسية", color: "text-primary",
-    topics: ["Compréhension de l'écrit", "Production écrite", "Grammaire et conjugaison", "Vocabulaire"],
-  },
-  {
-    id: "philosophy", name: "الفلسفة", color: "text-secondary",
-    topics: ["منهجية الكتابة الفلسفية", "الفلسفة والعلم", "الحرية والقيم", "الفكر السياسي", "المنطق والاستدلال"],
-  },
-  {
-    id: "history", name: "التاريخ والجغرافيا", color: "text-warning",
-    topics: ["الحرب العالمية الثانية", "الحرب الباردة", "قضية الجزائر", "العالم بعد الحرب الباردة", "الجغرافيا الاقتصادية"],
-  },
-  {
-    id: "english", name: "اللغة الإنجليزية", color: "text-danger",
-    topics: ["Reading Comprehension", "Writing Skills", "Grammar", "Vocabulary", "Oral Expression"],
-  },
-];
+const NEXT: Record<Status, Status> = { todo: "partial", partial: "done", done: "todo" };
 
-const STATUS_META: Record<Status, { icon: typeof faCircle; color: string; label: string }> = {
-  todo:    { icon: faCircle,          color: "text-border",     label: "لم أبدأ" },
-  partial: { icon: faCircleHalfStroke, color: "text-warning",   label: "جارٍ" },
-  done:    { icon: faCircleCheck,     color: "text-secondary",  label: "أتممته" },
+const STATUS_UI: Record<Status, { label: string; bg: string; fg: string; icon: "check" | "target" | "circle" }> = {
+  todo:    { label: "لم يبدأ", bg: "var(--bz-canvas)",     fg: "var(--bz-ink-3)",   icon: "circle" },
+  partial: { label: "جارٍ",    bg: "var(--bz-amber-050)",  fg: "var(--bz-amber)",   icon: "target" },
+  done:    { label: "أتقنته",  bg: "var(--bz-green-050)",  fg: "var(--bz-green)",   icon: "check" },
 };
 
-function nextStatus(s: Status): Status {
-  return s === "todo" ? "partial" : s === "partial" ? "done" : "todo";
-}
+const STREAM_KEY = "bz-stream";
 
 export default function TrackerPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [tab, setTab] = useState("math");
-  const [progress, setProgress] = useState<Record<string, Record<string, Status>>>({});
+  const [custom, setCustom] = useState<CustomLesson[]>([]);
+  const [progress, setProgress] = useState<Record<string, Status>>({});
+  const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
+  const [subject, setSubject] = useState<string>("");
 
   useEffect(() => {
-    if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
+    if (!loading && !user) {
+      router.replace(loginHrefFor(window.location.pathname, window.location.search));
+    }
   }, [loading, user, router]);
+
+  // شعبة الطالب تُحفظ محلّياً: لا يعيد اختيارها كل زيارة
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STREAM_KEY);
+      if (saved) setStream(saved);
+    } catch { /* التخزين قد يكون معطّلاً */ }
+  }, []);
+
+  useEffect(() => {
+    const unsub = listenCustomLessons(setCustom);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
-    const unsub = onValue(ref(rtdb, `studyProgress/${user.uid}`), (snap) => {
-      setProgress(snap.val() ?? {});
+    const unsub = onValue(ref(rtdb, `studyProgress/${user.uid}/lessons`), (snap) => {
+      setProgress((snap.val() as Record<string, Status> | null) ?? {});
     });
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
-  function toggle(subjectId: string, topicIdx: number) {
+  const all = useMemo(() => mergeLessons(custom), [custom]);
+  const subjects = useMemo(
+    () => [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))],
+    [all, stream],
+  );
+
+  // أوّل مادّة تُختار تلقائياً، وتُصحَّح إن غابت بعد تبديل الشعبة
+  useEffect(() => {
+    if (!subjects.includes(subject)) setSubject(subjects[0] ?? "");
+  }, [subjects, subject]);
+
+  const units = useMemo(() => {
+    const rows = all.filter((l) => l.stream === stream && l.subject === subject);
+    const map = new Map<string, Lesson[]>();
+    for (const l of rows.sort((a, b) => a.trimester - b.trimester || a.order - b.order)) {
+      const arr = map.get(l.unit) ?? [];
+      arr.push(l);
+      map.set(l.unit, arr);
+    }
+    return [...map.entries()].map(([unit, lessons]) => ({ unit, lessons }));
+  }, [all, stream, subject]);
+
+  /** النسبة: المُتقَن كامل، والجاري نصف — الطالب يستحقّ اعترافاً بما بدأه */
+  function percentOf(rows: Lesson[]) {
+    if (!rows.length) return 0;
+    let sum = 0;
+    for (const l of rows) {
+      const st = progress[l.id];
+      if (st === "done") sum += 1;
+      else if (st === "partial") sum += 0.5;
+    }
+    return Math.round((sum / rows.length) * 100);
+  }
+
+  const subjectRows = useMemo(
+    () => all.filter((l) => l.stream === stream && l.subject === subject),
+    [all, stream, subject],
+  );
+  const streamRows = useMemo(() => all.filter((l) => l.stream === stream), [all, stream]);
+
+  function cycle(id: string) {
     if (!user) return;
-    const key = `t${topicIdx}`;
-    const cur: Status = (progress[subjectId]?.[key] as Status) ?? "todo";
-    const next = nextStatus(cur);
-    set(ref(rtdb, `studyProgress/${user.uid}/${subjectId}/${key}`), next);
+    const cur = progress[id] ?? "todo";
+    set(ref(rtdb, `studyProgress/${user.uid}/lessons/${id}`), NEXT[cur]);
   }
 
-  function calcPercent(subjectId: string, total: number) {
-    const p = progress[subjectId] ?? {};
-    const done = Object.values(p).filter((v) => v === "done").length;
-    const part = Object.values(p).filter((v) => v === "partial").length;
-    return Math.round(((done + part * 0.5) / total) * 100);
+  function pickStream(s: string) {
+    setStream(s);
+    try { localStorage.setItem(STREAM_KEY, s); } catch { /* لا يضرّ */ }
   }
 
-  const subject = SUBJECTS.find((s) => s.id === tab)!;
-  const pct = calcPercent(tab, subject.topics.length);
-
-  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
+  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل…</div>;
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-4">
-        <div className="mb-5 flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-text-muted hover:text-primary">
-            <FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="font-display text-xl font-extrabold">متتبّع التقدّم الدراسي</h1>
-            <p className="text-xs text-text-muted">اضغط على كل موضوع لتحديث حالته</p>
+      <div className="mx-auto w-full max-w-3xl space-y-4 p-3 sm:p-4">
+        <header>
+          <h1 className="font-display text-xl font-extrabold">تقدّمي الدراسي</h1>
+          <p className="text-xs text-text-muted">
+            برنامج السنة الثالثة ثانوي — اضغط الدرس ليتبدّل: لم يبدأ ← جارٍ ← أتقنته.
+          </p>
+        </header>
+
+        {/* الشعبة */}
+        <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
+          {[...new Set([...STREAMS, ...all.map((l) => l.stream)])].map((s) => (
+            <button key={s} onClick={() => pickStream(s)}
+              className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                stream === s ? "bg-[var(--bz-blue)] text-white"
+                             : "border border-border text-text-muted hover:border-primary hover:text-primary"}`}>
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* تقدّم الشعبة كلّها */}
+        <div className="rounded-2xl border border-border p-3">
+          <div className="mb-1.5 flex items-baseline gap-2">
+            <span className="text-sm font-extrabold">تقدّم الشعبة</span>
+            <span className="font-mono text-lg font-extrabold text-[var(--bz-blue)]">
+              {percentOf(streamRows)}%
+            </span>
+            <span className="ms-auto text-[11px] text-text-muted">{streamRows.length} درساً</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--bz-canvas)]">
+            <div className="h-full rounded-full bg-[var(--bz-blue)] transition-all"
+              style={{ width: `${percentOf(streamRows)}%` }} />
           </div>
         </div>
 
-        {/* تبويبات المواد */}
-        <div className="mb-4 flex flex-wrap gap-2">
-          {SUBJECTS.map((s) => {
-            const pctS = calcPercent(s.id, s.topics.length);
-            const isActive = tab === s.id;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setTab(s.id)}
-                className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                  isActive ? "bg-gradient-primary text-white shadow" : "border border-border text-text-muted hover:border-primary hover:text-primary"
-                }`}
-              >
-                {s.name}
-                {pctS > 0 && (
-                  <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold ${isActive ? "bg-white/20" : "bg-secondary/10 text-secondary"}`}>
-                    {pctS}%
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* المواد */}
+        {subjects.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-muted">
+            لا دروس لهذه الشعبة بعد. تُضاف من لوحة الإدارة.
+          </p>
+        ) : (
+          <>
+            <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
+              {subjects.map((s) => {
+                const rows = all.filter((l) => l.stream === stream && l.subject === s);
+                return (
+                  <button key={s} onClick={() => setSubject(s)}
+                    className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                      subject === s ? "border-[var(--bz-blue)] bg-[var(--bz-blue-050)] text-[var(--bz-blue-700)]"
+                                    : "border-border text-text-muted hover:text-primary"}`}>
+                    {s}
+                    <span className="ms-1.5 font-mono text-[10px] opacity-70">{percentOf(rows)}%</span>
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* شريط التقدّم */}
-        <div className="mb-4 rounded-xl border border-border bg-surface p-4">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span className={`font-bold ${subject.color}`}>{subject.name}</span>
-            <span className="font-extrabold">{pct}%</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-border">
-            <div
-              className="h-full rounded-full bg-gradient-primary transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center gap-4 text-xs text-text-muted">
-            {(["todo","partial","done"] as Status[]).map((s) => {
-              const meta = STATUS_META[s];
-              const count = subject.topics.filter((_,i) => ((progress[tab]?.[`t${i}`] as Status) ?? "todo") === s).length;
-              return (
-                <span key={s} className="flex items-center gap-1">
-                  <FontAwesomeIcon icon={meta.icon} className={`h-3 w-3 ${meta.color}`} />
-                  {count} {meta.label}
+            <div className="rounded-2xl border border-border p-3">
+              <div className="mb-2 flex items-baseline gap-2">
+                <span className="text-sm font-extrabold">{subject}</span>
+                <span className="font-mono text-sm font-extrabold text-[var(--bz-blue)]">
+                  {percentOf(subjectRows)}%
                 </span>
-              );
-            })}
-          </div>
-        </div>
+                <span className="ms-auto text-[11px] text-text-muted">{subjectRows.length} درساً</span>
+              </div>
 
-        {/* قائمة المواضيع */}
-        <div className="space-y-2">
-          {subject.topics.map((topic, i) => {
-            const key = `t${i}`;
-            const status: Status = (progress[tab]?.[key] as Status) ?? "todo";
-            const meta = STATUS_META[status];
-            return (
-              <button
-                key={i}
-                onClick={() => toggle(tab, i)}
-                className={`flex w-full items-center gap-3 rounded-xl border p-4 text-right transition hover:shadow-glass ${
-                  status === "done"
-                    ? "border-secondary/30 bg-secondary/5"
-                    : status === "partial"
-                    ? "border-warning/30 bg-warning/5"
-                    : "border-border bg-surface hover:border-primary/30"
-                }`}
-              >
-                <FontAwesomeIcon icon={meta.icon} className={`h-5 w-5 shrink-0 ${meta.color}`} />
-                <span className={`flex-1 text-sm font-semibold ${status === "done" ? "line-through text-text-muted" : ""}`}>
-                  {topic}
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  status === "done" ? "bg-secondary/10 text-secondary" :
-                  status === "partial" ? "bg-warning/10 text-warning" :
-                  "bg-border text-text-muted"
-                }`}>
-                  {meta.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="mt-4 text-center text-xs text-text-muted">
-          يُحفظ تقدّمك تلقائياً ويظهر على أجهزتك كلّها 📱
-        </p>
-      </section>
+              {/* الوحدات — المنهج مبنيّ على وحدات لا دروس مسطّحة */}
+              <div className="space-y-3">
+                {units.map(({ unit, lessons }) => (
+                  <div key={unit}>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <Icon name="layers" size={12} className="text-text-muted" />
+                      <span className="text-[11.5px] font-bold text-text-muted">{unit}</span>
+                      <span className="ms-auto font-mono text-[10px] text-text-muted">
+                        {percentOf(lessons)}%
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {lessons.map((l) => {
+                        const st = progress[l.id] ?? "todo";
+                        const ui = STATUS_UI[st];
+                        return (
+                          <button key={l.id} onClick={() => cycle(l.id)}
+                            title={`${ui.label} — اضغط للتبديل`}
+                            className="flex w-full items-center gap-2 rounded-xl border border-border px-2.5 py-2 text-right transition hover:border-primary/40">
+                            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg"
+                              style={{ background: ui.bg, color: ui.fg }}>
+                              <Icon name={ui.icon} size={13} />
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-xs font-semibold">{l.title}</span>
+                            <span className="shrink-0 font-mono text-[10px] text-text-muted">ف{l.trimester}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </AppShell>
   );
 }
