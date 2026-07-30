@@ -9,7 +9,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/ui/icon";
 import { STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
-import { listenCustomLessons, mergeLessons, type CustomLesson } from "@/features/study/curriculum-store";
+import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
    تقدّمي الدراسي — على المنهج الرسمي
@@ -40,6 +40,7 @@ export default function TrackerPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [custom, setCustom] = useState<CustomLesson[]>([]);
+  const [hiddenSubs, setHiddenSubs] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, Status>>({});
   const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
   const [subject, setSubject] = useState<string>("");
@@ -63,6 +64,13 @@ export default function TrackerPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
+  /* المواد التي أخفاها الأدمن تختفي من هنا أيضاً — مصدر واحد للقرار،
+     فلا تظهر مادّة في صفحة وتغيب عن أخرى. */
+  useEffect(() => {
+    const unsub = listenHiddenSubjects(setHiddenSubs);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     const unsub = onValue(ref(rtdb, `studyProgress/${user.uid}/lessons`), (snap) => {
@@ -73,8 +81,9 @@ export default function TrackerPage() {
 
   const all = useMemo(() => mergeLessons(custom), [custom]);
   const subjects = useMemo(
-    () => [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))],
-    [all, stream],
+    () => [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))]
+      .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub)),
+    [all, stream, hiddenSubs],
   );
 
   // أوّل مادّة تُختار تلقائياً، وتُصحَّح إن غابت بعد تبديل الشعبة

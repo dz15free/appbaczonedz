@@ -6,7 +6,7 @@ import { ref, push, remove, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { STREAMS } from "@/features/study/curriculum";
-import { listenCustomLessons, mergeLessons, type CustomLesson } from "@/features/study/curriculum-store";
+import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
 import { AppShell } from "@/components/app-shell";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -72,6 +72,7 @@ export default function FlashcardsPage() {
   const [subject, setSubject] = useState("all");
   const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
   const [custom, setCustom] = useState<CustomLesson[]>([]);
+  const [hiddenSubs, setHiddenSubs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     try { const v = localStorage.getItem(STREAM_KEY); if (v) setStream(v); } catch { /* معطّل */ }
@@ -79,6 +80,13 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     const unsub = listenCustomLessons(setCustom);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+
+  /* المواد التي أخفاها الأدمن تختفي من هنا أيضاً — مصدر واحد للقرار،
+     فلا تظهر مادّة في صفحة وتغيب عن أخرى. */
+  useEffect(() => {
+    const unsub = listenHiddenSubjects(setHiddenSubs);
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
   const [front, setFront] = useState("");
@@ -112,11 +120,12 @@ export default function FlashcardsPage() {
      شعبة سابقة أو مادّة حُذفت من المنهج يجب أن تبقى قابلة للوصول. */
   const SUBJECTS = useMemo(() => {
     const all = mergeLessons(custom);
-    const fromCurriculum = [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))];
+    const fromCurriculum = [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))]
+      .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub));
     const fromCards = [...new Set(cards.map((c) => c.subject).filter(Boolean))];
     const names = [...new Set([...fromCurriculum, ...fromCards])];
     return [{ id: "all", name: "الكل" }, ...names.map((n) => ({ id: n, name: n }))];
-  }, [custom, stream, cards]);
+  }, [custom, stream, cards, hiddenSubs]);
 
   const filtered = subject === "all" ? cards : cards.filter((c) => c.subject === subject);
 

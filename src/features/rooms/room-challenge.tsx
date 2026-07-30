@@ -8,7 +8,7 @@ import {
   faTrophy, faLock, faPenToSquare, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { uploadToDrive } from "@/lib/drive";
+import { connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
 import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
@@ -264,10 +264,22 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
   const [minutes, setMinutes] = useState(0);
   const [att, setAtt] = useState<ChallengeAttachment | null>(null);
   const [upErr, setUpErr] = useState("");
+  const [connected, setConnected] = useState(false);
+  useEffect(() => { setConnected(hasDriveToken()); }, [open]);
   const qRef = useRef<HTMLTextAreaElement>(null);
 
   /* التمرين قد يكون **صورة** لا نصّاً — تصوير تمرين من الكتاب أشيع بكثير
      من إعادة كتابته. فنقبل البدء بمرفق وحده. */
+  /* 🐛 كنت أستعمل `lib/drive` الذي يطلب توكن Google **داخل onChange بعد
+     await** — فيخرج من سياق نقرة المستخدم فيحجب المتصفّح النافذة:
+     `[GSI_LOGGER] Failed to open popup window… Maybe blocked by the browser?`
+     الصواب نمط room-files: زرّ ربط صريح يُستدعى **مباشرة في معالج
+     النقرة**، ثم الرفع يستعمل التوكن المخزّن بلا نافذة. */
+  async function connect() {
+    try { await connectDrive(); setConnected(true); setUpErr(""); }
+    catch (e) { setUpErr(e instanceof Error ? e.message : "تعذّر ربط Google."); }
+  }
+
   async function pickFile(f: File | null | undefined) {
     if (!f) return;
     setUpErr("");
@@ -329,6 +341,17 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
                 <Icon name="close" size={14} />
               </button>
             </div>
+          ) : !isDriveConfigured() ? (
+            <p className="rounded-lg bg-background p-2 text-[11px] text-text-muted">
+              رفع الملفّات غير مُفعّل في الإعدادات.
+            </p>
+          ) : !connected ? (
+            // زرّ حقيقي: النافذة تُفتح داخل نقرة المستخدم فلا تُحجب
+            <button onClick={connect}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-primary hover:border-primary">
+              <Icon name="clip" size={15} />
+              اربط Google أولاً لرفع الملفّ
+            </button>
           ) : (
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-text-muted hover:border-primary hover:text-primary">
               <Icon name="clip" size={15} />

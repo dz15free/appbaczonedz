@@ -103,3 +103,51 @@ export async function addLessonsBulk(rows: (Omit<Lesson, "id"> & { id?: string }
   }
   return ok;
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   إخفاء مادّة — تحكّم الأدمن
+
+   الحذف الحقيقي لا يكفي: الدروس الثابتة في الشيفرة لا تُحذف من قاعدة
+   البيانات. فنُسجّل «مادّة مخفيّة» فتختفي من تتبّع الدراسة ومن بطاقات
+   المراجعة معاً، سواء كانت ثابتة أو مُضافة.
+
+   والإخفاء **قابل للتراجع** بخلاف الحذف: خطأ الأدمن لا يُتلف بيانات.
+   وتقدّم الطالب على دروسها يبقى محفوظاً، فإن أُعيدت عاد معها.
+════════════════════════════════════════════════════════════ */
+
+const HIDDEN = "curriculum/hiddenSubjects";
+
+/** مفتاح آمن: قاعدة البيانات ترفض . $ # [ ] / في المفاتيح */
+function subjKey(stream: string, subject: string) {
+  return `${stream}__${subject}`.replace(/[.$#[\]/]/g, "_");
+}
+
+export function listenHiddenSubjects(cb: (hidden: Set<string>) => void) {
+  return onValue(ref(rtdb, HIDDEN), (snap) => {
+    const val = (snap.val() as Record<string, boolean> | null) ?? {};
+    cb(new Set(Object.keys(val).filter((k) => val[k])));
+  });
+}
+
+export function isSubjectHidden(hidden: Set<string>, stream: string, subject: string) {
+  return hidden.has(subjKey(stream, subject));
+}
+
+export async function setSubjectHidden(stream: string, subject: string, hide: boolean) {
+  const r = ref(rtdb, `${HIDDEN}/${subjKey(stream, subject)}`);
+  if (hide) await set(r, true);
+  else await remove(r);
+}
+
+/** حذف نهائي لكل دروس مادّة **مُضافة** — لا يمسّ الثابتة في الشيفرة */
+export async function deleteSubjectLessons(rows: CustomLesson[], stream: string, subject: string) {
+  let n = 0;
+  for (const l of rows) {
+    if (l.stream === stream && l.subject === subject && l.key) {
+      await deleteLesson(l.key);
+      n++;
+    }
+  }
+  return n;
+}

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSiteSubjects } from "@/features/study/subjects-store";
 import Link from "next/link";
 import { ref, push, remove, onValue, query, orderByChild, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -17,31 +18,8 @@ import { SupportChatSheet } from "@/features/support/support-chat";
 import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
 import { ShareButton } from "@/components/ui/share-sheet";
 
-const SUBJECTS = [
-  { id: "all", label: "الكل" },
-  { id: "arabic", label: "اللغة العربية" },
-  { id: "islamic", label: "العلوم الإسلامية" },
-  { id: "math", label: "الرياضيات" },
-  { id: "science", label: "علوم الطبيعة والحياة" },
-  { id: "physics", label: "العلوم الفيزيائية" },
-  { id: "philosophy", label: "الفلسفة" },
-  { id: "history-geo", label: "التاريخ والجغرافيا" },
-  { id: "french", label: "اللغة الفرنسية" },
-  { id: "english", label: "اللغة الإنجليزية" },
-  { id: "amazigh", label: "اللغة الأمازيغية" },
-  { id: "law", label: "القانون" },
-  { id: "accounting", label: "التسيير المحاسبي والمالي" },
-  { id: "economics", label: "الاقتصاد والمناجمنت" },
-  { id: "spanish", label: "اللغة الإسبانية" },
-  { id: "german", label: "اللغة الألمانية" },
-  { id: "italian", label: "اللغة الإيطالية" },
-  { id: "elec-eng", label: "الهندسة الكهربائية" },
-  { id: "mech-eng", label: "الهندسة الميكانيكية" },
-  { id: "process-eng", label: "هندسة الطرائق" },
-  { id: "civil-eng", label: "الهندسة المدنية" },
-  { id: "art-major", label: "مادة التخصص الفني" },
-  { id: "other", label: "أخرى" },
-];
+/* كانت قائمة ثالثة مكتوبة في الشيفرة. صارت من سجلّ المواد، فإضافة
+   مادّة في لوحة الإدارة تظهر هنا وفي الغرف معاً بلا تعديل شيفرة. */
 
 interface LibEntry { id: string; subject: string; chapter: string; title: string; description?: string; fileUrl: string; fileType: string; uploaderId: string; uploaderName: string; createdAt: number; isPaid?: boolean; price?: number; }
 
@@ -51,9 +29,19 @@ function guessType(url: string) {
   return "link";
 }
 function timeAgo(ts: number) { const d = Math.floor((Date.now() - ts) / 86400000); return d === 0 ? "اليوم" : d === 1 ? "أمس" : `منذ ${d} يوم`; }
-function subjectLabel(id: string) { return SUBJECTS.find((s) => s.id === id)?.label ?? id; }
+/* تأخذ القائمة وسيطاً: القائمة صارت حيّة من خطّاف، والدالّة على مستوى
+   الوحدة لا تستطيع قراءة خطّاف. */
+function subjectLabel(list: { id: string; label: string }[], id: string) {
+  return list.find((s) => s.id === id)?.label ?? id;
+}
 
 export default function LibraryPage() {
+  const siteSubjects = useSiteSubjects();
+  // «الكل» أوّلاً كما كانت القائمة الثابتة
+  const SUBJECTS = [
+    { id: "all", label: "الكل" },
+    ...siteSubjects.map((s) => ({ id: s.id, label: s.name })),
+  ];
   const router = useRouter();
 
   const { user, loading } = useAuth();
@@ -225,9 +213,16 @@ export default function LibraryPage() {
 }
 
 /* بطاقة مصدر — تدعم المحتوى المدفوع بالقفل والكود */
+/* بطاقة العنصر مكوّن مستقلّ، فتقرأ سجلّ المواد بنفسها بدل تمريره
+   عبر خاصيّة — القائمة حيّة والقارئ واحد. */
 function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, onDelete }: {
   e: LibEntry; uid: string; isAdmin: boolean; isTeacher: boolean; myUid: string; myName: string; highlighted?: boolean; onDelete: () => void;
 }) {
+  const siteSubjects = useSiteSubjects();
+  const SUBJECTS = [
+    { id: "all", label: "الكل" },
+    ...siteSubjects.map((x) => ({ id: x.id, label: x.name })),
+  ];
   const { settings } = useSiteSettings();
   const [hasAccess, setHasAccess] = useState(false);
   const [showRedeem, setShowRedeem] = useState(false);
@@ -287,7 +282,7 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{subjectLabel(e.subject)}</span>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{subjectLabel(SUBJECTS, e.subject)}</span>
             {e.chapter && <span className="rounded-full bg-border px-2 py-0.5 text-[10px] text-text-muted">{e.chapter}</span>}
             {e.isPaid && (
               <span className="flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">

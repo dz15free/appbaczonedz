@@ -5,7 +5,8 @@ import { Icon } from "@/components/ui/icon";
 import { LESSONS, STREAMS } from "@/features/study/curriculum";
 import {
   listenCustomLessons, mergeLessons, addLesson, addLessonsBulk,
-  deleteLesson, type CustomLesson,
+  deleteLesson, listenHiddenSubjects, isSubjectHidden, setSubjectHidden,
+  deleteSubjectLessons, type CustomLesson,
 } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
@@ -28,6 +29,12 @@ export function CurriculumEditor() {
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [stream, setStream] = useState(STREAMS[0] ?? "");
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const unsub = listenHiddenSubjects(setHidden);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   useEffect(() => {
     const unsub = listenCustomLessons(setCustom);
@@ -205,6 +212,48 @@ export function CurriculumEditor() {
           className="mt-2 rounded-lg border border-[var(--bz-blue)] px-3 py-1.5 text-sm font-bold text-[var(--bz-blue)] disabled:opacity-50">
           أضف
         </button>
+      </div>
+
+      {/* المواد — إظهار وإخفاء وحذف */}
+      <div className="rounded-xl border border-border p-3">
+        <h3 className="mb-2 text-sm font-extrabold">مواد الشعبة الحالية</h3>
+        <p className="mb-2 text-[11px] leading-relaxed text-text-muted">
+          الإخفاء يُزيل المادّة من <b>تتبّع الدراسة</b> و<b>بطاقات المراجعة</b> معاً،
+          وهو <b>قابل للتراجع</b> ولا يُتلف تقدّم الطلاب. أمّا الحذف فيمسّ
+          الدروس المُضافة يدوياً فقط — الثابتة في الشيفرة تُخفى ولا تُحذف.
+        </p>
+        <div className="space-y-1">
+          {[...new Set(mergeLessons(custom).filter((l) => l.stream === stream).map((l) => l.subject))]
+            .map((sub) => {
+              const off = isSubjectHidden(hidden, stream, sub);
+              const own = custom.filter((l) => l.stream === stream && l.subject === sub).length;
+              return (
+                <div key={sub}
+                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
+                    off ? "border-border bg-[var(--bz-canvas)] opacity-60" : "border-border"}`}>
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {sub}{off && <span className="ms-1 text-[10px] text-text-muted">(مخفيّة)</span>}
+                  </span>
+                  <button onClick={() => setSubjectHidden(stream, sub, !off)}
+                    className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[10.5px] font-bold text-text-muted hover:text-primary">
+                    {off ? "إظهار" : "إخفاء"}
+                  </button>
+                  {own > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`حذف ${own} درساً مُضافاً من «${sub}»؟ لا رجعة.`)) return;
+                        const n = await deleteSubjectLessons(custom, stream, sub);
+                        setMsg({ kind: "ok", text: `حُذف ${n} درساً.` });
+                      }}
+                      className="shrink-0 text-text-muted hover:text-[var(--bz-red)]"
+                      aria-label="حذف الدروس المُضافة">
+                      <Icon name="trash" size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+        </div>
       </div>
 
       {/* المُضاف — للمراجعة والحذف */}

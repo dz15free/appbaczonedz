@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ALL_SUBJECTS } from "@/lib/constants";
+import { useSiteSubjects } from "@/features/study/subjects-store";
 import { useRouter } from "next/navigation";
 import { createRoom, type RoomType } from "@/features/rooms/rooms";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -15,32 +17,15 @@ const TYPES: { id: RoomType; label: string }[] = [
   { id: "teacher", label: "أستاذ" },
 ];
 
-export const ROOM_SUBJECTS = [
-  { id: "", label: "عام (بدون مادة)" },
-  { id: "arabic", label: "اللغة العربية" },
-  { id: "islamic", label: "العلوم الإسلامية" },
-  { id: "math", label: "الرياضيات" },
-  { id: "science", label: "علوم الطبيعة والحياة" },
-  { id: "physics", label: "العلوم الفيزيائية" },
-  { id: "philosophy", label: "الفلسفة" },
-  { id: "history-geo", label: "التاريخ والجغرافيا" },
-  { id: "french", label: "اللغة الفرنسية" },
-  { id: "english", label: "اللغة الإنجليزية" },
-  { id: "amazigh", label: "اللغة الأمازيغية" },
-  { id: "law", label: "القانون" },
-  { id: "accounting", label: "التسيير المحاسبي والمالي" },
-  { id: "economics", label: "الاقتصاد والمناجمنت" },
-  { id: "spanish", label: "اللغة الإسبانية" },
-  { id: "german", label: "اللغة الألمانية" },
-  { id: "italian", label: "اللغة الإيطالية" },
-  { id: "elec-eng", label: "الهندسة الكهربائية" },
-  { id: "mech-eng", label: "الهندسة الميكانيكية" },
-  { id: "process-eng", label: "هندسة الطرائق" },
-  { id: "civil-eng", label: "الهندسة المدنية" },
-  { id: "art-major", label: "مادة التخصص الفني" },
-];
+/* ROOM_SUBJECTS بقيت كقيمة احتياطية فقط — القائمة الحيّة تأتي من سجلّ
+   المواد فيتحكّم بها الأدمن. */
+/* نُبقي `label` إلى جانب `name`: مستهلكون آخرون (صفحة الغرف · جدولة
+   حصّة · الحصص القادمة) يقرؤون `label`، وتغييرها كان سيكسرهم بلا داعٍ. */
+export const ROOM_SUBJECTS = ALL_SUBJECTS.map((s) => ({ id: s.id, name: s.name, label: s.name }));
 
 export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
+  // القائمة الحيّة من سجلّ المواد — يتحكّم بها الأدمن بلا إعادة نشر
+  const siteSubjects = useSiteSubjects();
   const router = useRouter();
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
@@ -91,8 +76,8 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               onChange={(e) => setSubject(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
             >
-              {ROOM_SUBJECTS.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
+              {siteSubjects.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
