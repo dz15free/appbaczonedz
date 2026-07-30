@@ -8,7 +8,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/ui/icon";
-import { STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
+import { OFFICIAL_STREAMS, STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
 import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
@@ -145,7 +145,7 @@ export default function TrackerPage() {
 
         {/* الشعبة */}
         <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
-          {[...new Set([...STREAMS, ...all.map((l) => l.stream)])].map((s) => (
+          {[...new Set([...OFFICIAL_STREAMS, ...all.map((l) => l.stream)])].map((s) => (
             <button key={s} onClick={() => pickStream(s)}
               className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                 stream === s ? "bg-[var(--bz-blue)] text-white"

@@ -7,6 +7,7 @@ import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { STREAMS } from "@/features/study/curriculum";
 import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
+import { useSiteSubjects } from "@/features/study/subjects-store";
 import { AppShell } from "@/components/app-shell";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -73,6 +74,7 @@ export default function FlashcardsPage() {
   const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
   const [custom, setCustom] = useState<CustomLesson[]>([]);
   const [hiddenSubs, setHiddenSubs] = useState<Set<string>>(new Set());
+  const siteSubjects = useSiteSubjects();
 
   useEffect(() => {
     try { const v = localStorage.getItem(STREAM_KEY); if (v) setStream(v); } catch { /* معطّل */ }
@@ -120,12 +122,16 @@ export default function FlashcardsPage() {
      شعبة سابقة أو مادّة حُذفت من المنهج يجب أن تبقى قابلة للوصول. */
   const SUBJECTS = useMemo(() => {
     const all = mergeLessons(custom);
+    /* ثلاثة مصادر: مواد الموقع التي يديرها الأدمن · مواد المنهج لشعبة
+       الطالب · وكل مادّة لها بطاقات فعلاً. الأخيرة تضمن ألّا تختفي
+       بطاقة بسبب تغيير في القوائم. */
+    const fromSite = siteSubjects.map((x) => x.name);
     const fromCurriculum = [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))]
       .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub));
     const fromCards = [...new Set(cards.map((c) => c.subject).filter(Boolean))];
-    const names = [...new Set([...fromCurriculum, ...fromCards])];
+    const names = [...new Set([...fromSite, ...fromCurriculum, ...fromCards])];
     return [{ id: "all", name: "الكل" }, ...names.map((n) => ({ id: n, name: n }))];
-  }, [custom, stream, cards, hiddenSubs]);
+  }, [custom, stream, cards, hiddenSubs, siteSubjects]);
 
   const filtered = subject === "all" ? cards : cards.filter((c) => c.subject === subject);
 
@@ -161,6 +167,22 @@ export default function FlashcardsPage() {
     await remove(ref(rtdb, `flashcards/${user.uid}/${id}`));
   }
 
+  /* حذف كلّي: مسح العقدة **مرّة واحدة** لا حلقة على كل بطاقة.
+     مئة بطاقة = مئة طلب في الحلقة، وطلب واحد هنا — والفرق يظهر على
+     حصّة Firebase وعلى شبكة الطالب معاً. */
+  async function deleteAll() {
+    if (!user || cards.length === 0) return;
+    const n = subject === "all" ? cards.length : filtered.length;
+    const what = subject === "all" ? "كل بطاقاتك" : `بطاقات «${subjectName(subject)}»`;
+    if (!confirm(`حذف ${what} (${n} بطاقة)؟ لا يمكن التراجع.`)) return;
+    if (subject === "all") {
+      await remove(ref(rtdb, `flashcards/${user.uid}`));
+      return;
+    }
+    // حذف مادّة واحدة: لا مفرّ من المرور على بطاقاتها
+    for (const c of filtered) await remove(ref(rtdb, `flashcards/${user.uid}/${c.id}`));
+  }
+
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   const subjectName = (id: string) => (SUBJECTS.find((s) => s.id === id)?.name ?? id) || "عامّ";
@@ -186,7 +208,7 @@ export default function FlashcardsPage() {
             {(["study", "add", "manage"] as Tab[]).map((t) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`rounded-full px-4 py-1.5 text-sm font-bold ${tab === t ? "bg-gradient-primary text-white" : "border border-border text-text-muted hover:text-primary"}`}>
-                {t === "study" ? "📖 مراجعة" : t === "add" ? "➕ إضافة" : "🗂️ بطاقاتي"}
+                {t === "study" ? "مراجعة" : t === "add" ? "إضافة" : "بطاقاتي"}
               </button>
             ))}
           </div>
@@ -309,6 +331,21 @@ export default function FlashcardsPage() {
         {/* ══════ تبويب الإدارة ══════ */}
         {!studying && tab === "manage" && (
           <div>
+            {cards.length > 0 && (
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-xs text-text-muted">
+                  {subject === "all" ? `${cards.length} بطاقة` : `${filtered.length} في هذه المادّة`}
+                </span>
+                <button
+                  onClick={deleteAll}
+                  className="ms-auto flex items-center gap-1.5 rounded-lg border border-[#F3C9C6] bg-[var(--bz-red-050)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--bz-red)] transition hover:brightness-95"
+                >
+                  <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                  {subject === "all" ? "حذف كل البطاقات" : "حذف بطاقات هذه المادّة"}
+                </button>
+              </div>
+            )}
+
             {cards.length === 0 ? (
               <p className="py-10 text-center text-sm text-text-muted">لا بطاقات بعد.</p>
             ) : (

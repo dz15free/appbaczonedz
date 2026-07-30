@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { LESSONS, STREAMS } from "@/features/study/curriculum";
+import { LESSONS, STREAMS, OFFICIAL_STREAMS } from "@/features/study/curriculum";
 import {
   listenCustomLessons, mergeLessons, addLesson, addLessonsBulk,
   deleteLesson, listenHiddenSubjects, isSubjectHidden, setSubjectHidden,
@@ -262,7 +262,7 @@ export function CurriculumEditor() {
           <h3 className="text-sm font-extrabold">الدروس المُضافة</h3>
           <select value={stream} onChange={(e) => setStream(e.target.value)}
             className="rounded-lg border border-border bg-surface px-2 py-1 text-xs outline-none">
-            {[...new Set([...STREAMS, ...custom.map((c) => c.stream)])].map((s) => (
+            {[...new Set([...OFFICIAL_STREAMS, ...custom.map((c) => c.stream)])].map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
