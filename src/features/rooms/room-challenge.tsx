@@ -8,7 +8,7 @@ import {
   faTrophy, faLock, faPenToSquare, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
+import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
 import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
@@ -265,7 +265,23 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
   const [att, setAtt] = useState<ChallengeAttachment | null>(null);
   const [upErr, setUpErr] = useState("");
   const [connected, setConnected] = useState(false);
-  useEffect(() => { setConnected(hasDriveToken()); }, [open]);
+  const [driveReady, setDriveReady] = useState(false);
+
+  /* 🐛 «لم تكتمل تهيئة Google بعد» — كنت أستدعي connectDrive() دون
+     initDrive() التي تُحمّل سكربت Google وتُنشئ tokenClient. صفحة
+     الملفّات تستدعيها عند التركيب، ونسيتها هنا.
+     نُهيّئ عند **فتح الدرج** لا عند تركيب الصفحة: لا نُحمّل سكربتاً
+     خارجياً لكل أستاذ لم يفتح التحدّي أصلاً. */
+  useEffect(() => {
+    if (!open || !isDriveConfigured()) return;
+    let alive = true;
+    initDrive().then((ok) => {
+      if (!alive) return;
+      setDriveReady(ok);
+      setConnected(hasDriveToken());
+    });
+    return () => { alive = false; };
+  }, [open]);
   const qRef = useRef<HTMLTextAreaElement>(null);
 
   /* التمرين قد يكون **صورة** لا نصّاً — تصوير تمرين من الكتاب أشيع بكثير
@@ -276,6 +292,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
      الصواب نمط room-files: زرّ ربط صريح يُستدعى **مباشرة في معالج
      النقرة**، ثم الرفع يستعمل التوكن المخزّن بلا نافذة. */
   async function connect() {
+    if (!driveReady) { setUpErr("جارٍ تهيئة Google… أعد المحاولة بعد لحظة."); return; }
     try { await connectDrive(); setConnected(true); setUpErr(""); }
     catch (e) { setUpErr(e instanceof Error ? e.message : "تعذّر ربط Google."); }
   }
@@ -347,10 +364,10 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
             </p>
           ) : !connected ? (
             // زرّ حقيقي: النافذة تُفتح داخل نقرة المستخدم فلا تُحجب
-            <button onClick={connect}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-primary hover:border-primary">
+            <button onClick={connect} disabled={!driveReady}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-primary transition hover:border-primary disabled:cursor-wait disabled:opacity-60">
               <Icon name="clip" size={15} />
-              اربط Google أولاً لرفع الملفّ
+              {driveReady ? "اربط Google أولاً لرفع الملفّ" : "جارٍ التهيئة…"}
             </button>
           ) : (
             <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-text-muted hover:border-primary hover:text-primary">
