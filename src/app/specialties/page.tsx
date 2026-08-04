@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
-import { absUrl } from "@/features/guide/guide-store";
+import { absUrl } from "@/features/guide/site-url";
 
 /* ════════════════════════════════════════════════════════════
    دليل التخصّصات — صفحة عامّة

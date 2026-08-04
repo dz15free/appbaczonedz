@@ -4,6 +4,8 @@ import { ref, onValue, set, remove, update, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
+// إعادة تصدير: المستوردون القدامى لا ينكسرون، والمصدر ملفّ محايد
+export { absUrl, SITE_URL } from "@/features/guide/site-url";
 
 /* ════════════════════════════════════════════════════════════
    محتوى دليل التخصّصات — تكتبه أنت
@@ -22,16 +24,6 @@ import { SEED_CONTENT } from "@/features/guide/seed-content";
 
 const PATH = "guide/specialities";
 
-/* الرابط المطلق: Google يرفض الروابط النسبية في JSON-LD
-   («الحقل item يحتوي على رابط غير صالح»). نبنيه من مكان واحد فلا
-   يتفرّق بين الصفحات. */
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com"
-).replace(/\/+$/, "");
-
-export function absUrl(path: string): string {
-  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
-}
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */

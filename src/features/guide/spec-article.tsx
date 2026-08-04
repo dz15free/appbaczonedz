@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/ui/icon";
-import { listenGuide, linkOf, absUrl, type SpecFull } from "@/features/guide/guide-store";
+import { listenGuide, linkOf, type SpecFull } from "@/features/guide/guide-store";
+import { absUrl } from "@/features/guide/site-url";
 
 /* ════════════════════════════════════════════════════════════
    عرض موضوع التخصّص
