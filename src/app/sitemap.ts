@@ -22,6 +22,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
 
+  /* نُدرج المعرّف الأصلي: الرابط المخصّص يعيش في قاعدة البيانات ولا
+     تصل إليه الخريطة الساكنة، والصفحة تقبل الشكلين فلا يضيع شيء. */
   const specs: MetadataRoute.Sitemap = SPEC_INDEX.map((s) => ({
     url: `${BASE}/specialties/${s.slug}`,
     lastModified: now,

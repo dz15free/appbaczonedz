@@ -754,3 +754,281 @@ body.bz-fullscreen-active .bz-voicebar {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 -8px 24px -12px rgba(19, 23, 34, .3);
 }
+
+/* ════════════════════════════════════════════════════════════
+   دليل التخصّصات — هوية بصرية خاصّة
+
+   الدليل محتوى عامّ يصل إليه غريب عن المنصّة من Google. فيحتاج شخصية
+   تميّزه: ترويسة داكنة عميقة تُبرز العنوان، وبطاقات هادئة تحته.
+
+   القياسات بـ`clamp()` لا بنقاط توقّف: العنوان ينمو مع الشاشة بسلاسة
+   بدل أن يقفز قفزات، وهو أهدأ على الهاتف.
+   ════════════════════════════════════════════════════════════ */
+
+.bz-guide { background: var(--bz-canvas); }
+
+.bz-guide-hero {
+  position: relative;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 85% -20%, #2E5BE6 0%, transparent 55%),
+    radial-gradient(90% 120% at 10% 0%, #1A3FB0 0%, transparent 60%),
+    linear-gradient(180deg, #17203A 0%, #131A2E 100%);
+}
+/* شبكة خفيفة جداً: تُذكّر بورقة الرياضيات دون أن تشتّت */
+.bz-guide-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .06;
+  background-image:
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+}
+.bz-guide-hero > * { position: relative; z-index: 1; }
+
+.bz-guide-kicker {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #BFD0FF;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .16);
+}
+
+.bz-guide-stat {
+  padding: 5px 11px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #DCE6FD;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .14);
+}
+
+/* البحث يلتصق بالأعلى: 260 تخصّصاً تعني تمريراً طويلاً، ومن يمرّر
+   ويريد البحث لا يجب أن يعود إلى الأعلى. */
+.bz-guide-search {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  margin-inline: -12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bz-canvas) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--bz-line);
+}
+@media (min-width: 640px) { .bz-guide-search { margin-inline: 0; padding-inline: 0; } }
+
+.bz-guide-chip {
+  flex: 0 0 auto;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  color: var(--bz-ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: transform .12s, border-color .15s, background .15s;
+}
+.bz-guide-chip:active { transform: scale(.96); }
+.bz-guide-chip.is-on {
+  background: var(--bz-blue);
+  border-color: var(--bz-blue);
+  color: #fff;
+}
+
+/* ── بطاقة التخصّص ── */
+.bz-spec-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  transition: transform .16s cubic-bezier(.2, .8, .2, 1), box-shadow .16s, border-color .16s;
+}
+.bz-spec-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--bz-blue-100);
+  box-shadow: 0 10px 26px -14px rgba(19, 23, 34, .3);
+}
+.bz-spec-card:active { transform: translateY(0) scale(.99); }
+.bz-spec-card.is-soon { opacity: .62; cursor: default; }
+.bz-spec-card.is-soon:hover { transform: none; box-shadow: none; border-color: var(--bz-line); }
+
+.bz-spec-name { font-size: 14.5px; font-weight: 800; color: var(--bz-ink); }
+.bz-spec-fr   { font-size: 11px; color: var(--bz-ink-3); }
+.bz-spec-ex {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--bz-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;          /* سطران: البطاقات تبقى متساوية */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bz-spec-go {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--bz-blue);
+}
+.bz-spec-soon {
+  margin-top: 8px;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--bz-amber);
+  background: var(--bz-amber-050);
+}
+
+/* ── أقسام الموضوع ── */
+.bz-spec-sec {
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+}
+.bz-spec-sec > h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--bz-blue-700);
+}
+/* الإيجابيات والسلبيات تُقرأ بلونها قبل قراءة عنوانها */
+.bz-spec-sec.is-pro { border-inline-start: 3px solid var(--bz-green); }
+.bz-spec-sec.is-pro > h2 { color: var(--bz-green); }
+.bz-spec-sec.is-con { border-inline-start: 3px solid var(--bz-amber); }
+.bz-spec-sec.is-con > h2 { color: var(--bz-amber); }
+
+.bz-spec-p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 2;            /* العربية تحتاج تنفّساً أكبر بين السطور */
+  color: var(--bz-ink-2);
+}
+.bz-spec-list { margin: 8px 0; padding: 0; list-style: none; }
+.bz-spec-list li {
+  position: relative;
+  padding-inline-start: 18px;
+  margin-bottom: 7px;
+  font-size: 14px;
+  line-height: 1.95;
+  color: var(--bz-ink-2);
+}
+.bz-spec-list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bz-blue);
+}
+.bz-spec-note {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  line-height: 1.85;
+  color: #8A5A12;
+  background: var(--bz-amber-050);
+}
+
+.bz-spec-rel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bz-ink);
+  transition: border-color .15s, transform .12s;
+}
+.bz-spec-rel:hover { border-color: var(--bz-blue-100); transform: translateX(-2px); }
+
+/* الوضع الداكن */
+.dark .bz-spec-card,
+.dark .bz-spec-sec,
+.dark .bz-spec-rel { background: #1B1F27; }
+.dark .bz-guide-chip { background: #1B1F27; }
+
+/* ── بطاقة التخصّصات في الرئيسية ──
+   داكنة وسط بطاقات فاتحة: تلفت النظر بالتباين لا بحجم أكبر، فلا تزاحم
+   بقيّة الصفحة. */
+.bz-home-guide {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #1A3FB0 0%, #2350D9 55%, #2E5BE6 100%);
+  box-shadow: 0 12px 30px -16px rgba(35, 80, 217, .7);
+  transition: transform .18s cubic-bezier(.2, .8, .2, 1), box-shadow .18s;
+}
+.bz-home-guide:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -18px rgba(35, 80, 217, .8); }
+.bz-home-guide:active { transform: translateY(0) scale(.995); }
+
+/* توهّج خفيف يتحرّك عند التحويم — إشارة حياة لا زخرفة صاخبة */
+.bz-home-guide-bg {
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 260px; height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,255,255,.22) 0%, transparent 65%);
+  transition: transform .4s ease;
+}
+.bz-home-guide:hover .bz-home-guide-bg { transform: translate(-14px, 14px); }
+
+.bz-home-guide-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+.bz-home-guide-cta {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #1A3FB0;
+  background: #fff;
+}
+/* على الهاتف يختفي الزرّ: البطاقة كلّها قابلة للضغط، وزرّ إضافي يضيّق
+   النصّ بلا فائدة. */
+@media (min-width: 480px) { .bz-home-guide-cta { display: inline-flex; } }

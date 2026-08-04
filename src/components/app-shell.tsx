@@ -5,7 +5,7 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -35,6 +35,9 @@ const NAV = [
   { href: "/rooms", label: "الغرف", icon: faUsers },
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/library", label: "المكتبة", icon: faBookOpen },
+  /* «تخصّصي» لا «دليل التخصّصات»: الطالب لا يبحث عن دليل، يبحث عن
+     مستقبله. الكلمة القصيرة تناسب الشريط أيضاً. */
+  { href: "/specialties", label: "تخصّصي", icon: faGraduationCap },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
 ];
 
@@ -69,6 +72,7 @@ const MENU_ITEMS_BASE = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
+  { href: "/specialties", label: "تعرّف على تخصّصك الجامعي", icon: faGraduationCap, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GuideEditor } from "@/features/admin/guide-editor";
 import { SubjectsEditor } from "@/features/admin/subjects-editor";
 import { CurriculumEditor } from "@/features/admin/curriculum-editor";
 import { useRouter } from "next/navigation";
@@ -163,6 +164,7 @@ const TABS = [
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
   { id: "curriculum", label: "المنهج",   icon: faBookOpen },
   { id: "subjects",  label: "المواد",    icon: faBookOpen },
+  { id: "guide",     label: "دليل التخصّصات", icon: faBookOpen },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
   { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
@@ -475,6 +477,8 @@ export default function AdminPage() {
         {tab === "curriculum" && <CurriculumEditor />}
 
         {tab === "subjects" && <SubjectsEditor />}
+
+        {tab === "guide" && <GuideEditor />}
 
         {tab === "overview" && (
           <div className="space-y-4">
