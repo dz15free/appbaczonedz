@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
 import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -52,9 +52,14 @@ export default function PlannerPage() {
     if (!node || exporting) return;
     setExporting(true);
     try {
+      /* 🐛 القصّ من الأسفل على الهاتف: `getBoundingClientRect().height`
+         يُرجع الارتفاع **المرئي**، فإن كان المخطّط أطول من حاويته
+         (وهو الغالب على شاشة ضيّقة) ضاع ما تحته.
+         `scrollHeight`/`scrollWidth` يُرجعان المحتوى **كاملاً** بما
+         يتجاوز الإطار، فنأخذ الأكبر منهما ضماناً. */
       const rect = node.getBoundingClientRect();
-      const w = Math.round(rect.width);
-      const h = Math.round(rect.height);
+      const w = Math.round(Math.max(rect.width, node.scrollWidth));
+      const h = Math.round(Math.max(rect.height, node.scrollHeight));
       const scale = 3; // دقّة عالية للطباعة والمشاركة
 
       // الخصائص التي تكفي لإعادة إنتاج المظهر بدقّة
@@ -152,8 +157,38 @@ export default function PlannerPage() {
         </button>
 
         <div className="rounded-2xl border border-border bg-surface p-4">
-          <h1 className="font-display text-xl font-extrabold">🖨️ مخطّط البكالوريا للطباعة</h1>
+          <h1 className="font-display text-xl font-extrabold">مخطّط البكالوريا للطباعة</h1>
           <p className="mt-1 text-sm text-text-muted">اختر التصميم والحجم، ثم اطبعه واملأه يدوياً أو استعمله رقمياً.</p>
+
+          {/* بلانرات جاهزة: من يريد التنظيم اليوم لا يريد تصميماً — يريد
+              ملفّاً يطبعه الآن. فنعرضهما قبل أدوات التخصيص. */}
+          <div className="mt-4 rounded-xl border border-[var(--bz-blue-100)] bg-[var(--bz-blue-050)] p-3">
+            <p className="mb-2 text-[12px] font-extrabold text-[var(--bz-blue-700)]">
+              أو حمّل بلانراً جاهزاً بصيغة PDF
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <a href="https://www.baczonedz.com/2026/07/planner-2027.html"
+                target="_blank" rel="noreferrer" className="bz-plan-dl">
+                <span className="bz-plan-ico">
+                  <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-extrabold">بلانر تنظيم الوقت</span>
+                  <span className="block text-[11px] text-text-muted">بكالوريا 2027 · PDF</span>
+                </span>
+              </a>
+              <a href="https://www.baczonedz.com/2026/07/pdf-2027_0355167680.html"
+                target="_blank" rel="noreferrer" className="bz-plan-dl">
+                <span className="bz-plan-ico">
+                  <FontAwesomeIcon icon={faFileArrowDown} className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-extrabold">أقوى بلانر للمراجعة</span>
+                  <span className="block text-[11px] text-text-muted">تنظيم وقت الدراسة · PDF</span>
+                </span>
+              </a>
+            </div>
+          </div>
 
           {/* اختيار القالب */}
           <div className="mt-4">

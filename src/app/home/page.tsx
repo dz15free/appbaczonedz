@@ -292,24 +292,43 @@ export default function HomePage() {
             <h3 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h3>
 
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
-            <Link href="/specialties" className="bz-home-guide group">
-              <span className="bz-home-guide-bg" aria-hidden />
-              <span className="bz-home-guide-in">
-                <span className="bz-home-guide-icon">
-                  <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" />
-                </span>
-                <span className="bz-home-guide-txt">
-                  <span className="bz-home-guide-t">ماذا ستدرس بعد البكالوريا؟</span>
-                  <span className="bz-home-guide-d">
-                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.
+            <div className="bz-res-grid">
+              <Link href="/specialties" className="bz-res-card is-blue">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
                   </span>
+                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
-                <span className="bz-home-guide-cta">
-                  اكتشف
-                  <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
+              </Link>
+
+              <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">نظّم مراجعتك من اليوم</span>
+                    <span className="bz-res-d">أنشئ برنامج مراجعة يناسب وقتك ومستواك.</span>
+                  </span>
+                  <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
-              </span>
-            </Link>
+              </a>
+
+              <Link href="/tools/planner" className="bz-res-card is-amber">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarDays} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">مخطّط البكالوريا للطباعة</span>
+                    <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
+                  </span>
+                  <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+            </div>
 
             <div className="space-y-3">
               {EXTERNAL.map((q) => (
@@ -375,24 +394,43 @@ export default function HomePage() {
           <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
-          <Link href="/specialties" className="bz-home-guide group">
-              <span className="bz-home-guide-bg" aria-hidden />
-              <span className="bz-home-guide-in">
-                <span className="bz-home-guide-icon">
-                  <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" />
-                </span>
-                <span className="bz-home-guide-txt">
-                  <span className="bz-home-guide-t">ماذا ستدرس بعد البكالوريا؟</span>
-                  <span className="bz-home-guide-d">
-                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.
+          <div className="bz-res-grid">
+              <Link href="/specialties" className="bz-res-card is-blue">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
                   </span>
+                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
-                <span className="bz-home-guide-cta">
-                  اكتشف
-                  <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
+              </Link>
+
+              <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">نظّم مراجعتك من اليوم</span>
+                    <span className="bz-res-d">أنشئ برنامج مراجعة يناسب وقتك ومستواك.</span>
+                  </span>
+                  <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
-              </span>
-            </Link>
+              </a>
+
+              <Link href="/tools/planner" className="bz-res-card is-amber">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarDays} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">مخطّط البكالوريا للطباعة</span>
+                    <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
+                  </span>
+                  <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+            </div>
 
           <ExternalGrid />
         </div>

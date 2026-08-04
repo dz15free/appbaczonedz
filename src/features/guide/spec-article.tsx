@@ -24,6 +24,20 @@ const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pr
   { key: "verdict",   label: "الخلاصة",                    icon: "check" },
 ];
 
+/* يُصيّر **الغامق** بلا مكتبة Markdown.
+   نُقسّم على `**` ثم نُغمّق الأجزاء الفردية — تركيب بسيط لا يحتمل
+   ثغرة حقن لأنّنا نُنشئ عناصر React لا HTML خامّاً. */
+function Rich({ text }: { text: string }) {
+  const parts = text.split("**");
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 === 1 ? <strong key={i} className="font-extrabold text-[var(--bz-ink)]">{p}</strong> : <span key={i}>{p}</span>,
+      )}
+    </>
+  );
+}
+
 function Body({ text }: { text: string }) {
   return (
     <>
@@ -34,12 +48,12 @@ function Body({ text }: { text: string }) {
           return (
             <ul key={i} className="bz-spec-list">
               {t.split("\n").filter(Boolean).map((li, j) => (
-                <li key={j}>{li.replace(/^[•\-]\s*/, "")}</li>
+                <li key={j}><Rich text={li.replace(/^[•\-]\s*/, "")} /></li>
               ))}
             </ul>
           );
         }
-        return <p key={i} className="bz-spec-p">{t}</p>;
+        return <p key={i} className="bz-spec-p"><Rich text={t} /></p>;
       })}
     </>
   );
@@ -102,10 +116,15 @@ export function SpecArticle({ slug }: { slug: string }) {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: `تخصّص ${spec.ar}${spec.fr ? ` — ${spec.fr}` : ""}`,
-    description: spec.excerpt || (spec.intro ?? "").slice(0, 155),
+    /* الوصف من `excerpt` أوّلاً: المقدّمة تحوي علامات ** فتظهر في
+       نتيجة البحث حرفيّاً لو أخذناها كما هي. */
+    description: (spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "")).slice(0, 160),
     inLanguage: "ar",
     about: { "@type": "Thing", name: spec.field },
     publisher: { "@type": "Organization", name: "BacZone" },
+    ...(spec.updatedAt
+      ? { dateModified: new Date(spec.updatedAt).toISOString() }
+      : {}),
     mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/specialties/${linkOf(spec)}`) },
   };
 

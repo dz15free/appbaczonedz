@@ -12,6 +12,7 @@ import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { BADGES, earnedBadges } from "@/features/gamification/points";
+import { listenExcluded } from "@/features/admin/moderation";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 interface Player {
@@ -36,7 +37,15 @@ export default function LeaderboardPage() {
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [myRank, setMyRank] = useState<number | null>(null);
+
+  /* المستبعدون بقرار الإدارة لا يظهرون — نقاط مضخّمة أو حساب تجريبي
+     يُفسدان معنى الترتيب كلّه. */
+  useEffect(() => {
+    const unsub = listenExcluded(setExcluded);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -62,10 +71,14 @@ export default function LeaderboardPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
+  /* التصفية عند العرض لا داخل onValue: قائمة الاستبعاد قد تصل بعد
+     اللاعبين، فالتصفية وقت القراءة كانت ستستعمل مجموعة فارغة. */
+  const visible = players.filter((p) => !excluded.has(p.uid));
+
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
-  const top3 = players.slice(0, 3);
-  const rest = players.slice(3, 30);
+  const top3 = visible.slice(0, 3);
+  const rest = visible.slice(3, 30);
 
   return (
     <AppShell>
@@ -168,7 +181,7 @@ export default function LeaderboardPage() {
           })}
         </div>
 
-        {players.length === 0 && (
+        {visible.length === 0 && (
           <div className="py-16 text-center text-text-muted">
             <FontAwesomeIcon icon={faTrophy} className="h-10 w-10" />
             <p className="mt-3 text-sm">لا بيانات بعد — انشر وعلّق لتكسب النقاط!</p>

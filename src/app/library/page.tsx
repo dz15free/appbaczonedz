@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ReportLinkButton } from "@/features/community/report-link";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import Link from "next/link";
 import { ref, push, remove, onValue, query, orderByChild, limitToLast } from "firebase/database";
@@ -301,6 +302,7 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
               · {timeAgo(e.createdAt)}
             </p>
             {e.isPaid && <ContentRatingBadge itemId={e.id} showEmpty />}
+            <ReportLinkButton itemId={e.id} itemTitle={e.title} url={e.fileUrl} compact />
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">

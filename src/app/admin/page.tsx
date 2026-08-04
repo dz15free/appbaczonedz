@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { listenExcluded, setLeaderboardExcluded, deleteUserData } from "@/features/admin/moderation";
 import { GuideEditor } from "@/features/admin/guide-editor";
 import { SubjectsEditor } from "@/features/admin/subjects-editor";
 import { CurriculumEditor } from "@/features/admin/curriculum-editor";
@@ -206,6 +207,14 @@ export default function AdminPage() {
   const { settings } = useSiteSettings();
 
   const [reports, setReports] = useState<Report[]>([]);
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+
+  // المستبعدون من الترتيب — يُقرأ في تبويب المستخدمين
+  useEffect(() => {
+    const unsub = listenExcluded(setExcluded);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
@@ -401,6 +410,11 @@ export default function AdminPage() {
     if (!r.contentRef) return;
     if (!confirm("حذف المحتوى المُبلَّغ عنه نهائياً؟ سيُحذف البلاغ تلقائياً.")) return;
     try {
+      if (r.kind === "broken-link") {
+        // بلاغ رابط: لا محتوى مجتمع لحذفه — نُغلق البلاغ وحده
+        await remove(ref(rtdb, `reports/${r.firebaseKey}`));
+        return;
+      }
       if (r.kind === "post") {
         await deletePost({ id: r.contentRef });
       }
@@ -419,6 +433,30 @@ export default function AdminPage() {
   async function banUser(uid: string, ban: boolean) {
     await update(ref(rtdb, `users/${uid}`), { banned: ban });
   }
+  /* استبعاد من الترتيب: عقوبة خفيفة قابلة للتراجع — نقاط مضخّمة أو
+     حساب تجريبي — لا تُلغي الحساب. */
+  async function toggleLeaderboard(uid: string, excluded: boolean) {
+    await setLeaderboardExcluded(uid, !excluded);
+  }
+
+  /* حذف نهائي: تأكيد مزدوج لأنّه لا رجعة فيه — كتابة الاسم شرط،
+     فلا تُحذف حسابات بضغطة خاطئة. */
+  async function purgeUser(uid: string, name: string) {
+    const typed = prompt(
+      `حذف «${name}» نهائياً؟\n\nسيُمسح: حسابه · بطاقاته · تقدّمه · مهامّه · إشعاراته · أصدقاؤه.\n` +
+      `لا يمكن التراجع.\n\nاكتب اسمه للتأكيد:`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== name.trim()) { alert("الاسم غير مطابق — أُلغي الحذف."); return; }
+    const r = await deleteUserData(uid);
+    alert(
+      `حُذفت بيانات المستخدم (${r.removed.length} مسار).` +
+      (r.failed.length ? `\nتعذّر حذف: ${r.failed.join(", ")}` : "") +
+      `\n\n⚠️ حساب الدخول نفسه يُحذف من Firebase Console ← Authentication، ` +
+      `فلا يمكن حذفه من المتصفّح لأسباب أمنية.`,
+    );
+  }
+
   async function closeRoom(roomId: string) {
     if (!confirm("هل تريد إغلاق هذه الغرفة؟")) return;
     await remove(ref(rtdb, `roomLive/${roomId}`));
@@ -858,6 +896,19 @@ export default function AdminPage() {
                         إلغاء الأدمن
                       </button>
                     )}
+                    <button onClick={() => toggleLeaderboard(u.uid, excluded.has(u.uid))}
+                      title="إخفاء/إظهار في لوحة الترتيب"
+                      className={`rounded-md px-2 py-1 text-[11px] font-bold ${
+                        excluded.has(u.uid)
+                          ? "border border-primary/30 text-primary hover:bg-primary/10"
+                          : "border border-border text-text-muted hover:text-primary"}`}>
+                      {excluded.has(u.uid) ? "أعده للترتيب" : "استبعد من الترتيب"}
+                    </button>
+                    <button onClick={() => purgeUser(u.uid, u.name)}
+                      title="حذف نهائي لبيانات المستخدم"
+                      className="rounded-md border border-danger/30 px-2 py-1 text-[11px] font-bold text-danger hover:bg-danger/10">
+                      حذف نهائي
+                    </button>
                     <button onClick={() => banUser(u.uid, !u.banned)}
                       className={`rounded-md px-2 py-1 text-[11px] font-bold ${u.banned ? "border border-secondary/30 text-secondary hover:bg-secondary/10" : "border border-danger/30 text-danger hover:bg-danger/10"}`}>
                       {u.banned ? "رفع الحظر" : "حظر"}
@@ -1014,7 +1065,11 @@ export default function AdminPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon icon={faFlag} className="h-4 w-4 text-danger" />
-                    <span className="font-semibold text-sm">{r.kind === "post" ? "منشور" : "تعليق"} مُبلَّغ عنه</span>
+                    <span className="font-semibold text-sm">
+                      {r.kind === "broken-link"
+                        ? "🔗 رابط لا يعمل"
+                        : `${r.kind === "post" ? "منشور" : "تعليق"} مُبلَّغ عنه`}
+                    </span>
                   </div>
                 </div>
                 {r.contentPreview ? (

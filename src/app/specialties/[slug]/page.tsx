@@ -20,7 +20,7 @@ export async function generateMetadata(
   const pretty = decodeURIComponent(slug);
   const url = `/specialties/${pretty}`;
   // العنوان الحقيقي يأتي مع المحتوى؛ هذا أساس آمن للفهرسة والمشاركة
-  const title = `التخصّص الجامعي — دليل BacZone`;
+  const title = `التخصّص الجامعي في الجزائر — دليل BacZone`;
   return {
     title,
     description:

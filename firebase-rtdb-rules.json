@@ -398,6 +398,15 @@
           ".validate": "!newData.exists() || ((!newData.hasChild('permalink') || newData.child('permalink').val().matches(/^[a-z0-9-]{1,60}$/)) && (!newData.hasChild('title') || newData.child('title').val().length <= 200) && (!newData.hasChild('excerpt') || newData.child('excerpt').val().length <= 400))"
         }
       }
+    },
+    "moderation": {
+      ".read": "auth != null",
+      "leaderboardExcluded": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$uid": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
     }
   }
 }
