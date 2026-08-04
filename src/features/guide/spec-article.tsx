@@ -21,6 +21,17 @@ const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pr
   { key: "careers",   label: "أين تعمل بعد التخرّج",       icon: "users" },
   { key: "pros",      label: "ما يجذب إليه",               icon: "star",  tone: "pro" },
   { key: "cons",      label: "ما يجب أن تعرفه قبل الاختيار", icon: "target", tone: "con" },
+  { key: "modules",   label: "المقاييس ولغة التدريس",       icon: "book" },
+  { key: "daily",     label: "يومك الدراسي عملياً",         icon: "timer" },
+  { key: "where",     label: "أين يُدرَّس في الجزائر؟",       icon: "home" },
+  { key: "numbers",   label: "التخصّص بالأرقام",             icon: "poll" },
+  { key: "master",    label: "ماذا بعد الليسانس؟",          icon: "layers" },
+  { key: "future",    label: "الآفاق المستقبلية",           icon: "target" },
+  { key: "salary",    label: "الأجر والمنح",                icon: "star" },
+  { key: "prosCons",  label: "مميّزات وعيوب",               icon: "shapes" },
+  /* آراء الطلبة قبل الخلاصة مباشرة: آخر ما يقرؤه الطالب قبل أن يقرّر
+     يجب أن يكون صوت من جرّب، لا وصفاً رسمياً. */
+  { key: "voices",    label: "من داخل التخصّص: ما يقوله طلبته", icon: "chat" },
   { key: "verdict",   label: "الخلاصة",                    icon: "check" },
 ];
 

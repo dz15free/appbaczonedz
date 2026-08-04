@@ -1052,7 +1052,9 @@ export default function AdminPage() {
                 <span className="text-sm font-bold">{reports.length} بلاغ</span>
                 <button onClick={async () => {
                   if (!confirm("حذف كل البلاغات؟")) return;
-                  await Promise.all(reports.map((r) => remove(ref(rtdb, `reports/${r.firebaseKey}`))));
+                  try {
+                    await Promise.all(reports.map((r) => remove(ref(rtdb, `reports/${r.firebaseKey}`))));
+                  } catch { alert("تعذّر حذف بعض البلاغات — راجع صلاحيات reports."); }
                 }}
                   className="flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-1.5 text-xs font-bold text-danger hover:bg-danger/10">
                   <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
@@ -1096,7 +1098,13 @@ export default function AdminPage() {
                       حذف المنشور
                     </button>
                   )}
-                  <button onClick={() => remove(ref(rtdb, `reports/${r.firebaseKey}`))}
+                  <button onClick={async () => {
+                      /* 🐛 كان `remove` بلا معالجة خطأ: حين ترفضه
+                         القواعد يفشل **صامتاً** فيبدو الزرّ معطّلاً.
+                         الآن نُظهر السبب. */
+                      try { await remove(ref(rtdb, `reports/${r.firebaseKey}`)); }
+                      catch { alert("تعذّر حذف البلاغ — راجع صلاحيات reports في قواعد قاعدة البيانات."); }
+                    }}
                     className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-text-muted hover:bg-border">
                     <FontAwesomeIcon icon={faCheckCircle} className="h-3 w-3" />
                     تجاهل البلاغ

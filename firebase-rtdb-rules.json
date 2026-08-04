@@ -88,7 +88,11 @@
     },
     "reports": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      "$reportKey": {
+        ".write": "auth != null && (!data.exists() || auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "!newData.exists() || newData.hasChildren(['kind','createdAt'])"
+      }
     },
     "groups": {
       ".read": "auth != null",

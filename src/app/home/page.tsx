@@ -262,19 +262,7 @@ export default function HomePage() {
 
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
             <div className="bz-res-grid is-stack">
-              <Link href="/specialties" className="bz-res-card is-blue">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
-                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
-                  </span>
-                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
-
-              <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -295,6 +283,18 @@ export default function HomePage() {
                     <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
                   </span>
                   <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+
+<Link href="/specialties" className="bz-res-card is-blue">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
+                  </span>
+                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
               </Link>
             </div>
@@ -349,19 +349,7 @@ export default function HomePage() {
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
           <div className="bz-res-grid is-stack">
-              <Link href="/specialties" className="bz-res-card is-blue">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
-                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
-                  </span>
-                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
-
-              <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -382,6 +370,18 @@ export default function HomePage() {
                     <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
                   </span>
                   <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+
+<Link href="/specialties" className="bz-res-card is-blue">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
+                  </span>
+                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
               </Link>
             </div>

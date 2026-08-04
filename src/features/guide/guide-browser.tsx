@@ -127,7 +127,29 @@ export function GuideBrowser() {
         ))}
       </div>
 
-      <p className="mt-10 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[11.5px] leading-[1.9] text-[var(--bz-ink-3)]">
+      {/* ══ معدّلات القبول ══
+          يأتي **بعد** التصفّح لا قبله: من يعرف تخصّصه يسأل عن معدّله،
+          ومن لا يعرفه بعد يُشتّته الرقم. */}
+      <a
+        href="https://www.baczonedz.com/2026/07/BAC-2026-Fichier-des-moyennes-minimales.html"
+        target="_blank"
+        rel="noreferrer"
+        className="bz-avg-card mt-10"
+      >
+        <span className="bz-avg-bg" aria-hidden />
+        <span className="bz-avg-in">
+          <span className="bz-avg-icon"><Icon name="poll" size={20} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="bz-avg-t">معدّلات القبول الدنيا — بكالوريا 2026</span>
+            <span className="bz-avg-d">
+              الملفّ الرسمي بمعدّلات القبول لكل تخصّص وجامعة. قارن معدّلك قبل أن ترتّب رغباتك.
+            </span>
+          </span>
+          <Icon name="download" size={16} className="shrink-0 opacity-80" />
+        </span>
+      </a>
+
+      <p className="mt-4 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[11.5px] leading-[1.9] text-[var(--bz-ink-3)]">
         <b className="text-[var(--bz-ink-2)]">تنبيه:</b> معدّلات القبول تتغيّر كل سنة
         بحسب عدد الناجحين ورغباتهم، فاعتبرها مؤشّراً لا ضماناً. اعتمد دائماً على
         منصّة التوجيه الرسمية عند ملء رغباتك.

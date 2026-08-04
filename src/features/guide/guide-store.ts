@@ -43,6 +43,18 @@ export interface SpecContent {
   pros?: string;
   cons?: string;
   verdict?: string;
+  /* أقسام إضافية من مراجع المناهج — تُثري المقال بما يهمّ الطالب فعلاً
+     ولا يجده في الوصف الرسمي: ماذا بعد الليسانس، أين يُدرَّس، وماذا
+     يقول من درسه. */
+  modules?: string;
+  master?: string;
+  where?: string;
+  salary?: string;
+  daily?: string;
+  numbers?: string;
+  future?: string;
+  voices?: string;
+  prosCons?: string;
   /** مسودّة لا تظهر للزوّار */
   draft?: boolean;
   updatedAt?: number;
