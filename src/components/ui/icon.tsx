@@ -23,10 +23,12 @@ export type IconName =
   | "page" | "more" | "mic" | "micOff" | "chat" | "hand" | "anon" | "users"
   | "target" | "star" | "book" | "ai" | "timer" | "lock" | "search" | "share"
   | "copy" | "trash" | "check" | "close" | "download" | "expand" | "collapse"
-  | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass";
+  | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass" | "warn";
 
 /** مسارات الأيقونات — كلّها على شبكة 24×24 */
 const PATHS: Record<IconName, string[]> = {
+  // تحذير: مثلّث بعلامة تعجّب — مفهوم عالمياً بلا نصّ
+  warn: ["M12 4l9 16H3z", "M12 10v4", "M12 17h.01"],
   // مدوّر: ساقان من مفصل واحد + قوس مرسوم
   compass: ["M12 3v2", "M12 5l-4 9", "M12 5l4 9", "M8 14a5.5 5.5 0 0 0 8 0"],
   cursor:    ["M5.5 3.2 19 10.6l-6.3 1.6-2.3 6.2z"],

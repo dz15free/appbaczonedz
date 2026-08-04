@@ -20,11 +20,12 @@ import { Icon } from "@/components/ui/icon";
 ════════════════════════════════════════════════════════════ */
 
 export function ReportLinkButton({
-  itemId, itemTitle, url, compact = false,
+  itemId, itemTitle, url, subject, compact = false,
 }: {
   itemId: string;
   itemTitle: string;
   url?: string;
+  subject?: string;
   /** داخل بطاقة مزدحمة: أيقونة بلا نصّ */
   compact?: boolean;
 }) {
@@ -44,7 +45,11 @@ export function ReportLinkButton({
         kind: "broken-link",
         contentRef: itemId,
         // معاينة تُغني الأدمن عن فتح الموقع ليعرف عمّاذا يتكلّم البلاغ
-        contentPreview: `${itemTitle}${url ? ` — ${url.slice(0, 160)}` : ""}`,
+        // هويّة كاملة: الأدمن يجب أن يعرف **أي ملخّص** بلا بحث
+        contentPreview:
+          `الملخّص: ${itemTitle}` +
+          (subject ? ` · المادّة: ${subject}` : "") +
+          (url ? `\nالرابط: ${url.slice(0, 300)}` : ""),
         reporterId: user.uid,
         reporterName: user.displayName || "طالب",
         reason: (reason || "الرابط لا يعمل").slice(0, 300),
@@ -69,16 +74,17 @@ export function ReportLinkButton({
   }
 
   return (
+    /* كان زرّاً رمادياً صغيراً بلا حدود، فلا يبدو زرّاً أصلاً ولا
+       يُفهم أنّه تبليغ. الآن: حدّ أحمر خفيف وأيقونة تحذير ونصّ كامل —
+       بارز بما يكفي ليُرى، وهادئ بما يكفي ألّا يُغري بالضغط عبثاً. */
     <button
       onClick={send}
       disabled={state === "busy"}
       title="بلّغ إدارة الموقع أنّ هذا الرابط لا يعمل"
-      className={`inline-flex items-center gap-1 rounded-lg text-[11px] font-bold text-text-muted transition hover:text-[var(--bz-red)] disabled:opacity-50 ${
-        compact ? "p-1" : "px-2 py-1"
-      }`}
+      className="bz-report-btn"
     >
-      <Icon name="target" size={12} />
-      {!compact && (state === "busy" ? "..." : "الرابط لا يعمل؟ بلّغ الإدارة")}
+      <Icon name="warn" size={13} />
+      {state === "busy" ? "جارٍ الإرسال…" : "بلّغ: الرابط لا يعمل"}
     </button>
   );
 }

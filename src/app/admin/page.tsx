@@ -307,9 +307,14 @@ export default function AdminPage() {
         try {
           const cid = r.contentRef;
           if (!cid) return r;
+          /* 🐛 كان الإثراء يفترض أنّ كل بلاغ محتوى مجتمع، فيقرأ مسار
+             تعليق غير موجود لبلاغ رابط **ويدهس المعاينة التي أرسلها
+             المُبلِّغ بسلسلة فارغة** — فيصل الأدمن بلاغاً بلا هويّة.
+             بلاغ الرابط يحمل معاينته معه، فنتركها كما هي. */
+          if (r.kind === "broken-link") return r;
           const path = r.kind === "post" ? `community/posts/${cid}/text` : `community/comments/${cid}/text`;
           const s2 = await get(ref(rtdb, path));
-          return { ...r, contentPreview: s2.val() as string ?? "" };
+          return { ...r, contentPreview: (s2.val() as string) ?? r.contentPreview ?? "" };
         } catch { return r; }
       }));
       setReports(withContent);

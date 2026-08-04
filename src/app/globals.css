@@ -996,7 +996,10 @@ body.bz-fullscreen-active .bz-voicebar {
   gap: 10px;
   grid-template-columns: 1fr;
 }
-@media (min-width: 900px) { .bz-res-grid { grid-template-columns: repeat(3, 1fr); } }
+/* `is-stack`: عمود واحد على كل المقاسات — ثلاث بطاقات جنباً إلى جنب
+   على الحاسوب تضغط نصّها فيصير سطرين مقطوعين. الطولية تُقرأ أسرع
+   وتتنفّس، وهي ما طلبه صراحةً. */
+.bz-res-grid.is-stack { grid-template-columns: 1fr; }
 
 .bz-res-card {
   position: relative;
@@ -1072,8 +1075,11 @@ body.bz-fullscreen-active .bz-voicebar {
   background: #fff;
 }
 /* بين 480 و900: صفّ أفقي — العرض يكفي ولا يضغط النصّ */
-@media (min-width: 480px) and (max-width: 899px) {
-  .bz-res-in { flex-direction: row; align-items: center; gap: 12px; }
+/* صفّ أفقي داخل البطاقة من 480px: العرض يكفي فلا ينضغط النصّ */
+@media (min-width: 480px) {
+  .bz-res-in { flex-direction: row; align-items: center; gap: 13px; }
+  .bz-res-card { padding: 16px; }
+  .bz-res-t { font-size: 15.5px; }
 }
 
 /* بطاقات البلانر الجاهز — لمسة واحدة على الهاتف */
@@ -1220,3 +1226,21 @@ body.bz-fullscreen-active .bz-voicebar {
   color: #131722;
   background: #fff;
 }
+
+/* زرّ التبليغ عن رابط معطّل — يجب أن يُرى ويُفهم بلا شرح */
+.bz-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--bz-red);
+  background: var(--bz-red-050);
+  border: 1px solid #F3C9C6;
+  transition: background .15s, transform .12s;
+}
+.bz-report-btn:hover { background: #FBE3E1; }
+.bz-report-btn:active { transform: scale(.97); }
+.bz-report-btn:disabled { opacity: .6; cursor: wait; }

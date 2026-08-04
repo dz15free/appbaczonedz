@@ -302,7 +302,7 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
               · {timeAgo(e.createdAt)}
             </p>
             {e.isPaid && <ContentRatingBadge itemId={e.id} showEmpty />}
-            <ReportLinkButton itemId={e.id} itemTitle={e.title} url={e.fileUrl} compact />
+            <ReportLinkButton itemId={e.id} itemTitle={e.title} url={e.fileUrl} subject={subjectLabel(SUBJECTS, e.subject)} />
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">

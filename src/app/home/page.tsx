@@ -40,10 +40,9 @@ const TOOLS = [
   { href: "/tools/tracker", label: "تقدّمي الدراسي", desc: "تتبّع مراجعتك", icon: faListCheck, color: "bg-sky-500/10 text-sky-500" },
 ];
 
-const EXTERNAL = [
-  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", desc: "خطّة مراجعة منظّمة لك", icon: faCalendarCheck },
-  { href: "/tools/planner", label: "مخطّط البكالوريا للطباعة", desc: "بلانر يومي احترافي جاهز للطباعة", icon: faCalendarDays },
-];
+/* 🐛 حُذفت `EXTERNAL` و`ExternalGrid`: بطاقتاهما («إنشاء برنامج
+   مراجعة» و«مخطّط البكالوريا») صارتا ضمن الشبكة الموحّدة، فكانتا
+   تظهران **مرّتين في القسم نفسه** — وهو التكرار الذي رآه. */
 
 function timeAgo(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -133,36 +132,6 @@ const ToolsGrid = memo(function ToolsGrid() {
   );
 });
 
-/* مصادر خارجية */
-const ExternalGrid = memo(function ExternalGrid() {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {EXTERNAL.map((q) => {
-        const isInternal = q.href.startsWith("/");
-        const inner = (
-          <>
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
-              <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <span className="flex items-center gap-1.5 font-bold">
-                {q.label}
-                {!isInternal && <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 text-text-muted" />}
-              </span>
-              <span className="text-sm text-text-muted">{q.desc}</span>
-            </div>
-          </>
-        );
-        const cls = "group flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-4 transition hover:-translate-y-0.5 hover:shadow-glass";
-        return isInternal ? (
-          <Link key={q.href} href={q.href} className={cls}>{inner}</Link>
-        ) : (
-          <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
-        );
-      })}
-    </div>
-  );
-});
 
 /* لوحة الترتيب المصغّرة */
 interface MiniPlayer { uid: string; name: string; points: number }
@@ -292,7 +261,7 @@ export default function HomePage() {
             <h3 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h3>
 
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
-            <div className="bz-res-grid">
+            <div className="bz-res-grid is-stack">
               <Link href="/specialties" className="bz-res-card is-blue">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
@@ -328,21 +297,6 @@ export default function HomePage() {
                   <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
               </Link>
-            </div>
-
-            <div className="space-y-3">
-              {EXTERNAL.map((q) => (
-                <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer"
-                  className="group flex items-center gap-3 rounded-2xl border border-border bg-gradient-to-l from-primary/10 to-transparent p-3 transition hover:shadow-glass">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-primary text-white">
-                    <FontAwesomeIcon icon={q.icon} className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1 text-sm font-bold">{q.label}<FontAwesomeIcon icon={faUpRightFromSquare} className="h-2.5 w-2.5 text-text-muted" /></span>
-                    <span className="text-xs text-text-muted">{q.desc}</span>
-                  </div>
-                </a>
-              ))}
             </div>
           </div>
         </aside>
@@ -394,7 +348,7 @@ export default function HomePage() {
           <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
-          <div className="bz-res-grid">
+          <div className="bz-res-grid is-stack">
               <Link href="/specialties" className="bz-res-card is-blue">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
@@ -431,8 +385,6 @@ export default function HomePage() {
                 </span>
               </Link>
             </div>
-
-          <ExternalGrid />
         </div>
 
         {/* تابعنا */}
