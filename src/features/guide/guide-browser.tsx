@@ -53,6 +53,13 @@ export function GuideBrowser() {
 
   return (
     <>
+      {/* رجوع إلى الموقع: الزائر يصل من Google مباشرة إلى هذه الصفحة،
+          فبدون هذا الرابط لا يعرف أنّ خلفها منصّة كاملة. */}
+      <Link href="/home" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bz-blue)] hover:underline">
+        <Icon name="chevRight" size={13} />
+        العودة إلى BacZone
+      </Link>
+
       {/* ══ البحث: يلتصق بأعلى الشاشة عند التمرير ══ */}
       <div className="bz-guide-search">
         <div className="relative flex-1">

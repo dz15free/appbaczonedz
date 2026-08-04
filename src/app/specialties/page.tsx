@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
+import { absUrl } from "@/features/guide/guide-store";
 
 /* ════════════════════════════════════════════════════════════
    دليل التخصّصات — صفحة عامّة
@@ -36,6 +37,7 @@ export default function SpecialtiesPage() {
     name: TITLE,
     description: DESC,
     inLanguage: "ar",
+    url: absUrl("/specialties"),
   };
 
   return (

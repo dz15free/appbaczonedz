@@ -16,6 +16,12 @@ import type { ChallengeAttachment } from "@/features/rooms/challenge";
    الهاتف عبء بلا فائدة — بطاقة واضحة تفتحه في تبويب أنفع.
 ════════════════════════════════════════════════════════════ */
 
+/** رابط الفتح في تبويب: صيغة العرض لا صيغة المصغّرة */
+function openUrl(u: string): string {
+  const m = u.match(/[?&]id=([^&]+)/);
+  return m ? `https://drive.google.com/file/d/${m[1]}/view` : u;
+}
+
 export function AttachmentView({
   att, compact = false,
 }: {
@@ -41,7 +47,7 @@ export function AttachmentView({
 
   if (att.kind !== "image") {
     return (
-      <a href={att.url} target="_blank" rel="noreferrer" className="bz-att-file">
+      <a href={openUrl(att.url)} target="_blank" rel="noreferrer" className="bz-att-file">
         <span className="bz-att-file-icon"><Icon name="file" size={16} /></span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[12.5px] font-bold">{att.name}</span>
@@ -58,7 +64,8 @@ export function AttachmentView({
         className={`bz-att-img ${compact ? "is-compact" : ""}`}
         aria-label={`تكبير ${att.name}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={att.url} alt={att.name} loading="lazy" />
+        <img src={att.url} alt={att.name} loading="lazy"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         <span className="bz-att-zoom"><Icon name="expand" size={13} /> تكبير</span>
       </button>
 
@@ -69,7 +76,7 @@ export function AttachmentView({
           </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={att.url} alt={att.name} onClick={(e) => e.stopPropagation()} />
-          <a href={att.url} target="_blank" rel="noreferrer" className="bz-att-open"
+          <a href={openUrl(att.url)} target="_blank" rel="noreferrer" className="bz-att-open"
             onClick={(e) => e.stopPropagation()}>
             فتح الأصل
           </a>

@@ -294,17 +294,14 @@ export default function HomePage() {
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
             <Link href="/specialties" className="bz-home-guide group">
               <span className="bz-home-guide-bg" aria-hidden />
-              <span className="relative z-10 flex items-center gap-3.5">
+              <span className="bz-home-guide-in">
                 <span className="bz-home-guide-icon">
-                  <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
+                  <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" />
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
-                    ماذا ستدرس بعد البكالوريا؟
-                  </span>
-                  <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
-                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
-                    وكيف تُقبل، وأين تعمل بعدها.
+                <span className="bz-home-guide-txt">
+                  <span className="bz-home-guide-t">ماذا ستدرس بعد البكالوريا؟</span>
+                  <span className="bz-home-guide-d">
+                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.
                   </span>
                 </span>
                 <span className="bz-home-guide-cta">
@@ -379,26 +376,23 @@ export default function HomePage() {
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
           <Link href="/specialties" className="bz-home-guide group">
-            <span className="bz-home-guide-bg" aria-hidden />
-            <span className="relative z-10 flex items-center gap-3.5">
-              <span className="bz-home-guide-icon">
-                <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
-                  ماذا ستدرس بعد البكالوريا؟
+              <span className="bz-home-guide-bg" aria-hidden />
+              <span className="bz-home-guide-in">
+                <span className="bz-home-guide-icon">
+                  <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" />
                 </span>
-                <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
-                  تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
-                  وكيف تُقبل، وأين تعمل بعدها.
+                <span className="bz-home-guide-txt">
+                  <span className="bz-home-guide-t">ماذا ستدرس بعد البكالوريا؟</span>
+                  <span className="bz-home-guide-d">
+                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.
+                  </span>
+                </span>
+                <span className="bz-home-guide-cta">
+                  اكتشف
+                  <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
                 </span>
               </span>
-              <span className="bz-home-guide-cta">
-                اكتشف
-                <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-              </span>
-            </span>
-          </Link>
+            </Link>
 
           <ExternalGrid />
         </div>

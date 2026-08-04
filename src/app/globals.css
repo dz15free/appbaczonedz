@@ -981,168 +981,80 @@ body.bz-fullscreen-active .bz-voicebar {
 .dark .bz-guide-chip { background: #1B1F27; }
 
 /* ── بطاقة التخصّصات في الرئيسية ──
-   داكنة وسط بطاقات فاتحة: تلفت النظر بالتباين لا بحجم أكبر، فلا تزاحم
-   بقيّة الصفحة. */
+   كانت صفّاً واحداً بأيقونة ونصّ وزرّ: على الهاتف ينضغط النصّ بين
+   الأيقونة والزرّ فيصير سطراً بحرفين. الآن التخطيط **عمودي على
+   الهاتف** وصفّ من 480px فما فوق. */
 .bz-home-guide {
   position: relative;
   display: block;
   overflow: hidden;
-  border-radius: 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #1A3FB0 0%, #2350D9 55%, #2E5BE6 100%);
-  box-shadow: 0 12px 30px -16px rgba(35, 80, 217, .7);
-  transition: transform .18s cubic-bezier(.2, .8, .2, 1), box-shadow .18s;
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, #1A3FB0 0%, #2350D9 60%, #2E5BE6 100%);
+  box-shadow: 0 10px 26px -16px rgba(35, 80, 217, .65);
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
 }
-.bz-home-guide:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -18px rgba(35, 80, 217, .8); }
+.bz-home-guide:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -18px rgba(35,80,217,.75); }
 .bz-home-guide:active { transform: translateY(0) scale(.995); }
 
-/* توهّج خفيف يتحرّك عند التحويم — إشارة حياة لا زخرفة صاخبة */
 .bz-home-guide-bg {
   position: absolute;
-  inset: -40% -20% auto auto;
-  width: 260px; height: 260px;
+  inset: -45% -25% auto auto;
+  width: 220px; height: 220px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255,255,255,.22) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(255,255,255,.2) 0%, transparent 65%);
   transition: transform .4s ease;
+  pointer-events: none;
 }
-.bz-home-guide:hover .bz-home-guide-bg { transform: translate(-14px, 14px); }
+.bz-home-guide:hover .bz-home-guide-bg { transform: translate(-12px, 12px); }
 
+.bz-home-guide-in {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;      /* الهاتف: عمودي فلا ينضغط النصّ */
+  align-items: flex-start;
+  gap: 10px;
+}
 .bz-home-guide-icon {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 46px; height: 46px;
-  border-radius: 14px;
+  width: 40px; height: 40px;
+  border-radius: 12px;
   color: #fff;
-  background: rgba(255, 255, 255, .16);
-  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.22);
+}
+.bz-home-guide-txt { min-width: 0; flex: 1; }
+.bz-home-guide-t {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #fff;
+}
+.bz-home-guide-d {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: rgba(255,255,255,.78);
 }
 .bz-home-guide-cta {
-  display: none;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  padding: 8px 14px;
-  border-radius: 12px;
+  padding: 8px 15px;
+  border-radius: 11px;
   font-size: 12.5px;
   font-weight: 800;
   color: #1A3FB0;
   background: #fff;
 }
-/* على الهاتف يختفي الزرّ: البطاقة كلّها قابلة للضغط، وزرّ إضافي يضيّق
-   النصّ بلا فائدة. */
-@media (min-width: 480px) { .bz-home-guide-cta { display: inline-flex; } }
-
-/* ════════════════════════════════════════════════════════════
-   مرفقات التحدّي
-
-   صورة هاتف حديث تتجاوز 4000 بكسل عرضاً. عرضها خاماً يكسر التخطيط
-   ويُبطئ الصفحة، فنحدّ الارتفاع ونملأ العرض، والضغط يفتحها كاملة.
-   ════════════════════════════════════════════════════════════ */
-
-.bz-att-img {
-  position: relative;
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid var(--bz-line);
-  background: var(--bz-canvas);
-  cursor: zoom-in;
-}
-.bz-att-img img {
-  display: block;
-  width: 100%;
-  max-height: 340px;
-  object-fit: contain;      /* لا نقصّ حلّ الطالب — قد يُقصّ سطر مهمّ */
-  background: #fff;
-}
-/* داخل قائمة الأستاذ: أقصر، فتبقى عشرات الحلول قابلة للمسح بالعين */
-.bz-att-img.is-compact img { max-height: 180px; }
-@media (max-width: 640px) {
-  .bz-att-img img { max-height: 260px; }
-  .bz-att-img.is-compact img { max-height: 150px; }
-}
-
-.bz-att-zoom {
-  position: absolute;
-  inset-block-end: 8px;
-  inset-inline-end: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #fff;
-  background: rgba(19, 23, 34, .72);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-
-.bz-att-file {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--bz-line);
-  background: var(--bz-surface, #fff);
-  transition: border-color .15s, transform .12s;
-}
-.bz-att-file:hover { border-color: var(--bz-blue-100); transform: translateY(-1px); }
-.bz-att-file-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  color: var(--bz-blue);
-  background: var(--bz-blue-050);
-}
-
-/* الصورة المكبّرة */
-.bz-att-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 10090;           /* فوق الأدراج السفلية */
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(10, 13, 20, .92);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  animation: bz-att-in 160ms ease both;
-}
-@keyframes bz-att-in { from { opacity: 0 } to { opacity: 1 } }
-@media (prefers-reduced-motion: reduce) { .bz-att-lightbox { animation: none } }
-
-.bz-att-lightbox img {
-  max-width: 100%;
-  max-height: 82vh;
-  border-radius: 12px;
-  object-fit: contain;
-  background: #fff;
-}
-.bz-att-close {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top, 0px));
-  inset-inline-end: 12px;
-  display: grid;
-  place-items: center;
-  width: 40px; height: 40px;      /* مقاس لمس مريح */
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 255, 255, .14);
-}
-.bz-att-open {
-  position: absolute;
-  bottom: max(16px, env(safe-area-inset-bottom, 0px));
-  padding: 9px 18px;
-  border-radius: 999px;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: #131722;
-  background: #fff;
+@media (min-width: 480px) {
+  .bz-home-guide { padding: 16px; }
+  .bz-home-guide-in { flex-direction: row; align-items: center; gap: 13px; }
+  .bz-home-guide-t { font-size: 16px; }
 }

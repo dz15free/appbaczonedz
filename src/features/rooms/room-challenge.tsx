@@ -157,7 +157,11 @@ export function StudentChallengeLayer({
     try {
       const up = await uploadToDrive(f);
       setMyAtt({
-        url: `https://drive.google.com/uc?export=view&id=${up.id}`,
+        /* 🐛 `uc?export=view` أوقفته Google للتضمين المباشر: يعمل عند
+           فتحه في تبويب (لأنّه يُعيد توجيهاً) ويفشل داخل <img> فتظهر
+           علامة استفهام — وهو ما رأيته على iPhone.
+           `thumbnail?sz=w1600` يُرجع الصورة نفسها ويصلح للتضمين. */
+        url: `https://drive.google.com/thumbnail?id=${up.id}&sz=w1600`,
         name: up.name || f.name,
         kind: f.type.startsWith("image/") ? "image" : "doc",
       });
@@ -253,6 +257,20 @@ export function StudentChallengeLayer({
                   </div>
                 ) : !isDriveConfigured() ? (
                   <p className="text-[11px] text-text-muted">رفع الملفّات غير مُفعّل.</p>
+                ) : !hasDriveToken() ? (
+                  /* 🐛 الطالب لم يكن له زرّ ربط إطلاقاً — فالرفع يفشل
+                     دائماً «تعذّر الرفع، تأكّد من ربط Google» بلا أي
+                     وسيلة للربط. النافذة تُفتح داخل النقرة فلا تُحجب. */
+                  <button
+                    onClick={async () => {
+                      if (!driveReady) { setAttErr("جارٍ التهيئة… أعد المحاولة بعد لحظة."); return; }
+                      try { await connectDrive(); setAttErr(""); setDriveReady(true); }
+                      catch { setAttErr("تعذّر ربط Google. أعد المحاولة."); }
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold text-primary hover:border-primary">
+                    <Icon name="clip" size={15} />
+                    {driveReady ? "اربط Google مرّة واحدة لرفع حلّك" : "جارٍ التهيئة…"}
+                  </button>
                 ) : (
                   <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold transition ${
                     uploading || !driveReady ? "cursor-wait text-text-muted" : "text-primary hover:border-primary"}`}>
@@ -370,7 +388,11 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
     try {
       const up = await uploadToDrive(f);
       setAtt({
-        url: `https://drive.google.com/uc?export=view&id=${up.id}`,
+        /* 🐛 `uc?export=view` أوقفته Google للتضمين المباشر: يعمل عند
+           فتحه في تبويب (لأنّه يُعيد توجيهاً) ويفشل داخل <img> فتظهر
+           علامة استفهام — وهو ما رأيته على iPhone.
+           `thumbnail?sz=w1600` يُرجع الصورة نفسها ويصلح للتضمين. */
+        url: `https://drive.google.com/thumbnail?id=${up.id}&sz=w1600`,
         name: up.name || f.name,
         kind: f.type.startsWith("image/") ? "image" : "doc",
       });

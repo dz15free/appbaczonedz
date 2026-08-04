@@ -5,7 +5,7 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -43,12 +43,15 @@ const TOOLS_DROPDOWN = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
-  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
-  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faClone, external: false },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false },
 ];
 
 // قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية (الروابط الثابتة؛ تُدمج مع روابط قابلة للتعديل من الأدمن داخل المكوّن)
 const MORE_DROPDOWN_BASE = [
+  /* التخصّصات أوّلاً: قرار يخصّ مستقبل الطالب لا أداة مراجعة، ورابط
+     داخلي وسط روابط خارجية. */
+  { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
   { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
@@ -71,8 +74,8 @@ const MENU_ITEMS_BASE = [
   { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
-  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faLayerGroup, external: false },
-  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faListCheck, external: false },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faClone, external: false },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false },
   { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
 ];

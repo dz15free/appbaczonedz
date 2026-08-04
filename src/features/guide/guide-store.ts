@@ -22,6 +22,17 @@ import { SEED_CONTENT } from "@/features/guide/seed-content";
 
 const PATH = "guide/specialities";
 
+/* الرابط المطلق: Google يرفض الروابط النسبية في JSON-LD
+   («الحقل item يحتوي على رابط غير صالح»). نبنيه من مكان واحد فلا
+   يتفرّق بين الصفحات. */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com"
+).replace(/\/+$/, "");
+
+export function absUrl(path: string): string {
+  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
   permalink?: string;
@@ -60,6 +71,7 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       fr: c.fr?.trim() || s.fr,
       field: c.field?.trim() || s.field,
       // منشور = له مقدّمة وليس مسودّة. صفحة فارغة أسوأ من غيابها.
+      // منشور = له مقدّمة وليس مسودّة صراحةً
       published: Boolean(c.intro?.trim()) && c.draft !== true,
     };
   });
@@ -88,7 +100,11 @@ export function normalizePermalink(x: string): string {
 }
 
 export async function saveSpec(slug: string, patch: SpecContent) {
+  /* 🐛 التخصّص الجديد يُنشأ بـ`draft: true`، ولم يكن هناك أي سبيل
+     لإلغائها — فيُحفظ المقال ولا يُنشر أبداً مهما كتبت.
+     الحفظ مع مقدّمة يعني نيّة النشر، فنرفع المسودّة صراحةً. */
   const clean: Record<string, unknown> = { updatedAt: Date.now() };
+  if (patch.intro?.trim()) clean.draft = false;
   for (const [k, v] of Object.entries(patch)) {
     if (v === undefined || v === "") continue;   // القاعدة ترفض undefined
     clean[k] = v;

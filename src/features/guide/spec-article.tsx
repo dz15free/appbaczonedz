@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/ui/icon";
-import { listenGuide, linkOf, type SpecFull } from "@/features/guide/guide-store";
+import { listenGuide, linkOf, absUrl, type SpecFull } from "@/features/guide/guide-store";
 
 /* ════════════════════════════════════════════════════════════
    عرض موضوع التخصّص
@@ -105,16 +105,34 @@ export function SpecArticle({ slug }: { slug: string }) {
     inLanguage: "ar",
     about: { "@type": "Thing", name: spec.field },
     publisher: { "@type": "Organization", name: "BacZone" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/specialties/${linkOf(spec)}`) },
+  };
+
+  /* روابط **مطلقة** في فتات الطريق: Google يرفض النسبية صراحةً. */
+  const crumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "دليل التخصّصات", item: absUrl("/specialties") },
+      { "@type": "ListItem", position: 2, name: spec.field,
+        item: absUrl(`/specialties#${encodeURIComponent(spec.field)}`) },
+      { "@type": "ListItem", position: 3, name: spec.ar,
+        item: absUrl(`/specialties/${linkOf(spec)}`) },
+    ],
   };
 
   return (
     <main className="bz-guide">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs) }} />
 
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
+            <Link href="/home" className="hover:underline">BacZone</Link>
+            <span>·</span>
             <Link href="/specialties" className="font-bold text-white hover:underline">
               دليل التخصّصات
             </Link>
