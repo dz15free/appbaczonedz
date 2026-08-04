@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { ReportLinkButton } from "@/features/community/report-link";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import Link from "next/link";
-import { ref, push, remove, onValue, query, orderByChild, limitToLast } from "firebase/database";
+import { ref, push, remove, update, onValue, query, orderByChild, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar, faPen, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
@@ -237,6 +237,33 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
   const locked = !!e.isPaid && !hasAccess && !isOwnerOrAdmin;
   const [showRate, setShowRate] = useState(false);
   const [showPay, setShowPay] = useState(false);
+  /* التعديل داخل البطاقة لا في نافذة: المستخدم يرى ما يُعدّله في سياقه،
+     والنافذة تقطعه عن بقيّة القائمة بلا فائدة هنا. */
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ title: e.title, chapter: e.chapter, description: e.description ?? "", fileUrl: e.fileUrl });
+  const [saving, setSaving] = useState(false);
+  const [editErr, setEditErr] = useState("");
+
+  async function saveEdit() {
+    const t = draft.title.trim(), u = draft.fileUrl.trim();
+    if (!t || !u) { setEditErr("العنوان والرابط مطلوبان."); return; }
+    setSaving(true);
+    setEditErr("");
+    try {
+      // نُحدّث الحقول المسموح بها فقط — لا نمسّ المالك ولا تاريخ الإضافة
+      await update(ref(rtdb, `library/${e.id}`), {
+        title: t.slice(0, 200),
+        chapter: draft.chapter.trim().slice(0, 120),
+        description: draft.description.trim().slice(0, 600),
+        fileUrl: u,
+        fileType: guessType(u),
+        updatedAt: Date.now(),
+      });
+      setEditing(false);
+    } catch {
+      setEditErr("تعذّر الحفظ — راجع صلاحيات قاعدة البيانات.");
+    } finally { setSaving(false); }
+  }
 
   async function doGenerate() {
     setGenBusy(true);
@@ -306,13 +333,50 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
           </div>
         </div>
         <div className="flex shrink-0 flex-col gap-1.5">
-          {locked ? (
+          {editing && isOwnerOrAdmin && (
+        <div className="mt-3 space-y-2 rounded-xl border border-[var(--bz-blue-100)] bg-[var(--bz-blue-050)] p-3">
+          <p className="text-[11px] font-extrabold text-[var(--bz-blue-700)]">تعديل الملخّص</p>
+          <input value={draft.title} onChange={(ev) => setDraft({ ...draft, title: ev.target.value })}
+            placeholder="العنوان"
+            className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-bold outline-none focus:border-[var(--bz-blue)]" />
+          <input value={draft.chapter} onChange={(ev) => setDraft({ ...draft, chapter: ev.target.value })}
+            placeholder="الوحدة / الفصل"
+            className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-sm outline-none focus:border-[var(--bz-blue)]" />
+          <textarea value={draft.description} onChange={(ev) => setDraft({ ...draft, description: ev.target.value })}
+            rows={2} placeholder="وصف مختصر (اختياري)"
+            className="w-full resize-y rounded-lg border border-border bg-surface px-2.5 py-2 text-sm outline-none focus:border-[var(--bz-blue)]" />
+          <input value={draft.fileUrl} onChange={(ev) => setDraft({ ...draft, fileUrl: ev.target.value })}
+            dir="ltr" placeholder="رابط الملفّ"
+            className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 font-mono text-xs outline-none focus:border-[var(--bz-blue)]" />
+          {editErr && <p className="text-[11px] font-bold text-danger">{editErr}</p>}
+          <div className="flex gap-2">
+            <button onClick={saveEdit} disabled={saving}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[var(--bz-blue)] py-2 text-xs font-bold text-white disabled:opacity-50">
+              <FontAwesomeIcon icon={faCheck} className="h-3 w-3" />
+              {saving ? "..." : "حفظ التعديل"}
+            </button>
+            <button onClick={() => { setEditing(false); setDraft({ title: e.title, chapter: e.chapter, description: e.description ?? "", fileUrl: e.fileUrl }); }}
+              className="rounded-lg border border-border px-3 py-2 text-xs font-bold text-text-muted">
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+
+      {locked ? (
             <button onClick={() => setShowRedeem(true)}
               className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white hover:opacity-90">
               <FontAwesomeIcon icon={faLock} className="h-3 w-3" /> فتح
             </button>
           ) : (
             <a href={e.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-lg bg-gradient-primary px-3 py-2 text-xs font-bold text-white hover:opacity-90">فتح</a>
+          )}
+          {isOwnerOrAdmin && (
+            <button onClick={() => { setEditing((v) => !v); setEditErr(""); }}
+              title="تعديل الملخّص"
+              className="grid h-8 w-full place-items-center rounded-lg text-text-muted hover:bg-primary/10 hover:text-primary">
+              <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+            </button>
           )}
           {isOwnerOrAdmin && (
             <button onClick={onDelete} className="grid h-8 w-full place-items-center rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger">

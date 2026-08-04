@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, memo } from "react";
+import { useStudyNudge, markActiveToday } from "@/features/notifications/study-nudge";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -183,6 +184,15 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
+
+  /* تذكير المراجعة — قيوده داخل الخطّاف نفسه (مرّة/يوم · 16–21 ·
+     للطالب · لا لمن درس اليوم · يتوقّف بعد 3 تجاهلات). */
+  useStudyNudge(user?.uid, profile?.role);
+
+  // نُسجّل نشاط اليوم: من يفتح المنصّة اليوم لا يُذكَّر مساءً
+  useEffect(() => {
+    if (user?.uid) void markActiveToday(user.uid);
+  }, [user?.uid]);
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
 

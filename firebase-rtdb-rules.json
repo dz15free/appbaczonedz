@@ -272,7 +272,8 @@
     "library": {
       ".read": "auth != null",
       "$id": {
-        ".write": "auth != null && (!data.exists() && newData.child('uploaderId').val() === auth.uid || data.exists() && !newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'))"
+        ".write": "auth != null && ((!data.exists() && newData.child('uploaderId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('uploaderId').val() === data.child('uploaderId').val()))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['title','fileUrl','uploaderId']) && newData.child('title').val().length <= 200 && newData.child('fileUrl').isString())"
       },
       ".indexOn": [
         "createdAt"
