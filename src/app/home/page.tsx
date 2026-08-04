@@ -235,55 +235,6 @@ export default function HomePage() {
         <div className="space-y-6 lg:col-span-2">
           <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
-        {/* ══ بطاقة التخصّصات ══
-            لا نكتب «دليل التخصّصات»: الطالب لا يبحث عن دليل، يبحث عن
-            مستقبله. النصّ يخاطب سؤاله الحقيقي — «ماذا سأصير؟» */}
-        <Link href="/specialties" className="bz-home-guide group">
-          <span className="bz-home-guide-bg" aria-hidden />
-          <span className="relative z-10 flex items-center gap-3.5">
-            <span className="bz-home-guide-icon">
-              <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
-                ماذا ستدرس بعد البكالوريا؟
-              </span>
-              <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
-                تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
-                وكيف تُقبل، وأين تعمل بعدها.
-              </span>
-            </span>
-            <span className="bz-home-guide-cta">
-              اكتشف
-              <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-            </span>
-          </span>
-        </Link>
-
-          {/* ══ بطاقة التخصّصات ══
-              لا نكتب «دليل التخصّصات»: الطالب لا يبحث عن دليل، يبحث عن
-              مستقبله. النصّ يخاطب سؤاله الحقيقي — «ماذا سأصير؟» */}
-          <Link href="/specialties" className="bz-home-guide group">
-            <span className="bz-home-guide-bg" aria-hidden />
-            <span className="relative z-10 flex items-center gap-3.5">
-              <span className="bz-home-guide-icon">
-                <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
-                  ماذا ستدرس بعد البكالوريا؟
-                </span>
-                <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
-                  تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
-                  وكيف تُقبل، وأين تعمل بعدها.
-                </span>
-              </span>
-              <span className="bz-home-guide-cta">
-                اكتشف
-                <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-              </span>
-            </span>
-          </Link>
 
           {/* الإشعارات — بارزة ليراها الجميع */}
           <NotificationToggle />
@@ -339,6 +290,30 @@ export default function HomePage() {
           </div>
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h3>
+
+            {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
+            <Link href="/specialties" className="bz-home-guide group">
+              <span className="bz-home-guide-bg" aria-hidden />
+              <span className="relative z-10 flex items-center gap-3.5">
+                <span className="bz-home-guide-icon">
+                  <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
+                    ماذا ستدرس بعد البكالوريا؟
+                  </span>
+                  <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
+                    تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
+                    وكيف تُقبل، وأين تعمل بعدها.
+                  </span>
+                </span>
+                <span className="bz-home-guide-cta">
+                  اكتشف
+                  <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
+                </span>
+              </span>
+            </Link>
+
             <div className="space-y-3">
               {EXTERNAL.map((q) => (
                 <a key={q.href} href={q.href} target="_blank" rel="noopener noreferrer"
@@ -401,6 +376,30 @@ export default function HomePage() {
         {/* مصادر إضافية */}
         <div>
           <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
+
+          {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
+          <Link href="/specialties" className="bz-home-guide group">
+            <span className="bz-home-guide-bg" aria-hidden />
+            <span className="relative z-10 flex items-center gap-3.5">
+              <span className="bz-home-guide-icon">
+                <FontAwesomeIcon icon={faGraduationCap} className="h-6 w-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-extrabold leading-snug text-white sm:text-base">
+                  ماذا ستدرس بعد البكالوريا؟
+                </span>
+                <span className="mt-1 block text-[12px] leading-relaxed text-white/75">
+                  تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك — ماذا تدرس فيها،
+                  وكيف تُقبل، وأين تعمل بعدها.
+                </span>
+              </span>
+              <span className="bz-home-guide-cta">
+                اكتشف
+                <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
+              </span>
+            </span>
+          </Link>
+
           <ExternalGrid />
         </div>
 

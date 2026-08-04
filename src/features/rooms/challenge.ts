@@ -43,6 +43,8 @@ export interface ChallengeAnswer {
   name: string;
   text: string;
   at: number;
+  /** صورة الحلّ أو ملفّه — كثير من الحلول تُكتب على الورق ثم تُصوَّر */
+  attachment?: ChallengeAttachment;
 }
 
 const MAX_ANSWER = 4000;
@@ -127,14 +129,25 @@ export function listenScores(roomId: string, cb: (scores: Record<string, number>
 
 /* ═══════════ الطالب ═══════════ */
 
-export async function submitAnswer(roomId: string, uid: string, name: string, text: string) {
+export async function submitAnswer(roomId: string, uid: string, name: string, text: string,
+  attachment?: ChallengeAttachment) {
   const t = text.trim();
-  if (!t) return;
-  await set(ref(rtdb, `roomChallengeAnswers/${roomId}/${uid}`), {
+  /* الحلّ قد يكون **صورة بلا نصّ** — ورقة مصوّرة. رفضه لغياب النصّ كان
+     سيمنع أشيع طريقة يحلّ بها الطالب فعلاً. */
+  if (!t && !attachment?.url) return;
+  const row: Record<string, unknown> = {
     name: name || "طالب",
     text: t.slice(0, MAX_ANSWER),
     at: Date.now(),
-  });
+  };
+  if (attachment?.url) {
+    row.attachment = {
+      url: attachment.url,
+      name: attachment.name.slice(0, 120),
+      kind: attachment.kind,
+    };
+  }
+  await set(ref(rtdb, `roomChallengeAnswers/${roomId}/${uid}`), row);
 }
 
 export function listenMyAnswer(roomId: string, uid: string, cb: (a: ChallengeAnswer | null) => void) {

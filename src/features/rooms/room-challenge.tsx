@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
+import { AttachmentView } from "@/features/rooms/attachment-view";
 import { MathText, MATH_SNIPPETS, insertAtCursor } from "@/features/rooms/use-katex";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import {
@@ -96,6 +97,25 @@ export function StudentChallengeLayer({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [justSent, setJustSent] = useState(false);
+  const [myAtt, setMyAtt] = useState<ChallengeAttachment | null>(null);
+  const [attErr, setAttErr] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [driveReady, setDriveReady] = useState(false);
+
+  /* التهيئة عند فتح مساحة الحلّ لا عند تركيب الغرفة — لا نُحمّل سكربت
+     Google لكل طالب لم يفتح التحدّي أصلاً. */
+  useEffect(() => {
+    if (!open || !isDriveConfigured()) return;
+    let alive = true;
+    initDrive().then((ok) => { if (alive) setDriveReady(ok); });
+    return () => { alive = false; };
+  }, [open]);
+
+  // نستعيد مرفق الحلّ المُسلَّم عند فتح المساحة للتعديل
+  useEffect(() => {
+    if (open && myAnswer?.attachment) setMyAtt(myAnswer.attachment);
+  }, [open, myAnswer?.attachment?.url]);   // eslint-disable-line react-hooks/exhaustive-deps
   const answerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -116,11 +136,34 @@ export function StudentChallengeLayer({
   const canEdit = challenge.open;
 
   async function send() {
-    if (!draft.trim() || busy) return;
+    if ((!draft.trim() && !myAtt) || busy) return;
     setBusy(true);
-    await submitAnswer(roomId, uid, name, draft);
+    await submitAnswer(roomId, uid, name, draft, myAtt ?? undefined);
     setBusy(false);
     setOpen(false);
+    setJustSent(true);
+    // 6 ثوانٍ تكفي لرؤية التأكيد ولا تُبقيه مزعجاً
+    setTimeout(() => setJustSent(false), 6000);
+  }
+
+  /* رفع صورة الحلّ. أشيع طريقة: يحلّ على ورقته ثم يصوّرها — فمنع ذلك
+     كان سيجعل الميزة نظرية. */
+  async function pickAnswerFile(f: File | null | undefined) {
+    if (!f) return;
+    setAttErr("");
+    if (f.size > 8 * 1024 * 1024) { setAttErr("الملفّ أكبر من 8 ميغابايت."); return; }
+    if (!driveReady) { setAttErr("جارٍ تهيئة الرفع… أعد المحاولة بعد لحظة."); return; }
+    setUploading(true);
+    try {
+      const up = await uploadToDrive(f);
+      setMyAtt({
+        url: `https://drive.google.com/uc?export=view&id=${up.id}`,
+        name: up.name || f.name,
+        kind: f.type.startsWith("image/") ? "image" : "doc",
+      });
+    } catch {
+      setAttErr("تعذّر الرفع. تأكّد من ربط Google ثم أعد المحاولة.");
+    } finally { setUploading(false); }
   }
 
   function saveToCards() {
@@ -145,7 +188,12 @@ export function StudentChallengeLayer({
         <FontAwesomeIcon icon={submitted ? faCheck : faBrain} className="h-4 w-4 shrink-0" />
         <span className="truncate">
           {submitted
-            ? canEdit ? "سلّمت حلّك — اضغط للتعديل" : "سلّمت حلّك ✓"
+            ? /* بعد ثوانٍ من التسليم تهدأ الرسالة إلى «حلّك مُسلَّم».
+                 «اضغط للتعديل» نداء إلى فعل، وإبقاؤه ساعةً يجعل الطالب
+                 يظنّ أنّ عليه فعل شيء لم يفعله. */
+              justSent
+                ? "تمّ تسليم حلّك ✓"
+                : canEdit ? "حلّك مُسلَّم — يمكنك تعديله" : "حلّك مُسلَّم"
             : "تحدٍّ جديد — ابدأ الحل"}
         </span>
       </button>
@@ -159,20 +207,9 @@ export function StudentChallengeLayer({
             {/* المرفق: الصورة تُعرض داخل البطاقة (التمرين نفسه غالباً)،
                 والمستند يُفتح في تبويب — لا نُحمّل PDF داخل بطاقة صغيرة. */}
             {challenge.attachment && (
-              challenge.attachment.kind === "image" ? (
-                <a href={challenge.attachment.url} target="_blank" rel="noreferrer" className="mt-2 block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={challenge.attachment.url} alt={challenge.attachment.name}
-                    className="max-h-64 w-full rounded-xl border border-border object-contain" />
-                </a>
-              ) : (
-                <a href={challenge.attachment.url} target="_blank" rel="noreferrer"
-                  className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-background p-2.5 text-xs font-bold text-primary">
-                  <Icon name="file" size={15} />
-                  <span className="min-w-0 flex-1 truncate">{challenge.attachment.name}</span>
-                  <Icon name="download" size={14} />
-                </a>
-              )
+              <div className="mt-2.5">
+                <AttachmentView att={challenge.attachment} />
+              </div>
             )}
 
             {challenge.deadline && <ChallengeCountdown deadline={challenge.deadline} />}
@@ -200,6 +237,34 @@ export function StudentChallengeLayer({
                 className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-primary"
               />
               <MathBar taRef={answerRef} onChange={setDraft} />
+
+              {/* إرفاق الحلّ: صورة الورقة أو ملفّ */}
+              <div className="mt-3 rounded-xl border border-border p-3">
+                <p className="mb-2 text-[11px] font-bold text-text-muted">
+                  حللت على ورقة؟ صوّرها وأرفقها — أو أرفق ملفّاً
+                </p>
+                {myAtt ? (
+                  <div className="space-y-2">
+                    <AttachmentView att={myAtt} compact />
+                    <button onClick={() => setMyAtt(null)}
+                      className="flex items-center gap-1.5 text-[11px] font-bold text-text-muted hover:text-danger">
+                      <Icon name="trash" size={12} /> إزالة المرفق
+                    </button>
+                  </div>
+                ) : !isDriveConfigured() ? (
+                  <p className="text-[11px] text-text-muted">رفع الملفّات غير مُفعّل.</p>
+                ) : (
+                  <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border py-3 text-xs font-bold transition ${
+                    uploading || !driveReady ? "cursor-wait text-text-muted" : "text-primary hover:border-primary"}`}>
+                    <Icon name="image" size={15} />
+                    {uploading ? "جارٍ الرفع…" : !driveReady ? "جارٍ التهيئة…" : "أرفق صورة أو ملفّ"}
+                    <input type="file" hidden accept="image/*,.pdf,.doc,.docx"
+                      disabled={uploading || !driveReady}
+                      onChange={(e) => pickAnswerFile(e.target.files?.[0])} />
+                  </label>
+                )}
+                {attErr && <p className="mt-1.5 text-[11px] font-bold text-danger">{attErr}</p>}
+              </div>
               {draft.includes("$") && (
                 <div className="mt-2 rounded-xl border border-border bg-background p-3">
                   <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة</p>
@@ -208,7 +273,7 @@ export function StudentChallengeLayer({
               )}
               <button
                 onClick={send}
-                disabled={!draft.trim() || busy}
+                disabled={(!draft.trim() && !myAtt) || busy}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
               >
                 <FontAwesomeIcon icon={submitted ? faPenToSquare : faPaperPlane} className="h-4 w-4" />
@@ -525,7 +590,17 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
 
                 {open && (
                   <>
-                    <MathText text={a.text} className="mt-2.5 border-t border-border pt-2.5 text-sm leading-relaxed text-text-primary" />
+                    {a.text?.trim() && (
+                      <MathText text={a.text} className="mt-2.5 border-t border-border pt-2.5 text-sm leading-relaxed text-text-primary" />
+                    )}
+
+                    {/* مرفق الطالب: الأستاذ يمرّ على عشرات الحلول، فالمعاينة
+                        مضغوطة ويكبّرها بضغطة عند الحاجة. */}
+                    {a.attachment && (
+                      <div className={a.text?.trim() ? "mt-2" : "mt-2.5 border-t border-border pt-2.5"}>
+                        <AttachmentView att={a.attachment} compact />
+                      </div>
+                    )}
                     <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                       <span className="text-[11px] font-bold text-text-muted">التقييم:</span>
                       {[1, 2, 3, 4, 5].map((n) => (

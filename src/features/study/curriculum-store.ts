@@ -151,3 +151,68 @@ export async function deleteSubjectLessons(rows: CustomLesson[], stream: string,
   }
   return n;
 }
+
+
+/* ── الشعب: إخفاء وإعادة تسمية ──
+   الشعبة الثابتة في الشيفرة لا تُحذف بحذف سجلّها، فنُخفيها بدل أن
+   نُوهم بحذف لا يحدث. وإعادة التسمية تنقل دروسها معها، وإلّا بقيت
+   يتيمة تحت اسم لم يعد ظاهراً. */
+
+const HSTREAM = "curriculum/hiddenStreams";
+const RSTREAM = "curriculum/streamNames";
+
+function safe(k: string) { return k.replace(/[.$#[\]/]/g, "_"); }
+
+export function listenStreamMeta(
+  cb: (m: { hidden: Set<string>; renames: Record<string, string> }) => void,
+) {
+  let hidden = new Set<string>();
+  let renames: Record<string, string> = {};
+  const emit = () => cb({ hidden, renames });
+  const u1 = onValue(ref(rtdb, HSTREAM), (s) => {
+    const v = (s.val() as Record<string, boolean> | null) ?? {};
+    hidden = new Set(Object.keys(v).filter((k) => v[k]));
+    emit();
+  });
+  const u2 = onValue(ref(rtdb, RSTREAM), (s) => {
+    renames = (s.val() as Record<string, string> | null) ?? {};
+    emit();
+  });
+  return () => {
+    if (typeof u1 === "function") u1();
+    if (typeof u2 === "function") u2();
+  };
+}
+
+export function isStreamHidden(hidden: Set<string>, stream: string) {
+  return hidden.has(safe(stream));
+}
+
+export async function setStreamHidden(stream: string, hide: boolean) {
+  const r = ref(rtdb, `${HSTREAM}/${safe(stream)}`);
+  if (hide) await set(r, true); else await remove(r);
+}
+
+/** إعادة تسمية شعبة **وتحديث دروسها المُضافة** حتى لا تُيتَّم */
+export async function renameStream(rows: CustomLesson[], from: string, to: string) {
+  const name = to.trim();
+  if (!name || name === from) return 0;
+  await set(ref(rtdb, `${RSTREAM}/${safe(from)}`), name);
+  let n = 0;
+  for (const l of rows) {
+    if (l.stream === from && l.key) {
+      await update(ref(rtdb, `${PATH}/${l.key}`), { stream: name });
+      n++;
+    }
+  }
+  return n;
+}
+
+/** حذف كل الدروس المُضافة لشعبة — الثابتة تُخفى فقط */
+export async function deleteStreamLessons(rows: CustomLesson[], stream: string) {
+  let n = 0;
+  for (const l of rows) {
+    if (l.stream === stream && l.key) { await deleteLesson(l.key); n++; }
+  }
+  return n;
+}

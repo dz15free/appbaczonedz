@@ -167,7 +167,12 @@
     "studyProgress": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": "auth != null && auth.uid === $uid",
+        "lessons": {
+          "$lessonId": {
+            ".validate": "newData.isString() && newData.val().matches(/^(todo|partial|done)$/)"
+          }
+        }
       }
     },
     "bannedUsers": {
@@ -200,6 +205,10 @@
           }
         },
         "activeTool": {
+          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
+        },
+        "roomState": {
+          ".read": "auth != null",
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
         "videoState": {
@@ -297,10 +306,11 @@
     "roomChallengeAnswers": {
       "$roomId": {
         ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
-          ".validate": "newData.hasChildren(['name','text','at'])"
+          ".validate": "newData.hasChildren(['name','at']) && (newData.child('text').val().length > 0 || newData.hasChild('attachment'))"
         }
       }
     },
@@ -351,6 +361,41 @@
         "$uid": {
           ".write": "auth != null && ((auth.uid === $uid && root.child('purchases').child(auth.uid).child('library').child($itemId).exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
           ".validate": "!newData.exists() || (newData.hasChildren(['stars','name','at']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 5 && (!newData.hasChild('comment') || newData.child('comment').val().length <= 500))"
+        }
+      }
+    },
+    "curriculum": {
+      ".read": "auth != null",
+      "lessons": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".indexOn": [
+          "stream",
+          "subject"
+        ],
+        "$lessonKey": {
+          ".validate": "newData.hasChildren(['title','subject','stream']) && newData.child('title').isString() && newData.child('title').val().length <= 300 && newData.child('subject').isString() && newData.child('subject').val().length <= 120 && newData.child('stream').isString() && newData.child('stream').val().length <= 120"
+        }
+      },
+      "hiddenSubjects": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$key": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "siteSubjects": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$subjectId": {
+        ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length <= 120"
+      }
+    },
+    "guide": {
+      ".read": true,
+      "specialities": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$slug": {
+          ".validate": "!newData.exists() || ((!newData.hasChild('permalink') || newData.child('permalink').val().matches(/^[a-z0-9-]{1,60}$/)) && (!newData.hasChild('title') || newData.child('title').val().length <= 200) && (!newData.hasChild('excerpt') || newData.child('excerpt').val().length <= 400))"
         }
       }
     }

@@ -3,6 +3,7 @@
 import { ref, onValue, set, remove, update, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
+import { SEED_CONTENT } from "@/features/guide/seed-content";
 
 /* ════════════════════════════════════════════════════════════
    محتوى دليل التخصّصات — تكتبه أنت
@@ -49,7 +50,9 @@ export type SpecFull = SpecLite & SpecContent & { published: boolean };
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   return SPEC_INDEX.map((s) => {
-    const c = content?.[s.slug] ?? {};
+    /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
+       فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
+    const c = { ...(SEED_CONTENT[s.slug] ?? {}), ...(content?.[s.slug] ?? {}) };
     return {
       ...s,
       ...c,

@@ -9,7 +9,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/ui/icon";
 import { OFFICIAL_STREAMS, STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
-import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
+import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, listenStreamMeta, isStreamHidden, type CustomLesson } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
    تقدّمي الدراسي — على المنهج الرسمي
@@ -41,6 +41,9 @@ export default function TrackerPage() {
   const { user, loading } = useAuth();
   const [custom, setCustom] = useState<CustomLesson[]>([]);
   const [hiddenSubs, setHiddenSubs] = useState<Set<string>>(new Set());
+  const [streamMeta, setStreamMeta] = useState<{ hidden: Set<string>; renames: Record<string, string> }>(
+    { hidden: new Set(), renames: {} },
+  );
   const [progress, setProgress] = useState<Record<string, Status>>({});
   const [stream, setStream] = useState<string>(STREAMS[0] ?? "");
   const [subject, setSubject] = useState<string>("");
@@ -68,6 +71,12 @@ export default function TrackerPage() {
      فلا تظهر مادّة في صفحة وتغيب عن أخرى. */
   useEffect(() => {
     const unsub = listenHiddenSubjects(setHiddenSubs);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+
+  /* الشعبة التي أخفاها الأدمن تختفي هنا أيضاً — قرار واحد لكل الموقع. */
+  useEffect(() => {
+    const unsub = listenStreamMeta(setStreamMeta);
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
 
@@ -145,7 +154,9 @@ export default function TrackerPage() {
 
         {/* الشعبة */}
         <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
-          {[...new Set([...OFFICIAL_STREAMS, ...all.map((l) => l.stream)])].map((s) => (
+          {[...new Set([...OFFICIAL_STREAMS, ...all.map((l) => l.stream)])]
+            .filter((s) => !isStreamHidden(streamMeta.hidden, s))
+            .map((s) => (
             <button key={s} onClick={() => pickStream(s)}
               className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                 stream === s ? "bg-[var(--bz-blue)] text-white"

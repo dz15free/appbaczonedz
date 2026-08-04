@@ -1032,3 +1032,117 @@ body.bz-fullscreen-active .bz-voicebar {
 /* على الهاتف يختفي الزرّ: البطاقة كلّها قابلة للضغط، وزرّ إضافي يضيّق
    النصّ بلا فائدة. */
 @media (min-width: 480px) { .bz-home-guide-cta { display: inline-flex; } }
+
+/* ════════════════════════════════════════════════════════════
+   مرفقات التحدّي
+
+   صورة هاتف حديث تتجاوز 4000 بكسل عرضاً. عرضها خاماً يكسر التخطيط
+   ويُبطئ الصفحة، فنحدّ الارتفاع ونملأ العرض، والضغط يفتحها كاملة.
+   ════════════════════════════════════════════════════════════ */
+
+.bz-att-img {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-canvas);
+  cursor: zoom-in;
+}
+.bz-att-img img {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;      /* لا نقصّ حلّ الطالب — قد يُقصّ سطر مهمّ */
+  background: #fff;
+}
+/* داخل قائمة الأستاذ: أقصر، فتبقى عشرات الحلول قابلة للمسح بالعين */
+.bz-att-img.is-compact img { max-height: 180px; }
+@media (max-width: 640px) {
+  .bz-att-img img { max-height: 260px; }
+  .bz-att-img.is-compact img { max-height: 150px; }
+}
+
+.bz-att-zoom {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline-end: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(19, 23, 34, .72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.bz-att-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  transition: border-color .15s, transform .12s;
+}
+.bz-att-file:hover { border-color: var(--bz-blue-100); transform: translateY(-1px); }
+.bz-att-file-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  color: var(--bz-blue);
+  background: var(--bz-blue-050);
+}
+
+/* الصورة المكبّرة */
+.bz-att-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10090;           /* فوق الأدراج السفلية */
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 13, 20, .92);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: bz-att-in 160ms ease both;
+}
+@keyframes bz-att-in { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .bz-att-lightbox { animation: none } }
+
+.bz-att-lightbox img {
+  max-width: 100%;
+  max-height: 82vh;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #fff;
+}
+.bz-att-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  inset-inline-end: 12px;
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;      /* مقاس لمس مريح */
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, .14);
+}
+.bz-att-open {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #131722;
+  background: #fff;
+}

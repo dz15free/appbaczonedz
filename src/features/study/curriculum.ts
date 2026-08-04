@@ -214,7 +214,6 @@ export const LESSONS: Lesson[] = [
 export const OFFICIAL_STREAMS: string[] = [
   "علوم تجريبية",
   "رياضيات",
-  "تقني رياضي",
   "تسيير واقتصاد",
   "آداب وفلسفة",
   "لغات أجنبية",

@@ -6,7 +6,8 @@ import { LESSONS, STREAMS, OFFICIAL_STREAMS } from "@/features/study/curriculum"
 import {
   listenCustomLessons, mergeLessons, addLesson, addLessonsBulk,
   deleteLesson, listenHiddenSubjects, isSubjectHidden, setSubjectHidden,
-  deleteSubjectLessons, type CustomLesson,
+  deleteSubjectLessons, listenStreamMeta, isStreamHidden, setStreamHidden,
+  renameStream, deleteStreamLessons, type CustomLesson,
 } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
@@ -30,6 +31,16 @@ export function CurriculumEditor() {
   const [busy, setBusy] = useState(false);
   const [stream, setStream] = useState(STREAMS[0] ?? "");
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [streamMeta, setStreamMeta] = useState<{ hidden: Set<string>; renames: Record<string, string> }>(
+    { hidden: new Set(), renames: {} },
+  );
+  const [editStream, setEditStream] = useState<string | null>(null);
+  const [streamDraft, setStreamDraft] = useState("");
+
+  useEffect(() => {
+    const unsub = listenStreamMeta(setStreamMeta);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   useEffect(() => {
     const unsub = listenHiddenSubjects(setHidden);
@@ -132,6 +143,73 @@ export function CurriculumEditor() {
           {LESSONS.length} ثابت + {custom.length} مُضاف = {all.length}
         </span>
       </header>
+
+      {/* ══ الشعب: إعادة تسمية · إخفاء · حذف ══
+          لم يكن هناك أي زرّ لإدارتها — كانت قائمة ثابتة لا تُلمس. */}
+      <div className="rounded-xl border border-border p-3">
+        <h3 className="mb-1 text-sm font-extrabold">الشعب</h3>
+        <p className="mb-2 text-[11px] leading-relaxed text-text-muted">
+          إعادة التسمية <b>تنقل دروس الشعبة معها</b> فلا تبقى يتيمة. والشعبة
+          الأساسية تُخفى ولا تُحذف — حذف سجلّها لا يُزيلها من الشيفرة.
+        </p>
+        <div className="space-y-1">
+          {[...new Set([...OFFICIAL_STREAMS, ...custom.map((c) => c.stream)])].map((st) => {
+            const off = isStreamHidden(streamMeta.hidden, st);
+            const own = custom.filter((l) => l.stream === st).length;
+            const shown = streamMeta.renames[st.replace(/[.$#[\]/]/g, "_")] ?? st;
+            return (
+              <div key={st}
+                className={`flex flex-wrap items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
+                  off ? "border-border bg-[var(--bz-canvas)] opacity-60" : "border-border"}`}>
+                {editStream === st ? (
+                  <>
+                    <input autoFocus value={streamDraft} onChange={(e) => setStreamDraft(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Escape") setEditStream(null);
+                        if (e.key === "Enter") {
+                          const n = await renameStream(custom, st, streamDraft);
+                          setEditStream(null);
+                          setMsg({ kind: "ok", text: `أُعيدت التسمية · نُقل ${n} درساً.` });
+                        }
+                      }}
+                      className="min-w-0 flex-1 rounded-md border border-[var(--bz-blue)] bg-surface px-2 py-1 text-xs outline-none" />
+                    <button onClick={async () => {
+                      const n = await renameStream(custom, st, streamDraft);
+                      setEditStream(null);
+                      setMsg({ kind: "ok", text: `أُعيدت التسمية · نُقل ${n} درساً.` });
+                    }} className="shrink-0 font-bold text-[var(--bz-green)]">حفظ</button>
+                    <button onClick={() => setEditStream(null)} className="shrink-0 text-text-muted">إلغاء</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 truncate font-semibold">
+                      {shown}{off && <span className="ms-1 text-[10px] text-text-muted">(مخفيّة)</span>}
+                    </span>
+                    <span className="shrink-0 font-mono text-[10px] text-text-muted">{own}</span>
+                    <button onClick={() => { setEditStream(st); setStreamDraft(shown); }}
+                      className="shrink-0 text-text-muted hover:text-primary" aria-label="إعادة تسمية">
+                      <Icon name="pen" size={13} />
+                    </button>
+                    <button onClick={() => setStreamHidden(st, !off)}
+                      className="shrink-0 text-text-muted hover:text-primary" aria-label={off ? "إظهار" : "إخفاء"}>
+                      <Icon name="eye" size={13} />
+                    </button>
+                    {own > 0 && (
+                      <button onClick={async () => {
+                        if (!confirm(`حذف ${own} درساً مُضافاً من «${shown}»؟ لا رجعة.`)) return;
+                        const n = await deleteStreamLessons(custom, st);
+                        setMsg({ kind: "ok", text: `حُذف ${n} درساً.` });
+                      }} className="shrink-0 text-text-muted hover:text-[var(--bz-red)]" aria-label="حذف الدروس">
+                        <Icon name="trash" size={13} />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* تقرير التغطية — يُظهر أين النقص فعلاً */}
       <div className="overflow-hidden rounded-xl border border-border">
