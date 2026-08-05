@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ChargilyPayButton } from "@/features/paid/chargily-button";
 import { ReportLinkButton } from "@/features/community/report-link";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import Link from "next/link";
 import { ref, push, remove, update, onValue, query, orderByChild, limitToLast } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar, faPen, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar, faPen, faCheck, faComments } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
@@ -422,11 +423,24 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
       {showRedeem && locked && (
         <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
           <p className="text-xs font-semibold leading-relaxed">
-            هذا الملخّص مدفوع ({e.price} دج). للحصول على كود الوصول، تواصل مع الأدمن للدفع.
+            هذا الملخّص مدفوع ({e.price} دج). اختر طريقة الدفع المناسبة لك.
           </p>
+
+          {/* الدفع الفوري أوّلاً — أسرع طريق، ومن لا يملك بطاقة يجد
+              البديل تحته مباشرة. لا نُلغي التواصل مع الإدارة: بعض
+              الطلبة لا يملكون بطاقة أصلاً، وإغلاق الباب يخسرهم. */}
+          <ChargilyPayButton
+            itemType="library"
+            itemId={e.id}
+            price={e.price ?? 0}
+            uid={myUid}
+            className="mt-2"
+          />
+
           <button onClick={() => setShowPay(true)}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary py-2 text-xs font-bold text-white active:scale-95">
-            💬 تواصل مع الإدارة للشراء
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2 text-xs font-bold text-text-muted transition hover:border-primary hover:text-primary active:scale-95">
+            <FontAwesomeIcon icon={faComments} className="h-3.5 w-3.5" />
+            أو ادفع بالتواصل مع الإدارة
           </button>
           <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
           <div className="mt-2 flex gap-2">

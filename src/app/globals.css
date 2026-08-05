@@ -1309,3 +1309,29 @@ body.bz-fullscreen-active .bz-voicebar {
   .bz-avg-t { font-size: 15px; }
   .bz-avg-d { font-size: 12px; line-height: 1.85; }
 }
+
+/* زرّ الدفع الإلكتروني — بارز كخيار أوّل بلا صخب */
+.bz-pay-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  color: #fff;
+  background: linear-gradient(135deg, #10603F 0%, #1E8A5F 65%, #24A472 100%);
+  box-shadow: 0 8px 20px -14px rgba(30, 138, 95, .8);
+  transition: transform .14s, box-shadow .14s, filter .14s;
+}
+.bz-pay-btn:hover { filter: brightness(1.06); box-shadow: 0 12px 26px -14px rgba(30,138,95,.9); }
+.bz-pay-btn:active { transform: scale(.985); }
+.bz-pay-btn:disabled { opacity: .7; cursor: wait; }
+.bz-pay-ico {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .22);
+}
