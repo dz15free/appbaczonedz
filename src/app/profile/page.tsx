@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TeacherContactEditor } from "@/features/paid/teacher-contact";
+import { listenTeacherSales, summarize, type TeacherSale } from "@/features/paid/teacher-sales";
 import { clearProfileCache } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -226,6 +228,9 @@ export default function ProfilePage() {
       {/* تقييم الطلاب — للأستاذ والإدارة */}
       {user && isStaff && <MyRatingSummary uid={user.uid} />}
 
+      {/* بيانات تواصل الأستاذ — بجانب لوحة أرباحه */}
+      {profile?.role === "teacher" && user && <TeacherContactEditor uid={user.uid} />}
+
       {/* لوحة أرباح الأستاذ — الأستاذ وحده (الإدارة لا تبيع محتوى) */}
       {user && profile?.role === "teacher" && <TeacherEarnings uid={user.uid} />}
 
@@ -308,17 +313,38 @@ export default function ProfilePage() {
 /* لوحة أرباح الأستاذ — مبيعاته وأرباحه بعد خصم العمولة */
 function TeacherEarnings({ uid }: { uid: string }) {
   const [codes, setCodes] = useState<AccessCode[]>([]);
+  const [sales, setSales] = useState<TeacherSale[]>([]);
+
   useEffect(() => {
     const unsub = listenOwnerCodes(uid, setCodes);
     return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
 
+  /* مبيعات الدفع الإلكتروني تُضمّ إلى مبيعات الأكواد في **لوحة واحدة**.
+     لوحتان منفصلتان تعنيان أن يجمع الأستاذ أرباحه بنفسه — وهو أوّل
+     مصدر للشكّ في المنصّة. */
+  useEffect(() => {
+    const unsub = listenTeacherSales(uid, setSales);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [uid]);
+
   const sold = codes.filter((c) => c.redeemedBy);
-  const totalGross = sold.reduce((s, c) => s + c.price, 0);
-  const totalNet = sold.reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0);
-  const settledNet = sold.filter((c) => c.settled).reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0);
+  const cardTotals = summarize(sales);
+
+  const totalGross = sold.reduce((s, c) => s + c.price, 0) + cardTotals.gross;
+  const totalNet =
+    sold.reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0) + cardTotals.net;
+  const settledNet =
+    sold.filter((c) => c.settled).reduce((s, c) => s + splitAmount(c.price, c.commissionPct).owner, 0)
+    + cardTotals.settled;
   const pendingNet = totalNet - settledNet;
-  const buyers = new Set(sold.map((c) => c.redeemedBy)).size;
+  const siteCut =
+    sold.reduce((s, c) => s + splitAmount(c.price, c.commissionPct).commission, 0)
+    + cardTotals.commission;
+  const buyers = new Set([
+    ...sold.map((c) => c.redeemedBy),
+    ...sales.map((x) => x.buyerUid),
+  ]).size;
 
   return (
     <section className="mx-auto mt-4 max-w-md px-4">
@@ -347,8 +373,58 @@ function TeacherEarnings({ uid }: { uid: string }) {
           </div>
         </div>
 
+        {/* الشفافية المالية: الأستاذ يرى **كم دخل وكم أخذ الموقع** بلا
+            حساب يدوي. إخفاء العمولة يفتح باب الشكّ لا الطمأنينة. */}
+        <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-background p-3 text-[11.5px]">
+          <div className="flex items-center justify-between">
+            <span className="text-text-muted">إجمالي المبيعات قبل العمولة</span>
+            <span className="font-bold">{totalGross} دج</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-text-muted">عمولة الموقع</span>
+            <span className="font-bold text-text-muted">− {siteCut} دج</span>
+          </div>
+          <div className="flex items-center justify-between border-t border-border pt-1.5">
+            <span className="font-bold">صافي أرباحك</span>
+            <span className="font-extrabold text-secondary">{totalNet} دج</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-text-muted">حُوّل إليك</span>
+            <span className="font-bold">{settledNet} دج</span>
+          </div>
+        </div>
+
+        {sales.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1.5 text-xs font-bold text-text-muted">
+              مبيعات الدفع بالبطاقة ({sales.length})
+            </p>
+            <div className="max-h-56 space-y-1.5 overflow-y-auto">
+              {sales.map((x) => (
+                <div key={x.id} className="flex items-center gap-2 rounded-lg border border-border p-2 text-[11.5px]">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold">{x.itemTitle}</span>
+                    <span className="block text-[10.5px] text-text-muted">
+                      {x.itemType === "room" ? "غرفة" : "ملخّص"} ·{" "}
+                      {new Date(x.paidAt).toLocaleDateString("ar-DZ")}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-left">
+                    <span className="block font-extrabold text-secondary">{x.net} دج</span>
+                    <span className="block text-[10px] text-text-muted">من {x.price}</span>
+                  </span>
+                  <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                    x.settled ? "bg-secondary/10 text-secondary" : "bg-amber-400/15 text-amber-600"}`}>
+                    {x.settled ? "حُوّل" : "بانتظار"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
-          الإجمالي قبل العمولة: {totalGross} دج · المُسوّى: {settledNet} دج. التسوية تتم مع أدمن الموقع.
+          التسوية تتم مع أدمن الموقع. المبالغ تصل إلى حساب الموقع أوّلاً ثم تُحوَّل إليك بعد خصم العمولة.
         </p>
 
         {sold.length > 0 && (

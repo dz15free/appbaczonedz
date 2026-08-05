@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChargilyPayButton } from "@/features/paid/chargily-button";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
@@ -1260,14 +1261,24 @@ function PaidRoomGate({ room, uid, onUnlocked }: {
           <FontAwesomeIcon icon={faLock} className="h-8 w-8" />
         </span>
         <h1 className="mt-4 font-display text-xl font-extrabold">{room.name}</h1>
-        <p className="mt-1 text-sm text-text-muted">غرفة مدفوعة — تحتاج كود وصول للدخول</p>
+        <p className="mt-1 text-sm text-text-muted">غرفة مدفوعة — ادفع بالبطاقة أو أدخل كود وصول</p>
         <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-sm font-bold text-amber-600">
           <FontAwesomeIcon icon={faLock} className="h-3 w-3" /> {room.price} دج
         </div>
 
+        {/* الدفع الفوري أوّلاً — أسرع طريق. ومن لا يملك بطاقة يجد
+            البديلين تحته: الكود، والتواصل مع الإدارة. */}
+        <ChargilyPayButton
+          itemType="room"
+          itemId={room.id}
+          price={room.price ?? 0}
+          uid={uid}
+          className="mt-4 text-right"
+        />
+
         <button onClick={() => setShowPay(true)}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-2.5 text-sm font-bold text-white active:scale-95">
-          تواصل مع الإدارة للشراء
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-border py-2 text-xs font-bold text-text-muted transition hover:border-primary hover:text-primary active:scale-95">
+          أو ادفع بالتواصل مع الإدارة
         </button>
         <SupportChatSheet open={showPay} onClose={() => setShowPay(false)} initialKind="payment" />
 

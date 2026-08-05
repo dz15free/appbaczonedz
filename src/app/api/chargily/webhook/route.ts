@@ -83,6 +83,33 @@ export async function POST(req: NextRequest) {
        ولا يُفتح له شيء — وهو أسوأ عطب ممكن هنا. */
     await dbSet(`userAccess/${order.uid}/${order.itemType}/${order.itemId}`, grantId);
 
+    /* ── العمولة تُحسب **لحظة الدفع** لا وقت العرض ──
+       لو حسبناها عند فتح اللوحة لتغيّرت أرباح مبيعات قديمة كلّما عدّل
+       الأدمن النسبة — وهذا ظلم للأستاذ. النسبة تُجمَّد مع العملية. */
+    const pct = Math.max(0, Math.min(100, Number(await dbGet<number>("settings/commissionPct")) || 0));
+    const commission = Math.round((order.price * pct) / 100);
+    const net = order.price - commission;
+
+    /* مرآة لكل أستاذ: `teacherSales/{ownerId}/{orderId}`.
+       لماذا مرآة بدل استعلام على السجلّ العامّ: قواعد قاعدة البيانات لا
+       تُصفّي القراءة بالحقول، فإتاحة السجلّ العامّ للأستاذ تعني أن يرى
+       مبيعات غيره. المرآة تُريه ما يخصّه وحده. */
+    if (order.ownerId) {
+      await dbSet(`teacherSales/${order.ownerId}/${orderId}`, {
+        buyerUid: order.uid,
+        itemType: order.itemType,
+        itemId: order.itemId,
+        itemTitle: order.itemTitle,
+        price: order.price,
+        commissionPct: pct,
+        commission,
+        net,
+        method: "chargily",
+        settled: false,          // الأدمن يُعلّمها بعد التحويل الفعلي
+        paidAt: Date.now(),
+      });
+    }
+
     // سجلّ للأستاذ والإدارة: من اشترى وبكم ومتى
     await dbSet(`chargilyPayments/${orderId}`, {
       uid: order.uid,
@@ -93,6 +120,10 @@ export async function POST(req: NextRequest) {
       ownerId: order.ownerId ?? "",
       ownerName: order.ownerName ?? "",
       method: "chargily",
+      commissionPct: pct,
+      commission,
+      net,
+      settled: false,
       paidAt: Date.now(),
     });
 
