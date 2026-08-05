@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/auth-provider";
-import { useProfile } from "@/features/auth/use-profile";
+import { useProfileState } from "@/features/auth/use-profile";
 import { saveProfile } from "@/lib/firebase/auth";
 import { TRACKS, WILAYAS, ALL_SUBJECTS } from "@/lib/constants";
 import { Button } from "@/components/ui/field";
@@ -14,7 +14,7 @@ export default function OnboardingPage() {
   const next = useNextDestination();
   const router = useRouter();
   const { user, loading } = useAuth();
-  const profile = useProfile(user?.uid);
+  const { profile, loading: profileLoading } = useProfileState(user?.uid);
   const [track, setTrack] = useState("");
   const [teachSubject, setTeachSubject] = useState("");
   const [wilaya, setWilaya] = useState("");
@@ -22,10 +22,31 @@ export default function OnboardingPage() {
 
   const isTeacher = profile?.role === "teacher";
 
+  // نملأ ما هو محفوظ: من ينقصه حقل واحد لا يُعيد إدخال الباقي
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.wilaya) setWilaya((v) => v || (profile.wilaya as string));
+    if (profile.track) setTrack((v) => v || (profile.track as string));
+    if (profile.teachSubject) setTeachSubject((v) => v || (profile.teachSubject as string));
+  }, [profile]);
+
   // حماية الصفحة: لا دخول بدون مصادقة
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
+
+  /* من أكمل تسجيله لا يُحبس هنا.
+     كان يكفي أن يتأخّر فحص الدخول أو يفشل ليُرسَل مستخدم مكتمل إلى
+     صفحة إعداد لا يحتاجها — فنخرجه بأنفسنا فور تأكّدنا من اكتمال
+     بياناته. الشرط نفسه المستعمل في `needsOnboarding` حرفياً، فلا
+     يتناقض الفحصان. */
+  useEffect(() => {
+    if (profileLoading || !profile) return;
+    const complete =
+      Boolean(profile.wilaya) &&
+      (profile.role === "teacher" ? Boolean(profile.teachSubject) : Boolean(profile.track));
+    if (complete) router.replace(next);
+  }, [profileLoading, profile, next, router]);
 
   async function handleSave() {
     if (!user || !wilaya) return;
@@ -40,7 +61,14 @@ export default function OnboardingPage() {
     router.push(next);
   }
 
-  if (loading || !user || !profile) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
+  /* 🐛 كان الشرط `!profile` يحبس المستخدم في «جارٍ التحميل» إلى الأبد.
+     ومن لا سجلّ له في قاعدة البيانات هو **بالضبط** من تُوجد هذه الصفحة
+     لأجله — فكانت تمنع من جاءت لتخدمه.
+     الآن ننتظر انتهاء **القراءة** لا وجود السجلّ: `profileLoading`
+     تنتهي سواء وُجد السجلّ أو لم يوجد. */
+  if (loading || !user || profileLoading) {
+    return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
+  }
 
   const canSubmit = wilaya && (isTeacher ? teachSubject : track);
 
