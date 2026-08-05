@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { ref, get, set, push } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { dbGet, dbSet, dbUpdate, dbPush, isServerDbReady } from "@/lib/firebase/server-db";
 
 export const runtime = "nodejs";
 
@@ -20,11 +19,22 @@ export const runtime = "nodejs";
 ════════════════════════════════════════════════════════════ */
 
 const SECRET = process.env.CHARGILY_SECRET_KEY;
-const MODE = process.env.CHARGILY_MODE === "live" ? "live" : "test";
-const BASE =
-  MODE === "live"
+
+/* الوضع يُقرأ من لوحة الإدارة أوّلاً ثم من البيئة.
+   فالتحويل بين التجربة والإنتاج ضغطة زرّ لا إعادة نشر. */
+async function resolveBase(): Promise<"live" | "test"> {
+  try {
+    const v = await dbGet<string>("settings/chargilyMode");
+    if (v === "live" || v === "test") return v;
+  } catch { /* نرجع إلى البيئة */ }
+  return process.env.CHARGILY_MODE === "live" ? "live" : "test";
+}
+
+function baseUrl(mode: "live" | "test") {
+  return mode === "live"
     ? "https://pay.chargily.net/api/v2"
     : "https://pay.chargily.net/test/api/v2";
+}
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
 
@@ -33,6 +43,13 @@ type ItemType = "library" | "room";
 export async function POST(req: NextRequest) {
   if (!SECRET) {
     return Response.json({ error: "الدفع الإلكتروني غير مُفعّل بعد." }, { status: 503 });
+  }
+  if (!isServerDbReady()) {
+    // رسالة صريحة بدل 500 غامض
+    return Response.json(
+      { error: "إعداد الخادم ناقص (FIREBASE_DB_SECRET)." },
+      { status: 503 },
+    );
   }
 
   let body: { itemType?: string; itemId?: string; uid?: string; name?: string; phone?: string };
@@ -51,14 +68,13 @@ export async function POST(req: NextRequest) {
 
   // نقرأ العنصر من قاعدة البيانات — السعر والمالك من هناك لا من الطلب
   const path = itemType === "room" ? `rooms/${itemId}` : `library/${itemId}`;
-  const snap = await get(ref(rtdb, path));
-  if (!snap.exists()) {
-    return Response.json({ error: "العنصر غير موجود." }, { status: 404 });
-  }
-  const item = snap.val() as {
+  const item = await dbGet<{
     title?: string; name?: string; price?: number; isPaid?: boolean;
     uploaderId?: string; ownerId?: string; uploaderName?: string; ownerName?: string;
-  };
+  }>(path);
+  if (!item) {
+    return Response.json({ error: "العنصر غير موجود." }, { status: 404 });
+  }
 
   if (!item.isPaid) {
     return Response.json({ error: "هذا العنصر مجّاني." }, { status: 400 });
@@ -75,17 +91,19 @@ export async function POST(req: NextRequest) {
 
   /* سجلّ محلّي قبل الانتقال: الويب هوك يصل باسم هذا السجلّ، فنعرف
      **من اشترى وماذا** حتى لو تأخّر أو تكرّر. */
-  const orderRef = push(ref(rtdb, "chargilyOrders"));
-  const orderId = orderRef.key as string;
-  await set(orderRef, {
+  const orderId = await dbPush("chargilyOrders", {
     uid, itemType, itemId, itemTitle: title,
     price, ownerId, ownerName,
     status: "pending",
     createdAt: Date.now(),
   });
+  if (!orderId) {
+    return Response.json({ error: "تعذّر إنشاء الطلب." }, { status: 500 });
+  }
 
+  const mode = await resolveBase();
   try {
-    const res = await fetch(`${BASE}/checkouts`, {
+    const res = await fetch(`${baseUrl(mode)}/checkouts`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${SECRET}`,
@@ -106,17 +124,19 @@ export async function POST(req: NextRequest) {
 
     const data = (await res.json()) as { checkout_url?: string; id?: string; message?: string };
     if (!res.ok || !data.checkout_url) {
-      await set(ref(rtdb, `chargilyOrders/${orderId}/status`), "failed");
+      await dbSet(`chargilyOrders/${orderId}/status`, "failed");
       return Response.json(
         { error: data.message || "تعذّر إنشاء عملية الدفع." },
         { status: 502 },
       );
     }
 
-    await set(ref(rtdb, `chargilyOrders/${orderId}/checkoutId`), data.id ?? "");
+    await dbUpdate(`chargilyOrders/${orderId}`, { checkoutId: data.id ?? "", mode });
     return Response.json({ url: data.checkout_url, orderId });
-  } catch {
-    await set(ref(rtdb, `chargilyOrders/${orderId}/status`), "failed");
+  } catch (e) {
+    await dbSet(`chargilyOrders/${orderId}/status`, "failed").catch(() => {});
+    // نُسجّل السبب في سجلّ الخادم: 502 وحده لا يُخبرك أين المشكلة
+    console.error("[BacZone] Chargily checkout failed:", e);
     return Response.json({ error: "تعذّر الاتصال ببوابة الدفع." }, { status: 502 });
   }
 }

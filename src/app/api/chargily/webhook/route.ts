@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
-import { ref, get, set, update } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { dbGet, dbSet, dbUpdate, isServerDbReady } from "@/lib/firebase/server-db";
 
 export const runtime = "nodejs";
 
@@ -36,6 +35,10 @@ function verify(rawBody: string, signature: string): boolean {
 
 export async function POST(req: NextRequest) {
   if (!SECRET) return new Response("not configured", { status: 503 });
+  /* الويب هوك يناديه Chargily لا المستخدم — فلا هويّة إطلاقاً.
+     بلا سرّ قاعدة البيانات لا يستطيع منح الوصول، و**503 مقصودة** كي
+     يُعيد Chargily الإرسال بدل أن تضيع عملية مدفوعة. */
+  if (!isServerDbReady()) return new Response("db not configured", { status: 503 });
 
   const signature = req.headers.get("signature") ?? "";
   const raw = await req.text();
@@ -62,13 +65,11 @@ export async function POST(req: NextRequest) {
   if (!orderId) return new Response("no order", { status: 200 });
 
   try {
-    const snap = await get(ref(rtdb, `chargilyOrders/${orderId}`));
-    if (!snap.exists()) return new Response("unknown order", { status: 200 });
-
-    const order = snap.val() as {
+    const order = await dbGet<{
       uid: string; itemType: "library" | "room"; itemId: string; itemTitle: string;
       price: number; ownerId?: string; ownerName?: string; status?: string;
-    };
+    }>(`chargilyOrders/${orderId}`);
+    if (!order) return new Response("unknown order", { status: 200 });
 
     // إعادة إرسال: مُعالَج مسبقاً — نردّ 200 ولا نمنح مرّتين
     if (order.status === "paid") return new Response("already handled", { status: 200 });
@@ -76,17 +77,14 @@ export async function POST(req: NextRequest) {
     /* منح الوصول: نكتب في `purchases` بنفس شكل نظام الأكواد القائم،
        فيقرأه كل ما هو مبنيّ عليه بلا تعديل. */
     const grantId = `chargily_${orderId}`;
-    await set(
-      ref(rtdb, `purchases/${order.uid}/${order.itemType}/${order.itemId}`),
-      grantId,
-    );
+    await dbSet(`purchases/${order.uid}/${order.itemType}/${order.itemId}`, grantId);
     /* ⚠️ المسار `userAccess` لا `access`: هذا ما تقرؤه الواجهة فعلاً
        (`listenHasAccess`). كتابته في مسار آخر تعني أن يدفع الطالب
        ولا يُفتح له شيء — وهو أسوأ عطب ممكن هنا. */
-    await set(ref(rtdb, `userAccess/${order.uid}/${order.itemType}/${order.itemId}`), grantId);
+    await dbSet(`userAccess/${order.uid}/${order.itemType}/${order.itemId}`, grantId);
 
     // سجلّ للأستاذ والإدارة: من اشترى وبكم ومتى
-    await set(ref(rtdb, `chargilyPayments/${orderId}`), {
+    await dbSet(`chargilyPayments/${orderId}`, {
       uid: order.uid,
       itemType: order.itemType,
       itemId: order.itemId,
@@ -98,10 +96,7 @@ export async function POST(req: NextRequest) {
       paidAt: Date.now(),
     });
 
-    await update(ref(rtdb, `chargilyOrders/${orderId}`), {
-      status: "paid",
-      paidAt: Date.now(),
-    });
+    await dbUpdate(`chargilyOrders/${orderId}`, { status: "paid", paidAt: Date.now() });
 
     return new Response("ok", { status: 200 });
   } catch {

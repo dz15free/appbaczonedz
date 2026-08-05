@@ -6,7 +6,7 @@ import { GuideEditor } from "@/features/admin/guide-editor";
 import { SubjectsEditor } from "@/features/admin/subjects-editor";
 import { CurriculumEditor } from "@/features/admin/curriculum-editor";
 import { useRouter } from "next/navigation";
-import { ref, onValue, remove, query, orderByChild, limitToLast, get, update } from "firebase/database";
+import { ref, onValue, remove, query, orderByChild, limitToLast, get, update, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -208,6 +208,15 @@ export default function AdminPage() {
 
   const [reports, setReports] = useState<Report[]>([]);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [payMode, setPayMode] = useState<"test" | "live">("test");
+
+  // وضع بوابة الدفع — يُقرأ حيّاً فتتبدّل الأزرار فور التغيير
+  useEffect(() => {
+    const unsub = onValue(ref(rtdb, "settings/chargilyMode"), (snap) => {
+      setPayMode(snap.val() === "live" ? "live" : "test");
+    });
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
 
   // المستبعدون من الترتيب — يُقرأ في تبويب المستخدمين
   useEffect(() => {
@@ -522,6 +531,49 @@ export default function AdminPage() {
         {tab === "subjects" && <SubjectsEditor />}
 
         {tab === "guide" && <GuideEditor />}
+
+        {tab === "control" && (
+          <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+            <h3 className="mb-1 font-display text-base font-extrabold">بوابة الدفع Chargily</h3>
+            <p className="mb-3 text-[11.5px] leading-relaxed text-text-muted">
+              <b>تجريبي:</b> لا أموال حقيقية، لتجربة المسار كاملاً ببطاقات الاختبار.
+              <br />
+              <b>مباشر:</b> عمليات حقيقية تُخصم من بطاقات الطلبة.
+              <br />
+              التبديل هنا يسري <b>فوراً</b> بلا إعادة نشر — لكن تأكّد أنّ المفتاح
+              السرّي في Vercel يطابق الوضع (<span className="font-mono">test_sk_</span> أو
+              <span className="font-mono"> live_sk_</span>)، وإلّا رفضت البوابة كل عملية.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(["test", "live"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={async () => {
+                    if (m === "live" && !confirm(
+                      "تحويل الدفع إلى الوضع المباشر؟\n\nستُخصم أموال حقيقية من الطلبة.\n" +
+                      "تأكّد أوّلاً أنّ CHARGILY_SECRET_KEY في Vercel يبدأ بـ live_sk_",
+                    )) return;
+                    await set(ref(rtdb, "settings/chargilyMode"), m);
+                    alert(m === "live" ? "الدفع الآن مباشر." : "الدفع الآن تجريبي.");
+                  }}
+                  className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${
+                    payMode === m
+                      ? m === "live"
+                        ? "border-danger bg-danger/10 text-danger"
+                        : "border-primary bg-primary/10 text-primary"
+                      : "border-border text-text-muted hover:text-primary"
+                  }`}
+                >
+                  {m === "live" ? "مباشر (أموال حقيقية)" : "تجريبي"}
+                  {payMode === m && " ✓"}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] font-bold text-text-muted">
+              الوضع الحالي: {payMode === "live" ? "مباشر" : "تجريبي"}
+            </p>
+          </div>
+        )}
 
         {tab === "overview" && (
           <div className="space-y-4">

@@ -54,19 +54,22 @@ export function ChargilyPayButton({
 
   return (
     <div className={className}>
-      <button onClick={pay} disabled={busy} className="bz-pay-btn">
-        <span className="bz-pay-ico"><Icon name="lock" size={15} /></span>
-        <span className="min-w-0 flex-1 text-right">
-          <span className="block text-[13px] font-extrabold">ادفع الآن بالبطاقة</span>
-          <span className="block text-[10.5px] opacity-80">
-            ذهبية بريد الجزائر أو CIB — {price} دج
+      {/* 🐛 كان النصّ يظهر مقلوباً: القفل يميناً والسعر ملتصقاً بحافّة
+          الزرّ. السبب أنّ الزرّ لم يُصرّح باتجاهه، فورث اتجاه المحيط
+          واختلط الرقم اللاتيني بالعربية.
+          الآن `dir="rtl"` صريح على الزرّ، والسعر في سطر مستقلّ فلا
+          يتزاحم مع الاسم. */}
+      <button onClick={pay} disabled={busy} className="bz-pay-btn" dir="rtl">
+        <span className="bz-pay-ico"><Icon name="lock" size={16} /></span>
+        <span className="min-w-0 flex-1 text-start">
+          <span className="block text-[13px] font-extrabold leading-snug">
+            ادفع بالبطاقة الذهبية أو CIB
+          </span>
+          <span className="block text-[11px] leading-snug opacity-85">
+            {busy ? "جارٍ التحويل إلى صفحة الدفع…" : `المبلغ: ${price} دج`}
           </span>
         </span>
-        {busy ? (
-          <span className="text-[11px] font-bold">جارٍ التحويل…</span>
-        ) : (
-          <Icon name="chevLeft" size={14} className="shrink-0 opacity-80" />
-        )}
+        {!busy && <Icon name="chevLeft" size={15} className="shrink-0 opacity-85" />}
       </button>
       {err && <p className="mt-1.5 text-[11px] font-bold text-danger">{err}</p>}
       <p className="mt-1.5 text-[10.5px] leading-relaxed text-text-muted">

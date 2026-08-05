@@ -1,60 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ref, onValue } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { useRole } from "@/features/auth/use-profile";
 
-/**
- * شارة الدور تظهر بجانب اسم المستخدم في المنشورات والتعليقات.
- * تقرأ الدور الحيّ من بيانات المستخدم عبر uid (دقيق ومحدَّث دائماً)،
- * مع إمكانية تمرير role مباشرة كقيمة احتياطية فورية.
- *
- * - أستاذ: شارة خضراء
- * - إدارة: شارة بنفسجية (لون المنصة)
- * - طالب: شارة رمادية خفيفة
- */
+/* ════════════════════════════════════════════════════════════
+   شارة الدور
 
-// ذاكرة مؤقتة بسيطة لتجنّب جلب نفس المستخدم مراراً
-const roleCache = new Map<string, string>();
+   🐛 **سبب «الأستاذ يعود طالباً عند التنقّل»** كان هنا:
+
+   ```ts
+   const r = liveRole ?? role ?? "student";   // المجهول = طالب
+   ```
+
+   وذاكرة الدور كانت `Map` في الذاكرة الحيّة — **تُمسح مع كل تحميل
+   صفحة**. فبعد الدخول تكون ممتلئة فيظهر «أستاذ»، وما إن ينتقل إلى
+   صفحة تُعيد التحميل حتى تفرغ، فيُعرض «طالب» حتى تعود القراءة.
+
+   إصلاحان:
+   1. **مصدر واحد**: `useRole` بذاكرته المحفوظة في المتصفّح ومربوطة
+      بالمعرّف — تبقى بين الصفحات وبعد إغلاق التبويب.
+   2. **المجهول لا يُعرض طالباً**: نُخفي الشارة حتى نعرف. غياب شارة
+      للحظة أهون بكثير من نسبة الأستاذ إلى غير صفته.
+════════════════════════════════════════════════════════════ */
 
 export function RoleBadge({ uid, role }: { uid?: string; role?: string }) {
-  const [liveRole, setLiveRole] = useState<string | undefined>(
-    role ?? (uid ? roleCache.get(uid) : undefined)
-  );
+  const { role: liveRole, ready } = useRole(uid);
 
-  useEffect(() => {
-    if (!uid) return;
-    // إن وُجد في الذاكرة استخدمه فوراً
-    const cached = roleCache.get(uid);
-    if (cached) setLiveRole(cached);
-    // واقرأ القيمة الحيّة من قاعدة البيانات
-    const unsub = onValue(ref(rtdb, `users/${uid}/role`), (snap) => {
-      const r = (snap.val() as string) ?? "student";
-      roleCache.set(uid, r);
-      setLiveRole(r);
-    });
-    return () => { if (typeof unsub === "function") unsub(); };
-  }, [uid]);
+  // القيمة المُمرّرة لها الأولوية: المستدعي يعرف الدور أحياناً يقيناً
+  const r = role ?? liveRole;
 
-  const r = liveRole ?? role ?? "student";
+  // لا نعرف بعد ولا قيمة مُمرّرة → لا شارة (لا «طالب» افتراضية)
+  if (!r) {
+    if (!ready) return null;
+    return null;
+  }
 
   if (r === "teacher") {
     return (
-      <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">
-        👨‍🏫 أستاذ
+      <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-secondary/10 px-1.5 py-0.5 text-[9px] font-bold text-secondary">
+        أستاذ
       </span>
     );
   }
   if (r === "admin") {
     return (
-      <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
-        🛡️ إدارة BacZoneDZ
+      <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+        إدارة BacZoneDZ
       </span>
     );
   }
   return (
-    <span className="inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full bg-border px-1.5 py-0.5 text-[9px] font-bold text-text-muted">
-      🎓 طالب
+    <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-border px-1.5 py-0.5 text-[9px] font-bold text-text-muted">
+      طالب
     </span>
   );
 }
