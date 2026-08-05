@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { clearProfileCache } from "@/features/auth/use-profile";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -200,7 +201,12 @@ export default function ProfilePage() {
 
         <Button
           variant="ghost"
-          onClick={() => logoutUser().then(() => router.push("/"))}
+          onClick={() => {
+            // نمسح ذاكرة الدور أوّلاً: لو دخل حساب آخر بعدها لرأى
+            // دور الحساب السابق للحظة.
+            clearProfileCache(user?.uid);
+            void logoutUser().then(() => router.push("/"));
+          }}
           className="mt-6 flex w-full items-center justify-center gap-2 text-danger"
         >
           <FontAwesomeIcon icon={faRightFromBracket} className="h-4 w-4" />

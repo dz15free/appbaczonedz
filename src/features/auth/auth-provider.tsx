@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { clearProfileCache } from "@/features/auth/use-profile";
 import { ref, onValue } from "firebase/database";
 import { auth, rtdb } from "@/lib/firebase/config";
 
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsub = onValue(ref(rtdb, `users/${user.uid}/platformBan`), (snap) => {
       if (snap.val() === true) {
         setBanned(true);
+        clearProfileCache(user.uid);
         signOut(auth).catch(() => {});
       }
     });
