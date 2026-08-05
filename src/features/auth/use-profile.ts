@@ -85,10 +85,25 @@ export function useProfileState(uid?: string) {
     const unsub = onValue(
       ref(rtdb, `users/${uid}`),
       (snap) => {
-        const next = (snap.val() as Profile) ?? null;
+        const raw = (snap.val() as Profile) ?? null;
+
+        /* 🛡️ شبكة أمان: **الدور لا يختفي أبداً**.
+
+           لو وصلت لقطة بلا دور — لأي سبب: قراءة جزئية، تراجع عن كتابة
+           مرفوضة، أو تعارض بين مستمعين على مسارات متداخلة — نحتفظ
+           بالدور المعروف بدل إسقاط الأستاذ إلى واجهة الطالب.
+
+           والدور لا يتغيّر إلّا بقرار إداري، فالإبقاء عليه أصحّ من
+           تصديق لقطة ناقصة. ولو غيّرته الإدارة فعلاً وصلت اللقطة
+           بالدور الجديد فيُكتب فوقه. */
+        const prev = readCache(uid);
+        const next: Profile | null =
+          raw && !raw.role && prev?.role ? { ...raw, role: prev.role } : raw;
+
         setProfile(next);
         setLoading(false);
-        writeCache(uid, next);
+        // لا نكتب null فوق نسخة صالحة: قد تكون قراءة عابرة فاشلة
+        if (next) writeCache(uid, next);
       },
       () => {
         // فشل القراءة: نُبقي النسخة المحفوظة بدل إسقاط المستخدم إلى

@@ -25,6 +25,21 @@ import { STUDY_QUOTES } from "@/features/study/quotes";
    والنصّ من نفس بنك الحِكَم في الموقع، فلا تتفرّق نبرة المنصّة.
 ════════════════════════════════════════════════════════════ */
 
+/* ⚠️ لا نكتب داخل `users/{uid}` إطلاقاً.
+
+   العقدة `users/{uid}` تحمل **هويّة المستخدم ودوره**، وقاعدة الكتابة
+   عليها تقارن الدور القديم بالجديد. وكل كتابة عليها تُطلق مستمع الملفّ
+   الشخصي من جديد.
+
+   وبمقارنة النسخة العاملة بالمُعطِبة كان هذا **التغيير الوظيفي الوحيد**
+   بينهما: كتابتان على عقدة الهويّة عند كل فتح للرئيسية.
+
+   فبيانات النشاط انتقلت إلى مسار مستقلّ `activity/{uid}` — لا تمسّ
+   الهويّة، ولا تُطلق مستمع الدور، ولا تخضع لقاعدة تقارن الأدوار.
+   وهي بيانات ثانوية أصلاً: مكانها ليس مع الهويّة. */
+
+const ACTIVITY = "activity";
+
 const KEY = "bz-nudge";              // آخر ظهور محلّياً
 const DAY = 86_400_000;
 const START_HOUR = 16;
@@ -81,7 +96,7 @@ export function useStudyNudge(uid?: string, role?: string) {
       try {
         /* من درس اليوم لا يحتاج تذكيراً بالدراسة. نقرأ آخر نشاط
            مسجّل؛ وإن تعذّرت القراءة نُكمل بدل أن نحرمه الرسالة. */
-        const snap = await get(ref(rtdb, `users/${uid}/lastActiveDay`));
+        const snap = await get(ref(rtdb, `${ACTIVITY}/${uid}/lastActiveDay`));
         const today = new Date().toDateString();
         if (snap.exists() && snap.val() === today) return;
         if (!alive) return;
@@ -105,7 +120,7 @@ export function useStudyNudge(uid?: string, role?: string) {
 
         const cur = readLocal();
         writeLocal({ last: Date.now(), ignored: cur.ignored + 1 });
-        void set(ref(rtdb, `users/${uid}/lastNudge`), Date.now()).catch(() => {});
+        void set(ref(rtdb, `${ACTIVITY}/${uid}/lastNudge`), Date.now()).catch(() => {});
       } catch { /* لا نُزعج المستخدم بخطأ تذكير */ }
     })();
 
@@ -116,6 +131,6 @@ export function useStudyNudge(uid?: string, role?: string) {
 /** يُسجّل أنّ الطالب نشط اليوم — يمنع تذكير من يدرس أصلاً */
 export async function markActiveToday(uid: string) {
   try {
-    await set(ref(rtdb, `users/${uid}/lastActiveDay`), new Date().toDateString());
+    await set(ref(rtdb, `${ACTIVITY}/${uid}/lastActiveDay`), new Date().toDateString());
   } catch { /* غير حرج */ }
 }
