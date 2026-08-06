@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SPEC_INDEX } from "@/features/guide/spec-index";
+import { BRANCHES } from "@/features/calculator/branches";
 
 /* ════════════════════════════════════════════════════════════
    خريطة الموقع
@@ -20,6 +21,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
+    ...BRANCHES.map((b) => ({
+      url: `${BASE}/calculate/${b.slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.85,
+    })),
   ];
 
   /* نُدرج المعرّف الأصلي: الرابط المخصّص يعيش في قاعدة البيانات ولا

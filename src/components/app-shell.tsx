@@ -52,6 +52,7 @@ const MORE_DROPDOWN_BASE = [
   /* التخصّصات أوّلاً: قرار يخصّ مستقبل الطالب لا أداة مراجعة، ورابط
      داخلي وسط روابط خارجية. */
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
+  { href: "/calculate", label: "حساب معدل البكالوريا", icon: faCalculator, external: false },
   { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
