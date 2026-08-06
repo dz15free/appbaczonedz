@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EditablePage } from "@/features/admin/editable-page";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
 import { absUrl } from "@/features/guide/site-url";
@@ -41,6 +42,7 @@ export default function SpecialtiesPage() {
   };
 
   return (
+    <EditablePage pageKey={"specialties"}>
     <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -70,5 +72,6 @@ export default function SpecialtiesPage() {
         <GuideBrowser />
       </div>
     </main>
+    </EditablePage>
   );
 }

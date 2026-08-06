@@ -1562,3 +1562,46 @@ body.bz-fullscreen-active .bz-voicebar {
 .dark .bz-calc-input,
 .dark .bz-calc-next-a { background: #1B1F27; }
 .bz-res-card.is-teal { background: linear-gradient(135deg, #0E5C63 0%, #0E7490 60%, #1490A8 100%); }
+
+/* محتوى HTML الذي يكتبه الأدمن — بلا أصناف Tailwind، فنُنسّق الوسوم
+   الخامّة مباشرة. بدون هذه القواعد يظهر ما يكتبه بلا تنسيق إطلاقاً. */
+.bz-page-html { color: var(--bz-ink-2); font-size: 14px; line-height: 2; }
+.bz-page-html h1,
+.bz-page-html h2,
+.bz-page-html h3 {
+  color: var(--bz-ink);
+  font-weight: 800;
+  line-height: 1.4;
+  margin: 20px 0 8px;
+}
+.bz-page-html h1 { font-size: 24px; }
+.bz-page-html h2 { font-size: 19px; }
+.bz-page-html h3 { font-size: 16px; }
+.bz-page-html p { margin: 10px 0; }
+.bz-page-html a { color: var(--bz-blue); font-weight: 700; }
+.bz-page-html a:hover { text-decoration: underline; }
+.bz-page-html ul,
+.bz-page-html ol { margin: 10px 0; padding-inline-start: 22px; }
+.bz-page-html li { margin-bottom: 6px; }
+.bz-page-html ul { list-style: disc; }
+.bz-page-html ol { list-style: decimal; }
+.bz-page-html img { max-width: 100%; height: auto; border-radius: 12px; }
+.bz-page-html table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.bz-page-html th,
+.bz-page-html td { border: 1px solid var(--bz-line); padding: 8px; text-align: start; }
+.bz-page-html th { background: var(--bz-canvas); font-weight: 800; }
+.bz-page-html blockquote {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-inline-start: 3px solid var(--bz-blue);
+  background: var(--bz-blue-050);
+  border-radius: 0 12px 12px 0;
+}
+.bz-page-html code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--bz-canvas);
+  font-family: ui-monospace, monospace;
+  font-size: 12.5px;
+}
+.bz-page-html hr { margin: 18px 0; border: 0; border-top: 1px solid var(--bz-line); }

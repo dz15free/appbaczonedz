@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useNavLinks } from "@/features/admin/nav-store";
 import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -48,6 +49,15 @@ const TOOLS_DROPDOWN = [
 ];
 
 // قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية (الروابط الثابتة؛ تُدمج مع روابط قابلة للتعديل من الأدمن داخل المكوّن)
+/* أيقونات القائمة: الأدمن يختار اسماً، ونحوّله إلى أيقونة FontAwesome
+   المستعملة في الشريط. اسم غير معروف يرجع إلى أيقونة رابط عامّة بدل
+   أن يكسر العرض. */
+const NAV_FA: Record<string, typeof faLink> = {
+  book: faBookOpen, poll: faCalculator, file: faFileLines, target: faScaleBalanced,
+  check: faClipboardCheck, timer: faCalendarCheck, users: faUsers, home: faHouse,
+  graduation: faGraduationCap, calendar: faCalendarDays,
+};
+
 const MORE_DROPDOWN_BASE = [
   /* التخصّصات أوّلاً: قرار يخصّ مستقبل الطالب لا أداة مراجعة، ورابط
      داخلي وسط روابط خارجية. */
@@ -97,15 +107,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { settings } = useSiteSettings();
 
-  // عناصر ديناميكية (روابط قابلة للتعديل من الأدمن) تُدمج مع القوائم الثابتة
-  const dynamicLinks = [
-    { href: "/tools/planner", label: "مخطّط البكالوريا للطباعة", icon: faCalendarDays, external: false },
-    { href: settings.weightedCalcUrl || "https://www.baczonedz.com/p/2026.html", label: "حساب المعدّل الموزون", icon: faScaleBalanced, external: true },
-    { href: settings.pastExamsUrl || "https://www.baczonedz.com/p/blog-page_9.html", label: "بكالوريات سابقة", icon: faFileLines, external: true },
-    { href: settings.averageCalcUrl || "https://www.baczonedz.com/p/blog-page_14.html", label: "حساب معدّل البكالوريا", icon: faCalculator, external: true },
-  ];
-  const moreDropdown = [...dynamicLinks, ...MORE_DROPDOWN_BASE];
-  const menuItems = [...MENU_ITEMS_BASE, ...dynamicLinks, ...MENU_ITEMS_EXTERNAL];
+  /* 🐛 كانت هنا ثلاث قوائم تُدمج بطريقتين مختلفتين للحاسوب والهاتف،
+     فتكرّر «حساب معدل البكالوريا» على الحاسوب وظهر بالرابط القديم وحده
+     على الهاتف. **مصدر واحد** الآن، يقرؤه السطحان — فيستحيل اختلافهما.
+     والأدمن يتحكّم به من لوحته. */
+  const navLinks = useNavLinks();
+  const dynamicLinks = navLinks.map((l) => ({
+    href: l.href,
+    label: l.label,
+    icon: NAV_FA[l.icon ?? ""] ?? faLink,
+    external: Boolean(l.external),
+  }));
+  const moreDropdown = dynamicLinks;
+  const menuItems = [...MENU_ITEMS_BASE, ...dynamicLinks];
 
   // تطبيق لون التمييز المخصَّص من إعدادات الإدارة
   useEffect(() => {

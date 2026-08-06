@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BRANCHES, getBranch, totalCoef } from "@/features/calculator/branches";
@@ -94,6 +95,7 @@ export default async function BranchCalculatorPage(
   const others = BRANCHES.filter((x) => x.slug !== b.slug);
 
   return (
+    <EditablePage pageKey={`calculate-${b.slug}`}>
     <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -201,6 +203,7 @@ export default async function BranchCalculatorPage(
         </aside>
       </div>
     </main>
+    </EditablePage>
   );
 }
 

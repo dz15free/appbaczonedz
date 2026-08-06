@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SiteEditor } from "@/features/admin/site-editor";
 import { listenExcluded, setLeaderboardExcluded, deleteUserData } from "@/features/admin/moderation";
 import { GuideEditor } from "@/features/admin/guide-editor";
 import { SubjectsEditor } from "@/features/admin/subjects-editor";
@@ -166,6 +167,7 @@ const TABS = [
   { id: "curriculum", label: "المنهج",   icon: faBookOpen },
   { id: "subjects",  label: "المواد",    icon: faBookOpen },
   { id: "guide",     label: "دليل التخصّصات", icon: faBookOpen },
+  { id: "site",      label: "القائمة والصفحات", icon: faBookOpen },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
   { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
@@ -531,6 +533,8 @@ export default function AdminPage() {
         {tab === "subjects" && <SubjectsEditor />}
 
         {tab === "guide" && <GuideEditor />}
+
+        {tab === "site" && <SiteEditor />}
 
         {tab === "control" && (
           <div className="mb-4 rounded-2xl border border-border bg-surface p-4">

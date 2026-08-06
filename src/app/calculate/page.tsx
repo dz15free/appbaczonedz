@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
 import { BRANCHES, totalCoef } from "@/features/calculator/branches";
 import { absUrl } from "@/features/guide/site-url";
@@ -49,6 +50,7 @@ export default function CalculateHub() {
   };
 
   return (
+    <EditablePage pageKey={"calculate"}>
     <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -90,5 +92,6 @@ export default function CalculateHub() {
         </p>
       </div>
     </main>
+    </EditablePage>
   );
 }

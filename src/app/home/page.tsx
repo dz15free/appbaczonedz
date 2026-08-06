@@ -9,7 +9,7 @@ import {
   faUsers, faRobot, faComments, faChalkboardUser,
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
-  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft, faCalculator } from "@fortawesome/free-solid-svg-icons";
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -307,18 +307,6 @@ export default function HomePage() {
                   <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
               </Link>
-
-              <Link href="/calculate" className="bz-res-card is-teal">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalculator} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">كم سيكون معدّلك؟</span>
-                    <span className="bz-res-d">احسبه بالمعاملات المعتمدة قبل صدور النتائج.</span>
-                  </span>
-                  <span className="bz-res-cta">احسب<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
             </div>
           </div>
         </aside>
@@ -404,18 +392,6 @@ export default function HomePage() {
                     <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
                   </span>
                   <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
-
-              <Link href="/calculate" className="bz-res-card is-teal">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalculator} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">كم سيكون معدّلك؟</span>
-                    <span className="bz-res-d">احسبه بالمعاملات المعتمدة قبل صدور النتائج.</span>
-                  </span>
-                  <span className="bz-res-cta">احسب<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
               </Link>
             </div>
