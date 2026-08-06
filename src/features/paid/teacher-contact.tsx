@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import {
-  listenTeacherContact, saveTeacherContact, normalizeUrl, type TeacherContact,
+  listenTeacherContact, saveTeacherContact, type TeacherContact,
 } from "@/features/paid/teacher-sales";
+import {
+  CONTACT_META, CONTACT_ORDER, ContactIcon, type ContactKey,
+} from "@/features/paid/teacher-contact-card";
 
 /* ════════════════════════════════════════════════════════════
    بيانات تواصل الأستاذ
@@ -20,7 +23,8 @@ import {
    يُنسَخ. والافتراض الآمن أولى حين يكون الخطأ غير قابل للإصلاح.
 ════════════════════════════════════════════════════════════ */
 
-const MAX_LINKS = 6;
+/* الشبكات المدعومة — الهاتف له خانته الخاصّة أعلاه */
+const NET_KEYS: ContactKey[] = CONTACT_ORDER.filter((k) => k !== "phone");
 
 export function TeacherContactEditor({ uid }: { uid: string }) {
   const [c, setC] = useState<TeacherContact>({ visibility: "private", links: [] });
@@ -36,8 +40,15 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
 
   const links = c.links ?? [];
 
-  function setLink(i: number, patch: Partial<{ label: string; url: string }>) {
-    const next = links.map((l, j) => (j === i ? { ...l, ...patch } : l));
+  /* نُخزّن الشبكة في `label` والرابط في `url` — نفس بنية البيانات
+     القديمة، فلا هجرة ولا كسر لما هو محفوظ. */
+  function valueOf(k: ContactKey) {
+    return links.find((l) => l.label === k)?.url ?? "";
+  }
+
+  function setNet(k: ContactKey, url: string) {
+    const rest = links.filter((l) => l.label !== k);
+    const next = url.trim() ? [...rest, { label: k, url }] : rest;
     setC({ ...c, links: next });
   }
 
@@ -77,44 +88,33 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
           className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
 
-        <label className="mb-1 block text-[11px] font-bold text-text-muted">
-          روابط (فيسبوك · تيليغرام · موقعك…)
+        {/* خانات مسمّاة بدل روابط حرّة: الأستاذ يضع الرابط فقط، والشبكة
+            معروفة مسبقاً — فيظهر شعارها الصحيح، ولا يكتب اسماً يدوياً
+            قد يخطئ فيه فلا نعرف أي شعار نعرض. */}
+        <label className="mb-1.5 block text-[11px] font-bold text-text-muted">
+          حساباتك (ضع الرابط فقط — اترك ما لا تملكه فارغاً)
         </label>
         <div className="space-y-2">
-          {links.map((l, i) => (
-            <div key={i} className="flex gap-1.5">
-              <input
-                value={l.label}
-                onChange={(e) => setLink(i, { label: e.target.value })}
-                placeholder="الاسم"
-                className="w-24 shrink-0 rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none focus:border-primary"
-              />
-              <input
-                value={l.url}
-                onChange={(e) => setLink(i, { url: e.target.value })}
-                dir="ltr"
-                placeholder="facebook.com/…"
-                className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-2 text-xs outline-none focus:border-primary"
-              />
-              <button
-                onClick={() => setC({ ...c, links: links.filter((_, j) => j !== i) })}
-                aria-label="حذف الرابط"
-                className="shrink-0 px-1 text-text-muted hover:text-danger"
-              >
-                <Icon name="trash" size={14} />
-              </button>
-            </div>
-          ))}
+          {NET_KEYS.map((k) => {
+            const m = CONTACT_META[k];
+            return (
+              <div key={k} className="flex items-center gap-2">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg"
+                  style={{ background: `${m.color}1A`, color: m.color }}>
+                  <ContactIcon k={k} size={17} />
+                </span>
+                <input
+                  value={valueOf(k)}
+                  onChange={(e) => setNet(k, e.target.value)}
+                  dir="ltr"
+                  placeholder={m.placeholder}
+                  aria-label={m.label}
+                  className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-2 text-xs outline-none focus:border-primary"
+                />
+              </div>
+            );
+          })}
         </div>
-
-        {links.length < MAX_LINKS && (
-          <button
-            onClick={() => setC({ ...c, links: [...links, { label: "", url: "" }] })}
-            className="mt-2 flex items-center gap-1.5 text-[11.5px] font-bold text-primary"
-          >
-            <Icon name="plus" size={13} /> أضف رابطاً
-          </button>
-        )}
 
         {/* الظهور */}
         <div className="mt-4 rounded-xl border border-border p-3">
@@ -154,12 +154,6 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
           {saving ? "..." : "حفظ"}
         </button>
         {msg && <p className="mt-2 text-center text-[11.5px] font-bold text-secondary">{msg}</p>}
-
-        {links.some((l) => l.url) && (
-          <p className="mt-2 text-[10.5px] text-text-muted" dir="ltr">
-            {links.filter((l) => l.url).map((l) => normalizeUrl(l.url)).join(" · ")}
-          </p>
-        )}
       </div>
     </section>
   );

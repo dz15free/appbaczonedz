@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TeacherContactCard } from "@/features/paid/teacher-contact-card";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -143,6 +144,19 @@ export default function UserProfilePage() {
               <FontAwesomeIcon icon={faLocationDot} className="h-4 w-4 text-primary" /> {theirProfile?.wilaya ?? "—"}
             </span>
           </div>
+
+          {/* وسائل التواصل — الجزء الذي كان ناقصاً: تُعرض للطالب حين
+              يجعلها الأستاذ عامّة، وللإدارة دائماً.
+              ⚠️ صلاحية الزائر تُقرأ من `myProfile` لا من `isAdmin`:
+              الأخيرة تعني «صاحب الصفحة أدمن»، ولو استعملناها لحُجبت
+              البيانات الخاصّة عن الإدارة نفسها. */}
+          {theirProfile?.role === "teacher" && (
+            <TeacherContactCard
+              uid={uid}
+              viewerUid={user?.uid}
+              viewerIsAdmin={myProfile?.role === "admin"}
+            />
+          )}
 
           {!isMe && isAdmin && user && (
             <button
