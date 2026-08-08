@@ -7,6 +7,8 @@ import {
   faCheckCircle,
   faFlag,
   faChevronDown,
+  faPlay,
+  faSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
@@ -31,119 +33,150 @@ export default function LandingPage() {
   }, [s.faviconUrl]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)]">
-{/* ═══════════════ الهيدر ═══════════════ */}
-<header className="fixed inset-x-0 top-0 z-50 border-b-0 bg-[linear-gradient(135deg,#299cff_0%,#106bb9_100%)] shadow-md">
-  <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
-    {/* الشعار + الاسم */}
-    <Link
-      href="/"
-      className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden sm:gap-2.5 sm:flex-none"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={s.logoUrl || "/icon.svg"}
-        alt={s.siteName || "BacZoneDZ"}
-        className="h-8 w-8 shrink-0 rounded-lg bg-white/10 p-0.5 object-contain sm:h-9 sm:w-9"
-      />
-      <span className="truncate font-display text-[15px] font-extrabold tracking-tight text-white sm:text-lg">
-        {s.siteName || "BacZoneDZ"}
-      </span>
-    </Link>
-
-    {/* الأزرار */}
-    <div className="flex shrink-0 items-center gap-1.5 text-white sm:gap-2.5">
-      <ThemeToggle />
-
-      <Link
-        href="/login"
-        className="hidden text-sm font-semibold text-white/90 transition hover:text-white sm:inline-block"
+    <main className="relative min-h-screen overflow-x-hidden bg-[#030712] text-slate-200 selection:bg-blue-500/30">
+      
+      {/* ═══════════════ الهيدر الطافي (Floating Header) ═══════════════ */}
+      <header
+        className={`fixed inset-x-0 z-50 transition-all duration-500 ease-out ${
+          scrolled
+            ? "top-4 mx-auto max-w-5xl px-4 sm:px-6"
+            : "top-0 w-full px-4 sm:px-6 py-2"
+        }`}
       >
-        دخول
-      </Link>
+        <div
+          className={`mx-auto flex items-center justify-between gap-3 overflow-hidden transition-all duration-500 ${
+            scrolled
+              ? "h-14 rounded-2xl border border-white/10 bg-slate-950/60 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl supports-[backdrop-filter]:bg-slate-950/40"
+              : "h-16 border-b border-transparent bg-transparent px-2"
+          }`}
+        >
+          {/* الشعار + الاسم */}
+          <Link
+            href="/"
+            className="group flex min-w-0 shrink-0 items-center gap-2.5 outline-none"
+          >
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-lg shadow-blue-500/20 transition-transform group-hover:scale-105">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={s.logoUrl || "/icon.svg"}
+                alt={s.siteName || "BacZoneDZ"}
+                className="h-6 w-6 object-contain brightness-0 invert"
+              />
+            </div>
+            <span className="truncate font-display text-[17px] font-extrabold tracking-tight text-white transition-colors group-hover:text-blue-400">
+              {s.siteName || "BacZoneDZ"}
+            </span>
+          </Link>
 
-      <Link
-        href="/register"
-        className="whitespace-nowrap rounded-xl bg-white px-3 py-2 text-[13px] font-bold text-[#106bb9] shadow-sm transition hover:bg-gray-50 active:scale-[0.97] sm:px-4 sm:py-2.5 sm:text-sm"
-      >
-        {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "…"}
-      </Link>
-    </div>
-  </div>
-</header>
+          {/* الأزرار */}
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <ThemeToggle />
 
-      {/* ═══════════════ الهيرو ═══════════════ */}
-      <section className="relative min-h-[100svh] overflow-hidden bg-[#07080f] text-white">
-        {/* خلفية */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-24 top-16 h-[380px] w-[380px] rounded-full bg-blue-600/35 blur-[120px] sm:h-[480px] sm:w-[480px]" />
-          <div className="absolute -right-16 bottom-20 h-[300px] w-[300px] rounded-full bg-emerald-500/20 blur-[100px] sm:h-[400px] sm:w-[400px]" />
-          <div className="absolute left-1/2 top-[40%] h-48 w-48 -translate-x-1/2 rounded-full bg-indigo-500/15 blur-[80px]" />
-          <div
-            className="absolute inset-0 opacity-[0.06]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
+            <Link
+              href="/login"
+              className="hidden text-sm font-medium text-slate-300 transition-colors hover:text-white sm:inline-block"
+            >
+              تسجيل الدخول
+            </Link>
+
+            <Link
+              href="/register"
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition-all hover:bg-blue-500 hover:ring-2 hover:ring-blue-500/50 hover:ring-offset-2 hover:ring-offset-[#030712] active:scale-95"
+            >
+              <span className="relative z-10">
+                {loaded ? s.heroCtaPrimary || "ابدأ مجاناً" : "..."}
+              </span>
+              <div className="absolute inset-0 z-0 h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ═══════════════ الهيرو (Hero Section) ═══════════════ */}
+      <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden pt-20">
+        {/* تأثيرات الإضاءة والخلفية */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="absolute top-[-10%] h-[600px] w-[800px] rounded-full bg-blue-600/20 blur-[120px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] h-[500px] w-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
+          
+          {/* شبكة منظور احترافية */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
         </div>
 
-        <div className="relative mx-auto flex min-h-[100svh] max-w-4xl flex-col items-center justify-center px-4 pb-24 pt-24 text-center sm:px-6 sm:pb-28 sm:pt-28">
+        <div className="relative z-10 mx-auto w-full max-w-5xl px-4 text-center sm:px-6">
+          
+          {/* شارة التحديثات (Badge) */}
           {s.landingBadge && (
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-bold text-blue-300 backdrop-blur-sm sm:mb-6 sm:text-[13px]">
-              <FontAwesomeIcon icon={faFlag} className="h-3 w-3" />
+            <div className="animate-fade-in-up mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 backdrop-blur-md">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+              </span>
               {s.landingBadge}
-            </span>
+            </div>
           )}
-<h1 className="max-w-3xl font-display text-[1.85rem] font-extrabold leading-[1.5] tracking-tight xs:text-[2.1rem] sm:text-4xl sm:leading-[1.45] md:text-[3.15rem] md:leading-[1.4]">
-  <span className="block pb-1">{s.heroTitleLine1}</span>
-  {/* تمت إضافة pb-4 و pt-2 لمنع قص الحروف العربية السفلية */}
-  <span className="mt-2 block bg-gradient-to-l from-blue-400 via-sky-300 to-emerald-300 bg-clip-text pb-4 pt-2 text-transparent sm:mt-2.5">
-    {s.heroTitleLine2}
-  </span>
-</h1>
-          <p className="mx-auto mt-4 max-w-lg text-[14px] leading-relaxed text-white/55 sm:mt-5 sm:text-base md:text-lg">
+
+          {/* العنوان الرئيسي */}
+          <h1 className="animate-fade-in-up mx-auto max-w-4xl font-display text-4xl font-extrabold leading-[1.3] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.5rem]">
+            <span className="block text-slate-100 drop-shadow-sm pb-2">
+              {s.heroTitleLine1}
+            </span>
+            <span className="relative mt-2 block pb-4 pt-2">
+              <span className="absolute inset-0 bg-gradient-to-r from-blue-500 via-teal-400 to-emerald-400 bg-clip-text text-transparent blur-2xl filter opacity-40" />
+              <span className="relative bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-300 bg-clip-text text-transparent drop-shadow-sm">
+                {s.heroTitleLine2}
+              </span>
+            </span>
+          </h1>
+
+          <p className="animate-fade-in-up animation-delay-100 mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 sm:text-xl">
             {s.heroSubtitle}
           </p>
 
-          <div className="mt-8 flex w-full max-w-sm flex-col gap-3 sm:mt-10 sm:max-w-none sm:flex-row sm:justify-center">
+          {/* أزرار الدعوة للإجراء */}
+          <div className="animate-fade-in-up animation-delay-200 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/register"
-              className="group flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-l from-blue-600 to-blue-500 px-6 py-3.5 text-[15px] font-bold text-white shadow-[0_12px_36px_-10px_rgba(37,99,235,0.65)] transition hover:brightness-110 active:scale-[0.98] sm:px-8 sm:py-4"
+              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-base font-bold text-slate-900 transition-all hover:bg-slate-100 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] active:scale-95 sm:w-auto"
             >
               {loaded ? s.heroCtaPrimary : "…"}
               <FontAwesomeIcon
                 icon={faArrowLeft}
-                className="h-3.5 w-3.5 transition group-hover:-translate-x-1"
+                className="transition-transform group-hover:-translate-x-1.5"
               />
             </Link>
+            
             <Link
               href="/login"
-              className="flex items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 text-[15px] font-bold text-white backdrop-blur-sm transition hover:bg-white/10 active:scale-[0.98] sm:px-8 sm:py-4"
+              className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-md transition-all hover:bg-white/10 active:scale-95 sm:w-auto"
             >
+              <FontAwesomeIcon icon={faPlay} className="text-blue-400" />
               {s.heroCtaSecondary}
             </Link>
           </div>
 
+          {/* شارات المجتمع الميزات المصغرة */}
           {(s.badges ?? []).length > 0 && (
-            <div className="mt-10 flex max-w-lg flex-wrap items-center justify-center gap-2 sm:mt-12 sm:max-w-2xl sm:gap-2.5">
+            <div className="animate-fade-in-up animation-delay-300 mt-16 flex flex-wrap items-center justify-center gap-3 border-t border-white/5 pt-8 sm:gap-6">
+              <p className="w-full text-sm font-medium text-slate-500 sm:w-auto sm:me-4">
+                انضم إلى مجتمع التميز:
+              </p>
               {(s.badges ?? []).map((b) => (
                 <div
                   key={b.id}
-                  className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] font-semibold text-white/75 backdrop-blur-sm sm:gap-2 sm:text-[13px]"
+                  className="flex items-center gap-2 text-sm font-semibold text-slate-300 transition-colors hover:text-white"
                 >
                   <DynamicIcon
                     value={b.icon}
-                    className="h-3.5 w-3.5 text-blue-300"
-                    emojiClass="text-sm"
+                    className="h-4 w-4 text-emerald-400"
+                    emojiClass="text-base"
                   />
                   {b.label}
                 </div>
@@ -152,39 +185,39 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* منحنى سفلي */}
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-[var(--bz-bg)] [clip-path:ellipse(65%_100%_at_50%_100%)] sm:h-16" />
+        {/* فاصل سفلي متدرج */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent" />
       </section>
 
-      {/* ═══════════════ الخطوات ═══════════════ */}
+      {/* ═══════════════ الخطوات (Journey) ═══════════════ */}
       {(s.steps ?? []).length > 0 && (
-        <section className="relative z-10 -mt-4 px-4 pb-16 sm:-mt-6 sm:px-6 sm:pb-20">
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-8 text-center sm:mb-10">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                كيف تبدأ
-              </span>
-              <h2 className="mt-1.5 font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
+        <section className="relative z-10 py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mb-16 text-center">
+              <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
+                <FontAwesomeIcon icon={faSparkles} className="h-4 w-4" />
+              </div>
+              <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                 {s.stepsTitle}
               </h2>
             </div>
 
-            <div className="grid gap-3.5 sm:grid-cols-3 sm:gap-4">
-              {(s.steps ?? []).map((step) => (
+            <div className="relative grid gap-8 md:grid-cols-3">
+              {/* خط التوصيل بين الخطوات (يظهر في الشاشات الكبيرة) */}
+              <div className="absolute left-1/2 top-1/2 -z-10 hidden w-full -translate-x-1/2 -translate-y-1/2 border-t-2 border-dashed border-white/10 md:block" />
+              
+              {(s.steps ?? []).map((step, idx) => (
                 <div
                   key={step.id}
-                  className="relative overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:rounded-3xl sm:p-6"
+                  className="group relative flex flex-col items-center rounded-3xl border border-white/5 bg-slate-900/50 p-8 text-center backdrop-blur-sm transition-all hover:-translate-y-2 hover:border-blue-500/30 hover:bg-slate-800/50 hover:shadow-[0_0_30px_-10px_rgba(59,130,246,0.3)]"
                 >
-                  <div className="absolute -right-3 -top-3 select-none text-[4.5rem] font-extrabold leading-none text-primary/[0.06] sm:text-[5rem]">
+                  <div className="absolute -top-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-lg font-bold text-white shadow-lg ring-4 ring-[#030712] transition-transform group-hover:scale-110 group-hover:rotate-3">
                     {step.n}
                   </div>
-                  <span className="relative grid h-11 w-11 place-items-center rounded-xl bg-gradient-primary text-sm font-extrabold text-white shadow-glow sm:h-12 sm:w-12 sm:rounded-2xl sm:text-base">
-                    {step.n}
-                  </span>
-                  <h3 className="relative mt-3.5 font-display text-base font-bold sm:mt-4 sm:text-lg">
+                  <h3 className="mt-6 font-display text-xl font-bold text-white">
                     {step.title}
                   </h3>
-                  <p className="relative mt-1.5 text-[13px] leading-relaxed text-text-muted sm:mt-2 sm:text-sm">
+                  <p className="mt-3 text-sm leading-relaxed text-slate-400">
                     {step.desc}
                   </p>
                 </div>
@@ -194,53 +227,101 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ الأدوار ═══════════════ */}
-      {(s.audience ?? []).length > 0 && (
-        <section className="px-4 py-14 sm:px-6 sm:py-18">
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-9 text-center sm:mb-12">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                الأدوار
+      {/* ═══════════════ الميزات (Bento Grid) ═══════════════ */}
+      {(s.features ?? []).length > 0 && (
+        <section className="relative py-24 sm:py-32">
+          {/* خلفية جمالية */}
+          <div className="absolute inset-y-0 right-1/2 -z-10 w-full max-w-3xl translate-x-1/2 bg-[radial-gradient(closest-side,rgba(37,99,235,0.05)_0%,transparent_100%)]" />
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mb-16 text-center">
+              <span className="text-sm font-bold uppercase tracking-[0.2em] text-blue-500">
+                ترسانة الطالب
               </span>
-              <h2 className="mt-1.5 font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
-                {s.audienceTitle}
+              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                {s.featuresTitle}
               </h2>
-              {s.audienceSubtitle && (
-                <p className="mx-auto mt-2.5 max-w-md text-sm text-text-muted sm:text-base">
-                  {s.audienceSubtitle}
+              {s.featuresSubtitle && (
+                <p className="mx-auto mt-4 max-w-2xl text-base text-slate-400">
+                  {s.featuresSubtitle}
                 </p>
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              {(s.features ?? []).map((f, idx) => (
+                <article
+                  key={f.id}
+                  className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/40 p-8 transition-all hover:border-white/20 hover:bg-slate-800/60 ${
+                    idx === 0 || idx === 3 ? "lg:col-span-2" : "col-span-1"
+                  }`}
+                >
+                  <div className="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/3 rounded-full bg-blue-500/10 blur-3xl transition-opacity group-hover:bg-blue-500/20" />
+                  
+                  <div className="relative z-10 flex h-full flex-col">
+                    <span className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-blue-400 ring-1 ring-white/10 transition-transform group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white group-hover:ring-blue-500">
+                      <DynamicIcon
+                        value={f.icon}
+                        className="h-5 w-5"
+                        emojiClass="text-xl"
+                      />
+                    </span>
+                    <h3 className="font-display text-xl font-bold text-white">
+                      {f.title}
+                    </h3>
+                    <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">
+                      {f.desc}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════ الأدوار (Audience) ═══════════════ */}
+      {(s.audience ?? []).length > 0 && (
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <div className="mb-16 text-center">
+              <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                {s.audienceTitle}
+              </h2>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
               {(s.audience ?? []).map((a, idx) => (
                 <article
                   key={a.id}
-                  className={`relative overflow-hidden rounded-2xl border p-5 sm:rounded-3xl sm:p-7 ${
-                    idx === 0
-                      ? "border-primary/20 bg-gradient-to-br from-primary/[0.07] to-transparent"
-                      : "border-secondary/20 bg-gradient-to-br from-secondary/[0.07] to-transparent"
-                  }`}
+                  className="group relative overflow-hidden rounded-3xl p-[1px] transition-all hover:shadow-[0_0_40px_-15px_rgba(59,130,246,0.5)]"
                 >
-                  <div className="flex gap-4">
+                  <span
+                    className={`absolute inset-0 z-0 bg-gradient-to-br ${
+                      idx === 0
+                        ? "from-blue-500/40 via-transparent to-transparent"
+                        : "from-emerald-500/40 via-transparent to-transparent"
+                    }`}
+                  />
+                  <div className="relative z-10 flex h-full flex-col gap-5 rounded-3xl bg-slate-950 p-8 sm:flex-row sm:items-start">
                     <span
-                      className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-white shadow-lg sm:h-14 sm:w-14 sm:rounded-2xl ${
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-inner ${
                         idx === 0
-                          ? "bg-gradient-primary"
-                          : "bg-gradient-to-br from-emerald-500 to-teal-600"
+                          ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+                          : "bg-gradient-to-br from-emerald-400 to-teal-600 text-white"
                       }`}
                     >
                       <DynamicIcon
                         value={a.icon}
-                        className="h-5 w-5 sm:h-6 sm:w-6"
-                        emojiClass="text-xl sm:text-2xl"
+                        className="h-6 w-6"
+                        emojiClass="text-2xl"
                       />
                     </span>
-                    <div className="min-w-0">
-                      <h3 className="font-display text-lg font-extrabold sm:text-xl">
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-white">
                         {a.title}
                       </h3>
-                      <p className="mt-2 text-[13px] leading-[1.8] text-text-muted sm:text-sm sm:leading-[1.85]">
+                      <p className="mt-3 text-sm leading-relaxed text-slate-400">
                         {a.desc}
                       </p>
                     </div>
@@ -252,103 +333,14 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ الميزات ═══════════════ */}
-      {(s.features ?? []).length > 0 && (
-        <section className="bg-surface px-4 py-14 sm:px-6 sm:py-20">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-9 text-center sm:mb-12">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                المزايا
-              </span>
-              <h2 className="mt-1.5 font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
-                {s.featuresTitle}
-              </h2>
-              {s.featuresSubtitle && (
-                <p className="mx-auto mt-2.5 max-w-md text-sm text-text-muted">
-                  {s.featuresSubtitle}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-3.5 xs:grid-cols-2 lg:grid-cols-3 sm:gap-4">
-              {(s.features ?? []).map((f) => (
-                <article
-                  key={f.id}
-                  className="group rounded-2xl border border-border bg-[var(--bz-bg)] p-4 transition hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md sm:p-5"
-                >
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:scale-105 group-hover:bg-gradient-primary group-hover:text-white group-hover:shadow-glow sm:h-11 sm:w-11">
-                    <DynamicIcon
-                      value={f.icon}
-                      className="h-4.5 w-4.5 sm:h-5 sm:w-5"
-                      emojiClass="text-lg sm:text-xl"
-                    />
-                  </span>
-                  <h3 className="mt-3 font-display text-[15px] font-bold sm:mt-3.5 sm:text-base">
-                    {f.title}
-                  </h3>
-                  <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted sm:text-[13px]">
-                    {f.desc}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ الشفافية ═══════════════ */}
-      {(s.pricingNote || (s.pricingRows ?? []).length > 0) && (
-        <section className="px-4 py-14 sm:px-6 sm:py-20">
-          <div className="mx-auto max-w-3xl">
-            <div className="text-center">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                الشفافية
-              </span>
-              <h2 className="mt-1.5 font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
-                {s.pricingTitle}
-              </h2>
-              {s.pricingNote && (
-                <p className="mx-auto mt-3 max-w-2xl text-[13px] leading-loose text-text-muted sm:mt-4 sm:text-sm">
-                  {s.pricingNote}
-                </p>
-              )}
-            </div>
-
-            {(s.pricingRows ?? []).length > 0 && (
-              <div className="mt-8 space-y-2.5 sm:mt-10 sm:space-y-3">
-                {(s.pricingRows ?? []).map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-3.5 sm:gap-3.5 sm:p-4"
-                  >
-                    <div className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-secondary/15">
-                      <FontAwesomeIcon
-                        icon={faCheckCircle}
-                        className="h-3.5 w-3.5 text-secondary"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-[13px] font-bold sm:text-sm">{r.title}</h3>
-                      <p className="mt-0.5 text-[12.5px] leading-relaxed text-text-muted sm:text-sm">
-                        {r.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ═══════════════ الأسئلة ═══════════════ */}
+      {/* ═══════════════ الأسئلة الشائعة (FAQ) ═══════════════ */}
       {(s.faq ?? []).length > 0 && (
-        <section className="bg-surface px-4 py-14 sm:px-6 sm:py-20">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-center font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
+        <section className="relative border-t border-white/5 py-24 sm:py-32">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+            <h2 className="text-center font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               {s.faqTitle}
             </h2>
-            <div className="mt-8 space-y-2 sm:mt-10 sm:space-y-2.5">
+            <div className="mt-12 space-y-4">
               {(s.faq ?? []).map((f) => (
                 <FaqRow key={f.id} q={f.q} a={f.a} />
               ))}
@@ -357,41 +349,42 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ CTA ═══════════════ */}
-      <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24">
-        <div className="pointer-events-none absolute inset-0 bg-[#07080f]" />
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-0 h-56 w-[420px] -translate-x-1/2 rounded-full bg-blue-600/25 blur-[90px]" />
+      {/* ═══════════════ CTA (الدعوة للإجراء) ═══════════════ */}
+      <section className="relative overflow-hidden py-24 sm:py-32">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="h-[400px] w-[800px] rounded-full bg-blue-600/20 blur-[100px]" />
         </div>
-
-        <div className="relative mx-auto max-w-xl text-center text-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={s.logoUrl || "/icon.svg"}
-            alt=""
-            className="mx-auto mb-5 h-14 w-14 rounded-2xl object-contain shadow-[0_0_36px_-6px_rgba(59,130,246,0.55)] sm:mb-6 sm:h-16 sm:w-16"
-          />
-          <h2 className="font-display text-xl font-extrabold sm:text-2xl md:text-3xl">
+        
+        <div className="relative z-10 mx-auto max-w-4xl px-4 text-center sm:px-6">
+          <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 p-1 shadow-2xl shadow-blue-500/20">
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={s.logoUrl || "/icon.svg"}
+              alt=""
+              className="h-full w-full object-contain brightness-0 invert"
+            />
+          </div>
+          <h2 className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
             {s.ctaTitle}
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-white/50 sm:text-base">
+          <p className="mx-auto mt-6 max-w-xl text-lg text-slate-400">
             {s.ctaSubtitle}
           </p>
-          <div className="mt-7 sm:mt-9">
+          <div className="mt-10">
             <Link
               href="/register"
-              className="group inline-flex items-center gap-2.5 rounded-2xl bg-white px-7 py-3.5 text-[15px] font-bold text-slate-900 shadow-xl transition hover:bg-white/90 active:scale-[0.98] sm:px-9 sm:py-4 sm:text-base"
+              className="group inline-flex items-center gap-3 rounded-2xl bg-white px-10 py-5 text-lg font-bold text-slate-950 shadow-xl transition-all hover:scale-105 hover:bg-slate-100 hover:shadow-blue-500/20 active:scale-95"
             >
-              <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />
+              <FontAwesomeIcon icon={faUserPlus} className="h-5 w-5" />
               {s.ctaButton}
             </Link>
           </div>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/40 sm:mt-7 sm:text-sm">
-            {["لا رسوم", "لا إعلانات", "لا بطاقة ائتمان"].map((t) => (
-              <span key={t} className="flex items-center gap-1.5">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-slate-400">
+            {["لا رسوم خفية", "بدون إعلانات مزعجة", "مجتمع متفاعل"].map((t) => (
+              <span key={t} className="flex items-center gap-2">
                 <FontAwesomeIcon
                   icon={faCheckCircle}
-                  className="h-3.5 w-3.5 text-emerald-400"
+                  className="h-4 w-4 text-emerald-400"
                 />
                 {t}
               </span>
@@ -400,58 +393,73 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════ التذييل ═══════════════ */}
-      <footer className="border-t border-border bg-surface px-4 py-8 text-center sm:py-10">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-2.5">
-          <div className="flex items-center gap-2">
+      {/* ═══════════════ التذييل (Footer) ═══════════════ */}
+      <footer className="border-t border-white/10 bg-slate-950 py-12 text-center">
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4">
+          <div className="flex items-center gap-3 opacity-80 transition-opacity hover:opacity-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={s.logoUrl || "/icon.svg"}
               alt=""
-              className="h-7 w-7 rounded-lg object-contain sm:h-8 sm:w-8"
+              className="h-8 w-8 object-contain opacity-50 grayscale"
             />
-            <span className="font-display text-sm font-bold sm:text-base">
+            <span className="font-display text-lg font-bold text-white">
               {s.siteName || "BacZoneDZ"}
             </span>
           </div>
-          <p className="text-xs text-text-muted sm:text-sm">
-            {s.footerText || `© ${year} BacZoneDZ`}
-          </p>
-          <div className="flex gap-4 text-[11px] text-text-muted sm:gap-5 sm:text-xs">
-            <Link href="/login" className="transition hover:text-primary">
+          <div className="flex gap-6 text-sm font-medium text-slate-500">
+            <Link href="/login" className="transition-colors hover:text-white">
               تسجيل الدخول
             </Link>
-            <Link href="/register" className="transition hover:text-primary">
-              تسجيل جديد
+            <Link href="/register" className="transition-colors hover:text-white">
+              حساب جديد
             </Link>
           </div>
+          <p className="text-sm text-slate-600">
+            {s.footerText || `© ${year} ${s.siteName || "BacZoneDZ"}. جميع الحقوق محفوظة.`}
+          </p>
         </div>
       </footer>
     </main>
   );
 }
 
+// ═══════════════ مكون الأسئلة الشائعة ═══════════════
 function FaqRow({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-[var(--bz-bg)]">
+    <div
+      className={`overflow-hidden rounded-2xl border transition-colors ${
+        open ? "border-blue-500/30 bg-blue-500/5" : "border-white/10 bg-slate-900/30 hover:bg-slate-800/50"
+      }`}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-3.5 py-3 text-right transition hover:bg-primary/5 sm:px-4 sm:py-3.5"
+        className="flex w-full items-center justify-between gap-4 p-5 text-right sm:p-6"
       >
-        <span className="flex-1 text-[13px] font-bold sm:text-sm">{q}</span>
-        <FontAwesomeIcon
-          icon={faChevronDown}
-          className={`h-3 w-3 shrink-0 text-text-muted transition ${
-            open ? "rotate-180" : ""
+        <span className="text-base font-bold text-slate-200">{q}</span>
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-300 ${
+            open ? "rotate-180 bg-blue-500/20 text-blue-400" : "bg-white/5 text-slate-400"
           }`}
-        />
+        >
+          <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
+        </span>
       </button>
-      <div className={open ? "px-3.5 pb-3.5 sm:px-4 sm:pb-4" : "hidden"}>
-        <p className="text-[13px] leading-loose text-text-muted sm:text-sm">
-          {a}
-        </p>
+      
+      {/* استخدام تقنية grid لتأثير سلاسة الفتح والإغلاق (Accordion effect) */}
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="px-5 pb-5 text-sm leading-relaxed text-slate-400 sm:px-6 sm:pb-6">
+            {a}
+          </p>
+        </div>
       </div>
     </div>
   );
