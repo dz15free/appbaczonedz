@@ -27,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative z-10 max-w-md space-y-5">
           <h2 className="font-display text-3xl xl:text-[2.15rem] font-extrabold leading-[1.3]">
-            أكبر مجتمع دراسي
+            نسعى لنكون أكبر مجتمع دراسي
             <br />
             <span className="bg-gradient-to-l from-blue-400 to-emerald-400 bg-clip-text text-transparent">
               لطلاب البكالوريا
@@ -38,9 +38,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </p>
           <ul className="space-y-2.5 pt-1">
             {[
-              "غرف دراسة مباشرة مع الأساتذة",
-              "تمارين وحلول مصحّحة",
+              "غرف دراسة مباشرة مع الأساتذة أو للمراجعة مع زملائك",
+              "ملخصات و تمارين و مواضيع و حلول الباكلوريات السابقة",
               "مجتمع طلابي نشط طوال السنة",
+"والمزيد لتكتشفه..",
             ].map((item) => (
               <li key={item} className="flex items-center gap-2.5 text-sm text-white/70">
                 <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-400">
