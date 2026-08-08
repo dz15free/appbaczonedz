@@ -40,75 +40,110 @@ export default function LoginPage() {
       router.push(goOnboarding ? `/onboarding?next=${encodeURIComponent(next)}` : next);
     } catch (err) {
       console.error("[BacZone] خطأ الدخول:", err);
-      setMsg({ type: "error", text: err instanceof AuthError ? err.message : "خطأ غير متوقّع." });
+      setMsg({
+        type: "error",
+        text: err instanceof AuthError ? err.message : "خطأ غير متوقّع.",
+      });
       setLoading(false);
     }
   }
 
   async function handleReset() {
-    if (!email.trim()) return setMsg({ type: "error", text: "أدخل بريدك أولاً ثم اضغط نسيت كلمة المرور." });
+    if (!email.trim()) {
+      return setMsg({
+        type: "error",
+        text: "أدخل بريدك أولاً ثم اضغط نسيت كلمة المرور.",
+      });
+    }
     try {
       await resetPassword(email);
-      setMsg({ type: "success", text: "تم إرسال رابط استعادة كلمة المرور إلى بريدك." });
+      setMsg({
+        type: "success",
+        text: "تم إرسال رابط استعادة كلمة المرور إلى بريدك.",
+      });
     } catch (err) {
-      setMsg({ type: "error", text: err instanceof AuthError ? err.message : "فشل الإرسال." });
+      setMsg({
+        type: "error",
+        text: err instanceof AuthError ? err.message : "فشل الإرسال.",
+      });
     }
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold">مرحباً بعودتك 👋</h1>
-        <p className="mt-1 text-sm text-text-muted">سجّل الدخول لمتابعة رحلتك نحو الباك.</p>
+    <div className="w-full">
+      {/* العنوان */}
+      <div className="mb-6 text-center lg:text-right">
+        <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-[1.65rem]">
+          مرحباً بعودتك 👋
+        </h1>
+        <p className="mt-1.5 text-sm text-text-muted">
+          سجّل الدخول لمتابعة رحلتك نحو الباك.
+        </p>
       </div>
 
-      {msg && (
-        <div
-          className={`rounded-xl px-4 py-3 text-sm font-semibold ${
-            msg.type === "error" ? "bg-danger/10 text-danger" : "bg-secondary/10 text-secondary"
-          }`}
-        >
-          {msg.text}
-        </div>
-      )}
+      {/* البطاقة */}
+      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm sm:p-7">
+        {msg && (
+          <div
+            className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold ${
+              msg.type === "error"
+                ? "bg-danger/10 text-danger"
+                : "bg-secondary/10 text-secondary"
+            }`}
+          >
+            {msg.text}
+          </div>
+        )}
 
-      <div className="space-y-4">
-        <Input
-          label="البريد الإلكتروني"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          dir="ltr"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="example@email.com"
-          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-        />
-        <div>
+        <div className="space-y-4">
           <Input
-            label="كلمة المرور"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            label="البريد الإلكتروني"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            dir="ltr"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="example@email.com"
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           />
-          <button
-            onClick={handleReset}
-            className="mt-2 text-xs font-semibold text-primary transition hover:underline"
-          >
-            نسيت كلمة المرور؟
-          </button>
+
+          <div>
+            <Input
+              label="كلمة المرور"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-xs font-bold text-primary transition hover:underline underline-offset-2"
+              >
+                نسيت كلمة المرور؟
+              </button>
+            </div>
+          </div>
         </div>
+
+        <Button
+          onClick={handleLogin}
+          loading={loading}
+          className="mt-6 h-12 w-full text-[15px] font-bold"
+        >
+          دخول
+        </Button>
       </div>
 
-      <Button onClick={handleLogin} loading={loading} className="w-full">
-        دخول
-      </Button>
-
-      <p className="text-center text-sm text-text-muted">
+      <p className="mt-6 text-center text-sm text-text-muted">
         ليس لديك حساب؟{" "}
-        <Link href="/register" className="font-bold text-primary hover:underline">
+        <Link
+          href="/register"
+          className="font-bold text-primary hover:underline underline-offset-2"
+        >
           أنشئ حساباً
         </Link>
       </p>
