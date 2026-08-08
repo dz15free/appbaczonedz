@@ -40,65 +40,69 @@ export default function LandingPage() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)]">
       {/* ═══════════════ الهيدر ═══════════════ */}
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "border-b border-border/70 bg-[var(--bz-surface)]/90 shadow-sm backdrop-blur-xl"
-            : "border-b border-transparent bg-transparent"
+    {/* ═══════════════ الهيدر ═══════════════ */}
+<header
+  className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+    scrolled
+      ? "border-b border-border/70 bg-[var(--bz-surface)]/95 shadow-sm backdrop-blur-xl"
+      : "border-b border-transparent bg-transparent"
+  }`}
+>
+  <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
+    {/* الشعار + الاسم */}
+    <Link
+      href="/"
+      className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden sm:gap-2.5 sm:flex-none"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={s.logoUrl || "/icon.svg"}
+        alt={s.siteName || "BacZoneDZ"}
+        className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
+      />
+      <span
+        className={`truncate font-display text-[15px] font-extrabold tracking-tight sm:text-lg ${
+          scrolled ? "text-[var(--bz-text)]" : "text-white"
         }`}
       >
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
-          {/* الشعار */}
-          <Link href="/" className="flex min-w-0 items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={s.logoUrl || "/icon.svg"}
-              alt={s.siteName || "BacZoneDZ"}
-              className="h-9 w-9 shrink-0 rounded-xl object-contain sm:h-10 sm:w-10"
-            />
-            <span
-              className={`truncate font-display text-base font-extrabold tracking-tight transition-colors sm:text-lg ${
-                scrolled ? "text-[var(--bz-text)]" : "text-white"
-              }`}
-            >
-              {s.siteName || "BacZoneDZ"}
-            </span>
-          </Link>
+        {s.siteName || "BacZoneDZ"}
+      </span>
+    </Link>
 
-          {/* الأزرار */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            <div
-              className={`rounded-xl p-0.5 transition ${
-                scrolled ? "" : "bg-white/10 backdrop-blur-sm"
-              }`}
-            >
-              <ThemeToggle />
-            </div>
+    {/* الأزرار — لا تتداخل أبداً */}
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+      <div
+        className={`flex items-center rounded-lg p-0.5 ${
+          scrolled ? "" : "bg-white/10 backdrop-blur-sm"
+        }`}
+      >
+        <ThemeToggle />
+      </div>
 
-            <Link
-              href="/login"
-              className={`hidden text-sm font-semibold transition sm:inline-block ${
-                scrolled
-                  ? "text-text-muted hover:text-primary"
-                  : "text-white/75 hover:text-white"
-              }`}
-            >
-              دخول
-            </Link>
+      <Link
+        href="/login"
+        className={`hidden text-sm font-semibold transition sm:inline-block ${
+          scrolled
+            ? "text-text-muted hover:text-primary"
+            : "text-white/80 hover:text-white"
+        }`}
+      >
+        دخول
+      </Link>
 
-            <Link
-              href="/register"
-              className={`rounded-xl px-3.5 py-2 text-sm font-bold transition active:scale-[0.97] sm:px-5 sm:py-2.5 ${
-                scrolled
-                  ? "bg-gradient-primary text-white shadow-glow"
-                  : "bg-white text-slate-900 shadow-lg hover:bg-white/90"
-              }`}
-            >
-              {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "…"}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Link
+        href="/register"
+        className={`whitespace-nowrap rounded-xl px-3 py-2 text-[13px] font-bold transition active:scale-[0.97] sm:px-4 sm:py-2.5 sm:text-sm ${
+          scrolled
+            ? "bg-gradient-primary text-white shadow-glow"
+            : "bg-white text-slate-900 shadow-md hover:bg-white/90"
+        }`}
+      >
+        {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "…"}
+      </Link>
+    </div>
+  </div>
+</header>
 
       {/* ═══════════════ الهيرو ═══════════════ */}
       <section className="relative min-h-[100svh] overflow-hidden bg-[#07080f] text-white">
@@ -125,13 +129,12 @@ export default function LandingPage() {
             </span>
           )}
 
-          <h1 className="max-w-3xl font-display text-[1.85rem] font-extrabold leading-[1.2] tracking-tight xs:text-[2.1rem] sm:text-4xl md:text-[3.15rem]">
-            {s.heroTitleLine1}
-            <br />
-            <span className="bg-gradient-to-l from-blue-400 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
-              {s.heroTitleLine2}
-            </span>
-          </h1>
+ <h1 className="max-w-3xl font-display text-[1.85rem] font-extrabold leading-[1.35] tracking-tight xs:text-[2.1rem] sm:text-4xl sm:leading-[1.3] md:text-[3.15rem] md:leading-[1.25]">
+  <span className="block">{s.heroTitleLine1}</span>
+  <span className="mt-1.5 block bg-gradient-to-l from-blue-400 via-sky-300 to-emerald-300 bg-clip-text text-transparent sm:mt-2">
+    {s.heroTitleLine2}
+  </span>
+</h1>
 
           <p className="mx-auto mt-4 max-w-lg text-[14px] leading-relaxed text-white/55 sm:mt-5 sm:text-base md:text-lg">
             {s.heroSubtitle}
