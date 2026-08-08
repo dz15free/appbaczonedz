@@ -7,8 +7,6 @@ import {
   faCheckCircle,
   faFlag,
   faChevronDown,
-  faPlay,
-  faSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
@@ -42,7 +40,7 @@ export default function LandingPage() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[#030712] text-slate-200 selection:bg-blue-500/30">
       
-      {/* ═══════════════ الهيدر الطافي (Floating Header) ═══════════════ */}
+      {/* ═══════════════ الهيدر الطافي ═══════════════ */}
       <header
         className={`fixed inset-x-0 z-50 transition-all duration-500 ease-out ${
           scrolled
@@ -99,32 +97,24 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* ═══════════════ الهيرو (Hero Section) ═══════════════ */}
+      {/* ═══════════════ الهيرو ═══════════════ */}
       <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden pt-20">
-        {/* تأثيرات الإضاءة والخلفية */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="absolute top-[-10%] h-[600px] w-[800px] rounded-full bg-blue-600/20 blur-[120px]" />
           <div className="absolute bottom-[-20%] right-[-10%] h-[500px] w-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
-          
-          {/* شبكة منظور احترافية */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-5xl px-4 text-center sm:px-6">
           
-          {/* شارة التحديثات (Badge) */}
           {s.landingBadge && (
-            <div className="animate-fade-in-up mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
-              </span>
+            <div className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-300 backdrop-blur-md">
+              <FontAwesomeIcon icon={faFlag} className="h-3 w-3" />
               {s.landingBadge}
             </div>
           )}
 
-          {/* العنوان الرئيسي */}
-          <h1 className="animate-fade-in-up mx-auto max-w-4xl font-display text-4xl font-extrabold leading-[1.3] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.5rem]">
+          <h1 className="mx-auto max-w-4xl font-display text-4xl font-extrabold leading-[1.4] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.5rem]">
             <span className="block text-slate-100 drop-shadow-sm pb-2">
               {s.heroTitleLine1}
             </span>
@@ -136,12 +126,11 @@ export default function LandingPage() {
             </span>
           </h1>
 
-          <p className="animate-fade-in-up animation-delay-100 mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 sm:text-xl">
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 sm:text-xl">
             {s.heroSubtitle}
           </p>
 
-          {/* أزرار الدعوة للإجراء */}
-          <div className="animate-fade-in-up animation-delay-200 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
               href="/register"
               className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-base font-bold text-slate-900 transition-all hover:bg-slate-100 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] active:scale-95 sm:w-auto"
@@ -157,14 +146,12 @@ export default function LandingPage() {
               href="/login"
               className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-md transition-all hover:bg-white/10 active:scale-95 sm:w-auto"
             >
-              <FontAwesomeIcon icon={faPlay} className="text-blue-400" />
               {s.heroCtaSecondary}
             </Link>
           </div>
 
-          {/* شارات المجتمع الميزات المصغرة */}
           {(s.badges ?? []).length > 0 && (
-            <div className="animate-fade-in-up animation-delay-300 mt-16 flex flex-wrap items-center justify-center gap-3 border-t border-white/5 pt-8 sm:gap-6">
+            <div className="mt-16 flex flex-wrap items-center justify-center gap-3 border-t border-white/5 pt-8 sm:gap-6">
               <p className="w-full text-sm font-medium text-slate-500 sm:w-auto sm:me-4">
                 انضم إلى مجتمع التميز:
               </p>
@@ -185,17 +172,16 @@ export default function LandingPage() {
           )}
         </div>
 
-        {/* فاصل سفلي متدرج */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#030712] to-transparent" />
       </section>
 
-      {/* ═══════════════ الخطوات (Journey) ═══════════════ */}
+      {/* ═══════════════ الخطوات ═══════════════ */}
       {(s.steps ?? []).length > 0 && (
         <section className="relative z-10 py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mb-16 text-center">
               <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
-                <FontAwesomeIcon icon={faSparkles} className="h-4 w-4" />
+                <FontAwesomeIcon icon={faCheckCircle} className="h-4 w-4" />
               </div>
               <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                 {s.stepsTitle}
@@ -203,7 +189,6 @@ export default function LandingPage() {
             </div>
 
             <div className="relative grid gap-8 md:grid-cols-3">
-              {/* خط التوصيل بين الخطوات (يظهر في الشاشات الكبيرة) */}
               <div className="absolute left-1/2 top-1/2 -z-10 hidden w-full -translate-x-1/2 -translate-y-1/2 border-t-2 border-dashed border-white/10 md:block" />
               
               {(s.steps ?? []).map((step, idx) => (
@@ -230,7 +215,6 @@ export default function LandingPage() {
       {/* ═══════════════ الميزات (Bento Grid) ═══════════════ */}
       {(s.features ?? []).length > 0 && (
         <section className="relative py-24 sm:py-32">
-          {/* خلفية جمالية */}
           <div className="absolute inset-y-0 right-1/2 -z-10 w-full max-w-3xl translate-x-1/2 bg-[radial-gradient(closest-side,rgba(37,99,235,0.05)_0%,transparent_100%)]" />
 
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -280,7 +264,7 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ الأدوار (Audience) ═══════════════ */}
+      {/* ═══════════════ الأدوار ═══════════════ */}
       {(s.audience ?? []).length > 0 && (
         <section className="py-24 sm:py-32">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -333,7 +317,7 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ الأسئلة الشائعة (FAQ) ═══════════════ */}
+      {/* ═══════════════ الأسئلة الشائعة ═══════════════ */}
       {(s.faq ?? []).length > 0 && (
         <section className="relative border-t border-white/5 py-24 sm:py-32">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
@@ -349,7 +333,7 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ CTA (الدعوة للإجراء) ═══════════════ */}
+      {/* ═══════════════ CTA ═══════════════ */}
       <section className="relative overflow-hidden py-24 sm:py-32">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="h-[400px] w-[800px] rounded-full bg-blue-600/20 blur-[100px]" />
@@ -393,7 +377,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════ التذييل (Footer) ═══════════════ */}
+      {/* ═══════════════ التذييل ═══════════════ */}
       <footer className="border-t border-white/10 bg-slate-950 py-12 text-center">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4">
           <div className="flex items-center gap-3 opacity-80 transition-opacity hover:opacity-100">
@@ -424,7 +408,6 @@ export default function LandingPage() {
   );
 }
 
-// ═══════════════ مكون الأسئلة الشائعة ═══════════════
 function FaqRow({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   
@@ -449,7 +432,6 @@ function FaqRow({ q, a }: { q: string; a: string }) {
         </span>
       </button>
       
-      {/* استخدام تقنية grid لتأثير سلاسة الفتح والإغلاق (Accordion effect) */}
       <div
         className={`grid transition-all duration-300 ease-in-out ${
           open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
