@@ -192,29 +192,14 @@ export function AdvertiseCard() {
 ════════════════════════════════════════════════════════════ */
 export function HomeExternalHighlights() {
   const { settings } = useSiteSettings();
-  const lessonsUrl = settings.lessonsUrl || "https://www.baczonedz.com/p/blog-page_33.html";
+  /* `lessonsUrl` لم يعد مستعملاً هنا بعد نقل البطاقة إلى الوصول السريع */
   const telegramUrl = settings.telegramUrl || "https://t.me/baczonedz";
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {/* دروس ومواضيع */}
-      <a
-        href={lessonsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glass"
-      >
-        <div className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl transition group-hover:scale-150" />
-        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110">
-          <FontAwesomeIcon icon={faGraduationCap} className="h-7 w-7" />
-        </span>
-        <div className="relative min-w-0">
-          <h3 className="font-display text-sm font-extrabold">دروس ومواضيع</h3>
-          <p className="mt-0.5 text-[11px] leading-snug text-text-muted">ملخّصات ومواضيع مُصحَّحة لكل الشُّعب</p>
-        </div>
-        <FontAwesomeIcon icon={faArrowLeft} className="relative mr-auto h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-primary" />
-      </a>
-
+    <div className="grid gap-3">
+      {/* «دروس ومواضيع» انتقلت: صارت بطاقة **محاكاة البكالوريا**
+          داخل «الوصول السريع» أعلى الصفحة. كانت هنا في ذيل الصفحة
+          حيث لا يصلها أحد بعد أن تكثر المنشورات. */}
       {/* قناة تيليغرام */}
       <a
         href={telegramUrl}

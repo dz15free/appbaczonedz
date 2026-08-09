@@ -9,7 +9,8 @@ import {
   faUsers, faRobot, faComments, faChalkboardUser,
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
-  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft,
+  faCompass, faShareNodes, faBullhorn, faAnglesDown } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -102,7 +103,26 @@ const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
   );
 });
 
-/* قسم الأقسام */
+/* ════════════════════════════════════════════════════════════
+   الوصول السريع
+
+   ثلاث طبقات بترتيب مقصود:
+     ١. بطاقة **محاكاة البكالوريا** بارزة بعرض كامل — كانت مدفونة
+        داخل «وجهات مهمّة» أسفل الصفحة باسم «دروس ومواضيع»، وهي
+        أقرب ما تكون إلى تجربة يوم الامتحان الحقيقي.
+     ٢. شبكة الأقسام الستّة.
+     ٣. أزرار قفز (هاتف) تُنزل المستخدم مباشرةً إلى الأقسام التي
+        تعيش أسفل الصفحة — فلا تُدفن تحت المنشورات مهما كثرت.
+   ════════════════════════════════════════════════════════════ */
+
+/** الأقسام التي تعيش في ذيل الصفحة ويقفز إليها الطالب من الأعلى */
+const JUMPS = [
+  { id: "bz-res",     label: "مصادر إضافية",    icon: faCompass,     studentOnly: false },
+  { id: "bz-tools",   label: "أدوات الباكلوريا", icon: faListCheck,   studentOnly: true },
+  { id: "bz-social",  label: "تابعنا",           icon: faShareNodes,  studentOnly: false },
+  { id: "bz-ads",     label: "أعلن معنا",        icon: faBullhorn,    studentOnly: false },
+];
+
 const SectionsRow = memo(function SectionsRow() {
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
@@ -111,12 +131,62 @@ const SectionsRow = memo(function SectionsRow() {
           <span className={`grid h-14 w-14 place-items-center rounded-2xl transition group-hover:scale-105 sm:h-16 sm:w-16 ${s.color}`}>
             <FontAwesomeIcon icon={s.icon} className="h-6 w-6 sm:h-7 sm:w-7" />
           </span>
-          <span className="text-center text-[11px] font-semibold leading-tight text-text-muted sm:text-xs">{s.label}</span>
+          <span className="text-center text-[11.5px] font-bold leading-tight text-text-muted sm:text-xs">{s.label}</span>
         </Link>
       ))}
     </div>
   );
 });
+
+/** بطاقة المحاكاة — الوجهة الأبرز داخل الوصول السريع */
+function SimCard({ href }: { href: string }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="bz-sim-card">
+      <span className="bz-sim-glow" aria-hidden />
+      <span className="bz-sim-ic">
+        <FontAwesomeIcon icon={faClipboardCheck} className="h-6 w-6" />
+      </span>
+      <span className="bz-sim-txt">
+        <span className="bz-sim-top">
+          <span className="bz-sim-t">محاكاة البكالوريا</span>
+          <span className="bz-sim-badge">تجربة حقيقية</span>
+        </span>
+        <span className="bz-sim-d">امتحان بتوقيت رسمي ومواضيع حقيقية — جرّب قبل أن تدخل القاعة.</span>
+      </span>
+      <span className="bz-sim-go">
+        ابدأ
+        <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
+      </span>
+    </a>
+  );
+}
+
+/** أزرار القفز — تظهر على الهاتف فقط (على الحاسوب الأقسام في الشريط الجانبي) */
+function JumpRow({ isTeacher }: { isTeacher: boolean }) {
+  const items = JUMPS.filter((j) => !j.studentOnly || !isTeacher);
+  return (
+    <div className="bz-jumps lg:hidden" aria-label="انتقال سريع لأقسام الصفحة">
+      {items.map((j) => (
+        <a key={j.id} href={`#${j.id}`} className="bz-jump">
+          <FontAwesomeIcon icon={j.icon} className="h-3 w-3" />
+          <span>{j.label}</span>
+          <FontAwesomeIcon icon={faAnglesDown} className="h-2.5 w-2.5 opacity-55" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/** الكتلة الكاملة — يستعملها الحاسوب والهاتف بلا اختلاف */
+function QuickAccess({ isTeacher, simUrl }: { isTeacher: boolean; simUrl: string }) {
+  return (
+    <div className="space-y-3">
+      <SimCard href={simUrl} />
+      <SectionsRow />
+      <JumpRow isTeacher={isTeacher} />
+    </div>
+  );
+}
 
 /* بطاقات الأدوات */
 const ToolsGrid = memo(function ToolsGrid() {
@@ -218,6 +288,8 @@ export default function HomePage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   const name = profile?.name || user.displayName || "طالب";
+  /* رابط المحاكاة يضبطه الأدمن من لوحته — والافتراضي هو الرابط القائم */
+  const simUrl = settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html";
 
   return (
     <AppShell>
@@ -236,8 +308,8 @@ export default function HomePage() {
 
           {/* الوصول السريع */}
           <div className="rounded-2xl border border-border bg-surface p-5">
-            <h2 className="mb-4 font-display text-base font-extrabold">الوصول السريع</h2>
-            <SectionsRow />
+            <h2 className="mb-4 font-display text-[17px] font-extrabold">الوصول السريع</h2>
+            <QuickAccess isTeacher={isTeacher} simUrl={simUrl} />
           </div>
 
           {/* مساحة الدراسة — محتوى يفعله الطالب لا يقرؤه فقط */}
@@ -353,8 +425,8 @@ export default function HomePage() {
 
         {/* الوصول السريع */}
         <div>
-          <h2 className="mb-3 font-display text-base font-extrabold">الوصول السريع</h2>
-          <SectionsRow />
+          <h2 className="mb-3 font-display text-[17px] font-extrabold">الوصول السريع</h2>
+          <QuickAccess isTeacher={isTeacher} simUrl={simUrl} />
         </div>
 
         {/* مساحة الدراسة */}
@@ -387,63 +459,69 @@ export default function HomePage() {
           )}
         </div>
 
+        {/* ══ أقسام الذيل ══
+            تبقى في آخر الصفحة كما هي، لكنّها لم تعد مدفونة: أزرار
+            القفز في «الوصول السريع» تُنزل إليها مباشرةً، والمعرّفات
+            هنا هي هدف تلك الأزرار. و`scroll-margin-top` يمنع الهيدر
+            اللاصق من تغطية العنوان بعد القفز. */}
+
+        {/* مصادر إضافية */}
+        <div id="bz-res" className="bz-anchor">
+          <h2 className="mb-3 font-display text-[17px] font-extrabold">مصادر إضافية</h2>
+
+          {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
+          <div className="bz-res-grid is-stack">
+            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+              <span className="bz-res-bg" aria-hidden />
+              <span className="bz-res-in">
+                <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
+                <span className="bz-res-txt">
+                  <span className="bz-res-t">نظّم مراجعتك من اليوم</span>
+                  <span className="bz-res-d">أنشئ برنامج مراجعة يناسب وقتك ومستواك.</span>
+                </span>
+                <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+              </span>
+            </a>
+
+            <Link href="/tools/planner" className="bz-res-card is-amber">
+              <span className="bz-res-bg" aria-hidden />
+              <span className="bz-res-in">
+                <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarDays} className="h-5 w-5" /></span>
+                <span className="bz-res-txt">
+                  <span className="bz-res-t">مخطّط البكالوريا للطباعة</span>
+                  <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
+                </span>
+                <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+              </span>
+            </Link>
+
+            <Link href="/specialties" className="bz-res-card is-blue">
+              <span className="bz-res-bg" aria-hidden />
+              <span className="bz-res-in">
+                <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                <span className="bz-res-txt">
+                  <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                  <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
+                </span>
+                <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+              </span>
+            </Link>
+          </div>
+        </div>
+
         {/* أدوات الباكلوريا — للطالب وحده (كما على الحاسوب) */}
         {!isTeacher && (
-          <div>
-            <h2 className="mb-3 font-display text-base font-extrabold">أدوات الباكلوريا</h2>
+          <div id="bz-tools" className="bz-anchor">
+            <h2 className="mb-3 font-display text-[17px] font-extrabold">أدوات الباكلوريا</h2>
             <ToolsGrid />
           </div>
         )}
 
-        {/* مصادر إضافية */}
-        <div>
-          <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
-
-          {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
-          <div className="bz-res-grid is-stack">
-                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">نظّم مراجعتك من اليوم</span>
-                    <span className="bz-res-d">أنشئ برنامج مراجعة يناسب وقتك ومستواك.</span>
-                  </span>
-                  <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </a>
-
-              <Link href="/tools/planner" className="bz-res-card is-amber">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarDays} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">مخطّط البكالوريا للطباعة</span>
-                    <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
-                  </span>
-                  <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
-
-<Link href="/specialties" className="bz-res-card is-blue">
-                <span className="bz-res-bg" aria-hidden />
-                <span className="bz-res-in">
-                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
-                  <span className="bz-res-txt">
-                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
-                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
-                  </span>
-                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
-                </span>
-              </Link>
-            </div>
-        </div>
-
         {/* تابعنا */}
-        <SocialLinks />
+        <div id="bz-social" className="bz-anchor"><SocialLinks /></div>
 
         {/* أعلن معنا */}
-        <AdvertiseCard />
+        <div id="bz-ads" className="bz-anchor"><AdvertiseCard /></div>
       </section>
     </AppShell>
   );

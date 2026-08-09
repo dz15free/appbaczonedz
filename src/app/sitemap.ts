@@ -15,6 +15,42 @@ import { BRANCHES } from "@/features/calculator/branches";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com";
 
+/* ════════════════════════════════════════════════════════════
+   محتوى الأدمن — يُقرأ من Firebase وقت توليد الخريطة
+
+   🐛 كانت الخريطة تُرسل **المعرّف الثابت** (`SPEC_INDEX`) بينما
+   تُصدر الصفحة `canonical` بالرابط المخصّص المحفوظ في قاعدة
+   البيانات. فيتلقّى Google إشارتين متناقضتين لكل تخصّص غيّرتَ
+   رابطه — وهو سبب مباشر لعدم أرشفة الصفحة.
+
+   وكانت تُدرج **كل** الـ٢٦٠ تخصّصاً حتى غير المكتوب منها. إرسال
+   صفحة «قيد الإعداد» إلى Google يُهدر ميزانية الزحف ويُضعف تقييم
+   جودة الموقع كلّه.
+
+   الآن تُقرأ العقدة الحقيقية: الرابط المخصّص، وتاريخ آخر تعديل،
+   والمنشور وحده. فما تكتبه في لوحة الإدارة يصل إلى Google بلا
+   إعادة نشر للموقع. */
+async function guidePages(): Promise<{ slug: string; at?: number }[]> {
+  const db = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
+  if (!db) return [];
+  try {
+    const res = await fetch(`${db}/guide/specialities.json`, { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+    const val = (await res.json()) as Record<string, {
+      permalink?: string; intro?: string; draft?: boolean; updatedAt?: number;
+    }> | null;
+    return Object.entries(val ?? {})
+      // منشور = له مقدّمة وليس مسودّة — نفس شرط `mergeGuide` حرفياً
+      .filter(([, c]) => Boolean(c?.intro?.trim()) && c?.draft !== true)
+      .map(([id, c]) => ({
+        slug: (c.permalink?.trim() || id).replace(/^\/+|\/+$/g, ""),
+        at: c.updatedAt,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /* الدورات المنشورة — تُقرأ من `coursesPublic`، وهي العقدة الوحيدة
    التي لا تحوي إلّا المنشور. المسوّدة والمرفوضة لا تصل هنا أصلاً،
    فلا تُفهرَس صفحة خاصّة بالخطأ. */
@@ -50,14 +86,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  /* نُدرج المعرّف الأصلي: الرابط المخصّص يعيش في قاعدة البيانات ولا
-     تصل إليه الخريطة الساكنة، والصفحة تقبل الشكلين فلا يضيع شيء. */
-  const specs: MetadataRoute.Sitemap = SPEC_INDEX.map((s) => ({
-    url: `${BASE}/specialties/${s.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.8,
-  }));
+  /* الروابط الحقيقية من قاعدة البيانات. وإن تعذّرت القراءة (شبكة أو
+     قاعدة معطّلة) نسقط إلى الفهرس الثابت بدل خريطة ناقصة. */
+  const live = await guidePages();
+  const specs: MetadataRoute.Sitemap = live.length
+    ? live.map((g) => ({
+        url: `${BASE}/specialties/${g.slug}`,
+        lastModified: g.at ? new Date(g.at) : now,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      }))
+    : SPEC_INDEX.map((s) => ({
+        url: `${BASE}/specialties/${s.slug}`,
+        lastModified: now,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      }));
 
   const courses: MetadataRoute.Sitemap = (await publishedCourses()).map((c) => ({
     url: `${BASE}/courses/${c.id}`,
@@ -66,5 +110,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...statics, ...specs, ...courses];
+  /* إزالة التكرار: رابط واحد لا يجوز أن يظهر مرّتين في الخريطة */
+  const all = [...statics, ...specs, ...courses];
+  const seen = new Set<string>();
+  return all.filter((e) => (seen.has(e.url) ? false : (seen.add(e.url), true)));
 }

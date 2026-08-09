@@ -1,10 +1,9 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/ui/icon";
-import { listenGuide, linkOf, type SpecFull } from "@/features/guide/guide-store";
+import { linkOf } from "@/features/guide/spec-link";
+import type { SpecFull } from "@/features/guide/guide-merge";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader, PublicCta } from "@/components/public-shell";
 
 /* ════════════════════════════════════════════════════════════
    عرض موضوع التخصّص
@@ -70,56 +69,49 @@ function Body({ text }: { text: string }) {
   );
 }
 
-export function SpecArticle({ slug }: { slug: string }) {
-  const [rows, setRows] = useState<SpecFull[] | null>(null);
-
-  useEffect(() => {
-    const unsub = listenGuide(setRows);
-    return () => { if (typeof unsub === "function") unsub(); };
-  }, []);
-
-  /* نطابق الرابط المخصّص أوّلاً، ثم الروابط القديمة، ثم المعرّف —
-     فلا ينكسر رابط شاركه طالب قبل أن تُغيّر الرابط. */
-  const spec = useMemo(() => {
-    if (!rows) return undefined;
-    const t = slug.toLowerCase();
-    return (
-      rows.find((s) => linkOf(s).toLowerCase() === t) ??
-      rows.find((s) => (s.aliases ?? []).some((a) => a.toLowerCase() === t)) ??
-      rows.find((s) => s.slug.toLowerCase() === t) ??
-      null
-    );
-  }, [rows, slug]);
-
-  if (spec === undefined) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-[var(--bz-ink-3)]">
-        جارٍ التحميل…
-      </main>
-    );
-  }
-
-  if (!spec || !spec.published) {
-    return (
+/* حالة «لم نجده / قيد الإعداد» — تُستدعى من الصفحة مباشرةً */
+export function SpecNotFound({ spec }: { spec?: SpecFull | null }) {
+  return (
+    <>
+      <PublicHeader />
       <main className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h1 className="font-display text-xl font-extrabold">
+        <h1 className="font-display text-[22px] font-extrabold leading-snug">
           {spec ? `تخصّص ${spec.ar} — قيد الإعداد` : "لم نجد هذا التخصّص"}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--bz-ink-3)]">
+        <p className="mx-auto mt-2.5 max-w-md text-[15px] leading-[1.9] text-[var(--bz-ink-2)]">
           {spec
             ? "نكتب شرح هذا التخصّص حالياً. عد قريباً، أو تصفّح بقيّة التخصّصات."
             : "ربما تغيّر الرابط. تصفّح الدليل للعثور على تخصّصك."}
         </p>
         <Link href="/specialties"
-          className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[var(--bz-blue)] px-4 py-2.5 text-sm font-bold text-white">
+          className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--bz-blue)] px-5 text-[14px] font-extrabold text-white">
           <Icon name="chevRight" size={14} />
           كل التخصّصات
         </Link>
       </main>
-    );
-  }
+      <PublicCta />
+    </>
+  );
+}
 
-  const related = (rows ?? [])
+/* ════════════════════════════════════════════════════════════
+   عرض موضوع التخصّص — **مكوّن خادم**
+
+   كان مكوّن عميل يجلب المحتوى بنفسه في `useEffect`، فيصل الزاحف —
+   ويصل الطالب على شبكة بطيئة — إلى «جارٍ التحميل…» ولا شيء غيره،
+   والبيانات المنظّمة أسفل `return` مبكّر فلا تُرسَل أبداً.
+
+   المعروض هنا **هو نفسه حرفاً بحرف**: لم يُحذف قسم ولا سطر. ما تغيّر
+   أنّ البيانات تصل جاهزة من الصفحة بدل أن يجلبها المتصفّح.
+   ════════════════════════════════════════════════════════════ */
+export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }) {
+  /* الأقسام المكتوبة فعلاً — يشترك فيها الفهرس والعرض */
+  const written = SECTIONS.filter(({ key }) => {
+    const v = spec[key];
+    return typeof v === "string" && v.trim().length > 0;
+  });
+
+  const related = rows
     .filter((r) => r.field === spec.field && r.slug !== spec.slug && r.published)
     .slice(0, 6);
 
@@ -153,6 +145,8 @@ export function SpecArticle({ slug }: { slug: string }) {
   };
 
   return (
+    <>
+    <PublicHeader />
     <main className="bz-guide">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -186,12 +180,30 @@ export function SpecArticle({ slug }: { slug: string }) {
         </div>
       </header>
 
-      <article className="mx-auto w-full max-w-3xl px-3 pb-14 pt-6 sm:px-4">
+      <article className="mx-auto w-full max-w-3xl px-4 pb-14 pt-6">
+        {/* فهرس الموضوع — سبعة عشر قسماً بلا فهرس تعني تمريراً أعمى
+            على الهاتف، ومن يريد «القبول والمعدّلات» وحدها مضطرّ للمرور
+            بكل شيء. لا يُحذف قسم: تُضاف طريقة الوصول إليه. */}
+        {written.length > 3 && (
+          <nav aria-label="أقسام الموضوع" className="bz-spec-toc">
+            <p className="bz-spec-toc-t">
+              <Icon name="file" size={13} />
+              في هذا الموضوع
+              <span className="bz-spec-toc-n">{written.length} أقسام</span>
+            </p>
+            <div className="bz-spec-toc-l">
+              {written.map(({ key, label }) => (
+                <a key={String(key)} href={`#sec-${String(key)}`}>{label}</a>
+              ))}
+            </div>
+          </nav>
+        )}
+
         {SECTIONS.map(({ key, label, icon, tone }) => {
           const v = spec[key];
           if (typeof v !== "string" || !v.trim()) return null;
           return (
-            <section key={String(key)} className={`bz-spec-sec ${tone ? `is-${tone}` : ""}`}>
+            <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec ${tone ? `is-${tone}` : ""}`}>
               <h2>
                 <Icon name={icon} size={15} />
                 {label}
@@ -221,6 +233,12 @@ export function SpecArticle({ slug }: { slug: string }) {
           </aside>
         )}
       </article>
+
+      <PublicCta
+        title={`تدرس ${spec.ar}؟ جهّز معدّلك أوّلاً`}
+        hint="انضمّ إلى BacZone: غرف مراجعة مباشرة، دورات من أساتذة، وملخّصات لكل الشُّعب — مجّاناً."
+      />
     </main>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -96,7 +97,9 @@ export default async function BranchCalculatorPage(
 
   return (
     <EditablePage pageKey={`calculate-${b.slug}`}>
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -203,6 +206,8 @@ export default async function BranchCalculatorPage(
         </aside>
       </div>
     </main>
+      <PublicCta />
+    </>
     </EditablePage>
   );
 }

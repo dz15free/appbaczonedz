@@ -16,6 +16,9 @@ export default function robots(): MetadataRoute.Robots {
            يبقى مسموحاً. */
         disallow: [
           "/api/", "/admin", "/rooms/", "/messages/", "/tools/", "/aibot",
+          /* صفحات شخصية أو عابرة: زحفها بلا قيمة، وبعضها يكشف ما لا يُقصد نشره */
+          "/onboarding", "/profile", "/notifications", "/groups/", "/u/",
+          "/pay/", "/offline", "/indexnow-key.txt",
           "/courses/new", "/courses/teach", "/courses/mine",
           "/courses/*/edit", "/courses/*/learn",
         ],

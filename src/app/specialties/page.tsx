@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { EditablePage } from "@/features/admin/editable-page";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
 import { absUrl } from "@/features/guide/site-url";
+import { getGuideRows } from "@/features/guide/guide-server";
 
 /* ════════════════════════════════════════════════════════════
    دليل التخصّصات — صفحة عامّة
@@ -31,7 +33,14 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
 
-export default function SpecialtiesPage() {
+/* نصف ساعة: المحتوى تحريريّ يتغيّر نادراً */
+export const revalidate = 1800;
+
+export default async function SpecialtiesPage() {
+  /* الصفوف تُقرأ على الخادم فيصل الزاحف إلى قائمة تخصّصات حقيقية،
+     ولا يحمّل الزائر بايتاً من محتوى الدليل الكامل. */
+  const rows = await getGuideRows();
+  const publishedCount = rows.filter((r) => r.published).length;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -43,7 +52,9 @@ export default function SpecialtiesPage() {
 
   return (
     <EditablePage pageKey={"specialties"}>
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -63,15 +74,18 @@ export default function SpecialtiesPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <span className="bz-guide-stat">{SPEC_INDEX.length} تخصّصاً</span>
             <span className="bz-guide-stat">{SPEC_FIELDS.length} مجالات</span>
+            <span className="bz-guide-stat">{publishedCount} دليلاً مكتوباً</span>
             <span className="bz-guide-stat">بلا تسجيل</span>
           </div>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
-        <GuideBrowser />
+        <GuideBrowser rows={rows} />
       </div>
     </main>
+      <PublicCta title={"اخترت تخصّصك؟ الخطوة التالية هي معدّلك"} hint={"انضمّ إلى BacZone: غرف مراجعة مباشرة، دورات من أساتذة، ملخّصات ومواضيع — مجّاناً."} />
+    </>
     </EditablePage>
   );
 }

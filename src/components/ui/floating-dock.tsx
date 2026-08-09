@@ -48,7 +48,10 @@ export function FloatingDock() {
           {visible && !dismissed && (
             <div
               key={animKey}
-              className="animate-bubble-in absolute bottom-full mb-2 w-max max-w-[190px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass sm:max-w-[220px]"
+              /* كانت الفقاعة مُوسَّطة على زرّ يبعد ١٦px عن حافّة الشاشة، فيخرج
+                 نصفها خارج الشاشة على الهاتف ويُقصّ نصّها. الآن تبدأ من
+                 حافّة الزرّ وتمتدّ نحو الداخل. */
+              className="animate-bubble-in absolute bottom-full left-0 mb-2 w-max max-w-[min(220px,calc(100vw-3.5rem))] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass"
             >
               <button
                 onClick={(e) => { e.preventDefault(); setDismissed(true); }}

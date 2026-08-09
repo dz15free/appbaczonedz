@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
 import { BRANCHES, totalCoef } from "@/features/calculator/branches";
@@ -51,7 +52,9 @@ export default function CalculateHub() {
 
   return (
     <EditablePage pageKey={"calculate"}>
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -69,29 +72,35 @@ export default function CalculateHub() {
       </header>
 
       <div className="mx-auto w-full max-w-4xl px-3 pb-14 sm:px-4">
-        <Link href="/home" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bz-blue)] hover:underline">
-          العودة إلى BacZone
+        {/* هدف لمس كامل: كان رابطاً بارتفاع ١٨px */}
+        <Link href="/home"
+          className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[13px] font-extrabold text-[var(--bz-blue)] transition hover:bg-[var(--bz-blue-050)]">
+          ← العودة إلى BacZone
         </Link>
 
-        <h2 className="mb-3 mt-6 font-display text-lg font-extrabold">اختر شعبتك</h2>
+        <h2 className="mb-3.5 mt-6 font-display text-[20px] font-extrabold">اختر شعبتك</h2>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {BRANCHES.map((b) => (
             <Link key={b.slug} href={`/calculate/${b.slug}`} className="bz-branch-card">
               <span className="bz-branch-bar" style={{ background: b.color }} />
-              <span className="bz-branch-name">{b.short}</span>
-              <span className="bz-branch-meta">
-                {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)}
+              <span className="min-w-0">
+                <span className="bz-branch-name">{b.short}</span>
+                <span className="bz-branch-meta">
+                  {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)}
+                </span>
               </span>
             </Link>
           ))}
         </div>
 
-        <p className="mt-8 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[11.5px] leading-[1.9] text-[var(--bz-ink-3)]">
-          <b className="text-[var(--bz-ink-2)]">تنبيه:</b> هذه أداة تقدير وفق المعاملات
+        <p className="mt-8 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[13px] leading-[1.9] text-[var(--bz-ink-2)]">
+          <b className="text-[var(--bz-ink)]">تنبيه:</b> هذه أداة تقدير وفق المعاملات
           المعتمدة. النتيجة الرسمية تصدر عن الديوان الوطني للامتحانات والمسابقات.
         </p>
       </div>
     </main>
+      <PublicCta title={"معدّلك يبدأ من مراجعتك"} hint={"انضمّ إلى BacZone: غرف مراجعة مباشرة، دورات من أساتذة، وملخّصات لكل الشُّعب — مجّاناً."} />
+    </>
     </EditablePage>
   );
 }

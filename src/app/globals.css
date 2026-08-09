@@ -19,7 +19,7 @@
   --bz-bg: #f8fafc;               /* slate-50 */
   --bz-surface: #ffffff;
   --bz-text: #0f172a;             /* slate-900 */
-  --bz-text-muted: #64748b;       /* slate-500 */
+  --bz-text-muted: #54637a;       /* أغمق من slate-500: يعبر حدّ WCAG AA */
   --bz-border: #e2e8f0;           /* slate-200 */
 
   /* مساحة العمل (غرفة الدراسة) */
@@ -54,7 +54,7 @@
   --bz-bg: #0f172a;
   --bz-surface: #1e293b;
   --bz-text: #f9fafb;
-  --bz-text-muted: #94a3b8;
+  --bz-text-muted: #9fb0c4;       /* أفتح قليلاً في الوضع الداكن للسبب نفسه */
   --bz-border: #334155;
 
   --bz-workspace: #0f1117;
@@ -85,8 +85,24 @@
 html {
   /* iOS height fix لاحقاً عبر --vh */
   scroll-behavior: smooth;
+  /* الهيدر لاصق: بلا هذا يقف كل هدف `#anchor` **تحته** بعد القفز */
+  scroll-padding-top: 76px;
 }
 
+/* ════════════════════════════════════════════════════════════
+   النصّ العربي — وضوح ووزن
+
+   ثلاثة أشياء كانت تجعل النصّ يبدو باهتاً:
+
+   ١. الوزن ٨٠٠ لم يكن محمَّلاً أصلاً (أُصلح في `layout.tsx`).
+   ٢. `text-rendering` الافتراضي لا يفعّل الربط المحسَّن في العربية.
+   ٣. لون النصّ الثانوي `#64748b` على خلفية `#f8fafc` يعطي تبايناً
+      ~٤٫٢:١ — تحت حدّ WCAG AA (٤٫٥:١) للنصّ الصغير. غُمِّق درجة.
+
+   ولا نستعمل `-webkit-font-smoothing: antialiased` مع العربية: هو
+   يُنحّف الحروف على macOS فتبدو **أضعف** لا أوضح، والعربية أصلاً
+   أدقّ خطوطاً من اللاتينية.
+   ════════════════════════════════════════════════════════════ */
 body {
   margin: 0;
   background: var(--bz-bg);
@@ -94,8 +110,26 @@ body {
   font-family: var(--font-tajawal), system-ui, sans-serif;
   direction: rtl;
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;   /* لا تغليظ اصطناعي يُشوّه الحرف */
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  letter-spacing: 0;             /* العربية متّصلة: التباعد يكسر الربط */
 }
+
+/* العناوين: خطّ العرض بوزن ثقيل حقيقي وارتفاع سطر مضبوط.
+   العنوان العربي بارتفاع سطر ١٫١ تتلامس فيه الهمزات والتشكيل. */
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-cairo), var(--font-tajawal), system-ui, sans-serif;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+h1 { font-weight: 800; }
+h2, h3 { font-weight: 800; }
+
+/* نصّ الجسم: ارتفاع سطر عربيّ مريح (اللاتيني يكتفي بـ١٫٥) */
+p, li { line-height: 1.85; }
+
+strong, b { font-weight: 800; }
 
 /* شريط تمرير نحيف */
 ::-webkit-scrollbar {
@@ -397,9 +431,286 @@ body.bz-fullscreen-active {
 }
 .bz-slide-in { animation: bz-slide-in 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
 
+/* حلقة تركيز واحدة لكل المنصّة.
+   لم تكن هناك أي حلقة تركيز مرئية: من يتنقّل بلوحة المفاتيح لا يعرف
+   أين هو إطلاقاً. ونستعمل `:focus-visible` لا `:focus` كي لا تظهر
+   الحلقة عند النقر بالفأر. */
+a:focus-visible, button:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgb(var(--bz-primary) / .75);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   الصفحات العامّة — هيدر وشريط دعوة
+   ════════════════════════════════════════════════════════════ */
+.bz-pubheader {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bz-surface);
+  background: color-mix(in srgb, var(--bz-surface) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid color-mix(in srgb, var(--bz-border) 70%, transparent);
+}
+.bz-pubnav {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--bz-text-muted);
+  transition: background-color .15s, color .15s;
+}
+.bz-pubnav:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
+.bz-pubnav.is-active { background: rgb(var(--bz-primary) / .12); color: rgb(var(--bz-primary)); font-weight: 800; }
+
+.bz-pubrail {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 12px 9px;
+  border-top: 1px solid color-mix(in srgb, var(--bz-border) 45%, transparent);
+  padding-top: 8px;
+}
+.bz-pubrail::-webkit-scrollbar { display: none; }
+.bz-pubchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+}
+.bz-pubchip.is-active {
+  background: rgb(var(--bz-primary) / .12);
+  border-color: rgb(var(--bz-primary) / .3);
+  color: rgb(var(--bz-primary));
+}
+
+/* ــ شريط الدعوة ــ */
+.bz-pubcta { padding: 0 12px 40px; }
+.bz-pubcta-in {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 22px;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(120% 150% at 88% -25%, #3b82f6 0%, transparent 58%),
+    linear-gradient(135deg, #17203A 0%, #1d4ed8 130%);
+  box-shadow: 0 18px 40px -22px rgba(29, 78, 216, .9);
+}
+@media (min-width: 768px) {
+  .bz-pubcta-in { flex-direction: row; align-items: center; gap: 28px; padding: 28px 32px; }
+}
+.bz-pubcta-t {
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -.01em;
+}
+@media (min-width: 768px) { .bz-pubcta-t { font-size: 23px; } }
+.bz-pubcta-d {
+  margin-top: 7px;
+  font-size: 14px;
+  line-height: 1.85;
+  color: rgba(255,255,255,.82);
+}
+.bz-pubcta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding: 0;
+  list-style: none;
+}
+.bz-pubcta-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,.9);
+  line-height: 1.6;
+}
+.bz-pubcta-act { display: flex; flex-direction: column; gap: 9px; flex-shrink: 0; }
+.bz-pubcta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 0 22px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #fff;
+  transition: transform .15s, box-shadow .15s;
+}
+.bz-pubcta-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px -12px rgba(0,0,0,.6); }
+.bz-pubcta-alt {
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,.78);
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bz-pubcta-alt:hover { color: #fff; text-decoration: underline; }
+
+/* ════════════════════════════════════════════════════════════
+   الوصول السريع — بطاقة المحاكاة وأزرار القفز
+   ════════════════════════════════════════════════════════════ */
+
+/* هدف القفز: الهيدر لاصق، فبلا هذا يقف العنوان **تحته** بعد النقر */
+.bz-anchor { scroll-margin-top: 76px; }
+
+.bz-sim-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  padding: 14px;
+  border-radius: 20px;
+  color: #fff;
+  background:
+    radial-gradient(120% 160% at 92% -30%, #3b82f6 0%, transparent 58%),
+    linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 52%, #0ea5e9 100%);
+  box-shadow: 0 10px 26px -14px rgba(29, 78, 216, .85);
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s;
+}
+.bz-sim-card:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -16px rgba(29,78,216,.95); }
+.bz-sim-card:active { transform: translateY(0); }
+
+/* شبكة خفيفة تُذكّر بورقة الامتحان */
+.bz-sim-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .12;
+  background-image:
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(200deg, #000 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(200deg, #000 0%, transparent 70%);
+}
+.bz-sim-ic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.22);
+}
+.bz-sim-txt { position: relative; min-width: 0; flex: 1; }
+.bz-sim-top { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.bz-sim-t {
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+.bz-sim-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.26);
+}
+.bz-sim-d {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: rgba(255,255,255,.82);
+}
+.bz-sim-go {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  align-self: center;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 13px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #fff;
+}
+/* على الشاشات الضيّقة ينزل زرّ «ابدأ» سطراً بدل أن يخنق النصّ */
+@media (max-width: 400px) {
+  .bz-sim-card { flex-wrap: wrap; }
+  .bz-sim-go { width: 100%; justify-content: center; margin-top: 2px; }
+}
+@media (min-width: 640px) {
+  .bz-sim-card { padding: 16px 18px; gap: 14px; }
+  .bz-sim-t { font-size: 17px; }
+  .bz-sim-d { font-size: 12.5px; }
+}
+
+/* ــ أزرار القفز ــ
+   رفّ أفقي منزلق: أربعة أزرار في سطر واحد لا يأكل ارتفاعاً، ويصل
+   المستخدم إلى قسم في ذيل الصفحة بنقرة بدل تمرير طويل. */
+.bz-jumps {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -16px;
+  padding: 2px 16px;
+}
+.bz-jumps::-webkit-scrollbar { display: none; }
+.bz-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+  transition: border-color .15s, color .15s, background-color .15s, transform .15s;
+}
+.bz-jump:hover { border-color: rgb(var(--bz-primary) / .45); color: rgb(var(--bz-primary)); }
+.bz-jump:active { transform: scale(.97); }
+
 /* ═══ اسم الموقع — هوية احترافية ═══ */
 .bz-brand {
-  font-family: var(--font-display, system-ui), "Segoe UI", sans-serif;
+  font-family: var(--font-display), var(--font-tajawal), system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--bz-text);
@@ -407,21 +718,191 @@ body.bz-fullscreen-active {
 }
 .bz-brand .bz-dz { color: rgb(var(--bz-primary)); }
 
-/* ═══ هيدر أبيض نظيف بألوان واقعية ═══ */
+/* ════════════════════════════════════════════════════════════
+   الهيدر
+
+   🐛 وفيه كان خطأ CSS صامت: `rgb(var(--bz-primary) / 0.1)` —
+   المتغيّر قنوات بمسافات (`37 99 235`) وبعدها ألفا بفاصلة، وهذا
+   **تركيب غير صالح فتُهمَل القاعدة كاملة**. النتيجة أنّ عنصر
+   التنقّل النشط على الحاسوب كان **بلا خلفية إطلاقاً** — لا يُعرف
+   في أي قسم أنت. الصيغة الصحيحة `rgb(... / 0.1)`.
+   ════════════════════════════════════════════════════════════ */
+/* انزلاق الدرج من الحافّة (RTL: من اليمين) */
+@keyframes bz-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.bz-drawer { animation: bz-drawer-in .28s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { .bz-drawer { animation: none; } }
+
+.bz-header {
+  /* قيمة صلبة أوّلاً ثمّ `color-mix`: المتصفّحات الأقدم (أندرويد
+     WebView قبل ١١١) لا تعرف `color-mix` فتُهمل السطر وتبقى على
+     الأولى — بدل هيدر شفّاف تماماً يختفي فوق المحتوى. */
+  background: var(--bz-surface);
+  background: color-mix(in srgb, var(--bz-surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  color: var(--bz-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--bz-border) 65%, transparent);
+  transition: box-shadow .25s cubic-bezier(.22,1,.36,1),
+              border-color .25s cubic-bezier(.22,1,.36,1),
+              background-color .25s cubic-bezier(.22,1,.36,1);
+}
+/* عند التمرير يرتفع الهيدر بظلّ خفيف بدل خطّ ثابت — الفرق صغير
+   لكنّه ما يجعل الشريط يبدو «طبقة» لا حدّاً مرسوماً. */
+.bz-header.is-scrolled {
+  background: var(--bz-surface);
+  background: color-mix(in srgb, var(--bz-surface) 94%, transparent);
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -12px rgba(15,23,42,.16);
+}
+.dark .bz-header.is-scrolled { box-shadow: 0 8px 24px -12px rgba(0,0,0,.6); }
+
+/* زرّ أيقونة في الهيدر — هدف لمس ٤٤px مضمون على الهاتف */
+.bz-hbtn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: var(--bz-text-muted);
+  transition: background-color .15s, color .15s, transform .15s;
+}
+.bz-hbtn:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
+.bz-hbtn:active { transform: scale(.94); }
+@media (min-width: 1024px) { .bz-hbtn { width: 40px; height: 40px; } }
+
+/* حاوية التنقّل: الروابط داخل «سكّة» واحدة بدل أزرار سابحة */
+.bz-navpill {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--bz-bg);
+  background: color-mix(in srgb, var(--bz-border) 34%, transparent);
+  border: 1px solid var(--bz-border);
+  border-color: color-mix(in srgb, var(--bz-border) 55%, transparent);
+}
+
+.bz-navlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 11px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--bz-text-muted);
+  transition: background-color .16s, color .16s;
+}
+.bz-navlink:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
+.bz-navlink.is-active {
+  background: var(--bz-surface);
+  color: rgb(var(--bz-primary));
+  font-weight: 800;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 4px 12px -6px rgba(15,23,42,.14);
+}
+.dark .bz-navlink.is-active { box-shadow: none; background: rgb(var(--bz-primary) / .18); }
+
+/* ــ اللوحة المنسدلة ــ */
+.bz-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: 260px;
+  padding: 6px;
+  border-radius: 18px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  box-shadow: 0 4px 8px rgba(15,23,42,.05), 0 24px 48px -20px rgba(15,23,42,.28);
+  animation: bz-menu-in .16s cubic-bezier(.22,1,.36,1) both;
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
+/* جسر غير مرئي يملأ الفجوة بين الزرّ واللوحة — يمنع الإغلاق
+   حين يمرّ الفأر بينهما (كانت الفجوة ٤px ميّتة تماماً). */
+.bz-menu::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -10px;
+  height: 10px;
+}
+@keyframes bz-menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .bz-menu { animation: none; } }
+
+.bz-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 13px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bz-text-muted);
+  transition: background-color .14s, color .14s;
+}
+.bz-menu-item:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
+.bz-menu-item.is-on { background: rgb(var(--bz-primary) / .12); color: rgb(var(--bz-primary)); }
+.bz-menu-ic {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgb(var(--bz-primary) / .10);
+  color: rgb(var(--bz-primary));
+}
+
+/* ــ أزرار الزائر ــ */
+.bz-hcta, .bz-hcta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: filter .15s, background-color .15s, border-color .15s, transform .15s;
+}
+.bz-hcta {
+  color: #fff;
+  background: linear-gradient(135deg, rgb(var(--bz-primary)), #0ea5e9);
+  box-shadow: 0 8px 20px -10px rgb(var(--bz-primary) / .8);
+}
+.bz-hcta:hover { filter: brightness(1.06); }
+.bz-hcta:active, .bz-hcta-ghost:active { transform: scale(.97); }
+.bz-hcta-ghost {
+  color: var(--bz-text);
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+}
+.bz-hcta-ghost:hover { border-color: rgb(var(--bz-primary) / .45); color: rgb(var(--bz-primary)); }
+/* على الشاشات الضيّقة جداً يبقى زرّ واحد: ٣٢٠px لا تتّسع للاثنين
+   مع الشعار وزرّ البحث. */
+@media (max-width: 380px) { .bz-hcta-ghost { display: none; } }
+
+/* توافق خلفي: صفحات قد تستعمل الاسم القديم */
 .bz-header-bar {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  background: color-mix(in srgb, var(--bz-surface) 85%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
   color: var(--bz-text);
   border-bottom: 1px solid var(--bz-border);
 }
-:root.dark .bz-header-bar, .dark .bz-header-bar {
-  background: rgba(17, 24, 39, 0.85);
-}
-.bz-header-bar .bz-brand { color: var(--bz-text); }
 .bz-header-bar .bz-nav-link { color: var(--bz-text-muted); }
 .bz-header-bar .bz-nav-link:hover { background: rgb(var(--bz-primary) / 0.07); color: var(--bz-text); }
-.bz-header-bar .bz-nav-active { background: rgba(var(--bz-primary), 0.1) !important; color: rgb(var(--bz-primary)) !important; }
+.bz-header-bar .bz-nav-active { background: rgb(var(--bz-primary) / 0.1) !important; color: rgb(var(--bz-primary)) !important; }
 
 /* البانر السفلي (هاتف) — أبيض نظيف */
 .bz-bottom-bar {
@@ -476,13 +957,13 @@ html { scrollbar-gutter: stable; }
 }
 
 /* ═══ معاينة الملاحظات المشتركة ═══ */
-.bz-notes-preview h1 { font-size: 1.3rem; font-weight: 800; color: rgb(var(--bz-primary)); margin: 0.8em 0 0.4em; border-bottom: 2px solid rgba(var(--bz-primary), 0.15); padding-bottom: 4px; }
+.bz-notes-preview h1 { font-size: 1.3rem; font-weight: 800; color: rgb(var(--bz-primary)); margin: 0.8em 0 0.4em; border-bottom: 2px solid rgb(var(--bz-primary) / 0.15); padding-bottom: 4px; }
 .bz-notes-preview h2 { font-size: 1.12rem; font-weight: 700; color: rgb(var(--bz-primary)); margin: 0.7em 0 0.3em; }
 .bz-notes-preview h3 { font-size: 1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
 .bz-notes-preview p { margin: 0.4em 0; }
 .bz-notes-preview ul { margin: 0.4em 1.4em; list-style: disc; }
 .bz-notes-preview li { margin: 0.25em 0; }
-.bz-notes-preview blockquote { border-inline-start: 3px solid rgb(var(--bz-primary)); background: rgba(var(--bz-primary), 0.06); margin: 0.6em 0; padding: 0.5em 0.9em; border-radius: 8px; }
+.bz-notes-preview blockquote { border-inline-start: 3px solid rgb(var(--bz-primary)); background: rgb(var(--bz-primary) / 0.06); margin: 0.6em 0; padding: 0.5em 0.9em; border-radius: 8px; }
 .bz-notes-preview mark { background: #fef08a; color: #1a1a2e; padding: 0 3px; border-radius: 3px; }
 .bz-notes-preview hr { border: none; border-top: 2px dashed var(--bz-border); margin: 1.2em 0; }
 .bz-notes-preview u { text-decoration-color: rgb(var(--bz-primary)); text-decoration-thickness: 2px; }
@@ -900,43 +1381,113 @@ body.bz-fullscreen-active .bz-voicebar {
   background: var(--bz-amber-050);
 }
 
-/* ── أقسام الموضوع ── */
-.bz-spec-sec {
+/* ── فهرس الموضوع ── */
+.bz-spec-toc {
   margin-bottom: 18px;
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid var(--bz-line);
-  background: var(--bz-surface, #fff);
+  padding: 15px 16px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--bz-blue) 18%, transparent);
+  background: var(--bz-blue-050);
 }
-.bz-spec-sec > h2 {
+.bz-spec-toc-t {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 8px;
-  font-size: 15px;
+  margin: 0 0 11px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--bz-blue-700);
 }
+.bz-spec-toc-n {
+  margin-inline-start: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--bz-blue-700);
+  background: color-mix(in srgb, var(--bz-blue) 12%, transparent);
+}
+.bz-spec-toc-l { display: flex; flex-wrap: wrap; gap: 7px; }
+.bz-spec-toc-l a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--bz-blue) 20%, transparent);
+  background: var(--bz-surface, #fff);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--bz-blue-700);
+  text-decoration: none;
+  transition: background-color .15s, color .15s, transform .15s;
+}
+.bz-spec-toc-l a:hover { background: var(--bz-blue); color: #fff; }
+.bz-spec-toc-l a:active { transform: scale(.97); }
+
+/* ── أقسام الموضوع ── */
+.bz-spec-sec {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 18px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  box-shadow: 0 1px 2px rgba(15,23,42,.03), 0 10px 26px -20px rgba(15,23,42,.22);
+  /* الهيدر لاصق: بلا هذا يقف العنوان **تحته** بعد القفز من الفهرس */
+  scroll-margin-top: 80px;
+}
+@media (min-width: 640px) { .bz-spec-sec { padding: 24px 26px; } }
+.bz-spec-sec > h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--bz-line) 75%, transparent);
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.012em;
+  color: var(--bz-blue-700);
+}
+/* الأيقونة داخل مربّع ملوّن: تُقرأ كعلامة قسم لا كزخرفة سابحة */
+.bz-spec-sec > h2 > svg {
+  flex-shrink: 0;
+  box-sizing: content-box;
+  padding: 7px;
+  border-radius: 10px;
+  background: var(--bz-blue-050);
+  color: var(--bz-blue);
+}
+.bz-spec-sec.is-pro > h2 > svg { background: var(--bz-green-050); color: var(--bz-green); }
+.bz-spec-sec.is-con > h2 > svg { background: var(--bz-amber-050); color: var(--bz-amber); }
 /* الإيجابيات والسلبيات تُقرأ بلونها قبل قراءة عنوانها */
 .bz-spec-sec.is-pro { border-inline-start: 3px solid var(--bz-green); }
 .bz-spec-sec.is-pro > h2 { color: var(--bz-green); }
 .bz-spec-sec.is-con { border-inline-start: 3px solid var(--bz-amber); }
 .bz-spec-sec.is-con > h2 { color: var(--bz-amber); }
 
+/* وضوح النصّ: ١٤px بلون رماديّ ثانوي على أبيض = نصّ هامشي، ومقالُ
+   التخصّص هو **المحتوى نفسه** لا هامشه. رُفع إلى ١٥٫٥px بلون الحبر
+   الأساسي، وقُيّد عرض السطر بـ٧٢ محرفاً: الأطول من ذلك يُتعب العين
+   ويُفقدها بداية السطر التالي. */
 .bz-spec-p {
-  margin: 8px 0;
-  font-size: 14px;
-  line-height: 2;            /* العربية تحتاج تنفّساً أكبر بين السطور */
-  color: var(--bz-ink-2);
+  margin: 10px 0;
+  font-size: 15.5px;
+  line-height: 1.95;
+  color: var(--bz-ink);
+  max-width: 72ch;
 }
 .bz-spec-list { margin: 8px 0; padding: 0; list-style: none; }
 .bz-spec-list li {
   position: relative;
-  padding-inline-start: 18px;
-  margin-bottom: 7px;
-  font-size: 14px;
-  line-height: 1.95;
-  color: var(--bz-ink-2);
+  padding-inline-start: 21px;
+  margin-bottom: 9px;
+  font-size: 15.5px;
+  line-height: 1.9;
+  color: var(--bz-ink);
+  max-width: 72ch;
 }
 .bz-spec-list li::before {
   content: "";
@@ -949,10 +1500,10 @@ body.bz-fullscreen-active .bz-voicebar {
   background: var(--bz-blue);
 }
 .bz-spec-note {
-  margin-top: 10px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 11.5px;
+  margin-top: 13px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
   line-height: 1.85;
   color: #8A5A12;
   background: var(--bz-amber-050);
@@ -1346,28 +1897,51 @@ body.bz-fullscreen-active .bz-voicebar {
    للإبهام (44px).
    ════════════════════════════════════════════════════════════ */
 
+/* بطاقة الشعبة: كانت شريطاً ملوّناً ونصّين رماديّين. صارت هدفاً
+   واضحاً بارتفاع لمس مريح وسهم يدلّ على أنّها تفتح صفحة. */
 .bz-branch-card {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   overflow: hidden;
-  padding: 14px 14px 14px 16px;
-  border-radius: 16px;
+  min-height: 76px;
+  padding: 14px 16px 14px 18px;
+  border-radius: 18px;
   border: 1px solid var(--bz-line);
   background: var(--bz-surface, #fff);
+  box-shadow: 0 1px 2px rgba(15,23,42,.03);
   transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s, border-color .16s;
+}
+.bz-branch-card::after {
+  content: "←";
+  margin-inline-start: auto;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--bz-ink-3);
+  transition: transform .16s, color .16s;
 }
 .bz-branch-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 26px -14px rgba(19,23,34,.3);
+  border-color: color-mix(in srgb, var(--bz-blue) 35%, transparent);
+  box-shadow: 0 12px 28px -16px rgba(19,23,34,.4);
 }
+.bz-branch-card:hover::after { transform: translateX(-3px); color: var(--bz-blue); }
 .bz-branch-bar {
   position: absolute;
   inset-inline-start: 0;
   inset-block: 0;
-  width: 4px;
+  width: 5px;
 }
-.bz-branch-name { display: block; font-size: 14.5px; font-weight: 800; color: var(--bz-ink); }
-.bz-branch-meta { display: block; margin-top: 3px; font-size: 11.5px; color: var(--bz-ink-3); }
+.bz-branch-name {
+  display: block;
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--bz-ink);
+}
+.bz-branch-meta { display: block; margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--bz-ink-2); }
 
 .bz-calc {
   border-radius: 20px;

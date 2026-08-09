@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SiteEditor } from "@/features/admin/site-editor";
 import { listenExcluded, setLeaderboardExcluded, deleteUserData } from "@/features/admin/moderation";
 import { GuideEditor } from "@/features/admin/guide-editor";
+import { SeoPanel } from "@/features/admin/seo-panel";
 import { SubjectsEditor } from "@/features/admin/subjects-editor";
 import { CurriculumEditor } from "@/features/admin/curriculum-editor";
 import { useRouter } from "next/navigation";
@@ -174,6 +175,7 @@ const TABS = [
   { id: "subjects",  label: "المواد",    icon: faBookOpen },
   { id: "guide",     label: "دليل التخصّصات", icon: faBookOpen },
   { id: "site",      label: "القائمة والصفحات", icon: faBookOpen },
+  { id: "seo",       label: "الأرشفة والسيو", icon: faLink },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
   { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
@@ -558,6 +560,8 @@ export default function AdminPage() {
         {tab === "guide" && <GuideEditor />}
 
         {tab === "site" && <SiteEditor />}
+
+        {tab === "seo" && <SeoPanel />}
 
         {tab === "control" && (
           <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
