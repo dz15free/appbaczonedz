@@ -71,7 +71,17 @@ function warn5() { tone(990, 0.20, "triangle", 0.18, 0); tone(1320, 0.28, "trian
 /** تفعيل الصوت يجب أن يقع داخل نقرة المستخدم — تقيّده كل المتصفّحات */
 export function primeAudio() { ctx(); }
 
-/* ── ملء الشاشة ── */
+/* ════════════════════════════════════════════════════════════
+   ملء الشاشة — مع بديل iOS
+
+   🐛 **iPhone لم يكن يدخل ملء الشاشة إطلاقاً.** سببه أنّ Safari على
+   iOS لا يدعم `requestFullscreen` على عنصر عادي (يدعمه على الفيديو
+   وحده)، فكان النداء يفشل بصمت ويبقى الامتحان داخل الصفحة.
+
+   الحلّ نفس حلّ الغرفة القائم: حين يرفض المتصفّح ملء الشاشة الحقيقي
+   نُطبّق `bz-fullscreen` — وهي الطبقة نفسها التي تستعملها الغرفة —
+   فيملأ الامتحان الشاشة فعلاً على كل جهاز.
+════════════════════════════════════════════════════════════ */
 type FsEl = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
 };
@@ -80,26 +90,63 @@ type FsDoc = Document & {
   webkitExitFullscreen?: () => Promise<void> | void;
 };
 
+const PSEUDO_CLASS = "bz-fullscreen";
+const BODY_CLASS = "bz-fullscreen-active";
+let pseudoEl: HTMLElement | null = null;
+
+/** ملء شاشة فعليّ أو بديلٌ بالتنسيق — كلاهما ملء شاشة عند المستخدم */
 export function isFullscreen(): boolean {
   if (typeof document === "undefined") return false;
   const d = document as FsDoc;
-  return Boolean(d.fullscreenElement || d.webkitFullscreenElement);
+  return Boolean(d.fullscreenElement || d.webkitFullscreenElement || pseudoEl);
+}
+
+export function isPseudoFullscreen(): boolean {
+  return Boolean(pseudoEl);
+}
+
+function applyPseudo(el: HTMLElement) {
+  pseudoEl = el;
+  el.classList.add(PSEUDO_CLASS);
+  document.body.classList.add(BODY_CLASS);
+}
+
+function clearPseudo() {
+  if (!pseudoEl) return;
+  pseudoEl.classList.remove(PSEUDO_CLASS);
+  document.body.classList.remove(BODY_CLASS);
+  pseudoEl = null;
 }
 
 export async function enterFullscreen(el?: HTMLElement | null) {
   const target = (el ?? document.documentElement) as FsEl;
   try {
-    if (target.requestFullscreen) await target.requestFullscreen();
-    else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
-  } catch { /* بعض المتصفّحات ترفض — الامتحان يستمرّ */ }
+    if (target.requestFullscreen) {
+      await target.requestFullscreen();
+      return;
+    }
+    if (target.webkitRequestFullscreen) {
+      await target.webkitRequestFullscreen();
+      return;
+    }
+  } catch { /* iOS يرفض على العناصر العادية — نُكمل بالبديل */ }
+  if (el) applyPseudo(el);
 }
 
 export async function exitFullscreen() {
+  clearPseudo();
   const d = document as FsDoc;
   try {
     if (d.exitFullscreen && d.fullscreenElement) await d.exitFullscreen();
     else if (d.webkitExitFullscreen && d.webkitFullscreenElement) await d.webkitExitFullscreen();
   } catch { /* تجاهل */ }
+}
+
+/** تبديل يدوي — يستعمله زرّ ملء الشاشة داخل قاعة الامتحان */
+export async function toggleFullscreen(el?: HTMLElement | null) {
+  if (isFullscreen()) await exitFullscreen();
+  else await enterFullscreen(el);
+  return isFullscreen();
 }
 
 /* ── الحارس ── */
@@ -165,6 +212,7 @@ export function useExamGuard({
 
     const onFsChange = () => {
       if (!opts.fs) return;
+      // البديل بالتنسيق لا يُطلق هذا الحدث أصلاً، فالفحص يخصّ الحقيقي
       if (!isFullscreen()) violation("خروج من ملء الشاشة");
     };
 

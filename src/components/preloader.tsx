@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png";
+/* الشعار محلّي: كان يُحمَّل من blogger.googleusercontent.com وهو
+   **عنصر LCP** لكل صفحة — نداء إلى نطاق ثالث على المسار الحرج،
+   بلا أبعاد معلومة فيقفز التخطيط. الملفّ في `public/` أصلاً. */
+const LOGO_URL = "/icon-192.png";
 
 export function Preloader() {
   const [hide, setHide] = useState(false);
@@ -40,6 +43,9 @@ export function Preloader() {
         <img
           src={LOGO_URL}
           alt="BacZoneDZ"
+          width={80}
+          height={80}
+          fetchPriority="high"
           className="relative h-20 w-20 animate-bz-logo-in rounded-2xl object-contain"
         />
       </div>

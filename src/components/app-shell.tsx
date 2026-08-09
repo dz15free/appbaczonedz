@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavLinks } from "@/features/admin/nav-store";
 import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -19,6 +20,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { LiveAvatar } from "@/components/ui/live-avatar";
+import { BottomSheet, SheetAction } from "@/components/ui/bottom-sheet";
 
 /* أيقونات التواصل (SVG مضمّن) */
 function DrawerTelegramIcon({ className = "" }: { className?: string }) {
@@ -63,13 +65,24 @@ function courseLinksFor(role?: string) {
   ];
 }
 
-// قائمة "أدوات الدراسة" المنسدلة (حاسوب)
+/* قائمة "أدوات الدراسة" المنسدلة (حاسوب) — أدوات **الطالب** */
 const TOOLS_DROPDOWN = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faClone, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false },
+];
+
+/* أدوات **الأستاذ** — تحلّ محلّ أدوات الدراسة لا تُضاف إليها.
+   «تقدّمي الدراسي» و«بطاقات المراجعة» و«مهامي» أدوات مراجعة طالب،
+   ووجودها في قائمة أستاذ ازدحامٌ بلا فائدة. */
+const TEACH_DROPDOWN = [
+  { href: "/courses/new", label: "أنشئ دورة", icon: faGraduationCap, external: false },
+  { href: "/courses/teach", label: "دوراتي التعليمية", icon: faChalkboardUser, external: false },
+  { href: "/library", label: "أضف ملخّصاً", icon: faBookOpen, external: false },
+  { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
+  { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
 ];
 
 // قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية (الروابط الثابتة؛ تُدمج مع روابط قابلة للتعديل من الأدمن داخل المكوّن)
@@ -91,13 +104,18 @@ const MORE_DROPDOWN_BASE = [
   { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
 ];
 
-// شريط الهاتف السفلي — مع زر إضافة مركزي بارز
+/* شريط الهاتف السفلي.
+
+   كان يحمل **ستّة** أهداف في ٣٦٠ بكسل: أربعة روابط + زرّ عائم + «المزيد».
+   نصيب التبويب الواحد ٥٧px عرضاً و٣٨px ارتفاعاً — دون أي حدّ لمس مقبول،
+   ونصّه ١٠px عربيّ أي على حافّة القراءة. صار أربعة أهداف + الزرّ العائم:
+   العرض ٧٠px والارتفاع ٥٦px والنصّ ١١px. «المكتبة» لم تختفِ — هي في
+   الدرج وفي الرئيسية، وهي أقلّ تكراراً من المجتمع والغرف. */
 const MOBILE_NAV_LEFT = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
-  { href: "/rooms", label: "غرف", icon: faUsers },
+  { href: "/rooms", label: "الغرف", icon: faUsers },
 ];
 const MOBILE_NAV_RIGHT = [
-  { href: "/library", label: "المكتبة", icon: faBookOpen },
   { href: "/community", label: "المجتمع", icon: faGlobe },
 ];
 
@@ -114,6 +132,18 @@ const MENU_ITEMS_BASE = [
   { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
 ];
+
+/* درج الهاتف للأستاذ — بلا أي أداة مراجعة طالب.
+   الدرج على الهاتف هو القائمة الرئيسية فعلياً، فبقاء «تقدّمي الدراسي»
+   فيه يعني أنّ أوّل ما يراه الأستاذ شيءٌ لا يخصّه. */
+const MENU_ITEMS_TEACHER = [
+  { href: "/rooms", label: "غرف الدراسة", icon: faUsers, external: false },
+  { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
+  { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
+  { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
+  { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
+  { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
+];
 // روابط خارجية ثابتة تُضاف بعد الروابط القابلة للتعديل من الأدمن
 const MENU_ITEMS_EXTERNAL = [
   { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
@@ -127,6 +157,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  /* القوائم المنسدلة على الحاسوب كانت تفتح بـ `group-hover` وحده: لا
+     نقر، ولا لوحة مفاتيح، ولا `aria-expanded`. على حاسوب لمسيّ كانت
+     ميّتة تماماً. صارت بالنقر مع إغلاق بـ Esc وبالنقر خارجها. */
+  const [openMenu, setOpenMenu] = useState<null | "tools" | "more">(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const banner = useSiteBanner();
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const { settings } = useSiteSettings();
@@ -143,8 +179,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     external: Boolean(l.external),
   }));
   const moreDropdown = dynamicLinks;
+  const isTeacher = profile?.role === "teacher";
   const courseLinks = courseLinksFor(profile?.role);
-  const menuItems = [...courseLinks, ...MENU_ITEMS_BASE, ...dynamicLinks];
+  /* القائمة تتبع الدور: أدوات مراجعة للطالب، وأدوات تدريس للأستاذ.
+     الأدمن يرى قائمة الطالب لأنّه يحتاج معاينة ما يراه الطلبة. */
+  const menuItems = [
+    ...courseLinks,
+    ...(isTeacher ? MENU_ITEMS_TEACHER : MENU_ITEMS_BASE),
+    ...dynamicLinks,
+  ];
+  const toolsMenu = isTeacher ? TEACH_DROPDOWN : TOOLS_DROPDOWN;
+  const toolsLabel = isTeacher ? "أدوات التدريس" : "أدوات الدراسة";
 
   // تطبيق لون التمييز المخصَّص من إعدادات الإدارة
   useEffect(() => {
@@ -194,55 +239,86 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user?.uid]);
 
-  return (
-    <div className="min-h-[100dvh] pb-24 lg:pb-0">
-      {/* ═══════ الشريط العلوي ═══════ */}
-      <header className="bz-header-bar sticky top-0 z-40 flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 relative">
-        {/* يسار: بحث + زر القائمة (هاتف) + شعار (حاسوب) */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setSearchOpen(true)}
-            aria-label="بحث"
-            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10 lg:hidden"
-          >
-            <FontAwesomeIcon icon={faMagnifyingGlass} className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="القائمة"
-            className="grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10 lg:hidden"
-          >
-            <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
-          </button>
-          <Link href="/home" className="hidden items-center gap-2 lg:flex">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZone"} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
-            <span className="inline-flex items-start gap-1">
-              <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
-              <BetaBadge />
-            </span>
-          </Link>
-        </div>
+  /* القوائم المنسدلة: تُغلق بالنقر خارجها وبـ Escape */
+  useEffect(() => {
+    if (!openMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenMenu(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenMenu(null); };
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [openMenu]);
 
-        {/* وسط: الشعار (هاتف فقط) — مُوسَّط تماماً عبر طبقة بعرض كامل */}
-        <div className="pointer-events-none absolute inset-x-0 flex justify-center lg:hidden">
-          <Link href="/home" className="pointer-events-auto flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={settings.logoUrl || "/icon.svg"} alt={settings.siteName ?? "BacZone"} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            <span className="inline-flex items-start gap-1">
-              <span className="bz-brand text-xl">{settings.siteName ?? "BacZone"}</span>
-              <BetaBadge />
+  /* الانتقال إلى صفحة أخرى يُغلق كل ما هو مفتوح */
+  useEffect(() => { setOpenMenu(null); setMenuOpen(false); setCreateOpen(false); }, [pathname]);
+
+  /* الدرج: كان بلا قفل تمرير وبلا Escape — الصفحة تتحرّك خلف الإصبع،
+     ولا مخرج بلوحة المفاتيح. `BottomSheet` كان يفعل الثلاثة والدرج لا. */
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const go = useCallback((href: string) => { setCreateOpen(false); window.location.assign(href); }, []);
+
+  return (
+    <div className="min-h-[100dvh]" style={{ paddingBottom: "var(--pb-shell, 0px)" }}>
+      {/* ═══════ الشريط العلوي ═══════ */}
+      <header
+        className="bz-header-bar sticky top-0 flex items-center gap-1.5 px-3 sm:px-4"
+        style={{ zIndex: "var(--z-nav)", minHeight: "var(--h-header)" }}
+      >
+        {/* ── الهاتف: قائمة + علامة داخل التدفّق ──
+            كانت العلامة طبقةً `absolute` مُوسَّطة بعرض ~١٥٥px فوق صفّ
+            أزرار يستهلك ~١٨٥px في شاشة ٣٦٠px. فكانت تُرسَم **تحت**
+            الأزرار متى طال اسم الموقع، لأنّ العنصر المطلق لا يشارك في
+            التدفّق ولا يُقصَّر. الآن هي عنصر عادي بـ `truncate`. */}
+        <button
+          onClick={() => setMenuOpen(true)}
+          aria-label="القائمة"
+          aria-expanded={menuOpen}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-control text-text-primary transition hover:bg-primary/10 lg:hidden"
+        >
+          <FontAwesomeIcon icon={faBars} className="h-[18px] w-[18px]" />
+        </button>
+
+        <Link href="/home" className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={settings.logoUrl || "/icon.svg"}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-item object-contain lg:h-9 lg:w-9"
+          />
+          <span className="inline-flex min-w-0 items-start gap-1">
+            <span className="bz-brand truncate text-[17px] sm:text-lg lg:text-xl">
+              {settings.siteName ?? "BacZone"}
             </span>
-          </Link>
-        </div>
+            <span className="hidden shrink-0 sm:inline"><BetaBadge /></span>
+          </span>
+        </Link>
 
         {/* تنقّل الحاسوب */}
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav ref={navRef} className="mx-auto hidden items-center gap-0.5 lg:flex">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
-              className={`bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+              aria-current={pathname === n.href ? "page" : undefined}
+              className={`bz-nav-link flex items-center gap-2 rounded-control px-3 py-2 text-[13.5px] font-bold transition ${
                 pathname === n.href ? "bz-nav-active" : "hover:bg-primary/10"
               }`}
             >
@@ -251,85 +327,68 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
 
-          {/* أدوات الدراسة (منسدلة) */}
-          <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/10">
-              <FontAwesomeIcon icon={faLayerGroup} className="h-4 w-4" />
-              أدوات الدراسة
-              <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
-            </button>
-            <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
-              {[...courseLinks.slice(1), ...TOOLS_DROPDOWN].map((m) => (
-                <Link key={m.href} href={m.href}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
-                  <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
-                  {m.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* المزيد (منسدلة) */}
-          <div className="group relative">
-            <button className="bz-nav-link flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition hover:bg-primary/10">
-              <FontAwesomeIcon icon={faEllipsis} className="h-4 w-4" />
-              المزيد
-              <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
-            </button>
-            <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
-              {moreDropdown.map((m) => (
-                <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
-                  <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
-                  {m.label}
-                  <FontAwesomeIcon icon={faUpRightFromSquare} className="ms-auto h-2.5 w-2.5 opacity-50" />
-                </a>
-              ))}
-            </div>
-          </div>
+          <DesktopMenu
+            id="tools"
+            label={toolsLabel}
+            icon={isTeacher ? faChalkboardUser : faLayerGroup}
+            open={openMenu === "tools"}
+            onToggle={() => setOpenMenu((v) => (v === "tools" ? null : "tools"))}
+            items={[...courseLinks.slice(1), ...toolsMenu]}
+          />
+          <DesktopMenu
+            id="more"
+            label="المزيد"
+            icon={faEllipsis}
+            open={openMenu === "more"}
+            onToggle={() => setOpenMenu((v) => (v === "more" ? null : "more"))}
+            items={moreDropdown}
+          />
         </nav>
 
         {/* يمين: بحث + إشعارات + صورة الحساب */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <button
             onClick={() => setSearchOpen(true)}
             aria-label="بحث"
-            className="hidden h-9 w-9 place-items-center rounded-xl text-text-muted transition hover:bg-primary/10 hover:text-primary lg:grid"
+            className="grid h-11 w-11 place-items-center rounded-control text-text-muted transition hover:bg-primary/10 hover:text-primary lg:h-10 lg:w-10"
           >
-            <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" />
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="h-[18px] w-[18px]" />
           </button>
 
           {/* روابط التواصل (حاسوب) */}
-          <div className="hidden items-center gap-1 lg:flex">
+          <div className="hidden items-center gap-0.5 lg:flex">
             {settings.telegramUrl && (
               <a href={settings.telegramUrl} target="_blank" rel="noopener noreferrer" aria-label="تيليغرام"
-                className="grid h-9 w-9 place-items-center rounded-xl text-sky-500 transition hover:bg-sky-500/10">
-                <DrawerTelegramIcon className="h-4 w-4" />
+                className="grid h-10 w-10 place-items-center rounded-control text-sky-500 transition hover:bg-sky-500/10">
+                <DrawerTelegramIcon className="h-[17px] w-[17px]" />
               </a>
             )}
             {settings.instagramUrl && (
               <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="إنستغرام"
-                className="grid h-9 w-9 place-items-center rounded-xl text-pink-500 transition hover:bg-pink-500/10">
-                <DrawerInstagramIcon className="h-4 w-4" />
+                className="grid h-10 w-10 place-items-center rounded-control text-pink-500 transition hover:bg-pink-500/10">
+                <DrawerInstagramIcon className="h-[17px] w-[17px]" />
               </a>
             )}
             {settings.facebookUrl && (
               <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="فيسبوك"
-                className="grid h-9 w-9 place-items-center rounded-xl text-blue-600 transition hover:bg-blue-600/10">
-                <DrawerFacebookIcon className="h-4 w-4" />
+                className="grid h-10 w-10 place-items-center rounded-control text-blue-600 transition hover:bg-blue-600/10">
+                <DrawerFacebookIcon className="h-[17px] w-[17px]" />
               </a>
             )}
             <div className="mx-1 h-5 w-px bg-border" />
           </div>
-          <Link href="/notifications" aria-label="الإشعارات" className="relative grid h-10 w-10 place-items-center rounded-xl text-text transition hover:bg-primary/10">
-            <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
+
+          <Link href="/notifications" aria-label={unread > 0 ? `الإشعارات — ${unread} غير مقروء` : "الإشعارات"}
+            className="relative grid h-11 w-11 place-items-center rounded-control text-text-primary transition hover:bg-primary/10 lg:h-10 lg:w-10">
+            <FontAwesomeIcon icon={faBell} className="h-[18px] w-[18px]" />
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
+              <span className="absolute right-1.5 top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger px-1 text-[10px] font-extrabold text-white ring-2 ring-surface">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
           </Link>
-          <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/15 transition hover:ring-primary/30">
+          <Link href="/profile" aria-label="حسابي"
+            className="ms-0.5 shrink-0 rounded-full ring-2 ring-primary/15 transition hover:ring-primary/35">
             <LiveAvatar uid={user?.uid} name={profile?.name || user?.displayName || "ط"} size="sm" className="h-9 w-9" />
           </Link>
         </div>
@@ -337,43 +396,55 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ═══════ درج القائمة الجانبي (هاتف) ═══════ */}
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMenuOpen(false)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div
+          className="fixed inset-0 lg:hidden"
+          style={{ zIndex: "var(--z-drawer)" }}
+          onClick={() => setMenuOpen(false)}
+        >
+          <div className="bz-bs-fade absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]" />
           <div
-            className="absolute inset-y-0 right-0 flex w-80 max-w-[85%] flex-col bg-surface shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="القائمة"
+            /* كان يستعمل `bz-fade-slide` وهي حركة **رأسية** ٨px، فيظهر
+               الدرج كأنّه ومض لا كأنّه انزلق من الحافّة. الآن ينزلق فعلاً. */
+            className="bz-drawer-in absolute inset-y-0 right-0 flex w-[86%] max-w-sm flex-col bg-surface shadow-e3"
             onClick={(e) => e.stopPropagation()}
-            style={{ animation: "bz-fade-slide 0.25s ease-out" }}
           >
             {/* رأس الدرج */}
-            <div className="flex items-center justify-between border-b border-border p-4">
-              <div className="flex items-center gap-3">
-                <LiveAvatar uid={user?.uid} name={profile?.name || "ط"} size="md" />
-                <div className="min-w-0">
-                  <p className="truncate font-bold">{profile?.name || "طالب"}</p>
-                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="text-xs text-primary hover:underline">عرض الملف الشخصي</Link>
-                </div>
+            <div className="flex items-center gap-3 border-b border-border p-4">
+              <LiveAvatar uid={user?.uid} name={profile?.name || "ط"} size="md" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14.5px] font-extrabold text-text-primary">{profile?.name || "طالب"}</p>
+                <Link href="/profile" onClick={() => setMenuOpen(false)}
+                  className="text-[12px] font-bold text-primary hover:underline">عرض الملف الشخصي</Link>
               </div>
-              <button onClick={() => setMenuOpen(false)} aria-label="إغلاق" className="grid h-8 w-8 place-items-center rounded-lg text-text-muted hover:text-danger">
-                <FontAwesomeIcon icon={faXmark} className="h-5 w-5" />
+              <button onClick={() => setMenuOpen(false)} aria-label="إغلاق"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-control text-text-muted transition hover:bg-danger/10 hover:text-danger">
+                <FontAwesomeIcon icon={faXmark} className="h-[18px] w-[18px]" />
               </button>
             </div>
 
             {/* عناصر القائمة */}
-            <nav className="flex-1 overflow-y-auto p-3">
+            <nav className="flex-1 overflow-y-auto p-2.5">
               {menuItems.map((m) =>
                 m.external ? (
                   <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
-                    <FontAwesomeIcon icon={m.icon} className="h-5 w-5 text-primary" />
-                    {m.label}
+                    className="flex min-h-12 items-center gap-3 rounded-control px-3 text-[13.5px] font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                    <FontAwesomeIcon icon={m.icon} className="h-[18px] w-[18px] text-primary" />
+                    <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                    <FontAwesomeIcon icon={faUpRightFromSquare} className="h-2.5 w-2.5 shrink-0 opacity-45" />
                   </a>
                 ) : (
                   <Link key={m.href} href={m.href} onClick={() => setMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
-                      pathname === m.href ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-primary/10 hover:text-primary"
+                    aria-current={pathname === m.href ? "page" : undefined}
+                    className={`flex min-h-12 items-center gap-3 rounded-control px-3 text-[13.5px] font-bold transition ${
+                      pathname === m.href
+                        ? "bg-primary/10 text-primary"
+                        : "text-text-muted hover:bg-primary/10 hover:text-primary"
                     }`}>
-                    <FontAwesomeIcon icon={m.icon} className="h-5 w-5 text-primary" />
-                    {m.label}
+                    <FontAwesomeIcon icon={m.icon} className="h-[18px] w-[18px] text-primary" />
+                    <span className="min-w-0 flex-1 truncate">{m.label}</span>
                   </Link>
                 )
               )}
@@ -382,23 +453,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* روابط التواصل */}
             {(settings.telegramUrl || settings.instagramUrl || settings.facebookUrl) && (
               <div className="border-t border-border px-4 py-3">
-                <p className="mb-2 text-xs font-bold text-text-muted">تابعنا على</p>
+                <p className="mb-2 text-[11.5px] font-extrabold text-text-muted">تابعنا على</p>
                 <div className="flex items-center gap-2.5">
                   {settings.telegramUrl && (
                     <a href={settings.telegramUrl} target="_blank" rel="noopener noreferrer" aria-label="تيليغرام"
-                      className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-sky-500 to-blue-500 text-white transition hover:scale-110">
+                      className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-sky-500 to-blue-500 text-white transition hover:scale-105">
                       <DrawerTelegramIcon className="h-5 w-5" />
                     </a>
                   )}
                   {settings.instagramUrl && (
                     <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="إنستغرام"
-                      className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-pink-500 via-rose-500 to-amber-400 text-white transition hover:scale-110">
+                      className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-pink-500 via-rose-500 to-amber-400 text-white transition hover:scale-105">
                       <DrawerInstagramIcon className="h-5 w-5" />
                     </a>
                   )}
                   {settings.facebookUrl && (
                     <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="فيسبوك"
-                      className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500 text-white transition hover:scale-110">
+                      className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-500 text-white transition hover:scale-105">
                       <DrawerFacebookIcon className="h-5 w-5" />
                     </a>
                   )}
@@ -407,11 +478,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
 
             {/* تذييل الدرج */}
-            <div className="flex items-center justify-between border-t border-border p-4">
+            <div
+              className="flex items-center justify-between gap-2 border-t border-border p-3"
+              style={{ paddingBottom: "calc(0.75rem + var(--safe-b))" }}
+            >
               <ThemeToggle />
               <button onClick={() => { setMenuOpen(false); setSearchOpen(true); }}
-                className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
-                <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" /> بحث
+                className="flex min-h-11 items-center gap-2 rounded-control bg-primary/10 px-4 text-[13px] font-extrabold text-primary transition hover:bg-primary/15">
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="h-4 w-4" /> بحث في المنصّة
               </button>
             </div>
           </div>
@@ -452,7 +526,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* الفوتر */}
       {settings.footerText && (
-        <footer className="border-t border-border bg-surface px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4">
+        <footer className="border-t border-border bg-surface px-4 py-5 text-center text-xs text-text-muted">
           <p>{settings.footerText}</p>
           {(settings.footerLinks?.length ?? 0) > 0 && (
             <div className="mt-1.5 flex flex-wrap justify-center gap-3">
@@ -472,46 +546,138 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ═══════ شريط التنقّل السفلي (هاتف) ═══════ */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 lg:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed inset-x-0 bottom-0 lg:hidden"
+        style={{ zIndex: "var(--z-nav)", paddingBottom: "var(--safe-b)" }}
+        aria-label="التنقّل السريع"
       >
-        <div className="bz-bottom-bar flex items-center justify-around px-2 pb-1 pt-2">
-          {MOBILE_NAV_LEFT.map((n) => {
-            const active = pathname === n.href;
-            return (
-              <Link key={n.href} href={n.href}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "bz-bottom-active" : ""}`}>
-                <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
-                <span>{n.label}</span>
-              </Link>
-            );
-          })}
+        <div className="bz-bottom-bar flex items-stretch justify-around px-1">
+          {MOBILE_NAV_LEFT.map((n) => <BottomTab key={n.href} {...n} active={pathname === n.href} />)}
 
-          {/* زر الإضافة المركزي البارز */}
-          <Link href="/rooms" aria-label="إنشاء"
-            className="bz-fab relative -mt-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-primary shadow-glow transition hover:scale-105">
+          {/* زرّ الإنشاء.
+              كان يحمل علامة «+» ويحمل `aria-label="إنشاء"` ثمّ **ينتقل
+              إلى قائمة الغرف** — وعدٌ بصريّ لا يفي به. صار يفتح ورقة
+              إنشاء حقيقية: منشور، غرفة، مصدر. */}
+          <button
+            onClick={() => setCreateOpen(true)}
+            aria-label="إنشاء جديد"
+            className="bz-fab relative -mt-5 grid h-14 w-14 shrink-0 place-items-center self-start rounded-full bg-gradient-primary shadow-brand transition active:scale-95"
+          >
             <FontAwesomeIcon icon={faPlus} className="h-6 w-6" style={{ color: "#ffffff" }} />
-          </Link>
-
-          {MOBILE_NAV_RIGHT.map((n) => {
-            const active = pathname === n.href;
-            return (
-              <Link key={n.href} href={n.href}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition ${active ? "bz-bottom-active" : ""}`}>
-                <FontAwesomeIcon icon={n.icon} className="h-5 w-5" />
-                <span>{n.label}</span>
-              </Link>
-            );
-          })}
-
-          {/* المزيد → يفتح الدرج */}
-          <button onClick={() => setMenuOpen(true)}
-            className="flex flex-1 flex-col items-center gap-0.5 py-1 text-[10px] font-semibold transition">
-            <FontAwesomeIcon icon={faEllipsis} className="h-5 w-5" />
-            <span>المزيد</span>
           </button>
+
+          {MOBILE_NAV_RIGHT.map((n) => <BottomTab key={n.href} {...n} active={pathname === n.href} />)}
+
+          <BottomTab label="المزيد" icon={faEllipsis} onClick={() => setMenuOpen(true)} />
         </div>
       </nav>
+
+      {/* ورقة الإنشاء السريع */}
+      <BottomSheet open={createOpen} onClose={() => setCreateOpen(false)} title="ماذا تريد أن تنشئ؟">
+        <div className="space-y-2 pb-2">
+          <SheetAction icon={faGlobe} label="منشور جديد" hint="شارك سؤالاً أو ملخّصاً مع المجتمع"
+            tone="primary" onClick={() => go("/community?compose=1")} />
+          <SheetAction icon={faUsers} label="غرفة دراسة" hint="راجع مع زملائك مباشرةً"
+            onClick={() => go("/rooms")} />
+          <SheetAction icon={faBookOpen} label="مصدر للمكتبة" hint="أضف ملخّصاً أو موضوعاً سابقاً"
+            onClick={() => go("/library")} />
+          {(profile?.role === "teacher" || profile?.role === "admin") && (
+            <SheetAction icon={faGraduationCap} label="دورة تعليمية" hint="ابنِ دورة بدروس وفيديوهات"
+              onClick={() => go("/courses/new")} />
+          )}
+        </div>
+      </BottomSheet>
+    </div>
+  );
+}
+
+/* ── تبويب الشريط السفلي ──
+   ٥٦px ارتفاعاً ونصّ ١١px: كان ٣٨px ونصّ ١٠px، وهو دون أي حدّ لمس
+   معقول — والحرف العربي أشدّ تضرّراً من اللاتيني بهذا الحجم. */
+function BottomTab({
+  href, label, icon, active, onClick,
+}: {
+  href?: string;
+  label: string;
+  icon: IconDefinition;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <>
+      <span className="relative grid h-6 place-items-center">
+        <FontAwesomeIcon icon={icon} className="h-[19px] w-[19px]" />
+      </span>
+      <span className="text-[11px] font-extrabold leading-none">{label}</span>
+    </>
+  );
+  const cls = `flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-item px-1 transition duration-fast ${
+    active ? "bz-bottom-active" : ""
+  }`;
+  if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
+  return (
+    <Link href={href!} aria-current={active ? "page" : undefined} className={cls}>
+      {inner}
+    </Link>
+  );
+}
+
+/* ── قائمة منسدلة على الحاسوب ──
+   بالنقر لا بالتحويم: `group-hover` وحده يعني أنّها غير موجودة لمن
+   يستعمل لوحة المفاتيح، وميّتة على الشاشات اللمسيّة. */
+function DesktopMenu({
+  id, label, icon, open, onToggle, items,
+}: {
+  id: string;
+  label: string;
+  icon: IconDefinition;
+  open: boolean;
+  onToggle: () => void;
+  items: { href: string; label: string; icon: IconDefinition; external?: boolean }[];
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={`bz-menu-${id}`}
+        className={`bz-nav-link flex items-center gap-2 rounded-control px-3 py-2 text-[13.5px] font-bold transition ${
+          open ? "bg-primary/10 text-primary" : "hover:bg-primary/10"
+        }`}
+      >
+        <FontAwesomeIcon icon={icon} className="h-4 w-4" />
+        {label}
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`h-3 w-3 transition-transform duration-fast ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          id={`bz-menu-${id}`}
+          role="menu"
+          className="bz-radial-in absolute right-0 top-full mt-1.5 w-60 rounded-card border border-border bg-surface p-1.5 shadow-e3"
+          style={{ zIndex: "var(--z-drawer)" }}
+        >
+          {items.map((m) =>
+            m.external ? (
+              <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer" role="menuitem"
+                className="flex items-center gap-3 rounded-control px-3 py-2.5 text-[13px] font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
+                <span className="min-w-0 flex-1 truncate">{m.label}</span>
+                <FontAwesomeIcon icon={faUpRightFromSquare} className="h-2.5 w-2.5 opacity-50" />
+              </a>
+            ) : (
+              <Link key={m.href} href={m.href} role="menuitem"
+                className="flex items-center gap-3 rounded-control px-3 py-2.5 text-[13px] font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary">
+                <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />
+                <span className="min-w-0 flex-1 truncate">{m.label}</span>
+              </Link>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
+import { SITE_URL } from "@/features/guide/site-url";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
@@ -23,23 +24,69 @@ const cairo = Cairo({
   display: "swap",
 });
 
+const SITE_NAME = "BacZoneDZ";
+const SITE_TITLE = "BacZoneDZ — منصّة ومجتمع طلاب البكالوريا في الجزائر";
+const SITE_DESC =
+  "منصّة تعليمية ومجتمع دراسي متكامل لطلبة البكالوريا في الجزائر: دورات، غرف مراجعة مباشرة، " +
+  "سبورة ذكية، ملخّصات ومواضيع، حاسبة المعدّل، ودليل التخصّصات الجامعية.";
+
 export const metadata: Metadata = {
-  title: "BacZoneDZ — أكبر مجتمع دراسي لطلاب البكالوريا في الجزائر",
-  description:
-    "منصة تعليمية ومجتمع دراسي متكامل لطلاب البكالوريا الجزائريين: غرف دراسة، سبورة ذكية، مشاركة ملفات، صوت جماعي، ومساعد ذكي.",
+  /* 🐛 غياب `metadataBase` كان يجعل Next يحلّ **كل** رابط نسبيّ في
+     المشروع مقابل `http://localhost:3000`. أي أنّ وسوم canonical وOG
+     في صفحات التخصّصات والحاسبة والدورات كانت تشير إلى جهاز التطوير
+     في الإنتاج — وهي من أسوأ إشارات السيو الممكنة. */
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    /* قالب: كل صفحة تضيف اسمها قبل اسم المنصّة تلقائياً */
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESC,
+  applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  /* الأيقونات صارت محلّية: كانت تُحمَّل من blogger.googleusercontent.com
+     — نداء إلى نطاق خارجي على المسار الحرج لكل صفحة، وخارج سيطرتنا
+     تماماً لو تغيّر أو حُذف. الملفّات موجودة في `public/` أصلاً. */
   icons: {
     icon: [
-      { url: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png",
+    apple: "/icon-192.png",
+    shortcut: "/favicon.ico",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_DZ",
+    url: "/",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESC,
+    images: ["/icon-512.png"],
   },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // مهم للسبورة وغرفة الدراسة على الجوال
+  /* 🐛 كان `maximumScale: 1` هنا فيُعطَّل التكبير في **كل** الموقع —
+     المكتبة، والمجتمع، ومقالات التخصّصات — لا في السبورة وحدها.
+     وهو مخالف لمعيار الإتاحة WCAG 1.4.4، ويؤذي فعلياً طالباً ضعيف
+     البصر يقرأ مقالاً. السبورة تمنع التكبير داخلها بـ`touch-action`
+     في CSS، وهو المكان الصحيح لذلك. */
   themeColor: "#2563eb",
 };
 
@@ -57,6 +104,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>
       <body className="min-h-screen font-sans antialiased">
+        {/* بيانات منظّمة على مستوى الموقع: تُعرّف المنصّة لمحرّكات
+            البحث وتفعّل مربّع البحث في نتيجة Google. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: SITE_NAME,
+              url: SITE_URL,
+              logo: `${SITE_URL}/icon-512.png`,
+              description: SITE_DESC,
+              areaServed: { "@type": "Country", name: "الجزائر" },
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: SITE_NAME,
+              url: SITE_URL,
+              inLanguage: "ar",
+            },
+          ]) }}
+        />
         <Preloader />
         <Providers>{children}</Providers>
       </body>

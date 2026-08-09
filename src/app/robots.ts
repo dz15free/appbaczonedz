@@ -10,7 +10,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/specialties", "/specialties/", "/calculate", "/calculate/", "/courses", "/courses/"],
+        allow: [
+          "/", "/specialties", "/specialties/", "/calculate", "/calculate/",
+          "/courses", "/courses/", "/community", "/community/",
+        ],
         /* صفحات الدورات الخاصّة ممنوعة صراحةً: البناء والتعديل والمشغّل
            خلف تسجيل الدخول، وزحفها يُهدر ميزانية الزحف. المنشور وحده
            يبقى مسموحاً. */
@@ -18,6 +21,9 @@ export default function robots(): MetadataRoute.Robots {
           "/api/", "/admin", "/rooms/", "/messages/", "/tools/", "/aibot",
           "/courses/new", "/courses/teach", "/courses/mine",
           "/courses/*/edit", "/courses/*/learn",
+          /* صفحات شخصية أو عابرة: زحفها بلا قيمة وقد يكشف ما لا يُقصد نشره */
+          "/onboarding", "/profile", "/notifications", "/groups/", "/u/",
+          "/pay/", "/offline",
         ],
       },
     ],

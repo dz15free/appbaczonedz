@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus, faTrash, faPen, faXmark, faCheck, faSpinner, faEye, faEyeSlash,
-  faThumbtack, faStar, faCircleInfo,
+  faThumbtack, faStar, faCircleInfo, faPaperclip,
 } from "@fortawesome/free-solid-svg-icons";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import {
   useFeed, createFeedItem, updateFeedItem, deleteFeedItem, isLive,
   FEED_TYPES, type FeedItem, type FeedQuestion, type FeedCard as FCard,
+  type FeedAttachment,
 } from "@/features/feed/feed";
 import {
   BRANCHES, branchLabel, buildBranchMap, branchIds, isAllBranches, toggleBranchIn,
@@ -33,7 +34,9 @@ const emptyDraft = (): Draft => ({
   title: "",
   branches: { all: true },
   subject: "general",
-  xp: 5,
+  // النقاط اختيارية: المحتوى الدراسي ليس دائماً مهمّة تُكافأ، وجعلها 5
+  // افتراضاً كان يحوّل كل بطاقة إلى صيد نقاط. صفر = بلا نقاط ولا شارة.
+  xp: 0,
   questions: [{ text: "", choices: [{ text: "", correct: true }, { text: "" }] }],
   options: ["", ""],
   cards: [{ front: "", back: "" }],
@@ -250,6 +253,8 @@ function FeedEditor({
           placeholder="https://…" className={`${inp()} font-mono text-xs`} />
       </Field>
 
+      <AttachmentsEditor draft={draft} onChange={onChange} />
+
       {/* حقول النوع */}
       {showQuestions && <QuestionsEditor draft={draft} onChange={onChange} />}
       {showOptions && <OptionsEditor draft={draft} onChange={onChange} />}
@@ -289,9 +294,10 @@ function FeedEditor({
             {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
-        <Field label="النقاط عند الإنجاز">
+        <Field label="النقاط عند الإنجاز (اختياري)">
           <input type="number" min={0} max={40} value={draft.xp ?? 0}
             onChange={(e) => set("xp", Number(e.target.value) || 0)} className={inp()} />
+          <p className="mt-1 text-[10.5px] font-semibold text-text-muted">0 = بلا نقاط، ولا تظهر شارة النقاط للطالب.</p>
         </Field>
         <Field label="الأولوية (0–50)">
           <input type="number" min={0} max={50} value={draft.priority ?? 0}
@@ -399,6 +405,66 @@ function QuestionsEditor({ draft, onChange }: { draft: Draft; onChange: (d: Draf
         className="mt-2 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border text-[12px] font-extrabold text-primary">
         <FontAwesomeIcon icon={faPlus} className="h-3 w-3" /> إضافة سؤال
       </button>
+    </div>
+  );
+}
+
+/* ── محرّر المرفقات ──
+   «تمرين قصير» يحتاج غالباً صورة التمرين أو ملفّاً. لا نملك استضافة
+   للرفع، فالمرفق رابط — وهو نفس مبدأ الدورات (Drive/YouTube) القائم في
+   المنصّة، فلا نظام تخزين جديد. النوع يُستنتج تلقائياً ويمكن فرضه. */
+function AttachmentsEditor({ draft, onChange }: { draft: Draft; onChange: (d: Draft) => void }) {
+  const list: FeedAttachment[] = draft.attachments ?? [];
+  const setList = (v: FeedAttachment[]) => onChange({ ...draft, attachments: v });
+
+  return (
+    <div className="rounded-2xl border border-border bg-background p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-2 text-[12.5px] font-extrabold text-text-primary">
+          <FontAwesomeIcon icon={faPaperclip} className="h-3 w-3 text-primary" /> مرفقات (صور / ملفّات)
+        </p>
+        <button type="button" onClick={() => setList([...list, { url: "", label: "" }])}
+          disabled={list.length >= 6}
+          className="flex min-h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-[11.5px] font-extrabold text-primary transition hover:bg-primary/5 disabled:opacity-40">
+          <FontAwesomeIcon icon={faPlus} className="h-2.5 w-2.5" /> إضافة مرفق
+        </button>
+      </div>
+
+      <p className="mt-1.5 text-[10.5px] leading-relaxed text-text-muted">
+        ألصق رابط الصورة أو الملفّ (Drive أو أي مستضيف). الصور تُعرض داخل البطاقة، والملفّات تظهر بطاقةَ تحميل للطالب.
+      </p>
+
+      {list.length > 0 && (
+        <div className="mt-2.5 space-y-2">
+          {list.map((a, i) => (
+            <div key={i} className="rounded-xl border border-border bg-surface p-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-extrabold text-text-muted">#{i + 1}</span>
+                <button type="button" onClick={() => setList(list.filter((_, x) => x !== i))}
+                  className="ms-auto grid h-8 w-8 place-items-center rounded-lg text-text-muted transition hover:bg-danger/10 hover:text-danger"
+                  aria-label="حذف المرفق">
+                  <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                </button>
+              </div>
+              <input value={a.url} dir="ltr" placeholder="https://…"
+                onChange={(e) => setList(list.map((x, xi) => (xi === i ? { ...x, url: e.target.value } : x)))}
+                className={`${inp()} mt-1 font-mono text-xs`} />
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <input value={a.label ?? ""} placeholder="اسم المرفق (اختياري)"
+                  onChange={(e) => setList(list.map((x, xi) => (xi === i ? { ...x, label: e.target.value } : x)))}
+                  className={inp()} />
+                <select value={a.kind ?? ""} className={inp()}
+                  onChange={(e) => setList(list.map((x, xi) => (xi === i ? { ...x, kind: (e.target.value || undefined) as FeedAttachment["kind"] } : x)))}>
+                  <option value="">تلقائي (حسب الرابط)</option>
+                  <option value="image">صورة</option>
+                  <option value="pdf">ملفّ PDF</option>
+                  <option value="file">ملفّ آخر</option>
+                </select>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -569,6 +635,17 @@ function normalize(d: Draft): Partial<FeedItem> {
       }))
       .filter((q) => q.choices.length >= 2);
   }
+  base.attachments = (d.attachments ?? [])
+    .filter((a) => (a.url ?? "").trim())
+    .slice(0, 6)
+    .map((a) => ({
+      url: a.url.trim(),
+      label: a.label?.trim() || undefined,
+      kind: a.kind || undefined,
+    }));
+  // null صراحةً كي يحذفها `update` حين يُفرغها الأدمن
+  if (!base.attachments.length) base.attachments = null;
+
   if (type === "poll") base.options = (d.options ?? []).map((o) => o.trim()).filter(Boolean).slice(0, 6);
   if (type === "flashcard") base.cards = (d.cards ?? []).filter((c) => c.front.trim()).map((c) => ({ front: c.front.trim(), back: c.back.trim() || c.front.trim() })).slice(0, 10);
   if (type === "mistake") { base.wrong = d.wrong?.trim(); base.right = d.right?.trim(); base.why = d.why?.trim(); base.tip = d.tip?.trim(); }

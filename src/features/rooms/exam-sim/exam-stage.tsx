@@ -6,6 +6,7 @@ import {
   faFileLines, faPenToSquare, faPaperPlane, faUpRightFromSquare, faClock,
   faShieldHalved, faTriangleExclamation, faCircleCheck, faSpinner, faPaperclip,
   faXmark, faStop, faPlus, faUsers, faEye, faLightbulb, faHourglassHalf,
+  faExpand, faCompress, faRightFromBracket, faTriangleExclamation as faWarn,
 } from "@fortawesome/free-solid-svg-icons";
 import { AttachmentView } from "@/features/rooms/attachment-view";
 import { initDrive, connectDrive, uploadToDrive, hasDriveToken, isDriveConfigured } from "@/lib/gdrive";
@@ -16,7 +17,10 @@ import {
   endExam, extendExam, closeExam, releaseSolution,
   secondsLeft as calcSecondsLeft, formatClock, formatSimDuration,
 } from "@/features/rooms/exam-sim/exam-session";
-import { useExamGuard, integrityReport, bellStart, bellEnd, primeAudio } from "@/features/rooms/exam-sim/exam-guard";
+import {
+  useExamGuard, integrityReport, bellStart, bellEnd, primeAudio,
+  toggleFullscreen, isFullscreen,
+} from "@/features/rooms/exam-sim/exam-guard";
 import { ExamPapersPanel } from "@/features/rooms/exam-sim/exam-papers";
 
 /* ════════════════════════════════════════════════════════════
@@ -35,7 +39,7 @@ import { ExamPapersPanel } from "@/features/rooms/exam-sim/exam-papers";
 ════════════════════════════════════════════════════════════ */
 
 export function ExamStage({
-  roomId, roomName, session, isOwner, uid, userName,
+  roomId, roomName, session, isOwner, uid, userName, onLeaveRoom,
 }: {
   roomId: string;
   roomName: string;
@@ -43,6 +47,8 @@ export function ExamStage({
   isOwner: boolean;
   uid: string;
   userName: string;
+  /** مغادرة الغرفة — الظرف الطارئ يقع، والطالب يجب أن يجد باباً */
+  onLeaveRoom?: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,12 +67,12 @@ export function ExamStage({
       {isOwner ? (
         <TeacherExamView
           roomId={roomId} roomName={roomName} session={session}
-          left={left} timeUp={timeUp} uid={uid} userName={userName}
+          left={left} timeUp={timeUp} uid={uid} userName={userName} stageRef={stageRef}
         />
       ) : (
         <StudentExamView
           roomId={roomId} session={session} left={left} timeUp={timeUp}
-          uid={uid} userName={userName} stageRef={stageRef}
+          uid={uid} userName={userName} stageRef={stageRef} onLeaveRoom={onLeaveRoom}
         />
       )}
     </div>
@@ -96,6 +102,37 @@ function TimerPill({ left, timeUp, compact }: { left: number; timeUp: boolean; c
       <FontAwesomeIcon icon={faClock} className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
       {timeUp ? "00:00:00" : formatClock(left)}
     </span>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   زرّ ملء الشاشة — يعمل على iPhone بالبديل التنسيقي
+
+   موجود لكل من في القاعة لا للأستاذ وحده: الطالب هو من يحتاج شاشة
+   خالية من كل شيء عدا موضوعه.
+══════════════════════════════════════════════════════════ */
+function FullscreenBtn({ stageRef }: { stageRef?: React.RefObject<HTMLElement | null> }) {
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setOn(isFullscreen());
+    document.addEventListener("fullscreenchange", sync);
+    document.addEventListener("webkitfullscreenchange", sync);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      document.removeEventListener("webkitfullscreenchange", sync);
+    };
+  }, []);
+
+  return (
+    <button
+      onClick={async () => setOn(await toggleFullscreen(stageRef?.current ?? null))}
+      aria-label={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+      title={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:border-primary hover:text-primary"
+    >
+      <FontAwesomeIcon icon={on ? faCompress : faExpand} className="h-3.5 w-3.5" />
+    </button>
   );
 }
 
@@ -134,7 +171,7 @@ function SubjectViewer({ session, onOpenExternal }: { session: ExamSession; onOp
    الطالب
 ══════════════════════════════════════════════════════════ */
 function StudentExamView({
-  roomId, session, left, timeUp, uid, userName, stageRef,
+  roomId, session, left, timeUp, uid, userName, stageRef, onLeaveRoom,
 }: {
   roomId: string;
   session: ExamSession;
@@ -143,7 +180,9 @@ function StudentExamView({
   uid: string;
   userName: string;
   stageRef: React.RefObject<HTMLDivElement | null>;
+  onLeaveRoom?: () => void;
 }) {
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [tab, setTab] = useState<"subject" | "answer">("subject");
   const [text, setText] = useState("");
   const [atts, setAtts] = useState<ChallengeAttachment[]>([]);
@@ -263,7 +302,20 @@ function StudentExamView({
               {session.specialtyLabel} · {session.examLabel} · {formatSimDuration(session.durationMin)}
             </p>
           </div>
-          <TimerPill left={left} timeUp={timeUp} />
+          <span className="flex shrink-0 items-center gap-1.5">
+            <TimerPill left={left} timeUp={timeUp} />
+            <FullscreenBtn stageRef={stageRef} />
+            {onLeaveRoom && (
+              <button
+                onClick={() => setLeaveOpen(true)}
+                aria-label="مغادرة الغرفة"
+                title="مغادرة الغرفة"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-danger/40 text-danger transition hover:bg-danger/10"
+              >
+                <FontAwesomeIcon icon={faRightFromBracket} className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </span>
         </div>
 
         {session.guard.ac && (
@@ -411,6 +463,41 @@ function StudentExamView({
         </div>
       )}
 
+      {/* ── مغادرة الغرفة أثناء الامتحان ── */}
+      {leaveOpen && (
+        <div className="absolute inset-0 z-[65] grid place-items-center bg-black/60 p-5" role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-surface p-5 text-center">
+            <FontAwesomeIcon icon={faWarn} className="h-8 w-8 text-amber-500" />
+            <h3 className="mt-3 font-display text-lg font-extrabold text-text-primary">مغادرة الغرفة الآن؟</h3>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-text-muted">
+              {submitted
+                ? "ورقتك مُسلَّمة بالفعل — يمكنك المغادرة بأمان."
+                : session.allowLate
+                  ? "لم تُسلّم ورقتك بعد. يمكنك العودة والتسليم ما دامت المحاكاة مفتوحة."
+                  : "لم تُسلّم ورقتك بعد، وقد لا تتمكّن من التسليم بعد انتهاء الوقت."}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setLeaveOpen(false)}
+                className="min-h-[44px] flex-1 rounded-2xl border border-border text-[13px] font-extrabold text-text-muted">
+                البقاء
+              </button>
+              <button onClick={() => { setLeaveOpen(false); onLeaveRoom?.(); }}
+                className="min-h-[44px] flex-1 rounded-2xl bg-danger text-[13px] font-extrabold text-white">
+                مغادرة
+              </button>
+            </div>
+            {!submitted && (
+              <button
+                onClick={() => { setLeaveOpen(false); setTab("answer"); }}
+                className="mt-2.5 text-[12px] font-bold text-primary hover:underline"
+              >
+                العودة لتسليم ورقتي أوّلاً
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── إنذار المراقبة ── */}
       {alarmOpen && (
         <div className="absolute inset-0 z-[70] grid place-items-center bg-danger/85 p-5" role="alertdialog" aria-modal="true">
@@ -541,7 +628,7 @@ function StudentResultView({
    الأستاذ
 ══════════════════════════════════════════════════════════ */
 function TeacherExamView({
-  roomId, roomName, session, left, timeUp, uid, userName,
+  roomId, roomName, session, left, timeUp, uid, userName, stageRef,
 }: {
   roomId: string;
   roomName: string;
@@ -550,6 +637,7 @@ function TeacherExamView({
   timeUp: boolean;
   uid: string;
   userName: string;
+  stageRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [tab, setTab] = useState<"subject" | "papers">("papers");
   const [papers, setPapers] = useState<ExamPaper[]>([]);
@@ -586,7 +674,10 @@ function TeacherExamView({
               {session.specialtyLabel} · {formatSimDuration(session.durationMin)}
             </p>
           </div>
-          <TimerPill left={left} timeUp={timeUp} />
+          <span className="flex shrink-0 items-center gap-1.5">
+            <TimerPill left={left} timeUp={timeUp} />
+            <FullscreenBtn stageRef={stageRef} />
+          </span>
         </div>
 
         <div className="mt-2 flex flex-wrap gap-1.5">

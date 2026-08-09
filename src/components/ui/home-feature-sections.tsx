@@ -196,7 +196,7 @@ export function HomeExternalHighlights() {
   const telegramUrl = settings.telegramUrl || "https://t.me/baczonedz";
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-3">
       {/* دروس ومواضيع */}
       <a
         href={lessonsUrl}
@@ -215,23 +215,9 @@ export function HomeExternalHighlights() {
         <FontAwesomeIcon icon={faArrowLeft} className="relative mr-auto h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-primary" />
       </a>
 
-      {/* قناة تيليغرام */}
-      <a
-        href={telegramUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-sky-400/40 hover:shadow-glass"
-      >
-        <div className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-sky-500/10 blur-2xl transition group-hover:scale-150" />
-        <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 text-white shadow-lg transition group-hover:scale-110">
-          <TelegramIcon className="h-7 w-7" />
-        </span>
-        <div className="relative min-w-0">
-          <h3 className="font-display text-sm font-extrabold">انضمّ لقناتنا</h3>
-          <p className="mt-0.5 text-[11px] leading-snug text-text-muted">كل جديد أوّلاً بأوّل على تيليغرام</p>
-        </div>
-        <FontAwesomeIcon icon={faArrowLeft} className="relative mr-auto h-4 w-4 shrink-0 text-text-muted transition group-hover:-translate-x-1 group-hover:text-sky-500" />
-      </a>
+      {/* 🐛 حُذفت بطاقة تيليغرام من هنا: كانت القناة تظهر **ثلاث مرّات**
+          في شاشة الهاتف الواحدة — هنا، وفي «تابعنا»، وفي درج القائمة.
+          بقيت في «تابعنا» حيث موضعها الطبيعي مع بقيّة الحسابات. */}
     </div>
   );
 }

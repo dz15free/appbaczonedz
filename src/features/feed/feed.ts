@@ -60,6 +60,27 @@ export interface FeedQuestion {
   explanation?: string;
 }
 
+/* ── المرفقات ──
+   لا استضافة لدينا، فالمرفق **رابط** لا ملفّ مرفوع: صورة التمرين على أي
+   مستضيف، أو ملفّ PDF على Drive. النوع يُستنتج من الرابط ليُعرض كصورة
+   داخل البطاقة أو كبطاقة ملفّ قابلة للفتح — لا رابط عارٍ أمام الطالب. */
+export type AttachmentKind = "image" | "pdf" | "file";
+
+export interface FeedAttachment {
+  url: string;
+  label?: string;
+  kind?: AttachmentKind;
+}
+
+/** يستنتج نوع المرفق من امتداد الرابط — والمستخدم يستطيع تجاوزه صراحةً */
+export function attachmentKind(a: FeedAttachment): AttachmentKind {
+  if (a.kind) return a.kind;
+  const u = (a.url || "").split("?")[0].toLowerCase();
+  if (/\.(png|jpe?g|gif|webp|avif|svg)$/.test(u)) return "image";
+  if (/\.pdf$/.test(u)) return "pdf";
+  return "file";
+}
+
 export interface FeedCard {
   front: string;
   back: string;
@@ -79,6 +100,8 @@ export interface FeedItem extends Targeted {
   options?: string[];
   /** flashcard */
   cards?: FeedCard[];
+  /** مرفقات (صور/ملفّات) — تُعرض تحت النصّ. `null` تعني «احذفها» عند التحديث */
+  attachments?: FeedAttachment[] | null;
   /** mistake */
   wrong?: string;
   right?: string;
@@ -208,6 +231,10 @@ export async function updateFeedItem(id: string, patch: Partial<FeedItem>) {
   // الحقول التي تُفرَّغ عمداً تُكتب null صراحةً كي تُحذف
   for (const k of ["body", "imageUrl", "linkUrl", "modelAnswer", "wrong", "right", "why", "tip"] as const) {
     if (patch[k] === "") body[k] = null;
+  }
+  // المرفقات مصفوفة: تفريغها يجب أن يكتب null وإلّا بقيت القديمة
+  if (patch.attachments === null || (Array.isArray(patch.attachments) && !patch.attachments.length)) {
+    body.attachments = null;
   }
   if (patch.xp !== undefined) body.xp = Math.max(0, Math.min(MAX_XP, Math.round(Number(patch.xp) || 0)));
   await update(ref(rtdb, `${PATH}/${id}`), body);

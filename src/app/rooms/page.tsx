@@ -13,6 +13,7 @@ import {
   faRightToBracket,
   faRotate,
   faCalendarPlus,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { listLiveRooms, findRoomByName, type LiveRoom } from "@/features/rooms/rooms";
@@ -20,6 +21,7 @@ import { CreateRoomDialog, ROOM_SUBJECTS } from "@/features/rooms/create-room-di
 import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog";
 import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
 import { AppShell } from "@/components/app-shell";
+import { Card, Badge, Chip, ChipRail, EmptyState, Skeleton, SkeletonList } from "@/components/ui/kit";
 import { Input, Button } from "@/components/ui/field";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 
@@ -72,42 +74,51 @@ export default function RoomsPage() {
     }
   }
 
-  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
+  /* التحميل داخل الغلاف: كان يُرجع نصّاً عارياً بلا هيدر ولا شريط سفلي. */
+  if (loading || !user) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-4xl space-y-4 px-4 py-5">
+          <Skeleton className="h-10 w-2/3 rounded-control" />
+          <SkeletonList count={3} lines={1} />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-4xl px-5 py-8">
+      <section className="mx-auto max-w-4xl px-4 py-4 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-xl font-extrabold sm:text-2xl">الغرف النشطة الآن</h1>
+          <h1 className="font-display text-[22px] font-extrabold leading-tight text-text-primary sm:text-2xl">الغرف النشطة الآن</h1>
           <div className="flex items-center gap-2">
             <button
               onClick={manualRefresh}
               aria-label="تحديث"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-primary"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-control border border-border bg-surface text-text-muted transition hover:border-primary/40 hover:text-primary"
             >
               <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
-            <Button onClick={() => setShowSchedule(true)} variant="ghost" className="flex items-center gap-2 px-3 sm:px-4">
-              <FontAwesomeIcon icon={faCalendarPlus} className="h-4 w-4" />
-              <span className="hidden sm:inline">جدولة جلسة</span>
+            {/* التسميات كانت تختفي كلّياً تحت `sm` فيبقى زرّان بأيقونتين
+                بلا أي نصّ على الهاتف — لا أحد يعرف أيّهما يفعل ماذا. */}
+            <Button size="md" variant="ghost" onClick={() => setShowSchedule(true)}>
+              <FontAwesomeIcon icon={faCalendarPlus} className="h-4 w-4" /> جدولة
             </Button>
-            <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-3 sm:px-4">
-              <FontAwesomeIcon icon={faPlus} className="h-4 w-4" />
-              <span className="hidden sm:inline">غرفة جديدة</span>
-              <span className="sm:hidden">جديدة</span>
+            <Button size="md" onClick={() => setShowCreate(true)}>
+              <FontAwesomeIcon icon={faPlus} className="h-4 w-4" /> غرفة جديدة
             </Button>
           </div>
         </div>
-        <p className="mt-1 text-sm text-text-muted">
-          تظهر هنا الغرف العامة التي بها طالب متصل خلال آخر دقيقة. اضغط التحديث للبحث عن الجديد.
+        <p className="mt-1.5 max-w-prose text-[12.5px] leading-relaxed text-text-muted">
+          تظهر هنا الغرف العامّة التي بها طالب متّصل خلال آخر دقيقة — اضغط زرّ التحديث للبحث عن الجديد.
         </p>
 
         {/* الجلسات القادمة */}
         <UpcomingSessions />
 
         {/* الانضمام بكتابة اسم الغرفة */}
-        <div className="mt-5 rounded-lg border border-border bg-surface p-4">
-          <span className="mb-2 block text-sm font-semibold">الانضمام بالاسم (يشمل الغرف الخاصة وغرف الأستاذ)</span>
+        <Card className="mt-4">
+          <span className="mb-2 block text-[13px] font-extrabold text-text-primary">الانضمام بالاسم (يشمل الغرف الخاصّة وغرف الأستاذ)</span>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               value={joinName}
@@ -129,29 +140,25 @@ export default function RoomsPage() {
               انضمام
             </Button>
           </div>
-          {joinMsg && <p className="mt-2 text-sm text-danger">{joinMsg}</p>}
-        </div>
+          {joinMsg && <p className="mt-2 text-[12.5px] font-bold text-danger">{joinMsg}</p>}
+        </Card>
 
         {fetching ? (
-          <p className="mt-8 text-text-muted">جارٍ تحميل الغرف...</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <SkeletonList count={4} lines={1} />
+          </div>
         ) : (
           <>
             {/* فلتر المواد */}
             {rooms.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2">
-                {[{ id: "", label: "الكل" }, ...ROOM_SUBJECTS.filter((s) => s.id)].map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setSubjectFilter(s.id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                      subjectFilter === s.id
-                        ? "bg-gradient-primary text-white"
-                        : "border border-border text-text-muted hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
+              <div className="mt-5">
+                <ChipRail>
+                  {[{ id: "", label: "كلّ المواد" }, ...ROOM_SUBJECTS.filter((s) => s.id)].map((s) => (
+                    <Chip key={s.id} active={subjectFilter === s.id} onClick={() => setSubjectFilter(s.id)}>
+                      {s.label}
+                    </Chip>
+                  ))}
+                </ChipRail>
               </div>
             )}
 
@@ -161,46 +168,57 @@ export default function RoomsPage() {
                 ? rooms.filter((r) => r.subject === subjectFilter)
                 : rooms;
               return filtered.length === 0 ? (
-                <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
-                  <p className="text-text-muted">
-                    {rooms.length === 0
-                      ? "لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!"
-                      : `لا غرف نشطة لمادة «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}» الآن.`}
-                  </p>
-                  <Button onClick={() => setShowCreate(true)} className="mt-4">إنشاء غرفة</Button>
+                <div className="mt-6">
+                  <EmptyState
+                    icon={faUsers}
+                    title={rooms.length === 0 ? "لا غرف نشطة الآن" : `لا غرف نشطة في «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}»`}
+                    hint={rooms.length === 0
+                      ? "افتح غرفة وادعُ زملاءك — المراجعة الجماعية تُنجز أكثر ممّا تظنّ."
+                      : "جرّب مادّة أخرى من الشريط، أو افتح غرفة لهذه المادّة بنفسك."}
+                    action={<Button size="md" onClick={() => setShowCreate(true)}>إنشاء غرفة</Button>}
+                  />
                 </div>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {filtered.map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/rooms/${r.id}`}
-                      className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
-                          <span className="font-bold">{r.name}</span>
-                          {r.subject && (
-                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                              {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
-                            </span>
-                          )}
-                          {r.isPaid && (
-                            <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                              🔒 {r.price} دج
-                            </span>
-                          )}
-                        </div>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-secondary">
-                          <span className="flex items-center gap-1.5">
-                            <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
-                            {r.activeCount} متصل الآن · {r.ownerName}
+                    /* بطاقة الغرفة كانت `rounded-lg p-4` بحدّ رماديّ مسطّح
+                       — أضعف بطاقة في المنصّة، بينما تعرض الرئيسية
+                       البطاقة الغنيّة نفسها للغرف. صفحة الغرف تستحقّ
+                       على الأقلّ ما تعرضه الرئيسية. */
+                    <Link key={r.id} href={`/rooms/${r.id}`} className="block">
+                      <Card interactive className="h-full">
+                        <div className="flex items-start gap-3">
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-item bg-primary/10 text-primary">
+                            <FontAwesomeIcon icon={faUsers} className="h-[18px] w-[18px]" />
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[14.5px] font-extrabold text-text-primary">{r.name}</p>
+                            <p className="mt-0.5 truncate text-[11.5px] font-semibold text-text-muted">
+                              يديرها {r.ownerName}
+                            </p>
+                          </div>
+                          <span className="flex shrink-0 items-center gap-1.5 rounded-chip bg-emerald-500/10 px-2.5 py-1 text-[11px] font-extrabold text-emerald-600">
+                            <FontAwesomeIcon icon={faCircle} className="h-1.5 w-1.5 animate-pulse" />
+                            {r.activeCount}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
+                          {r.subject && (
+                            <Badge tone="brand">
+                              {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
+                            </Badge>
+                          )}
+                          {r.isPaid
+                            ? <Badge tone="warn" icon={faLock}>{r.price} دج</Badge>
+                            : <Badge tone="success">مجّانية</Badge>}
                           {r.isPaid && <ContentRatingBadge itemId={r.id} showEmpty />}
-                        </span>
-                      </div>
-                      <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary" />
+                          <span className="ms-auto flex items-center gap-1 text-[12px] font-extrabold text-primary">
+                            ادخل
+                            <FontAwesomeIcon icon={faArrowRight} className="h-3 w-3 -scale-x-100" />
+                          </span>
+                        </div>
+                      </Card>
                     </Link>
                   ))}
                 </div>

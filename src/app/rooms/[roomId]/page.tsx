@@ -536,6 +536,17 @@ export default function RoomPage() {
           />
         </span>
 
+        {/* أثناء المحاكاة يحتاج **الطالب** ملء الشاشة أيضاً — على iPhone
+            خصوصاً حيث لا يعمل ملء الشاشة الحقيقي، فيتكفّل البديل. */}
+        {!isOwner && exam && (
+          <BarButton
+            icon={fullscreen ? "collapse" : "expand"}
+            title={fullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+            active={fullscreen}
+            onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
+          />
+        )}
+
         {isOwner ? (
           <>
             <BarButton
@@ -864,6 +875,7 @@ export default function RoomPage() {
                 isOwner={isOwner}
                 uid={user.uid}
                 userName={user.displayName || "طالب"}
+                onLeaveRoom={() => router.push("/rooms")}
               />
             ) : (
             /* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */
@@ -935,7 +947,7 @@ export default function RoomPage() {
           </div>
 
           {/* ═══ طبقة وضع تركيز الأستاذ ═══ */}
-          {fullscreen && isOwner && (
+          {fullscreen && isOwner && !exam && (
             <TeacherFocusMode
               roomId={roomId}
               roomName={room?.name ?? "الغرفة"}
@@ -954,6 +966,8 @@ export default function RoomPage() {
               hasChallenge={!!challenge}
               challengePanel={<TeacherChallengePanel roomId={roomId} memberCount={members.length} />}
               onShare={shareRoomLink}
+              onExamSim={() => (exam ? setExamGradingOpen(true) : setExamSetupOpen(true))}
+              hasExam={Boolean(exam)}
               onGenerateCode={room?.isPaid ? generateAccessCode : undefined}
               chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
               filesPanel={<RoomFiles roomId={roomId} isOwner={isOwner} />}

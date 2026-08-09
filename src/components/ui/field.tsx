@@ -27,8 +27,10 @@ export function Input({
         <input
           type={effectiveType}
           className={clsx(
-            "w-full rounded-xl border bg-background px-4 text-text-primary outline-none transition",
-            "h-12 text-[15px]", // ارتفاع مريح للمس على الهاتف
+            "w-full rounded-control border bg-surface px-4 text-text-primary outline-none transition",
+            // ١٦px إلزامي: أي حجم أصغر يجعل Safari على iPhone **يُكبّر الصفحة**
+            // عند لمس الحقل، فتخرج الواجهة عن مكانها في التسجيل والدخول.
+            "h-12 text-[16px]",
             isPassword && "pl-11", // مساحة لزر العين (الواجهة RTL: العين يسار)
             error
               ? "border-danger/60 focus:border-danger focus:ring-2 focus:ring-danger/20"
@@ -54,29 +56,56 @@ export function Input({
   );
 }
 
+/* الزرّ — كان بدرجتَي توكيد فقط (`primary` بتدرّج ووهج، و`ghost`).
+   فكان كل إجراء في الصفحة يصرخ بنفس الصوت: لا فرق بصريّ بين
+   «اشترِ الدورة» و«شارك الرابط». الآن خمس درجات وثلاثة أحجام،
+   والاستعمال القديم يعمل حرفياً كما هو. */
+const BTN_SIZES = {
+  sm: "h-9 gap-1.5 rounded-item px-3.5 text-[12.5px]",
+  md: "h-11 gap-2 rounded-control px-4 text-[13.5px]",
+  lg: "h-12 gap-2 rounded-control px-5 text-[15px]",
+} as const;
+
 export function Button({
   children,
   variant = "primary",
+  size = "lg",
   loading,
+  block,
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "ghost" | "soft" | "quiet" | "danger";
+  size?: keyof typeof BTN_SIZES;
   loading?: boolean;
+  /** يملأ عرض الحاوية — الشكل الصحيح لأزرار الهاتف */
+  block?: boolean;
 }) {
   return (
     <button
       className={clsx(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 font-bold transition active:scale-[0.98] disabled:opacity-60 disabled:active:scale-100",
-        variant === "primary" && "bg-gradient-primary text-white shadow-glow hover:opacity-90",
-        variant === "ghost" && "border border-border bg-surface text-text-primary hover:bg-primary/10",
+        "inline-flex items-center justify-center font-extrabold transition duration-fast ease-bz",
+        "active:scale-[0.98] disabled:opacity-55 disabled:active:scale-100",
+        BTN_SIZES[size],
+        block && "w-full",
+        // التوكيد الأعلى: تدرّج الهويّة بظلّ مصبوغ بلونه، لا وهج عامّ
+        variant === "primary" && "bg-gradient-primary text-white shadow-brand hover:brightness-105",
+        variant === "ghost" && "border border-border bg-surface text-text-primary hover:border-primary/40 hover:text-primary",
+        variant === "soft" && "bg-primary/10 text-primary hover:bg-primary/15",
+        variant === "quiet" && "text-text-muted hover:bg-primary/[0.08] hover:text-primary",
+        variant === "danger" && "bg-danger/10 text-danger hover:bg-danger/15",
         className
       )}
       disabled={loading || props.disabled}
       {...props}
     >
       {loading ? (
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+        <span
+          className={clsx(
+            "inline-block h-4 w-4 animate-spin rounded-full border-2",
+            variant === "primary" ? "border-white/40 border-t-white" : "border-primary/30 border-t-primary",
+          )}
+        />
       ) : (
         children
       )}

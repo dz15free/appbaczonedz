@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/ui/icon";
 import { SPEC_FIELDS } from "@/features/guide/spec-index";
-import { listenGuide, linkOf, mergeGuide, type SpecFull } from "@/features/guide/guide-store";
+import { linkOf } from "@/features/guide/spec-link";
+import type { SpecFull } from "@/features/guide/guide-merge";
 
 /* ════════════════════════════════════════════════════════════
    متصفّح الدليل
@@ -19,15 +20,13 @@ import { listenGuide, linkOf, mergeGuide, type SpecFull } from "@/features/guide
 
 const CHIP = "bz-guide-chip";
 
-export function GuideBrowser() {
-  const [rows, setRows] = useState<SpecFull[]>(() => mergeGuide({}));
+/* الصفوف تأتي **من الخادم** الآن.
+   كان المتصفّح يستدعي `mergeGuide` بنفسه — وهي تستورد ١٫١٩MB من
+   محتوى الدليل — ثمّ يفتح مستمع Firebase ليستبدلها. فيدفع الزائر
+   ثمن المحتوى مرّتين: مرّة في الحزمة ومرّة في الشبكة. */
+export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
   const [q, setQ] = useState("");
   const [field, setField] = useState("");
-
-  useEffect(() => {
-    const unsub = listenGuide(setRows);
-    return () => { if (typeof unsub === "function") unsub(); };
-  }, []);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -55,7 +54,7 @@ export function GuideBrowser() {
     <>
       {/* رجوع إلى الموقع: الزائر يصل من Google مباشرة إلى هذه الصفحة،
           فبدون هذا الرابط لا يعرف أنّ خلفها منصّة كاملة. */}
-      <Link href="/home" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bz-blue)] hover:underline">
+      <Link href="/home" className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-[13px] font-extrabold text-[var(--bz-blue)] transition hover:bg-[var(--bz-blue-050)]">
         <Icon name="chevRight" size={13} />
         العودة إلى BacZone
       </Link>

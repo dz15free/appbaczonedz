@@ -5,13 +5,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheck, faXmark, faLightbulb, faChevronLeft, faRotate, faBolt,
   faUpRightFromSquare, faPaperPlane, faBookmark, faCircleCheck, faChartSimple,
+  faFilePdf, faFileArrowDown, faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import { saveFlashcard } from "@/features/study/save-flashcard";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import { awardXp } from "@/features/gamification/points";
 import {
-  castFeedVote, listenVotes, markFeedDone, tally,
-  type FeedItem, type FeedProgress, type FeedVote, FEED_TYPES,
+  castFeedVote, listenVotes, markFeedDone, tally, attachmentKind,
+  type FeedItem, type FeedProgress, type FeedVote, type FeedAttachment, FEED_TYPES,
 } from "@/features/feed/feed";
 import { branchLabel, isExactBranchMatch } from "@/features/feed/targeting";
 
@@ -30,13 +31,19 @@ import { branchLabel, isExactBranchMatch } from "@/features/feed/targeting";
 ════════════════════════════════════════════════════════════ */
 
 export function FeedCard({
-  item, uid, track, progress, onDone,
+  item, uid, track, progress, onDone, readOnly,
 }: {
   item: FeedItem;
   uid?: string;
   track?: string | null;
   progress?: FeedProgress | null;
   onDone?: (xp: number) => void;
+  /**
+   * الأستاذ والأدمن ليسا معنيّين بالنقاط ولا بـ«قرأتها»: يريان المحتوى
+   * كاملاً — الإجابة الصحيحة والشرح ونموذج الجواب — كمنشور يُقرأ لا
+   * تمريناً يُحلّ. عرض زرّ نقاطٍ لمن لا يجمعها ضجيجٌ لا فائدة فيه.
+   */
+  readOnly?: boolean;
 }) {
   const meta = FEED_TYPES.find((t) => t.id === item.type);
   const relevant = isExactBranchMatch(item, track);
@@ -67,7 +74,7 @@ export function FeedCard({
             <FontAwesomeIcon icon={faBolt} className="h-2.5 w-2.5" /> لشعبتك
           </span>
         )}
-        {Boolean(item.xp) && (
+        {Boolean(item.xp) && !readOnly && (
           <span className="ms-auto rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-extrabold text-amber-600">
             +{item.xp} نقطة
           </span>
@@ -85,20 +92,22 @@ export function FeedCard({
             className="mt-2.5 max-h-72 w-full rounded-xl border border-border object-contain" />
         )}
 
+        <Attachments list={item.attachments} />
+
         <div className="mt-3">
           {item.type === "poll" ? (
-            <PollBody item={item} uid={uid} onFirstVote={() => finish()} />
+            <PollBody item={item} uid={readOnly ? undefined : uid} onFirstVote={() => finish()} readOnly={readOnly} />
           ) : item.type === "flashcard" ? (
-            <FlashcardBody item={item} uid={uid} done={Boolean(progress?.done)} onDone={() => finish()} />
+            <FlashcardBody item={item} uid={uid} done={Boolean(progress?.done)} onDone={() => finish()} readOnly={readOnly} />
           ) : item.type === "mistake" ? (
-            <MistakeBody item={item} done={Boolean(progress?.done)} onDone={() => finish()} />
+            <MistakeBody item={item} done={Boolean(progress?.done) || Boolean(readOnly)} onDone={() => finish()} />
           ) : item.type === "philosophy" ? (
-            <PhilosophyBody item={item} uid={uid} done={Boolean(progress?.done)} onDone={() => finish()} />
+            <PhilosophyBody item={item} uid={uid} done={Boolean(progress?.done)} onDone={() => finish()} readOnly={readOnly} />
           ) : (item.questions?.length ?? 0) > 0 ? (
             <QuestionsBody item={item} done={Boolean(progress?.done)} savedScore={progress?.score}
-              onDone={(score, total) => finish({ score, total })} />
+              onDone={(score, total) => finish({ score, total })} readOnly={readOnly} />
           ) : (
-            <PlainBody item={item} done={Boolean(progress?.done)} onDone={() => finish()} />
+            <PlainBody item={item} done={Boolean(progress?.done) || Boolean(readOnly)} onDone={() => finish()} />
           )}
         </div>
 
@@ -114,8 +123,63 @@ export function FeedCard({
   );
 }
 
+/* ── المرفقات ──
+   التمرين القصير كثيراً ما يكون **صورة**: نصّ التمرين مصوّراً أو ملفّ
+   PDF. عرضه رابطاً عارياً يقتل التمرين، فالصور تُعرض داخل البطاقة كما
+   تُعرض في أي منشور، والملفّات تظهر بطاقةَ ملفّ واضحة تُفتح في تبويب
+   جديد — وارتفاع اللمس ≥ 44px كي يعمل على الهاتف. */
+function Attachments({ list }: { list?: FeedAttachment[] | null }) {
+  const items = (list ?? []).filter((a) => a && a.url);
+  if (!items.length) return null;
+
+  const images = items.filter((a) => attachmentKind(a) === "image");
+  const files = items.filter((a) => attachmentKind(a) !== "image");
+
+  return (
+    <div className="mt-2.5 space-y-2">
+      {images.length > 0 && (
+        <div className={`grid gap-2 ${images.length > 1 ? "sm:grid-cols-2" : ""}`}>
+          {images.map((a, i) => (
+            <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+              className="group relative block overflow-hidden rounded-xl border border-border bg-background">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a.url} alt={a.label || "مرفق"} loading="lazy"
+                className="max-h-80 w-full object-contain" />
+              <span className="absolute bottom-1.5 end-1.5 hidden items-center gap-1 rounded-lg bg-black/55 px-2 py-1 text-[10px] font-bold text-white group-hover:flex">
+                <FontAwesomeIcon icon={faImage} className="h-2.5 w-2.5" /> تكبير
+              </span>
+              {a.label && (
+                <span className="block border-t border-border px-2.5 py-1.5 text-[11px] font-bold text-text-muted">{a.label}</span>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {files.map((a, i) => {
+        const pdf = attachmentKind(a) === "pdf";
+        return (
+          <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+            className="flex min-h-11 items-center gap-2.5 rounded-xl border border-border bg-background px-3 py-2 transition hover:border-primary/40 hover:bg-primary/5">
+            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${pdf ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+              <FontAwesomeIcon icon={pdf ? faFilePdf : faFileArrowDown} className="h-3.5 w-3.5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[12.5px] font-extrabold text-text-primary">
+                {a.label || (pdf ? "ملفّ التمرين (PDF)" : "ملفّ مرفق")}
+              </span>
+              <span className="block text-[10.5px] font-semibold text-text-muted">اضغط للفتح في تبويب جديد</span>
+            </span>
+            <FontAwesomeIcon icon={faUpRightFromSquare} className="h-3 w-3 shrink-0 text-text-muted" />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── استفتاء ── */
-function PollBody({ item, uid, onFirstVote }: { item: FeedItem; uid?: string; onFirstVote: () => void }) {
+function PollBody({ item, uid, onFirstVote, readOnly }: { item: FeedItem; uid?: string; onFirstVote: () => void; readOnly?: boolean }) {
   const [votes, setVotes] = useState<Record<string, FeedVote>>({});
   const [busy, setBusy] = useState(false);
   const options = item.options ?? [];
@@ -126,7 +190,7 @@ function PollBody({ item, uid, onFirstVote }: { item: FeedItem; uid?: string; on
   }, [item.id]);
 
   const mine = uid ? votes[uid]?.choice : undefined;
-  const voted = typeof mine === "number";
+  const voted = typeof mine === "number" || Boolean(readOnly);
   const t = useMemo(() => tally(votes, options.length), [votes, options.length]);
 
   async function vote(i: number) {
@@ -161,7 +225,7 @@ function PollBody({ item, uid, onFirstVote }: { item: FeedItem; uid?: string; on
       ))}
       <p className="flex items-center gap-1.5 text-[11px] text-text-muted">
         <FontAwesomeIcon icon={faChartSimple} className="h-2.5 w-2.5" />
-        {voted ? `${t.total} صوتاً` : "صوّت لترى النتائج"}
+        {readOnly ? `${t.total} صوتاً` : voted ? `${t.total} صوتاً` : "صوّت لترى النتائج"}
       </p>
     </div>
   );
@@ -169,27 +233,29 @@ function PollBody({ item, uid, onFirstVote }: { item: FeedItem; uid?: string; on
 
 /* ── أسئلة (سؤال · تحدٍّ · تمرين · وثيقة) ── */
 function QuestionsBody({
-  item, done, savedScore, onDone,
+  item, done, savedScore, onDone, readOnly,
 }: {
   item: FeedItem;
   done: boolean;
   savedScore?: number;
   onDone: (score: number, total: number) => void;
+  readOnly?: boolean;
 }) {
   const qs = item.questions ?? [];
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(done);
+  const [finished, setFinished] = useState(done && !readOnly);
 
   const q = qs[idx];
   if (!q) return null;
 
-  const revealed = picked !== null;
+  // في وضع القراءة تُكشف الإجابة والشرح فوراً — لا تمرين يُحلّ
+  const revealed = picked !== null || Boolean(readOnly);
   const correctIdx = q.choices.findIndex((c) => c.correct);
 
   function pick(i: number) {
-    if (revealed || finished) return;
+    if (revealed || finished || readOnly) return;
     setPicked(i);
     if (q.choices[i]?.correct) setScore((s) => s + 1);
   }
@@ -218,7 +284,14 @@ function QuestionsBody({
   return (
     <div>
       {qs.length > 1 && (
-        <p className="mb-1.5 text-[11px] font-bold text-text-muted">سؤال {idx + 1} من {qs.length}</p>
+        <div className="mb-1.5 flex items-center gap-2">
+          <p className="text-[11px] font-bold text-text-muted">سؤال {idx + 1} من {qs.length}</p>
+          {readOnly && idx < qs.length - 1 && (
+            <button onClick={() => setIdx(idx + 1)} className="text-[11px] font-bold text-primary hover:underline">
+              السؤال التالي ←
+            </button>
+          )}
+        </div>
       )}
       <p className="text-[13.5px] font-bold leading-relaxed text-text-primary">{q.text}</p>
       {q.imageUrl && (
@@ -261,7 +334,7 @@ function QuestionsBody({
         </p>
       )}
 
-      {revealed && (
+      {revealed && !readOnly && (
         <button onClick={next}
           className="mt-2.5 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary text-[13px] font-extrabold text-white">
           {idx < qs.length - 1 ? "السؤال التالي" : "إنهاء"}
@@ -274,8 +347,8 @@ function QuestionsBody({
 
 /* ── بطاقات مراجعة ── */
 function FlashcardBody({
-  item, uid, done, onDone,
-}: { item: FeedItem; uid?: string; done: boolean; onDone: () => void }) {
+  item, uid, done, onDone, readOnly,
+}: { item: FeedItem; uid?: string; done: boolean; onDone: () => void; readOnly?: boolean }) {
   const cards = item.cards ?? [];
   const [i, setI] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -321,6 +394,7 @@ function FlashcardBody({
             <span className="text-[11px] text-text-muted">{i + 1}/{cards.length}</span>
           </div>
         )}
+        {!readOnly && (
         <button
           onClick={saveAll}
           disabled={!uid || saved}
@@ -331,6 +405,7 @@ function FlashcardBody({
           <FontAwesomeIcon icon={saved ? faCircleCheck : faBookmark} className="h-3 w-3" />
           {saved ? "محفوظة في بطاقاتك" : `احفظ ${cards.length > 1 ? "البطاقات" : "البطاقة"}`}
         </button>
+        )}
       </div>
     </div>
   );
@@ -378,8 +453,8 @@ function Row({ tone, label, value }: { tone: "bad" | "ok" | "info" | "tip"; labe
 
 /* ── سؤال فلسفة ── */
 function PhilosophyBody({
-  item, uid, done, onDone,
-}: { item: FeedItem; uid?: string; done: boolean; onDone: () => void }) {
+  item, uid, done, onDone, readOnly,
+}: { item: FeedItem; uid?: string; done: boolean; onDone: () => void; readOnly?: boolean }) {
   const [text, setText] = useState("");
   const [sent, setSent] = useState(done);
   const [busy, setBusy] = useState(false);
@@ -392,6 +467,15 @@ function PhilosophyBody({
       setSent(true);
       onDone();
     } finally { setBusy(false); }
+  }
+
+  if (readOnly) {
+    return item.modelAnswer ? (
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <p className="text-[10.5px] font-extrabold text-primary">نموذج إجابة</p>
+        <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-text-muted">{item.modelAnswer}</p>
+      </div>
+    ) : null;
   }
 
   if (sent) {

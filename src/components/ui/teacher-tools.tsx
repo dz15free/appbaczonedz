@@ -90,16 +90,24 @@ function MyStudents({ uid }: { uid: string }) {
       const ids = Object.keys(val).slice(0, 40);
       if (!ids.length) { if (alive) setRows([]); return; }
 
-      // اسم كل طالب من عقدته — قراءة واحدة لكل طالب ومحدودة بأربعين
-      const names = await Promise.all(
+      // اسم كل طالب ودوره من عقدته — قراءة واحدة لكل طالب ومحدودة بأربعين.
+      // الدور يُقرأ لأنّ **الأدمن ليس طالباً**: دخوله الغرفة للإشراف كان
+      // يُدرجه في «آخر من حضر»، وهو ليس من طلبة الأستاذ فيُستبعد هنا.
+      const people = await Promise.all(
         ids.map((id) =>
-          get(ref(rtdb, `users/${id}/name`)).then((s) => (s.val() as string) ?? "طالب").catch(() => "طالب"),
+          get(ref(rtdb, `users/${id}`))
+            .then((s) => {
+              const u = (s.val() as { name?: string; role?: string } | null) ?? null;
+              return { name: u?.name ?? "طالب", role: u?.role ?? "student" };
+            })
+            .catch(() => ({ name: "طالب", role: "student" })),
         ),
       );
       if (!alive) return;
       setRows(
         ids
-          .map((id, i) => ({ uid: id, name: names[i], since: Number(val[id]?.at) || 0 }))
+          .map((id, i) => ({ uid: id, name: people[i].name, role: people[i].role, since: Number(val[id]?.at) || 0 }))
+          .filter((r) => r.role !== "admin")
           // الأحدث حضوراً أوّلاً: عقدة الحضور تُكتب مرّة واحدة لكل طالب،
           // فلا عدد حصص فيها — وعرض رقم مُختلَق أسوأ من عدم عرضه.
           .sort((a, b) => b.since - a.since)

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers, faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis, faChalkboard, faBrain, faMicrophone } from "@fortawesome/free-solid-svg-icons";
+import { faCompress, faComments, faHand, faUserSecret, faFolderOpen, faUsers, faChartBar, faShareNodes, faKey, faGripVertical, faXmark, faEllipsis, faChalkboard, faBrain, faMicrophone, faGraduationCap } from "@fortawesome/free-solid-svg-icons";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { StatusDot } from "@/components/ui/status-dot";
 import { useTimerLabel } from "@/features/rooms/room-timer";
@@ -42,6 +42,9 @@ export interface TeacherFocusProps {
   hasChallenge: boolean;
   challengePanel: ReactNode;
   onShare: () => void;
+  /** محاكاة البكالوريا — كانت غير قابلة للوصول داخل ملء الشاشة */
+  onExamSim?: () => void;
+  hasExam?: boolean;
   onGenerateCode?: () => void;     // للغرف المدفوعة فقط
   /* اللوحات */
   chatPanel: ReactNode;
@@ -187,6 +190,10 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           onClick={() => { setSheet(null); document.getElementById("bz-voice-join")?.click(); }} />
         <SheetRow icon={faBrain} label={props.hasChallenge ? "لوحة حلول التحدي" : "تحدٍّ جديد"} onClick={() => { setSheet(null); props.onChallenge(); }} />
         <SheetRow icon={faChartBar} label="استفتاء سريع" onClick={() => { setSheet(null); props.onCreatePoll(); }} />
+        {props.onExamSim && (
+          <SheetRow icon={faGraduationCap} label={props.hasExam ? "أوراق الامتحان" : "محاكاة البكالوريا"}
+            onClick={() => { setSheet(null); props.onExamSim!(); }} />
+        )}
         <SheetRow icon={faFolderOpen} label="ملفات الغرفة" onClick={() => setSheet("files")} />
         <SheetRow icon={faShareNodes} label="مشاركة رابط الغرفة" onClick={() => { setSheet(null); props.onShare(); }} />
         {props.onGenerateCode && (
@@ -242,6 +249,9 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
        انتقلت إلى درج «المزيد» الموجود أصلاً. وفّر ذلك ثلاثة أزرار. */
     { id: "challenge", icon: faBrain, label: props.hasChallenge ? "لوحة التحدي" : "تحدٍّ جديد", onClick: props.onChallenge, active: props.hasChallenge },
     { id: "poll", icon: faChartBar, label: "استفتاء", onClick: props.onCreatePoll },
+    ...(props.onExamSim
+      ? [{ id: "exam", icon: faGraduationCap, label: props.hasExam ? "أوراق الامتحان" : "محاكاة البكالوريا", onClick: props.onExamSim, active: props.hasExam }]
+      : []),
     { id: "more", icon: faEllipsis, label: "أدوات الحصة", onClick: () => setSheet("more") },
   ];
 
