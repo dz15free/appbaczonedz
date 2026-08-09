@@ -6,7 +6,7 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -33,11 +33,35 @@ function DrawerFacebookIcon({ className = "" }: { className?: string }) {
 
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse },
+  { href: "/courses", label: "الدورات", icon: faGraduationCap },
   { href: "/rooms", label: "الغرف", icon: faUsers },
   { href: "/community", label: "المجتمع", icon: faGlobe },
   { href: "/library", label: "المكتبة", icon: faBookOpen },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
 ];
+
+/* روابط الدورات حسب الدور — الطالب لا يرى «إنشاء دورة»، والأستاذ لا
+   يرى أدوات الإدارة. عرض ما لا يُسمح به يُنتج نقرة تنتهي برفض. */
+function courseLinksFor(role?: string) {
+  if (role === "admin") {
+    return [
+      { href: "/courses", label: "الدورات", icon: faGraduationCap, external: false },
+      { href: "/courses/teach", label: "دوراتي التعليمية", icon: faChalkboardUser, external: false },
+      { href: "/admin?tab=courses", label: "إدارة الدورات", icon: faClipboardCheck, external: false },
+    ];
+  }
+  if (role === "teacher") {
+    return [
+      { href: "/courses", label: "الدورات", icon: faGraduationCap, external: false },
+      { href: "/courses/teach", label: "دوراتي التعليمية", icon: faChalkboardUser, external: false },
+      { href: "/courses/new", label: "إنشاء دورة", icon: faPlus, external: false },
+    ];
+  }
+  return [
+    { href: "/courses", label: "الدورات", icon: faGraduationCap, external: false },
+    { href: "/courses/mine", label: "دوراتي", icon: faClone, external: false },
+  ];
+}
 
 // قائمة "أدوات الدراسة" المنسدلة (حاسوب)
 const TOOLS_DROPDOWN = [
@@ -119,7 +143,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     external: Boolean(l.external),
   }));
   const moreDropdown = dynamicLinks;
-  const menuItems = [...MENU_ITEMS_BASE, ...dynamicLinks];
+  const courseLinks = courseLinksFor(profile?.role);
+  const menuItems = [...courseLinks, ...MENU_ITEMS_BASE, ...dynamicLinks];
 
   // تطبيق لون التمييز المخصَّص من إعدادات الإدارة
   useEffect(() => {
@@ -234,7 +259,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <FontAwesomeIcon icon={faChevronDown} className="h-3 w-3" />
             </button>
             <div className="invisible absolute right-0 top-full z-50 mt-1 w-56 rounded-2xl border border-border bg-surface p-2 opacity-0 shadow-glass transition-all group-hover:visible group-hover:opacity-100">
-              {TOOLS_DROPDOWN.map((m) => (
+              {[...courseLinks.slice(1), ...TOOLS_DROPDOWN].map((m) => (
                 <Link key={m.href} href={m.href}
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 hover:text-primary">
                   <FontAwesomeIcon icon={m.icon} className="h-4 w-4 text-primary" />

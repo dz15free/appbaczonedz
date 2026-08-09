@@ -9,7 +9,9 @@ import { rtdb } from "@/lib/firebase/config";
    - عمولة الموقع نسبة مئوية (افتراضي 10%) يتحكّم بها الأدمن
 ════════════════════════════════════════════ */
 
-export type PaidItemType = "library" | "room";
+/* «course» أُضيف لا استُبدل: الدورات تدخل نظام الملكية القائم بدل نظام
+   ثانٍ. الأكواد وChargily ومنح الأدمن اليدوي تعمل عليها بلا تعديل. */
+export type PaidItemType = "library" | "room" | "course";
 
 export interface AccessCode {
   id: string;

@@ -405,7 +405,7 @@ function TeacherEarnings({ uid }: { uid: string }) {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{x.itemTitle}</span>
                     <span className="block text-[10.5px] text-text-muted">
-                      {x.itemType === "room" ? "غرفة" : "ملخّص"} ·{" "}
+                      {x.itemType === "room" ? "غرفة" : x.itemType === "course" ? "دورة" : "ملخّص"} ·{" "}
                       {new Date(x.paidAt).toLocaleDateString("ar-DZ")}
                     </span>
                   </span>

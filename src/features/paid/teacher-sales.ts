@@ -17,7 +17,7 @@ import { rtdb } from "@/lib/firebase/config";
 export interface TeacherSale {
   id: string;
   buyerUid: string;
-  itemType: "library" | "room";
+  itemType: "library" | "room" | "course";
   itemId: string;
   itemTitle: string;
   price: number;

@@ -38,7 +38,13 @@ function baseUrl(mode: "live" | "test") {
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
 
-type ItemType = "library" | "room";
+type ItemType = "library" | "room" | "course";
+
+const ITEM_PATHS: Record<ItemType, string> = {
+  library: "library",
+  room: "rooms",
+  course: "courses",
+};
 
 export async function POST(req: NextRequest) {
   if (!SECRET) {
@@ -59,7 +65,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "طلب غير صالح." }, { status: 400 });
   }
 
-  const itemType = body.itemType === "room" ? "room" : "library";
+  const itemType: ItemType =
+    body.itemType === "room" ? "room" : body.itemType === "course" ? "course" : "library";
   const itemId = String(body.itemId ?? "").trim();
   const uid = String(body.uid ?? "").trim();
   if (!itemId || !uid) {
@@ -67,16 +74,27 @@ export async function POST(req: NextRequest) {
   }
 
   // نقرأ العنصر من قاعدة البيانات — السعر والمالك من هناك لا من الطلب
-  const path = itemType === "room" ? `rooms/${itemId}` : `library/${itemId}`;
+  const path = `${ITEM_PATHS[itemType]}/${itemId}`;
   const item = await dbGet<{
     title?: string; name?: string; price?: number; isPaid?: boolean;
     uploaderId?: string; ownerId?: string; uploaderName?: string; ownerName?: string;
+    teacherId?: string; teacherName?: string; type?: string; status?: string;
   }>(path);
   if (!item) {
     return Response.json({ error: "العنصر غير موجود." }, { status: 404 });
   }
 
-  if (!item.isPaid) {
+  /* الدورة تحمل `type` و`status` بدل `isPaid`.
+     و**المنشورة وحدها تُباع**: بيع مسوّدة يعني أن يدفع طالب مقابل
+     محتوى لم يجتز المراجعة بعد. */
+  if (itemType === "course") {
+    if (item.type !== "paid") {
+      return Response.json({ error: "هذه الدورة مجّانية." }, { status: 400 });
+    }
+    if (item.status !== "published") {
+      return Response.json({ error: "هذه الدورة غير متاحة للشراء حالياً." }, { status: 400 });
+    }
+  } else if (!item.isPaid) {
     return Response.json({ error: "هذا العنصر مجّاني." }, { status: 400 });
   }
   const price = Number(item.price) || 0;
@@ -86,8 +104,8 @@ export async function POST(req: NextRequest) {
   }
 
   const title = String(item.title ?? item.name ?? "محتوى BacZone").slice(0, 120);
-  const ownerId = String(item.uploaderId ?? item.ownerId ?? "");
-  const ownerName = String(item.uploaderName ?? item.ownerName ?? "");
+  const ownerId = String(item.uploaderId ?? item.ownerId ?? item.teacherId ?? "");
+  const ownerName = String(item.uploaderName ?? item.ownerName ?? item.teacherName ?? "");
 
   /* سجلّ محلّي قبل الانتقال: الويب هوك يصل باسم هذا السجلّ، فنعرف
      **من اشترى وماذا** حتى لو تأخّر أو تكرّر. */

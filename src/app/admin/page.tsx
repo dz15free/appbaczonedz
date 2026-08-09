@@ -17,7 +17,7 @@ import {
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
   faPlus, faXmark, faToggleOn, faToggleOff, faUsers,
   faDoorOpen, faBan, faUnlock, faEye, faBookOpen,
-  faGlobe, faUpRightFromSquare,
+  faGlobe, faUpRightFromSquare, faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -32,6 +32,7 @@ import { AdminRatingRow } from "@/features/community/teacher-rating-ui";
 import { detectBrigading, listenTeacherRatings, computeStats, type TeacherRating } from "@/features/community/teacher-rating";
 import { setSupportAccount, useSupportInfo, SUPPORT_DEFAULTS } from "@/features/support/admin-chat";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { AdminCourses } from "@/features/courses/admin-courses";
 
 interface Report {
   firebaseKey: string;
@@ -164,6 +165,7 @@ const TABS = [
   { id: "users",     label: "المستخدمون", icon: faUsers },
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
+  { id: "courses",   label: "إدارة الدورات", icon: faGraduationCap },
   { id: "curriculum", label: "المنهج",   icon: faBookOpen },
   { id: "subjects",  label: "المواد",    icon: faBookOpen },
   { id: "guide",     label: "دليل التخصّصات", icon: faBookOpen },
@@ -232,6 +234,14 @@ export default function AdminPage() {
   const [libraryEntries, setLibraryEntries] = useState<any[]>([]);
   const [stats, setStats] = useState({ users: 0, groups: 0, posts: 0, rooms: 0, library: 0 });
   const [tab, setTab] = useState<Tab>("overview");
+
+  /* رابط الإشعار يفتح التبويب المقصود مباشرة (?tab=courses).
+     بلا هذا يصل الأدمن إلى «إحصائيات» ويبحث عن الدورة بنفسه. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const want = new URLSearchParams(window.location.search).get("tab");
+    if (want && TABS.some((t) => t.id === want)) setTab(want as Tab);
+  }, []);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [userSearch, setUserSearch] = useState("");
 
@@ -528,6 +538,11 @@ export default function AdminPage() {
         </div>
 
         {/* ════ إحصائيات ════ */}
+        {/* مراجعة الدورات — التبويب الجديد داخل اللوحة نفسها */}
+        {tab === "courses" && user && (
+          <AdminCourses admin={{ uid: user.uid, name: profile?.name || user.displayName || "الإدارة" }} />
+        )}
+
         {tab === "curriculum" && <CurriculumEditor />}
 
         {tab === "subjects" && <SubjectsEditor />}
@@ -803,7 +818,7 @@ export default function AdminPage() {
                             <div key={c.id} className="rounded-lg border border-border bg-background p-2.5 text-xs">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="truncate font-bold">{c.itemTitle}</span>
-                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{c.itemType === "library" ? "ملخّص" : "غرفة"}</span>
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{c.itemType === "library" ? "ملخّص" : c.itemType === "course" ? "دورة" : "غرفة"}</span>
                               </div>
                               <p className="mt-1 text-text-muted">اشترى: <span className="font-semibold text-text-primary">{c.redeemedName || "طالب"}</span> · الأستاذ: {c.ownerName}</p>
                               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">

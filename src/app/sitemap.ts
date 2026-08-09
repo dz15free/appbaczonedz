@@ -15,12 +15,31 @@ import { BRANCHES } from "@/features/calculator/branches";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/* الدورات المنشورة — تُقرأ من `coursesPublic`، وهي العقدة الوحيدة
+   التي لا تحوي إلّا المنشور. المسوّدة والمرفوضة لا تصل هنا أصلاً،
+   فلا تُفهرَس صفحة خاصّة بالخطأ. */
+async function publishedCourses(): Promise<{ id: string; at: number }[]> {
+  const db = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
+  if (!db) return [];
+  try {
+    const res = await fetch(`${db}/coursesPublic.json?shallow=false`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const val = (await res.json()) as Record<string, { publishedAt?: number; status?: string }> | null;
+    return Object.entries(val ?? {})
+      .filter(([, c]) => c?.status === "published")
+      .map(([id, c]) => ({ id, at: c.publishedAt ?? Date.now() }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/courses`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
     { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
     ...BRANCHES.map((b) => ({
@@ -40,5 +59,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...statics, ...specs];
+  const courses: MetadataRoute.Sitemap = (await publishedCourses()).map((c) => ({
+    url: `${BASE}/courses/${c.id}`,
+    lastModified: new Date(c.at),
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
+
+  return [...statics, ...specs, ...courses];
 }

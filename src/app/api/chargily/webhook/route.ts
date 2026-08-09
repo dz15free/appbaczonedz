@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
-import { dbGet, dbSet, dbUpdate, isServerDbReady } from "@/lib/firebase/server-db";
+import { dbGet, dbSet, dbUpdate, dbPush, isServerDbReady } from "@/lib/firebase/server-db";
 
 export const runtime = "nodejs";
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const order = await dbGet<{
-      uid: string; itemType: "library" | "room"; itemId: string; itemTitle: string;
+      uid: string; itemType: "library" | "room" | "course"; itemId: string; itemTitle: string;
       price: number; ownerId?: string; ownerName?: string; status?: string;
     }>(`chargilyOrders/${orderId}`);
     if (!order) return new Response("unknown order", { status: 200 });
@@ -128,6 +128,20 @@ export async function POST(req: NextRequest) {
     });
 
     await dbUpdate(`chargilyOrders/${orderId}`, { status: "paid", paidAt: Date.now() });
+
+    /* إشعار الطالب — نظام الإشعارات القائم نفسه.
+       من دفع يجب أن يجد إشعاراً يفتح ما دفع مقابله مباشرة، لا أن يبحث
+       عنه في القائمة. */
+    await dbPush(`notifications/${order.uid}`, {
+      type: order.itemType === "course" ? "course" : "purchase",
+      text:
+        order.itemType === "course"
+          ? `تمّ الدفع بنجاح — دورة «${order.itemTitle}» صارت متاحة لك.`
+          : `تمّ الدفع بنجاح — «${order.itemTitle}» صار متاحاً لك.`,
+      link: order.itemType === "course" ? `/courses/${order.itemId}` : "/library",
+      read: false,
+      createdAt: Date.now(),
+    }).catch(() => { /* الإشعار مساعد لا شرط للوصول */ });
 
     return new Response("ok", { status: 200 });
   } catch {

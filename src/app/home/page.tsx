@@ -18,6 +18,7 @@ import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
 import { FeatureCards, SocialLinks, AdvertiseCard, HomeExternalHighlights, NotificationToggle } from "@/components/ui/home-feature-sections";
 import { AdSlot } from "@/components/ui/ad-slot";
+import { HomeCourses } from "@/components/ui/home-courses";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -28,6 +29,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 /* أقسام الموقع */
 const SECTIONS = [
   { href: "/rooms", label: "غرف الدراسة", icon: faChalkboardUser, color: "bg-indigo-500/10 text-indigo-500" },
+  { href: "/courses", label: "الدورات", icon: faGraduationCap, color: "bg-primary/10 text-primary" },
   { href: "/library", label: "المكتبة", icon: faBookOpen, color: "bg-emerald-500/10 text-emerald-500" },
   { href: "/aibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
@@ -224,6 +226,9 @@ export default function HomePage() {
             <SectionsRow />
           </div>
 
+          {/* الدورات — قسم مستقلّ يسبق بقيّة المصادر */}
+          <HomeCourses track={profile?.track} />
+
           {/* وجهات مهمّة */}
           <HomeExternalHighlights />
 
@@ -325,6 +330,9 @@ export default function HomePage() {
           <h2 className="mb-3 font-display text-base font-extrabold">الوصول السريع</h2>
           <SectionsRow />
         </div>
+
+        {/* الدورات */}
+        <HomeCourses track={profile?.track} />
 
         {/* وجهات مهمّة */}
         <HomeExternalHighlights />

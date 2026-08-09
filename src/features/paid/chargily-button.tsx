@@ -18,7 +18,7 @@ import { Icon } from "@/components/ui/icon";
 export function ChargilyPayButton({
   itemType, itemId, price, uid, className = "",
 }: {
-  itemType: "library" | "room";
+  itemType: "library" | "room" | "course";
   itemId: string;
   /** للعرض فقط — الخادم لا يثق به */
   price: number;

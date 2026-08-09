@@ -9,7 +9,9 @@
       ".indexOn": [
         "name",
         "email",
-        "points"
+        "points",
+        "role",
+        "track"
       ],
       "$uid": {
         ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && (!newData.hasChild('role') || newData.child('role').val() === 'student' || newData.child('role').val() === 'teacher')) || (auth.uid === $uid && data.exists() && (!newData.hasChild('role') || newData.child('role').val() === data.child('role').val())))"
@@ -294,7 +296,7 @@
         "ownerId"
       ],
       "$codeId": {
-        ".write": "auth != null && ((!data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin') || (data.exists() && !data.child('redeemedBy').exists() && newData.child('redeemedBy').val() === auth.uid))"
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin') && ((newData.child('itemType').val() === 'course' && root.child('courses').child(newData.child('itemId').val()).child('teacherId').val() === auth.uid) || (newData.child('itemType').val() === 'library' && root.child('library').child(newData.child('itemId').val()).child('uploaderId').val() === auth.uid) || (newData.child('itemType').val() === 'room' && root.child('rooms').child(newData.child('itemId').val()).child('ownerId').val() === auth.uid)) && newData.child('createdBy').val() === auth.uid && newData.child('ownerId').val() === auth.uid && !newData.hasChild('redeemedBy')) || (data.exists() && !data.child('redeemedBy').exists() && newData.child('redeemedBy').val() === auth.uid && newData.child('itemType').val() === data.child('itemType').val() && newData.child('itemId').val() === data.child('itemId').val() && newData.child('price').val() === data.child('price').val() && newData.child('ownerId').val() === data.child('ownerId').val() && newData.child('createdBy').val() === data.child('createdBy').val() && newData.child('createdAt').val() === data.child('createdAt').val()))"
       }
     },
     "userAccess": {
@@ -351,10 +353,10 @@
     },
     "purchases": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         "$itemType": {
           "$itemId": {
-            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".write": "auth != null && ((auth.uid === $uid && !data.exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
             ".validate": "root.child('accessCodes').child(newData.val()).child('redeemedBy').val() === auth.uid && root.child('accessCodes').child(newData.val()).child('itemId').val() === $itemId"
           }
         }
@@ -445,6 +447,87 @@
     "pageOverrides": {
       ".read": true,
       ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "courses": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      ".indexOn": [
+        "teacherId",
+        "status",
+        "updatedAt",
+        "createdAt"
+      ],
+      "$courseId": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || data.child('teacherId').val() === auth.uid)",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('teacherId').val() === auth.uid && newData.child('status').val() === 'draft') || (data.exists() && newData.exists() && data.child('teacherId').val() === auth.uid && newData.child('teacherId').val() === auth.uid && (data.child('status').val() === 'draft' || data.child('status').val() === 'changes' || data.child('status').val() === 'rejected') && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'submitted' || newData.child('status').val() === data.child('status').val())) || (data.exists() && !newData.exists() && data.child('teacherId').val() === auth.uid && data.child('status').val() === 'draft'))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['title','teacherId','status','type','subject']) && newData.child('title').isString() && newData.child('title').val().length <= 160 && newData.child('type').val().matches(/^(free|paid)$/) && newData.child('status').val().matches(/^(draft|submitted|review|changes|rejected|approved|published|unpublished)$/) && (!newData.hasChild('price') || (newData.child('price').isNumber() && newData.child('price').val() >= 0)) && (!newData.hasChild('shortDesc') || newData.child('shortDesc').val().length <= 300) && (!newData.hasChild('fullDesc') || newData.child('fullDesc').val().length <= 4000))"
+      }
+    },
+    "courseContent": {
+      "$courseId": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('purchases').child(auth.uid).child('course').child($courseId).exists() || (root.child('coursesPublic').child($courseId).child('type').val() === 'free' && root.child('coursesPublic').child($courseId).child('status').val() === 'published' && root.child('courseEnrollments').child($courseId).child(auth.uid).exists()))",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('courses').child($courseId).child('teacherId').val() === auth.uid && (root.child('courses').child($courseId).child('status').val() === 'draft' || root.child('courses').child($courseId).child('status').val() === 'changes' || root.child('courses').child($courseId).child('status').val() === 'rejected')))"
+      }
+    },
+    "coursesPublic": {
+      ".read": true,
+      ".indexOn": [
+        "publishedAt",
+        "subject",
+        "type"
+      ],
+      "$courseId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".validate": "!newData.exists() || (newData.hasChildren(['title','teacherId','status']) && newData.child('status').val() === 'published')"
+      }
+    },
+    "courseEnrollments": {
+      "$courseId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === $uid && (!newData.exists() || (root.child('coursesPublic').child($courseId).child('type').val() === 'free' && root.child('coursesPublic').child($courseId).child('status').val() === 'published'))) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".validate": "!newData.exists() || newData.hasChild('at')"
+        }
+      }
+    },
+    "userCourses": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "courseProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$courseId": {
+          ".validate": "!newData.exists() || (!newData.hasChild('percent') || (newData.child('percent').isNumber() && newData.child('percent').val() >= 0 && newData.child('percent').val() <= 100))"
+        }
+      }
+    },
+    "courseReviews": {
+      ".read": true,
+      "$courseId": {
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === $uid && (root.child('purchases').child(auth.uid).child('course').child($courseId).exists() || (root.child('coursesPublic').child($courseId).child('type').val() === 'free' && root.child('courseEnrollments').child($courseId).child(auth.uid).exists()))) || (auth.uid === $uid && !newData.exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['stars','name','at']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 5 && newData.child('at').isNumber() && newData.child('at').val() <= now && newData.child('name').isString() && newData.child('name').val().length <= 80 && (!newData.hasChild('comment') || newData.child('comment').val().length <= 500))"
+        }
+      }
+    },
+    "courseReviewThreads": {
+      "$courseId": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('courses').child($courseId).child('teacherId').val() === auth.uid)",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$msgId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['byUid','text','at']) && newData.child('byUid').val() === auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 1000)",
+          ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('courses').child($courseId).child('teacherId').val() === auth.uid && !data.exists() && newData.exists()))"
+        }
+      }
+    },
+    "teacherCourses": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
     }
   }
 }

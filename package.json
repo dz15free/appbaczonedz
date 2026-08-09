@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "test:rules": "firebase emulators:exec --only database --project baczone-rules-test \"node rules-test.mjs\"",
+    "test:lifecycle": "firebase emulators:exec --only database --project baczone-lifecycle-test \"node lifecycle-test.mjs\""
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",
@@ -19,12 +21,13 @@
     "@tanstack/react-query": "5.66.0",
     "clsx": "2.1.1",
     "firebase": "11.10.0",
-    "next": "^16.2.12",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "next": "15.3.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "zustand": "5.0.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@opennextjs/cloudflare": "0.3.10",
     "@types/node": "22.10.7",
     "@types/react": "19.0.7",
@@ -32,6 +35,7 @@
     "autoprefixer": "10.4.20",
     "eslint": "9.18.0",
     "eslint-config-next": "15.1.6",
+    "firebase-tools": "^13.29.1",
     "postcss": "8.5.1",
     "tailwindcss": "3.4.17",
     "typescript": "5.7.3",
