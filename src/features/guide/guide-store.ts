@@ -2,6 +2,8 @@
 
 import { ref, onValue, set, remove, update, get } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
+import { SEED_CONTENT } from "@/features/guide/seed-content";
 // إعادة تصدير: المستوردون القدامى لا ينكسرون، والمصدر ملفّ محايد
 export { absUrl, SITE_URL } from "@/features/guide/site-url";
 
@@ -23,14 +25,61 @@ export { absUrl, SITE_URL } from "@/features/guide/site-url";
 const PATH = "guide/specialities";
 
 
-/* الأنواع والدمج انتقلت إلى `guide-merge.ts` (وحدة محايدة): كانت
-   تجرّ ١٫١٩MB من البذرة إلى حزمة المتصفّح عبر `"use client"` أعلاه.
-   نعيد تصديرها هنا فلا ينكسر أي مستورد قديم. */
-export {
-  mergeGuide, linkOf, normalizePermalink,
-} from "@/features/guide/guide-merge";
-export type { SpecContent, SpecFull } from "@/features/guide/guide-merge";
-import { mergeGuide, normalizePermalink, type SpecContent, type SpecFull } from "@/features/guide/guide-merge";
+export interface SpecContent {
+  /** الرابط الظاهر — إن غاب استُعمل المعرّف */
+  permalink?: string;
+  /** روابط سابقة تظلّ تعمل بعد التغيير */
+  aliases?: string[];
+  title?: string;
+  fr?: string;
+  field?: string;
+  /** وصف قصير للسيو ولبطاقة الفهرس */
+  excerpt?: string;
+  intro?: string;
+  study?: string;
+  admission?: string;
+  subjects?: string;
+  careers?: string;
+  pros?: string;
+  cons?: string;
+  verdict?: string;
+  /* أقسام إضافية من مراجع المناهج — تُثري المقال بما يهمّ الطالب فعلاً
+     ولا يجده في الوصف الرسمي: ماذا بعد الليسانس، أين يُدرَّس، وماذا
+     يقول من درسه. */
+  modules?: string;
+  master?: string;
+  where?: string;
+  salary?: string;
+  daily?: string;
+  numbers?: string;
+  future?: string;
+  voices?: string;
+  prosCons?: string;
+  /** مسودّة لا تظهر للزوّار */
+  draft?: boolean;
+  updatedAt?: number;
+}
+
+export type SpecFull = SpecLite & SpecContent & { published: boolean };
+
+/** يدمج الفهرس الثابت مع ما كتبتَه */
+export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
+  return SPEC_INDEX.map((s) => {
+    /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
+       فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
+    const c = { ...(SEED_CONTENT[s.slug] ?? {}), ...(content?.[s.slug] ?? {}) };
+    return {
+      ...s,
+      ...c,
+      ar: c.title?.trim() || s.ar,
+      fr: c.fr?.trim() || s.fr,
+      field: c.field?.trim() || s.field,
+      // منشور = له مقدّمة وليس مسودّة. صفحة فارغة أسوأ من غيابها.
+      // منشور = له مقدّمة وليس مسودّة صراحةً
+      published: Boolean(c.intro?.trim()) && c.draft !== true,
+    };
+  });
+}
 
 export function listenGuide(cb: (rows: SpecFull[]) => void) {
   return onValue(ref(rtdb, PATH), (snap) => {
@@ -38,6 +87,21 @@ export function listenGuide(cb: (rows: SpecFull[]) => void) {
   });
 }
 
+/** الرابط الظاهر لتخصّص */
+export function linkOf(s: SpecFull): string {
+  return (s.permalink?.trim() || s.slug).replace(/^\/+|\/+$/g, "");
+}
+
+/** رابط صالح: لاتيني صغير بلا مسافات — ما يظهر في شريط العنوان */
+export function normalizePermalink(x: string): string {
+  return x
+    .trim().toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
 
 export async function saveSpec(slug: string, patch: SpecContent) {
   /* 🐛 التخصّص الجديد يُنشأ بـ`draft: true`، ولم يكن هناك أي سبيل

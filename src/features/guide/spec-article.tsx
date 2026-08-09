@@ -1,19 +1,17 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/ui/icon";
-import { linkOf, type SpecFull } from "@/features/guide/guide-merge";
+import { listenGuide, linkOf, type SpecFull } from "@/features/guide/guide-store";
 import { absUrl } from "@/features/guide/site-url";
 
 /* ════════════════════════════════════════════════════════════
-   عرض موضوع التخصّص — **مكوّن خادم**
+   عرض موضوع التخصّص
 
-   كان مكوّن عميل يجلب المحتوى بنفسه، فيصل الزاحف إلى «جارٍ التحميل…»
-   ولا شيء غيره. الآن المحتوى يُمرَّر جاهزاً من الصفحة، فيولد HTML
-   كاملاً: عنوان، ونصّ، وبيانات منظّمة — ويقرؤه الطالب فوراً بلا
-   انتظار جولة إلى قاعدة البيانات.
-
-   والأقسام تُعرض **فقط إن كُتبت**: قسم فارغ بعنوان يوحي بأنّ الموقع
+   الأقسام تُعرض **فقط إن كُتبت**: قسم فارغ بعنوان يوحي بأنّ الموقع
    ناقص، وحذفه أنظف من ملئه بكلام إنشائي.
-   ════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════════════════ */
 
 const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pro" | "con" }[] = [
   { key: "intro",     label: "ما هو هذا التخصّص؟",        icon: "book" },
@@ -72,35 +70,58 @@ function Body({ text }: { text: string }) {
   );
 }
 
-export function SpecNotFound({ spec }: { spec?: SpecFull | null }) {
-  return (
-    <main className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <h1 className="font-display text-[22px] font-extrabold leading-snug">
-        {spec ? `تخصّص ${spec.ar} — قيد الإعداد` : "لم نجد هذا التخصّص"}
-      </h1>
-      <p className="mx-auto mt-2.5 max-w-md text-[14px] leading-[1.9] text-[var(--bz-ink-2)]">
-        {spec
-          ? "نكتب شرح هذا التخصّص حالياً. عد قريباً، أو تصفّح بقيّة التخصّصات."
-          : "ربما تغيّر الرابط. تصفّح الدليل للعثور على تخصّصك."}
-      </p>
-      <Link href="/specialties"
-        className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-control bg-[var(--bz-blue)] px-5 text-[14px] font-extrabold text-white">
-        <Icon name="chevRight" size={14} />
-        كل التخصّصات
-      </Link>
-    </main>
-  );
-}
+export function SpecArticle({ slug }: { slug: string }) {
+  const [rows, setRows] = useState<SpecFull[] | null>(null);
 
-export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }) {
-  const related = rows
+  useEffect(() => {
+    const unsub = listenGuide(setRows);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, []);
+
+  /* نطابق الرابط المخصّص أوّلاً، ثم الروابط القديمة، ثم المعرّف —
+     فلا ينكسر رابط شاركه طالب قبل أن تُغيّر الرابط. */
+  const spec = useMemo(() => {
+    if (!rows) return undefined;
+    const t = slug.toLowerCase();
+    return (
+      rows.find((s) => linkOf(s).toLowerCase() === t) ??
+      rows.find((s) => (s.aliases ?? []).some((a) => a.toLowerCase() === t)) ??
+      rows.find((s) => s.slug.toLowerCase() === t) ??
+      null
+    );
+  }, [rows, slug]);
+
+  if (spec === undefined) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-[var(--bz-ink-3)]">
+        جارٍ التحميل…
+      </main>
+    );
+  }
+
+  if (!spec || !spec.published) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <h1 className="font-display text-xl font-extrabold">
+          {spec ? `تخصّص ${spec.ar} — قيد الإعداد` : "لم نجد هذا التخصّص"}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--bz-ink-3)]">
+          {spec
+            ? "نكتب شرح هذا التخصّص حالياً. عد قريباً، أو تصفّح بقيّة التخصّصات."
+            : "ربما تغيّر الرابط. تصفّح الدليل للعثور على تخصّصك."}
+        </p>
+        <Link href="/specialties"
+          className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[var(--bz-blue)] px-4 py-2.5 text-sm font-bold text-white">
+          <Icon name="chevRight" size={14} />
+          كل التخصّصات
+        </Link>
+      </main>
+    );
+  }
+
+  const related = (rows ?? [])
     .filter((r) => r.field === spec.field && r.slug !== spec.slug && r.published)
     .slice(0, 6);
-
-  const written = SECTIONS.filter(({ key }) => {
-    const v = spec[key];
-    return typeof v === "string" && v.trim().length > 0;
-  });
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -112,7 +133,9 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
     inLanguage: "ar",
     about: { "@type": "Thing", name: spec.field },
     publisher: { "@type": "Organization", name: "BacZone" },
-    ...(spec.updatedAt ? { dateModified: new Date(spec.updatedAt).toISOString() } : {}),
+    ...(spec.updatedAt
+      ? { dateModified: new Date(spec.updatedAt).toISOString() }
+      : {}),
     mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/specialties/${linkOf(spec)}`) },
   };
 
@@ -137,66 +160,56 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
         dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs) }} />
 
       <header className="bz-guide-hero">
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
-          <nav aria-label="مسار التصفّح"
-            className="mb-3 flex flex-wrap items-center gap-1.5 text-[11.5px] font-semibold text-white/70">
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+          <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/home" className="hover:underline">BacZone</Link>
-            <span aria-hidden>·</span>
-            <Link href="/specialties" className="font-extrabold text-white hover:underline">
+            <span>·</span>
+            <Link href="/specialties" className="font-bold text-white hover:underline">
               دليل التخصّصات
             </Link>
-            <span aria-hidden>·</span>
+            <span>·</span>
             <Link href={`/specialties#${encodeURIComponent(spec.field)}`} className="hover:underline">
               {spec.field}
             </Link>
           </nav>
-          <h1 className="font-display text-[26px] font-extrabold leading-[1.22] sm:text-[36px]">
+          <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
             {spec.ar}
           </h1>
           {spec.fr && (
-            <p className="mt-2 text-[13.5px] font-bold text-white/70" dir="ltr">{spec.fr}</p>
+            <p className="mt-1.5 text-[13px] font-bold text-white/70" dir="ltr">{spec.fr}</p>
           )}
           {spec.excerpt && (
-            /* ١٥px لا ١٣٫٥px، وارتفاع سطر ١٫٩ — هذا نصّ يُقرأ لا وسم. */
-            <p className="mt-3.5 max-w-2xl text-[15px] leading-[1.9] text-white/85">
+            <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80">
               {spec.excerpt}
             </p>
           )}
         </div>
       </header>
 
-      <article className="mx-auto w-full max-w-3xl px-4 pb-14 pt-6">
-        {/* فهرس المقال — ١٧ قسماً بلا فهرس يعني تمريراً أعمى على الهاتف */}
-        {written.length > 3 && (
-          <nav aria-label="أقسام الموضوع" className="bz-spec-toc">
-            <p className="bz-spec-toc-t">في هذا الموضوع</p>
-            <div className="bz-spec-toc-l">
-              {written.map(({ key, label }) => (
-                <a key={String(key)} href={`#sec-${String(key)}`}>{label}</a>
-              ))}
-            </div>
-          </nav>
-        )}
-
-        {written.map(({ key, label, icon, tone }) => (
-          <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec ${tone ? `is-${tone}` : ""}`}>
-            <h2>
-              <Icon name={icon} size={15} />
-              {label}
-            </h2>
-            <Body text={spec[key] as string} />
-            {key === "admission" && (
-              <p className="bz-spec-note">
-                المعدّلات مؤشّر من سنوات سابقة وتتغيّر كل سنة بحسب عدد الناجحين
-                ورغباتهم — لا تعتبرها ضماناً.
-              </p>
-            )}
-          </section>
-        ))}
+      <article className="mx-auto w-full max-w-3xl px-3 pb-14 pt-6 sm:px-4">
+        {SECTIONS.map(({ key, label, icon, tone }) => {
+          const v = spec[key];
+          if (typeof v !== "string" || !v.trim()) return null;
+          return (
+            <section key={String(key)} className={`bz-spec-sec ${tone ? `is-${tone}` : ""}`}>
+              <h2>
+                <Icon name={icon} size={15} />
+                {label}
+              </h2>
+              <Body text={v} />
+              {key === "admission" && (
+                <p className="bz-spec-note">
+                  المعدّلات مؤشّر من سنوات سابقة وتتغيّر كل سنة بحسب عدد الناجحين
+                  ورغباتهم — لا تعتبرها ضماناً.
+                </p>
+              )}
+            </section>
+          );
+        })}
 
         {related.length > 0 && (
           <aside className="mt-9 border-t border-[var(--bz-line)] pt-6">
-            <h2 className="mb-3 font-display text-[17px] font-extrabold">تخصّصات قريبة</h2>
+            <h2 className="mb-3 font-display text-base font-extrabold">تخصّصات قريبة</h2>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {related.map((r) => (
                 <Link key={r.slug} href={`/specialties/${linkOf(r)}`} className="bz-spec-rel">

@@ -48,54 +48,6 @@
   --bz-green-050:#EAF6F1;
   --bz-board-grid:#EDF0F5;
 
-  /* ══════════════════════════════════════════════════════════
-     رموز التصميم — السلالم الموحّدة
-
-     قبل هذا الملف كانت المنصّة تحمل ثلاث لوحات ألوان متنافسة،
-     واثني عشر نصف قطر مكتوباً بالبكسل يدوياً، وعشرين ظلّاً فريداً
-     لا يعني أيّها شيئاً. النتيجة أنّ الشاشة الواحدة كانت تحمل
-     أزرقين مختلفين وأربعة أنصاف أقطار — وهذا بالضبط ما يجعل
-     الواجهة تبدو «تقليدية»: لا لأنّها قبيحة، بل لأنّها بلا نظام.
-
-     ما يلي **سلالم**: كل قيمة درجة في سلّم، ولا قيمة خارجه.
-     ══════════════════════════════════════════════════════════ */
-
-  /* ــ أنصاف الأقطار ــ
-     ثلاث درجات لا أكثر: عنصر داخل بطاقة، بطاقة، لوحة كبيرة. */
-  --r-xs: 10px;    /* شارة · رقاقة صغيرة */
-  --r-sm: 12px;    /* عنصر داخل بطاقة */
-  --r-md: 14px;    /* حقل · زرّ */
-  --r-lg: 18px;    /* بطاقة */
-  --r-xl: 24px;    /* لوحة · قسم · ورقة سفليّة */
-
-  /* ــ الارتفاع (الظلال) ــ
-     أربع درجات بمعنى: 0 ملتصق، 1 مرفوع قليلاً، 2 عائم، 3 فوق كل شيء.
-     حبر واحد لكل الظلال (لا حبران كما كان). */
-  --e-0: 0 0 0 0 rgba(0,0,0,0);
-  --e-1: 0 1px 2px rgba(15,23,42,.04), 0 2px 8px -4px rgba(15,23,42,.08);
-  --e-2: 0 2px 4px rgba(15,23,42,.04), 0 8px 20px -8px rgba(15,23,42,.12);
-  --e-3: 0 4px 8px rgba(15,23,42,.05), 0 20px 40px -16px rgba(15,23,42,.18);
-  --e-brand: 0 8px 24px -10px rgb(var(--bz-primary) / .45);
-
-  /* ــ الحركة ــ منحنى واحد وثلاث سرعات */
-  --ease: cubic-bezier(.22, 1, .36, 1);
-  --t-fast: 140ms;
-  --t-base: 220ms;
-  --t-slow: 340ms;
-
-  /* ــ ارتفاعات الأشرطة ــ
-     كانت ثلاثة أرقام سحرية (96 و84 و54) تصف الشريط نفسه.
-     صار رقماً واحداً تُشتقّ منه الحشوة في كل مكان. */
-  --h-header: 60px;
-  --h-bottombar: 60px;
-  --safe-b: env(safe-area-inset-bottom, 0px);
-
-  /* ــ طبقات z ــ سلّم صريح بدل خمس مراتب عشوائية */
-  --z-sticky: 30;
-  --z-nav: 40;
-  --z-drawer: 60;
-  --z-sheet: 70;
-  --z-toast: 80;
 }
 
 .dark {
@@ -158,136 +110,6 @@ body {
   background: transparent;
 }
 
-/* ════════════════════════════════════════════════════════════
-   حشوة القاع — رقم واحد بدل ثلاثة
-
-   كانت `pb-24` (٩٦px) في الغلاف، و`84px` في `.bz-dock`، و`pb-24`
-   مرّة أخرى في الفوتر، والشريط الحقيقي ~٥٤px. فكان الهاتف يخسر
-   نحو ٧٪ من ارتفاع الشاشة فراغاً أبيض، ومرّتين معاً حين تحمل
-   الصفحة فوتراً. الآن مصدر واحد يشتقّ منه الجميع.
-   ════════════════════════════════════════════════════════════ */
-:root { --pb-shell: calc(var(--h-bottombar) + var(--safe-b) + 12px); }
-@media (min-width: 1024px) { :root { --pb-shell: 0px; } }
-
-/* انزلاق الدرج من الحافّة (RTL: من اليمين) */
-@keyframes bz-drawer-in {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
-}
-.bz-drawer-in { animation: bz-drawer-in .28s var(--ease) both; }
-@media (prefers-reduced-motion: reduce) { .bz-drawer-in { animation-duration: .01ms !important; } }
-
-/* ════════════════════════════════════════════════════════════
-   لغة الأسطح — بطاقة واحدة لكل المنصّة
-
-   كانت كل بطاقة في الموقع نصّاً مُعاد كتابته يدوياً
-   (`rounded-2xl border border-border bg-surface p-4`)، فاختلفت
-   الأنصاف والحدود والحشوات من صفحة لأخرى. الآن سطح واحد:
-   حدّ خفيف **مع** ارتفاع خفيف — لا حدّ رماديّ عارٍ.
-   ════════════════════════════════════════════════════════════ */
-.bz-surface-1 {
-  background: var(--bz-surface);
-  border: 1px solid color-mix(in srgb, var(--bz-border) 80%, transparent);
-  box-shadow: var(--e-1);
-}
-.bz-surface-2 {
-  background: var(--bz-surface);
-  border: 1px solid color-mix(in srgb, var(--bz-border) 70%, transparent);
-  box-shadow: var(--e-2);
-}
-/* في الوضع الداكن الظلال لا تُرى — يرفع السطح نفسه بدل الظلّ */
-.dark .bz-surface-1 { box-shadow: none; background: color-mix(in srgb, var(--bz-surface) 96%, #fff); }
-.dark .bz-surface-2 { box-shadow: none; background: color-mix(in srgb, var(--bz-surface) 92%, #fff); }
-
-/* بطاقة قابلة للنقر: ترتفع قليلاً لا تتضخّم */
-.bz-lift {
-  transition: box-shadow var(--t-base) var(--ease),
-              border-color var(--t-base) var(--ease),
-              transform var(--t-base) var(--ease);
-}
-@media (hover: hover) {
-  .bz-lift:hover {
-    box-shadow: var(--e-2);
-    border-color: rgb(var(--bz-primary) / .28);
-    transform: translateY(-2px);
-  }
-}
-.bz-lift:active { transform: translateY(0); }
-
-/* رفّ أفقي للشرائح — بديل الشرائح المتراكمة التي كانت تأكل
-   ١٨٠ بكسل من شاشة الهاتف قبل أوّل نتيجة */
-.bz-rail {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-block: 2px;
-  /* يتنفّس إلى حافّة الشاشة بدل أن يُقصّ داخل الحشوة */
-  margin-inline: -16px;
-  padding-inline: 16px;
-}
-.bz-rail::-webkit-scrollbar { display: none; }
-.bz-rail > * { scroll-snap-align: start; flex: 0 0 auto; }
-
-/* تدرّج تلاشٍ عند حافّة الرفّ ليُفهَم أنّ هناك المزيد */
-.bz-rail-wrap { position: relative; }
-.bz-rail-wrap::after {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  width: 28px;
-  pointer-events: none;
-  background: linear-gradient(to left, transparent, var(--bz-bg));
-}
-[dir="rtl"] .bz-rail-wrap::after { background: linear-gradient(to right, transparent, var(--bz-bg)); }
-
-/* هيكل تحميل — موجة بدل نبضة رمادية ميّتة */
-@keyframes bz-shimmer { 100% { transform: translateX(-100%); } }
-.bz-skel {
-  position: relative;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--bz-border) 55%, var(--bz-surface));
-  border-radius: var(--r-sm);
-}
-.bz-skel::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(100%);
-  background: linear-gradient(90deg, transparent,
-              color-mix(in srgb, var(--bz-surface) 70%, transparent), transparent);
-  animation: bz-shimmer 1.4s infinite;
-}
-@media (prefers-reduced-motion: reduce) { .bz-skel::after { animation: none; } }
-
-/* حلقة تركيز واحدة لكل المنصّة — كانت غائبة تماماً */
-.bz-focusable:focus-visible,
-a:focus-visible, button:focus-visible,
-input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid rgb(var(--bz-primary) / .75);
-  outline-offset: 2px;
-  border-radius: var(--r-xs);
-}
-
-/* عنوان قسم — الحجم نفسه في كل صفحة بدل ستّة أحجام */
-.bz-h-section {
-  font-family: var(--font-display), var(--font-tajawal), sans-serif;
-  font-size: 1.0625rem;   /* 17px */
-  line-height: 1.5;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--bz-text);
-}
-@media (min-width: 640px) { .bz-h-section { font-size: 1.1875rem; } }
-
-/* نصّ الجسم: عرض سطر مقروء ووزن أوضح ممّا كان */
-.bz-prose { font-size: 15px; line-height: 1.85; color: var(--bz-text); }
-.bz-prose p { margin: 0 0 0.85em; }
-.bz-prose > :last-child { margin-bottom: 0; }
-
 /* ========================================================================
    أدوات مساعدة (Utilities)
    ======================================================================== */
@@ -318,8 +140,8 @@ input::placeholder, textarea::placeholder {
 /* خلفية "كونية" دراسية للهيرو */
 .bz-cosmic-bg {
   background:
-    radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.16), transparent 40%),
-    radial-gradient(circle at 80% 30%, rgba(14, 165, 233, 0.14), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(79, 70, 229, 0.16), transparent 45%),
     radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.1), transparent 50%);
 }
 
@@ -389,8 +211,8 @@ body.bz-fullscreen-active {
 /* خلفية "شبكية" خفيفة للوحة الدراسة */
 .bz-studio-mesh {
   background:
-    radial-gradient(circle at 12% -10%, rgba(37, 99, 235, 0.18), transparent 42%),
-    radial-gradient(circle at 90% 105%, rgba(14, 165, 233, 0.12), transparent 48%),
+    radial-gradient(circle at 12% -10%, rgba(99, 102, 241, 0.16), transparent 42%),
+    radial-gradient(circle at 90% 105%, rgba(139, 92, 246, 0.12), transparent 48%),
     var(--studio-bg);
 }
 
@@ -436,7 +258,7 @@ body.bz-fullscreen-active {
 .bz-studio-tool.active {
   color: #fff;
   background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
-  box-shadow: 0 6px 18px -6px rgba(37, 99, 235, 0.65);
+  box-shadow: 0 6px 18px -6px rgba(99, 102, 241, 0.65);
 }
 
 /* زر أيقونة مساعد (مشاركة/استفتاء/شاشة كاملة...) */
@@ -465,7 +287,7 @@ body.bz-fullscreen-active {
 
 /* توهّج خلفي للشعار/الأيقونة الرئيسية */
 .bz-studio-glow {
-  box-shadow: 0 8px 28px -8px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 8px 28px -8px rgba(99, 102, 241, 0.55);
 }
 
 /* ═══════════════════════════════════════════
@@ -488,7 +310,7 @@ body.bz-fullscreen-active {
 .bz-marwa-content .bz-ul li::marker { color: rgb(var(--bz-primary)); }
 .bz-marwa-content .bz-ol li::marker { color: rgb(var(--bz-primary)); font-weight: 700; }
 .bz-marwa-content .bz-code {
-  background: rgb(var(--bz-primary) / 0.10); color: rgb(var(--bz-primary));
+  background: rgba(99,102,241,0.12); color: rgb(var(--bz-primary));
   padding: 0.1rem 0.35rem; border-radius: 0.35rem; font-size: 0.82em;
   font-family: ui-monospace, monospace; direction: ltr; display: inline-block;
 }
@@ -577,7 +399,7 @@ body.bz-fullscreen-active {
 
 /* ═══ اسم الموقع — هوية احترافية ═══ */
 .bz-brand {
-  font-family: var(--font-display), var(--font-tajawal), system-ui, sans-serif;
+  font-family: var(--font-display, system-ui), "Segoe UI", sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--bz-text);
@@ -587,30 +409,37 @@ body.bz-fullscreen-active {
 
 /* ═══ هيدر أبيض نظيف بألوان واقعية ═══ */
 .bz-header-bar {
-  background: color-mix(in srgb, var(--bz-surface) 82%, transparent);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
   color: var(--bz-text);
-  border-bottom: 1px solid color-mix(in srgb, var(--bz-border) 70%, transparent);
+  border-bottom: 1px solid var(--bz-border);
+}
+:root.dark .bz-header-bar, .dark .bz-header-bar {
+  background: rgba(17, 24, 39, 0.85);
 }
 .bz-header-bar .bz-brand { color: var(--bz-text); }
 .bz-header-bar .bz-nav-link { color: var(--bz-text-muted); }
 .bz-header-bar .bz-nav-link:hover { background: rgb(var(--bz-primary) / 0.07); color: var(--bz-text); }
-.bz-header-bar .bz-nav-active { background: rgb(var(--bz-primary) / 0.1) !important; color: rgb(var(--bz-primary)) !important; }
+.bz-header-bar .bz-nav-active { background: rgba(var(--bz-primary), 0.1) !important; color: rgb(var(--bz-primary)) !important; }
 
 /* البانر السفلي (هاتف) — أبيض نظيف */
 .bz-bottom-bar {
-  background: color-mix(in srgb, var(--bz-surface) 92%, transparent);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
   border-top: 1px solid var(--bz-border);
 }
+:root.dark .bz-bottom-bar, .dark .bz-bottom-bar {
+  background: rgba(17, 24, 39, 0.92);
+}
 .bz-bottom-bar a, .bz-bottom-bar button { color: var(--bz-text-muted); }
-.bz-bottom-bar { min-height: var(--h-bottombar); }
 .bz-bottom-bar a.bz-bottom-active, .bz-bottom-bar .bz-bottom-active { color: rgb(var(--bz-primary)); }
 .bz-bottom-bar a.bz-fab, .bz-bottom-bar a.bz-fab * { color: #ffffff !important; }
 
 /* ═══ تحسينات تجربة المستخدم العامة ═══ */
+html { scroll-behavior: smooth; }
+
 /* إزالة وميض اللمس الأزرق على الهاتف */
 * { -webkit-tap-highlight-color: transparent; }
 
@@ -624,10 +453,8 @@ body.bz-fullscreen-active {
   button, a { touch-action: manipulation; }
 }
 
-/* الصور: `content-visibility:auto` بلا `contain-intrinsic-size` كان
-   يجعل كل صورة تقفز بالتخطيط لحظة دخولها الشاشة. المقاس الضمني
-   يحجز مكاناً تقريبياً فيختفي القفز (CLS). */
-img { content-visibility: auto; contain-intrinsic-size: auto 300px; }
+/* تحسين عرض الصور أثناء التحميل */
+img { content-visibility: auto; }
 
 /* انتقالات ناعمة افتراضية للعناصر التفاعلية */
 button, a { transition-property: background-color, color, border-color, transform, opacity, box-shadow; transition-duration: 0.15s; }
@@ -649,13 +476,13 @@ html { scrollbar-gutter: stable; }
 }
 
 /* ═══ معاينة الملاحظات المشتركة ═══ */
-.bz-notes-preview h1 { font-size: 1.3rem; font-weight: 800; color: rgb(var(--bz-primary)); margin: 0.8em 0 0.4em; border-bottom: 2px solid rgb(var(--bz-primary) / 0.15); padding-bottom: 4px; }
+.bz-notes-preview h1 { font-size: 1.3rem; font-weight: 800; color: rgb(var(--bz-primary)); margin: 0.8em 0 0.4em; border-bottom: 2px solid rgba(var(--bz-primary), 0.15); padding-bottom: 4px; }
 .bz-notes-preview h2 { font-size: 1.12rem; font-weight: 700; color: rgb(var(--bz-primary)); margin: 0.7em 0 0.3em; }
 .bz-notes-preview h3 { font-size: 1rem; font-weight: 700; margin: 0.6em 0 0.3em; }
 .bz-notes-preview p { margin: 0.4em 0; }
 .bz-notes-preview ul { margin: 0.4em 1.4em; list-style: disc; }
 .bz-notes-preview li { margin: 0.25em 0; }
-.bz-notes-preview blockquote { border-inline-start: 3px solid rgb(var(--bz-primary)); background: rgb(var(--bz-primary) / 0.06); margin: 0.6em 0; padding: 0.5em 0.9em; border-radius: 8px; }
+.bz-notes-preview blockquote { border-inline-start: 3px solid rgb(var(--bz-primary)); background: rgba(var(--bz-primary), 0.06); margin: 0.6em 0; padding: 0.5em 0.9em; border-radius: 8px; }
 .bz-notes-preview mark { background: #fef08a; color: #1a1a2e; padding: 0 3px; border-radius: 3px; }
 .bz-notes-preview hr { border: none; border-top: 2px dashed var(--bz-border); margin: 1.2em 0; }
 .bz-notes-preview u { text-decoration-color: rgb(var(--bz-primary)); text-decoration-thickness: 2px; }
@@ -803,7 +630,7 @@ html { scrollbar-gutter: stable; }
 /* الأزرار العائمة (الخبّاشة + الإدارة)
    الهاتف: مرفوعة فوق شريط التنقّل السفلي.
    الحاسوب: قريبة من الزاوية السفلية كالمواقع الاحترافية (لا شريط سفلي). */
-.bz-dock { bottom: calc(var(--safe-b) + var(--h-bottombar) + 10px); }
+.bz-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); }
 @media (min-width: 1024px) {
   .bz-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 }
@@ -1004,11 +831,7 @@ body.bz-fullscreen-active .bz-voicebar {
 
 .bz-guide-chip {
   flex: 0 0 auto;
-  /* ٣٦px ارتفاعاً: كانت ٣٤px، وهي شرائح تُلمس بالإبهام على الهاتف */
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 14px;
+  padding: 7px 13px;
   border-radius: 999px;
   border: 1px solid var(--bz-line);
   background: var(--bz-surface, #fff);
@@ -1077,61 +900,21 @@ body.bz-fullscreen-active .bz-voicebar {
   background: var(--bz-amber-050);
 }
 
-/* ── فهرس المقال ──
-   موضوع التخصّص يبلغ سبعة عشر قسماً. بلا فهرس يصير التنقّل فيه
-   تمريراً أعمى على الهاتف، والطالب الذي يريد «القبول والمعدّلات»
-   وحدها مضطرّ للمرور بكل شيء. */
-.bz-spec-toc {
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--bz-line);
-  background: var(--bz-blue-050);
-}
-.bz-spec-toc-t {
-  margin: 0 0 9px;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--bz-blue-700);
-}
-.bz-spec-toc-l { display: flex; flex-wrap: wrap; gap: 7px; }
-.bz-spec-toc-l a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: var(--r-xs);
-  border: 1px solid color-mix(in srgb, var(--bz-blue) 22%, transparent);
-  background: var(--bz-surface, #fff);
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--bz-blue-700);
-  text-decoration: none;
-  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-}
-.bz-spec-toc-l a:hover { background: var(--bz-blue); color: #fff; }
-
 /* ── أقسام الموضوع ── */
 .bz-spec-sec {
-  margin-bottom: 16px;
-  padding: 18px 16px;
-  border-radius: var(--r-lg);
+  margin-bottom: 18px;
+  padding: 16px;
+  border-radius: 18px;
   border: 1px solid var(--bz-line);
   background: var(--bz-surface, #fff);
-  box-shadow: var(--e-1);
-  scroll-margin-top: calc(var(--h-header) + 12px);
 }
-@media (min-width: 640px) { .bz-spec-sec { padding: 22px 24px; } }
 .bz-spec-sec > h2 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--bz-line) 70%, transparent);
-  font-size: 16.5px;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: -.01em;
   color: var(--bz-blue-700);
 }
 /* الإيجابيات والسلبيات تُقرأ بلونها قبل قراءة عنوانها */
@@ -1140,26 +923,20 @@ body.bz-fullscreen-active .bz-voicebar {
 .bz-spec-sec.is-con { border-inline-start: 3px solid var(--bz-amber); }
 .bz-spec-sec.is-con > h2 { color: var(--bz-amber); }
 
-/* وضوح النصّ: ١٤px بلون رماديّ (`--bz-ink-2`) على أبيض هو **نصّ
-   ثانوي** — ومقالُ التخصّص هو المحتوى نفسه لا هامشه. رُفع إلى ١٥٫٥px
-   بلون الحبر الأساسي، وقُيّد عرض السطر بـ ٧٢ محرفاً: السطر الأطول
-   من ذلك يُتعب العين ويُفقدها بداية السطر التالي. */
 .bz-spec-p {
-  margin: 10px 0;
-  font-size: 15.5px;
-  line-height: 1.95;
-  color: var(--bz-ink);
-  max-width: 72ch;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 2;            /* العربية تحتاج تنفّساً أكبر بين السطور */
+  color: var(--bz-ink-2);
 }
 .bz-spec-list { margin: 8px 0; padding: 0; list-style: none; }
 .bz-spec-list li {
   position: relative;
-  padding-inline-start: 20px;
-  margin-bottom: 9px;
-  font-size: 15.5px;
-  line-height: 1.9;
-  color: var(--bz-ink);
-  max-width: 72ch;
+  padding-inline-start: 18px;
+  margin-bottom: 7px;
+  font-size: 14px;
+  line-height: 1.95;
+  color: var(--bz-ink-2);
 }
 .bz-spec-list li::before {
   content: "";
@@ -1172,10 +949,10 @@ body.bz-fullscreen-active .bz-voicebar {
   background: var(--bz-blue);
 }
 .bz-spec-note {
-  margin-top: 12px;
-  padding: 11px 14px;
-  border-radius: var(--r-sm);
-  font-size: 13px;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
   line-height: 1.85;
   color: #8A5A12;
   background: var(--bz-amber-050);

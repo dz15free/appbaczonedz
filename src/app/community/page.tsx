@@ -58,11 +58,7 @@ import {
 import { RichText } from "@/components/ui/linkify";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { ShareButton } from "@/components/ui/share-sheet";
-import { faComments } from "@fortawesome/free-solid-svg-icons";
 import { PostMediaGrid, isSupportedVideoUrl } from "@/features/community/post-media";
-import { Card, Chip, ChipRail, EmptyState, SkeletonList, IconButton, Badge } from "@/components/ui/kit";
-import { Button } from "@/components/ui/field";
-import { timeAgoShort } from "@/lib/time-ago";
 
 const MAX_IMAGES = 6;
 
@@ -94,14 +90,13 @@ export default function CommunityPage() {
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-5">
         <AdSlot placement="community" className="mb-4" />
-        <div className="mb-4 flex gap-1 rounded-control border border-border bg-surface p-1 shadow-e1">
+        <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              aria-pressed={tab === t.id}
-              className={`min-h-11 flex-1 rounded-item px-3 text-[13px] font-extrabold transition duration-fast ease-bz ${
-                tab === t.id ? "bg-gradient-primary text-white shadow-brand" : "text-text-muted hover:text-primary"
+              className={`min-h-[40px] flex-1 shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-bold transition ${
+                tab === t.id ? "bg-gradient-primary text-white" : "text-text-muted"
               }`}
             >
               {t.label}
@@ -124,36 +119,13 @@ export default function CommunityPage() {
   );
 }
 
-/* «منذ متى» انتقلت إلى `src/lib/time-ago.ts`: كانت ثلاث نسخ في
-   ثلاث صفحات بثلاث صياغات مختلفة للوقت نفسه. */
-
-
-/* ════════════════════════════════════════════════════════════
-   🐛 مواد المنشورات — مصدر واحد
-
-   كان المحرّر يكتب الاسم الرسمي الكامل («الرياضيات»، «العلوم
-   الفيزيائية»، «اللغة العربية») بينما تقارن شرائح التصفية بالاسم
-   المختصر («رياضيات»، «فيزياء»، «عربية») بمساواة صارمة. فكان
-   الضغط على أي شريحة مادّة **يُفرغ الصفحة تماماً** — إلى الأبد،
-   لأنّ الاسمين لا يتطابقان في أي منشور مهما كثرت المنشورات.
-
-   الآن القائمة واحدة، والشرائح تُشتقّ منها — فيستحيل اختلافهما.
-   ════════════════════════════════════════════════════════════ */
-const POST_SUBJECTS = [
-  "اللغة العربية", "العلوم الإسلامية", "الرياضيات", "علوم الطبيعة والحياة",
-  "العلوم الفيزيائية", "الفلسفة", "التاريخ والجغرافيا", "اللغة الفرنسية",
-  "اللغة الإنجليزية", "اللغة الأمازيغية", "القانون", "التسيير المحاسبي والمالي",
-  "الاقتصاد والمناجمنت", "اللغة الإسبانية", "اللغة الألمانية", "اللغة الإيطالية",
-  "الهندسة الكهربائية", "الهندسة الميكانيكية", "هندسة الطرائق",
-  "الهندسة المدنية", "مادة التخصص الفني",
-] as const;
-
-/** الشرائح المعروضة: أكثر المواد استعمالاً — والباقي عبر القائمة نفسها */
-const QUICK_SUBJECTS = [
-  "الرياضيات", "العلوم الفيزيائية", "علوم الطبيعة والحياة",
-  "اللغة العربية", "الفلسفة", "اللغة الفرنسية", "اللغة الإنجليزية",
-  "التاريخ والجغرافيا", "العلوم الإسلامية",
-];
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "الآن";
+  if (s < 3600) return `${Math.floor(s / 60)} د`;
+  if (s < 86400) return `${Math.floor(s / 3600)} س`;
+  return `${Math.floor(s / 86400)} يوم`;
+}
 
 function Feed({ me, isAdmin, myRole, track }: {
   me: Person; isAdmin: boolean; myRole?: string; track?: string | null;
@@ -165,9 +137,6 @@ function Feed({ me, isAdmin, myRole, track }: {
   const [feedProgress, setFeedProgress] = useState<Record<string, FeedProgress>>({});
   const isStaff = myRole === "teacher" || myRole === "admin";
   const [posts, setPosts] = useState<Post[]>([]);
-  /* كانت الصفحة تومض «لا منشورات بعد. كن أول من ينشر!» في كل زيارة
-     قبل وصول البيانات — أسوأ رسالة يمكن أن تستقبل بها مجتمعاً نشطاً. */
-  const [loadingPosts, setLoadingPosts] = useState(true);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [sort, setSort] = useState<"recent" | "top">("recent");
@@ -199,7 +168,7 @@ function Feed({ me, isAdmin, myRole, track }: {
   }, []);
 
   useEffect(() => {
-    const unsub = listenPosts(me.uid, (all) => { setPosts(all); setLoadingPosts(false); });
+    const unsub = listenPosts(me.uid, setPosts);
     return () => { if (typeof unsub === "function") unsub(); };
   }, [me.uid]);
   useEffect(() => {
@@ -301,18 +270,16 @@ function Feed({ me, isAdmin, myRole, track }: {
 
   return (
     <div className="space-y-4">
-      <Card flush className="p-3 sm:p-4">
+      <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4">
         <div className="flex gap-3">
           <LiveAvatar uid={me.uid} name={me.name || "ط"} size="md" className="shrink-0" />
           <textarea
             ref={composerRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="شارك سؤالاً أو فكرة أو ملخّصاً…"
+            placeholder="شارك سؤالاً أو فكرة أو ملخّصاً..."
             rows={2}
-            /* ١٦px إلزامي: أقلّ منه يجعل Safari على iPhone يُكبّر الصفحة
-               لحظة الكتابة، فيخرج المحرّر عن الشاشة. */
-            className="min-h-11 flex-1 resize-none bg-transparent pt-2 text-[16px] leading-relaxed outline-none placeholder:text-text-muted"
+            className="min-h-[44px] flex-1 resize-none bg-transparent pt-2 text-sm outline-none placeholder:text-text-muted"
           />
         </div>
 
@@ -374,100 +341,73 @@ function Feed({ me, isAdmin, myRole, track }: {
           </div>
         )}
 
-        {/* صفّ الأدوات.
-            كان صفّاً واحداً يحمل ٦ أزرار ٣٦px + فاصلاً + قائمة بواحد
-            وعشرين اسماً عربياً طويلاً + زرّ النشر، داخل ٣٢٨px. فينكسر
-            إلى ثلاثة صفوف مهترئة. الآن صفّان بمعنى: الإرفاق والخصوصية
-            في الأعلى، والتصنيف والنشر في الأسفل بعرض كامل. */}
-        <div className="mt-3 space-y-2.5 border-t border-border pt-3">
-          <div className="flex items-center gap-1">
-            <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={pick} />
-            <input ref={fileInput} type="file" hidden onChange={pick} />
-            <IconButton icon={faImage} label="إرفاق صور (حتى 6)" size="sm"
-              onClick={() => imageInput.current?.click()} />
-            <IconButton icon={faVideo} label="إضافة فيديو برابط" size="sm"
-              tone={showVideoField || videoUrl ? "brand" : "muted"}
-              onClick={() => setShowVideoField((v) => !v)} />
-            <IconButton icon={faPaperclip} label="إرفاق ملفّ" size="sm"
-              onClick={() => fileInput.current?.click()} />
-
-            <span className="mx-1 h-5 w-px bg-border" />
-
-            {([
-              { id: "public",  icon: faGlobe,     label: "عام — يراه الجميع" },
-              { id: "friends", icon: faUserGroup, label: "أصدقائي فقط" },
-              { id: "private", icon: faLock,      label: "خاص — أنا فقط" },
-            ] as const).map((v) => (
-              <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
-                aria-pressed={visibility === v.id}
-                className={`grid h-10 w-10 place-items-center rounded-control transition ${
-                  visibility === v.id
-                    ? "bg-primary text-white"
-                    : "text-text-muted hover:bg-primary/10 hover:text-primary"
-                }`}>
-                <FontAwesomeIcon icon={v.icon} className="h-[15px] w-[15px]" />
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
-              aria-label="مادّة المنشور"
-              className="h-11 min-w-0 flex-1 rounded-control border border-border bg-surface px-2.5 text-[13px] font-bold outline-none focus:border-primary">
-              <option value="">بدون مادّة</option>
-              {POST_SUBJECTS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            {/* 🐛 كان الزرّ يبقى معطّلاً إن أرفقت صوراً أو فيديو بلا نصّ،
-                رغم أنّ `publish()` يقبل ذلك — فيبدو النشر معطوباً. */}
-            <Button size="md" onClick={publish} loading={posting}
-              disabled={!text.trim() && !pending && !pendingImages.length && !videoUrl.trim()}
-              className="shrink-0 px-6">
-              نشر
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* الترتيب + فلتر المادّة — رفّ أفقي لا شرائح متراكمة */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Chip active={sort === "recent"} onClick={() => setSort("recent")}>
-            <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
-          </Chip>
-          <Chip active={sort === "top"} onClick={() => setSort("top")}>
-            <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
-          </Chip>
-          {subjectFilter && (
-            <button onClick={() => setSubjectFilter("")}
-              className="ms-auto inline-flex min-h-9 items-center gap-1.5 rounded-chip px-2.5 text-[12px] font-extrabold text-danger transition hover:bg-danger/10">
-              <FontAwesomeIcon icon={faXmark} className="h-3 w-3" /> أزل الفلتر
+        {/* صف الأدوات */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <input ref={imageInput} type="file" accept="image/*" multiple hidden onChange={pick} />
+          <input ref={fileInput} type="file" hidden onChange={pick} />
+          <button onClick={() => imageInput.current?.click()} aria-label="صور" title="إرفاق صور (حتى 6)"
+            className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
+            <FontAwesomeIcon icon={faImage} className="h-4 w-4" />
+          </button>
+          <button onClick={() => setShowVideoField((v) => !v)} aria-label="فيديو" title="إضافة فيديو برابط"
+            className={`grid h-9 w-9 place-items-center rounded-lg transition hover:bg-primary/10 hover:text-primary ${
+              showVideoField || videoUrl ? "bg-primary/10 text-primary" : "text-text-muted"
+            }`}>
+            <FontAwesomeIcon icon={faVideo} className="h-4 w-4" />
+          </button>
+          <button onClick={() => fileInput.current?.click()} aria-label="ملف" title="إرفاق ملف"
+            className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
+            <FontAwesomeIcon icon={faPaperclip} className="h-4 w-4" />
+          </button>
+          <div className="h-5 w-px bg-border" />
+          {([
+            { id: "public",  icon: faGlobe,     label: "عام" },
+            { id: "friends", icon: faUserGroup, label: "أصدقاء" },
+            { id: "private", icon: faLock,       label: "خاص" },
+          ] as const).map((v) => (
+            <button key={v.id} onClick={() => setVisibility(v.id)} aria-label={v.label} title={v.label}
+              className={`grid h-9 w-9 place-items-center rounded-lg transition ${visibility === v.id ? "bg-gradient-primary text-white" : "text-text-muted hover:bg-primary/10 hover:text-primary"}`}>
+              <FontAwesomeIcon icon={v.icon} className="h-3.5 w-3.5" />
             </button>
-          )}
-        </div>
-        <ChipRail>
-          <Chip active={!subjectFilter} onClick={() => setSubjectFilter("")}>كلّ المواد</Chip>
-          {QUICK_SUBJECTS.map((s) => (
-            <Chip key={s} active={subjectFilter === s} onClick={() => setSubjectFilter(s)}>{s}</Chip>
           ))}
-        </ChipRail>
+
+          <select value={postSubject} onChange={(e) => setPostSubject(e.target.value)}
+            className="ml-auto h-9 rounded-lg border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+            title="فئة المنشور">
+            <option value="">بدون فئة</option>
+            {["اللغة العربية","العلوم الإسلامية","الرياضيات","علوم الطبيعة والحياة","العلوم الفيزيائية","الفلسفة","التاريخ والجغرافيا","اللغة الفرنسية","اللغة الإنجليزية","اللغة الأمازيغية","القانون","التسيير المحاسبي والمالي","الاقتصاد والمناجمنت","اللغة الإسبانية","اللغة الألمانية","اللغة الإيطالية","الهندسة الكهربائية","الهندسة الميكانيكية","هندسة الطرائق","الهندسة المدنية","مادة التخصص الفني"].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
+            className="h-9 shrink-0 rounded-lg bg-gradient-primary px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50">
+            {posting ? "..." : "نشر"}
+          </button>
+        </div>
       </div>
 
-      {loadingPosts ? (
-        <SkeletonList count={3} lines={3} media />
-      ) : shown.length === 0 && studyItems.length === 0 ? (
-        <EmptyState
-          icon={faComments}
-          title={subjectFilter ? `لا منشورات في «${subjectFilter}» بعد` : "لا منشورات بعد"}
-          hint={subjectFilter
-            ? "جرّب مادّة أخرى، أو كن أوّل من يفتح النقاش في هذه المادّة."
-            : "اسأل عمّا يصعب عليك، أو شارك ملخّصاً أفادك — سؤالك يفيد غيرك أيضاً."}
-          action={
-            <Button size="md" onClick={() => composerRef.current?.focus()}>اكتب أوّل منشور</Button>
-          }
-        />
-      ) : null}
+      {/* الترتيب + فلتر الفئة */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setSort("recent")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
+          <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
+        </button>
+        <button onClick={() => setSort("top")}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
+          <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
+        </button>
+        <div className="mx-1 h-5 w-px self-center bg-border" />
+        {["","رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة"].map((s) => (
+          <button key={s} onClick={() => setSubjectFilter(s)}
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${subjectFilter === s ? "bg-gradient-primary text-white" : "border border-border text-text-muted hover:text-primary"}`}>
+            {s || "الكل"}
+          </button>
+        ))}
+      </div>
+
+      {shown.length === 0 && studyItems.length === 0 && (
+        <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>
+      )}
 
       {/* أوّل عنصر دراسي يتصدّر القائمة — ما يأتي الطالب لأجله */}
       {studyItems[0] && (
@@ -489,35 +429,39 @@ function Feed({ me, isAdmin, myRole, track }: {
           : undefined;
         return (
           <Fragment key={p.id}>
-          <Card as="article" flush>
+          <article
+            className="overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-primary/30 hover:shadow-glass"
+          >
             {/* ترويسة الكاتب */}
-            <div className="flex items-start gap-2.5 px-3.5 pt-3.5 sm:px-4">
+            <div className="flex items-start gap-2.5 px-4 pt-3.5">
               <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="shrink-0">
-                {/* ٤٠px: كانت ٣٢px هنا و٤٠px في الرئيسية و٤٤px في الرسائل —
-                    ثلاثة أحجام لنفس المعنى «مَن كتب هذا». */}
-                <LiveAvatar uid={p.authorId} name={p.authorName} size="md" />
+                <LiveAvatar uid={p.authorId} name={p.authorName} size="sm" />
               </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   <Link
                     href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`}
-                    className="truncate text-[13.5px] font-extrabold text-text-primary hover:underline"
+                    className="truncate text-sm font-bold hover:underline"
                   >
                     {p.authorName}
                   </Link>
                   <RoleBadge uid={p.authorId} role={p.authorRole} />
-                  {p.subject && <Badge tone="brand">{p.subject}</Badge>}
+                  {p.subject && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      {p.subject}
+                    </span>
+                  )}
                 </div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-text-muted">
-                  <span>{timeAgoShort(p.createdAt)}</span>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+                  <span>{timeAgo(p.createdAt)}</span>
                   <span aria-hidden>·</span>
                   <FontAwesomeIcon
                     icon={p.visibility === "private" ? faLock : p.visibility === "friends" ? faUserGroup : faGlobe}
-                    className="h-3 w-3"
+                    className="h-2.5 w-2.5"
                     title={p.visibility === "private" ? "خاص" : p.visibility === "friends" ? "الأصدقاء" : "عام"}
                   />
                   {p.editedAt && <span>· مُعدّل</span>}
-                  {p.locked && <FontAwesomeIcon icon={faLock} className="h-3 w-3 text-warning" title="مُغلق" />}
+                  {p.locked && <FontAwesomeIcon icon={faLock} className="h-2.5 w-2.5 text-warning" title="مُغلق" />}
                 </div>
               </div>
 
@@ -535,35 +479,26 @@ function Feed({ me, isAdmin, myRole, track }: {
             </div>
 
             {/* المحتوى */}
-            <div className="px-3.5 pt-2.5 sm:px-4">
+            <div className="px-4 pt-2.5">
               {p.text && (
-                <div className="whitespace-pre-wrap text-[14.5px] leading-[1.8]">
+                <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
                   <RichText text={p.text} noPreview={!!p.media?.length || !!p.attachmentId} />
                 </div>
               )}
             </div>
 
-            {/* الوسائط.
-                التعليق كان يقول «بعرض البطاقة كاملاً» والكود يضع `px-4`
-                — أي ٣٢px مقصوصة من صورة على شاشة ٣٦٠px. الآن الصور
-                كاملة العرض فعلاً، والمرفق (بطاقة ملفّ) يبقى محشوّاً. */}
-            {p.media?.length ? (
-              <div className="mt-2.5">
-                <PostMediaGrid media={p.media} />
-              </div>
-            ) : (
-              <div className="px-3.5 sm:px-4">
-                <PostAttachment post={p} />
-              </div>
-            )}
+            {/* الوسائط — بعرض البطاقة كاملاً */}
+            <div className="px-4">
+              {p.media?.length ? <PostMediaGrid media={p.media} /> : <PostAttachment post={p} />}
+            </div>
 
             {/* شريط التفاعل */}
-            <div className="mt-2.5 flex items-center gap-1.5 border-t border-border px-2.5 py-1.5 sm:px-3">
-              <div className="flex items-center rounded-chip bg-background">
+            <div className="mt-3 flex items-center gap-1 border-t border-border px-2 py-1.5">
+              <div className="flex items-center rounded-full bg-background">
                 <button
                   onClick={() => votePost(p.id, me.uid, 1, p.myVote)}
                   aria-label="تصويت مؤيّد"
-                  className={`grid h-11 w-11 place-items-center rounded-chip transition active:scale-90 ${
+                  className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${
                     p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"
                   }`}
                 >
@@ -579,7 +514,7 @@ function Feed({ me, isAdmin, myRole, track }: {
                 <button
                   onClick={() => votePost(p.id, me.uid, -1, p.myVote)}
                   aria-label="تصويت معارض"
-                  className={`grid h-11 w-11 place-items-center rounded-chip transition active:scale-90 ${
+                  className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${
                     p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"
                   }`}
                 >
@@ -589,9 +524,9 @@ function Feed({ me, isAdmin, myRole, track }: {
 
               <Link
                 href={`/community/${p.id}`}
-                className="flex min-h-11 items-center gap-1.5 rounded-item px-3 text-[12.5px] font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-text-muted transition hover:bg-primary/10 hover:text-primary"
               >
-                <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
+                <FontAwesomeIcon icon={faComment} className="h-3.5 w-3.5" />
                 {p.commentCount > 0 ? `${p.commentCount} تعليق` : "تعليق"}
               </Link>
 
@@ -602,7 +537,7 @@ function Feed({ me, isAdmin, myRole, track }: {
                 }}
               />
             </div>
-          </Card>
+          </article>
 
           {inject && (
             <FeedCard

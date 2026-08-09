@@ -3,7 +3,6 @@ import { EditablePage } from "@/features/admin/editable-page";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
 import { absUrl } from "@/features/guide/site-url";
-import { getGuideRows } from "@/features/guide/guide-server";
 
 /* ════════════════════════════════════════════════════════════
    دليل التخصّصات — صفحة عامّة
@@ -32,14 +31,7 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
 
-/* قيمة حرفيّة إلزاماً: Next لا يقبل تعبيراً هنا (٣٦٠٠ = ساعة) */
-export const revalidate = 3600;
-
-export default async function SpecialtiesPage() {
-  /* الصفوف تُقرأ على الخادم فيصل الزاحف إلى قائمة تخصّصات حقيقية،
-     ولا يحمّل الزائر بايتاً من محتوى الدليل الكامل. */
-  const rows = await getGuideRows();
-  const publishedCount = rows.filter((r) => r.published).length;
+export default function SpecialtiesPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -59,7 +51,7 @@ export default async function SpecialtiesPage() {
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-5xl px-4 py-9 sm:py-12">
           <span className="bz-guide-kicker">دليل BacZone</span>
-          <h1 className="mt-2.5 font-display text-[27px] font-extrabold leading-[1.22] sm:text-4xl">
+          <h1 className="mt-2.5 font-display text-[26px] font-extrabold leading-[1.25] sm:text-4xl">
             {TITLE}
           </h1>
           <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
@@ -71,14 +63,13 @@ export default async function SpecialtiesPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <span className="bz-guide-stat">{SPEC_INDEX.length} تخصّصاً</span>
             <span className="bz-guide-stat">{SPEC_FIELDS.length} مجالات</span>
-            <span className="bz-guide-stat">{publishedCount} دليلاً مكتوباً</span>
             <span className="bz-guide-stat">بلا تسجيل</span>
           </div>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
-        <GuideBrowser rows={rows} />
+        <GuideBrowser />
       </div>
     </main>
     </EditablePage>

@@ -17,8 +17,6 @@ interface PublicCourse {
   fullDesc?: string;
   coverUrl?: string;
   teacherName?: string;
-  type?: "free" | "paid";
-  price?: number;
 }
 
 async function fetchCourse(id: string): Promise<PublicCourse | null> {
@@ -72,43 +70,6 @@ export async function generateMetadata(
   };
 }
 
-export default async function CourseLayout(
-  { children, params }: { children: React.ReactNode; params: Promise<{ courseId: string }> },
-) {
-  const { courseId } = await params;
-  const c = await fetchCourse(courseId);
-
-  /* بيانات `Course` المنظّمة: صفحة الدورة كانت تُرسل عنواناً ووصفاً
-     فقط. مع هذا المخطّط يستطيع Google عرضها كنتيجة دورة تعليمية
-     باسم المزوّد والسعر — وهو فارق حقيقي في الظهور. */
-  const jsonLd = c?.title
-    ? {
-        "@context": "https://schema.org",
-        "@type": "Course",
-        name: c.title,
-        description: (c.shortDesc || c.fullDesc || "").slice(0, 300) || undefined,
-        inLanguage: "ar",
-        url: `${SITE}/courses/${courseId}`,
-        image: c.coverUrl || undefined,
-        provider: { "@type": "Organization", name: "BacZoneDZ", sameAs: SITE },
-        ...(c.teacherName
-          ? { author: { "@type": "Person", name: c.teacherName } }
-          : {}),
-        ...(c.type === "free"
-          ? { isAccessibleForFree: true, offers: { "@type": "Offer", price: 0, priceCurrency: "DZD" } }
-          : c.price
-            ? { offers: { "@type": "Offer", price: c.price, priceCurrency: "DZD" } }
-            : {}),
-      }
-    : null;
-
-  return (
-    <>
-      {jsonLd && (
-        <script type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      )}
-      {children}
-    </>
-  );
+export default function CourseLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }

@@ -58,10 +58,10 @@ export default function CalculateHub() {
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-4xl px-4 py-9 sm:py-12">
           <span className="bz-guide-kicker">حاسبة BacZone</span>
-          <h1 className="mt-2.5 font-display text-[27px] font-extrabold leading-[1.22] sm:text-4xl">
+          <h1 className="mt-2.5 font-display text-[26px] font-extrabold leading-[1.25] sm:text-4xl">
             احسب معدّلك في البكالوريا
           </h1>
-          <p className="mt-3.5 max-w-2xl text-[15px] leading-[1.9] text-white/85 sm:text-[16px]">
+          <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
             بالمعاملات المعتمدة بعد تعديلات الوزارة. اختر شعبتك، أدخل علاماتك،
             واعرف معدّلك في ثوانٍ — <b className="text-white">بلا تسجيل</b>.
           </p>
@@ -69,13 +69,11 @@ export default function CalculateHub() {
       </header>
 
       <div className="mx-auto w-full max-w-4xl px-3 pb-14 sm:px-4">
-        {/* هدف لمس كامل: كان رابطاً بارتفاع ١٨px */}
-        <Link href="/home"
-          className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-[13px] font-extrabold text-[var(--bz-blue)] transition hover:bg-[var(--bz-blue-050)]">
-          ← العودة إلى BacZone
+        <Link href="/home" className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bz-blue)] hover:underline">
+          العودة إلى BacZone
         </Link>
 
-        <h2 className="mb-3 mt-5 font-display text-[19px] font-extrabold">اختر شعبتك</h2>
+        <h2 className="mb-3 mt-6 font-display text-lg font-extrabold">اختر شعبتك</h2>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {BRANCHES.map((b) => (
             <Link key={b.slug} href={`/calculate/${b.slug}`} className="bz-branch-card">
@@ -88,8 +86,8 @@ export default function CalculateHub() {
           ))}
         </div>
 
-        <p className="mt-8 rounded-card border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[13px] leading-[1.9] text-[var(--bz-ink-2)]">
-          <b className="text-[var(--bz-ink)]">تنبيه:</b> هذه أداة تقدير وفق المعاملات
+        <p className="mt-8 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[11.5px] leading-[1.9] text-[var(--bz-ink-3)]">
+          <b className="text-[var(--bz-ink-2)]">تنبيه:</b> هذه أداة تقدير وفق المعاملات
           المعتمدة. النتيجة الرسمية تصدر عن الديوان الوطني للامتحانات والمسابقات.
         </p>
       </div>

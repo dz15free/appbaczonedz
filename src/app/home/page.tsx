@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUsers, faRobot, faComments, faChalkboardUser, faBookOpen, faTrophy,
-  faCalendarCheck, faLayerGroup, faListCheck, faCrown, faCalendarDays,
-  faPeopleGroup, faGraduationCap, faArrowLeft,
-} from "@fortawesome/free-solid-svg-icons";
+  faUsers, faRobot, faComments, faChalkboardUser,
+  faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
+  faUpRightFromSquare, faLayerGroup, faListCheck,
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -23,11 +23,9 @@ import { TeacherTools } from "@/components/ui/teacher-tools";
 import { StudyFeed } from "@/features/feed/study-feed";
 import { DailyPanel } from "@/features/daily/daily-panel";
 import { RoomDiscovery, useSessionReminders } from "@/features/rooms/room-discovery";
-import { listenPosts, type Post } from "@/features/community/social";
+import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
-import { PostPreviewCard } from "@/features/community/post-preview-card";
-import { EmptyState, SkeletonList, SeeAll, Skeleton, Card } from "@/components/ui/kit";
-import { Button } from "@/components/ui/field";
+import { RoleBadge } from "@/components/ui/role-badge";
 import { ref, query, orderByChild, limitToLast, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
@@ -60,29 +58,86 @@ function timeAgo(ts: number) {
   const d = Math.floor(h / 24); return `منذ ${d} يوم`;
 }
 
-/* بطاقة منشور — تستدعي البطاقة المشتركة نفسها التي يستعملها المجتمع.
-   كانت الرئيسية تملك **نسخة ثانية** من بطاقة المنشور: صورة ٤٠px بدل
-   ٣٢px، وشريط تصويت مختلف، وصيغة وقت مختلفة («منذ ٥ دقيقة» مقابل
-   «٥ د»). نسختان تعنيان أنّ كل تحسين يجب أن يُكتب مرّتين. */
+/* بطاقة منشور */
+const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
+      <Link href={`/community/${p.id}`} className="flex items-center gap-2.5">
+        <LiveAvatar uid={p.authorId} name={p.authorName} size="md" />
+        <div className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <span className="truncate font-bold">{p.authorName}</span>
+            <RoleBadge uid={p.authorId} role={p.authorRole} />
+          </span>
+          <span className="text-xs text-text-muted">{timeAgo(p.createdAt)}</span>
+        </div>
+      </Link>
+      {p.text && (
+        <Link href={`/community/${p.id}`} className="mt-3 block line-clamp-3 text-sm leading-relaxed">{p.text}</Link>
+      )}
+      {p.attachmentKind === "file" && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-muted">
+          <FontAwesomeIcon icon={faClipboardCheck} className="h-4 w-4 text-primary" />
+          {p.fileName || "ملف مرفق"}
+        </div>
+      )}
+      <div className="mt-3 flex items-center gap-4 border-t border-border pt-3 text-sm">
+        <div className="flex items-center gap-1 rounded-full bg-background px-1">
+          <button onClick={() => votePost(p.id, uid, 1, p.myVote)}
+            className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === 1 ? "text-secondary" : "text-text-muted hover:text-secondary"}`} aria-label="رفع">
+            <FontAwesomeIcon icon={faArrowUp} className="h-4 w-4" />
+          </button>
+          <span className={`min-w-4 text-center text-sm font-bold ${p.score > 0 ? "text-secondary" : p.score < 0 ? "text-danger" : "text-text-muted"}`}>{p.score}</span>
+          <button onClick={() => votePost(p.id, uid, -1, p.myVote)}
+            className={`grid h-8 w-8 place-items-center rounded-full ${p.myVote === -1 ? "text-danger" : "text-text-muted hover:text-danger"}`} aria-label="خفض">
+            <FontAwesomeIcon icon={faArrowDown} className="h-4 w-4" />
+          </button>
+        </div>
+        <Link href={`/community/${p.id}`} className="flex items-center gap-1.5 text-text-muted hover:text-primary">
+          <FontAwesomeIcon icon={faComment} className="h-4 w-4" />
+          {p.commentCount > 0 ? `${p.commentCount} تعليق` : "تعليق"}
+        </Link>
+      </div>
+    </div>
+  );
+});
 
-/* الوصول السريع — رفّ أفقي على الهاتف، شبكة على الشاشات الأوسع.
-   ٦ مربّعات ٥٦px في شبكة ٣×٢ كانت تأكل ~١٩٠px من ارتفاع شاشة ٦٤٠px
-   لتعرض ما يعرفه المستخدم أصلاً. الرفّ يعرضها كلّها في سطر واحد. */
+/* قسم الأقسام */
 const SectionsRow = memo(function SectionsRow() {
   return (
-    <div className="bz-rail sm:!mx-0 sm:!grid sm:grid-cols-6 sm:!px-0">
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
       {SECTIONS.map((s) => (
-        <Link key={s.href} href={s.href}
-          className="group flex w-[74px] shrink-0 flex-col items-center gap-1.5 sm:w-auto">
-          <span className={`grid h-14 w-14 place-items-center rounded-card transition duration-fast group-hover:scale-105 ${s.color}`}>
-            <FontAwesomeIcon icon={s.icon} className="h-[22px] w-[22px]" />
+        <Link key={s.href} href={s.href} className="group flex flex-col items-center gap-2">
+          <span className={`grid h-14 w-14 place-items-center rounded-2xl transition group-hover:scale-105 sm:h-16 sm:w-16 ${s.color}`}>
+            <FontAwesomeIcon icon={s.icon} className="h-6 w-6 sm:h-7 sm:w-7" />
           </span>
-          <span className="text-center text-[11.5px] font-bold leading-tight text-text-muted">{s.label}</span>
+          <span className="text-center text-[11px] font-semibold leading-tight text-text-muted sm:text-xs">{s.label}</span>
         </Link>
       ))}
     </div>
   );
 });
+
+/* بطاقات الأدوات */
+const ToolsGrid = memo(function ToolsGrid() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {TOOLS.map((t) => (
+        <Link key={t.href} href={t.href}
+          className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-glass">
+          <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${t.color}`}>
+            <FontAwesomeIcon icon={t.icon} className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className="block font-bold">{t.label}</span>
+            <span className="text-sm text-text-muted">{t.desc}</span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+});
+
 
 /* لوحة الترتيب المصغّرة */
 interface MiniPlayer { uid: string; name: string; points: number }
@@ -106,27 +161,27 @@ function MiniLeaderboard() {
   const medals = ["text-amber-400", "text-slate-400", "text-amber-700"];
 
   return (
-    <Card>
-      <div className="mb-2.5 flex items-center justify-between gap-2">
-        <h2 className="bz-h-section flex items-center gap-2">
-          <FontAwesomeIcon icon={faTrophy} className="h-4 w-4 text-amber-500" /> أبطال المنصّة
-        </h2>
-        <SeeAll href="/leaderboard" label="الترتيب الكامل" />
+    <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="flex items-center gap-2 font-display text-base font-extrabold">
+          <FontAwesomeIcon icon={faTrophy} className="h-4 w-4 text-amber-400" /> أبطال المنصّة
+        </h3>
+        <Link href="/leaderboard" className="text-sm font-semibold text-primary hover:underline">الترتيب الكامل</Link>
       </div>
       <div className="space-y-2">
         {top.map((p, i) => (
           <Link key={p.uid} href={`/u/${p.uid}?name=${encodeURIComponent(p.name)}`}
-            className="flex min-h-12 items-center gap-3 rounded-item px-2 transition hover:bg-primary/[0.06]">
+            className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-background">
             <span className={`w-5 text-center font-display text-sm font-extrabold ${i < 3 ? medals[i] : "text-text-muted"}`}>
               {i < 3 ? <FontAwesomeIcon icon={faCrown} className="h-3.5 w-3.5" /> : i + 1}
             </span>
             <LiveAvatar uid={p.uid} name={p.name} size="sm" className="h-9 w-9" />
-            <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-text-primary">{p.name}</span>
-            <span className="shrink-0 rounded-chip bg-primary/10 px-2.5 py-1 text-[11.5px] font-extrabold text-primary">{p.points} ن</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.name}</span>
+            <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">{p.points} ن</span>
           </Link>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -145,9 +200,6 @@ export default function HomePage() {
   }, [user?.uid]);
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
-  /* حالة تحميل صريحة: كانت `posts` تبدأ `[]` فيومض «لا منشورات بعد»
-     في كل زيارة قبل وصول البيانات — أسوأ انطباع أوّل ممكن. */
-  const [postsLoading, setPostsLoading] = useState(true);
 
   /* الواجهة تتبع الدور: الأستاذ لا يراجع للبكالوريا، فأدوات الطالب
      تملأ شاشته بما لا يستعمله. */
@@ -160,57 +212,33 @@ export default function HomePage() {
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
-    const unsub = listenPosts(user.uid, (all) => { setPosts(all.slice(0, 5)); setPostsLoading(false); });
+    const unsub = listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
-  /* التحميل داخل الغلاف لا خارجه: كان يُرجع نصّاً عارياً بلا هيدر ولا
-     شريط سفلي، فتومض الصفحة بيضاء تماماً عند كل تحقّق من الجلسة. */
-  if (loading || !user) {
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-2xl space-y-4 px-4 py-5">
-          <Skeleton className="h-44 w-full rounded-panel" />
-          <Skeleton className="h-28 w-full rounded-card" />
-          <SkeletonList count={2} lines={2} />
-        </div>
-      </AppShell>
-    );
-  }
+  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   const name = profile?.name || user.displayName || "طالب";
 
   return (
     <AppShell>
-      {/* ══════════════════════════════════════════════════════════
-          شجرة واحدة متجاوبة
-
-          كانت الرئيسية مكتوبة **مرّتين**: نسخة `lg:grid` ونسخة
-          `lg:hidden`، كلتاهما تُركَّبان معاً في كل زيارة. فكان
-          `HomeHeroSlider` يشغّل مؤقّتَي شرائح، و`StudyFeed`
-          و`RoomDiscovery` و`HomeCourses` تفتح مستمعي Firebase
-          مضاعفين، ثمّ يُخفى نصف ذلك بـ CSS. وقد تباعدت النسختان
-          فعلاً: «أبطال المنصّة» لم تكن تظهر على الهاتف إطلاقاً.
-
-          الترتيب هنا مقصود: ما يفعله الطالب **الآن** أوّلاً (تحيّته
-          وعدّه التنازلي، مهمّة اليوم، وصوله السريع)، ثمّ ما يكتشفه،
-          ثمّ ما يقرؤه، وأخيراً ما هو خدميّ. لافتة التثبيت وتفعيل
-          الإشعارات نزلتا إلى الأسفل: لا يجوز أن يكون أوّل ما يراه
-          مَن فتح المنصّة للمذاكرة طلبَين منّا.
-          ══════════════════════════════════════════════════════════ */}
-      <div className="mx-auto grid max-w-6xl gap-5 px-4 py-4 sm:px-5 lg:grid-cols-3 lg:gap-6 lg:py-6">
-
-        {/* ── العمود الرئيسي ── */}
-        <div className="space-y-5 lg:col-span-2 lg:space-y-6">
+      {/* ══════════ نسخة الحاسوب ══════════ */}
+      <div className="mx-auto hidden max-w-6xl gap-6 px-5 py-6 lg:grid lg:grid-cols-3">
+        {/* العمود الرئيسي */}
+        <div className="space-y-6 lg:col-span-2">
           <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
-          {/* مهمّة اليوم للطالب · أدوات التدريس للأستاذ */}
+
+          {/* الإشعارات — بارزة ليراها الجميع */}
+          <NotificationToggle />
+
+          {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
           {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
 
           {/* الوصول السريع */}
-          <section aria-labelledby="h-quick">
-            <h2 id="h-quick" className="bz-h-section mb-2.5">الوصول السريع</h2>
+          <div className="rounded-2xl border border-border bg-surface p-5">
+            <h2 className="mb-4 font-display text-base font-extrabold">الوصول السريع</h2>
             <SectionsRow />
-          </section>
+          </div>
 
           {/* مساحة الدراسة — محتوى يفعله الطالب لا يقرؤه فقط */}
           {!isTeacher && <StudyFeed uid={user.uid} track={track} limit={4} />}
@@ -218,70 +246,61 @@ export default function HomePage() {
           {/* من يراجع الآن؟ */}
           <RoomDiscovery uid={user.uid} track={track} subject={profile?.teachSubject ?? null} />
 
-          {/* الدورات */}
+          {/* الدورات — قسم مستقلّ يسبق بقيّة المصادر */}
           <HomeCourses track={profile?.track} />
 
-          {/* آخر المنشورات */}
-          <section aria-labelledby="h-posts">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 id="h-posts" className="bz-h-section">آخر المنشورات</h2>
-              <SeeAll href="/community" label="كل المنشورات" />
-            </div>
-            {postsLoading ? (
-              <SkeletonList count={2} lines={2} />
-            ) : posts.length === 0 ? (
-              <EmptyState
-                icon={faComments}
-                title="لا منشورات بعد"
-                hint="اسأل عمّا يصعب عليك، أو شارك ملخّصاً أفادك — أوّل منشور يفتح النقاش."
-                action={<Link href="/community?compose=1"><Button size="md">اكتب أوّل منشور</Button></Link>}
-                compact
-              />
-            ) : (
-              <div className="space-y-3">
-                {posts.map((p) => <PostPreviewCard key={p.id} p={p} uid={user.uid} />)}
-              </div>
-            )}
-          </section>
-
-          {/* وجهات مفيدة */}
+          {/* وجهات مهمّة */}
           <HomeExternalHighlights />
+
           <FeatureCards />
           <AdSlot placement="home" />
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
+              <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
+            </div>
+            {posts.length === 0 ? (
+              <div className="rounded-2xl border border-border bg-surface py-10 text-center text-text-muted">
+                <FontAwesomeIcon icon={faComments} className="h-8 w-8 opacity-40" />
+                <p className="mt-3 text-sm">لا منشورات بعد. كن أوّل من يشارك!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">{posts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} />)}</div>
+            )}
+          </div>
         </div>
 
-        {/* ── العمود الجانبي ──
-            على الهاتف يتدفّق أسفل العمود الرئيسي طبيعياً، فيصل الطالب
-            إلى «أبطال المنصّة» — التي لم تكن تصله أبداً قبل الدمج. */}
-        <aside className="space-y-5 lg:space-y-6">
+        {/* العمود الجانبي */}
+        <aside className="space-y-6">
           <MiniLeaderboard />
-
+          <SocialLinks />
+          <AdvertiseCard />
           {/* أدوات الباكلوريا — للطالب: مراجعته لا تدريس الأستاذ */}
           {!isTeacher && (
-            <section aria-labelledby="h-tools">
-              <h2 id="h-tools" className="bz-h-section mb-2.5">أدوات الباكلوريا</h2>
-              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
-                {TOOLS.map((t) => (
-                  <Link key={t.href} href={t.href}
-                    className="bz-surface-1 bz-lift group flex items-center gap-3 rounded-card p-3">
-                    <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-item ${t.color}`}>
-                      <FontAwesomeIcon icon={t.icon} className="h-[18px] w-[18px]" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13.5px] font-extrabold text-text-primary">{t.label}</span>
-                      <span className="block truncate text-[11.5px] text-text-muted">{t.desc}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </section>
+          <div>
+            <h3 className="mb-3 font-display text-base font-extrabold">أدوات الباكلوريا</h3>
+            <div className="space-y-3">
+              {TOOLS.map((t) => (
+                <Link key={t.href} href={t.href}
+                  className="group flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:border-primary/30 hover:shadow-glass">
+                  <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${t.color}`}>
+                    <FontAwesomeIcon icon={t.icon} className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{t.label}</span>
+                    <span className="text-xs text-text-muted">{t.desc}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
           )}
+          <div>
+            <h3 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h3>
 
-          {/* مصادر إضافية */}
-          <section aria-labelledby="h-res">
-            <h2 id="h-res" className="bz-h-section mb-2.5">مصادر إضافية</h2>
+            {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
             <div className="bz-res-grid is-stack">
-              <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -305,7 +324,7 @@ export default function HomePage() {
                 </span>
               </Link>
 
-              <Link href="/specialties" className="bz-res-card is-blue">
+<Link href="/specialties" className="bz-res-card is-blue">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
@@ -317,15 +336,115 @@ export default function HomePage() {
                 </span>
               </Link>
             </div>
-          </section>
-
-          {/* خدميّات: أسفل الصفحة عمداً */}
-          <NotificationToggle />
-          <InstallAppBanner />
-          <SocialLinks />
-          <AdvertiseCard />
+          </div>
         </aside>
       </div>
+
+      {/* ══════════ نسخة الهاتف ══════════ */}
+      <section className="mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
+        <InstallAppBanner />
+        <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
+
+        {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}
+        <NotificationToggle />
+
+        {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
+        {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
+
+        {/* الوصول السريع */}
+        <div>
+          <h2 className="mb-3 font-display text-base font-extrabold">الوصول السريع</h2>
+          <SectionsRow />
+        </div>
+
+        {/* مساحة الدراسة */}
+        {!isTeacher && <StudyFeed uid={user.uid} track={track} limit={4} />}
+
+        {/* من يراجع الآن؟ */}
+        <RoomDiscovery uid={user.uid} track={track} />
+
+        {/* الدورات */}
+        <HomeCourses track={profile?.track} />
+
+        {/* وجهات مهمّة */}
+        <HomeExternalHighlights />
+
+        <FeatureCards />
+
+        {/* آخر المنشورات */}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
+            <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
+          </div>
+          {posts.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-surface py-10 text-center text-text-muted">
+              <FontAwesomeIcon icon={faComments} className="h-8 w-8 opacity-40" />
+              <p className="mt-3 text-sm">لا منشورات بعد. كن أوّل من يشارك!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">{posts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} />)}</div>
+          )}
+        </div>
+
+        {/* أدوات الباكلوريا — للطالب وحده (كما على الحاسوب) */}
+        {!isTeacher && (
+          <div>
+            <h2 className="mb-3 font-display text-base font-extrabold">أدوات الباكلوريا</h2>
+            <ToolsGrid />
+          </div>
+        )}
+
+        {/* مصادر إضافية */}
+        <div>
+          <h2 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h2>
+
+          {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
+          <div className="bz-res-grid is-stack">
+                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">نظّم مراجعتك من اليوم</span>
+                    <span className="bz-res-d">أنشئ برنامج مراجعة يناسب وقتك ومستواك.</span>
+                  </span>
+                  <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </a>
+
+              <Link href="/tools/planner" className="bz-res-card is-amber">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarDays} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">مخطّط البكالوريا للطباعة</span>
+                    <span className="bz-res-d">صمّمه، حمّله صورة، أو خذ بلانر PDF جاهزاً.</span>
+                  </span>
+                  <span className="bz-res-cta">جهّزه<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+
+<Link href="/specialties" className="bz-res-card is-blue">
+                <span className="bz-res-bg" aria-hidden />
+                <span className="bz-res-in">
+                  <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
+                  <span className="bz-res-txt">
+                    <span className="bz-res-t">ماذا ستدرس بعد البكالوريا؟</span>
+                    <span className="bz-res-d">تعرّف على التخصّصات الجامعية قبل أن تملأ رغباتك.</span>
+                  </span>
+                  <span className="bz-res-cta">اكتشف<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+                </span>
+              </Link>
+            </div>
+        </div>
+
+        {/* تابعنا */}
+        <SocialLinks />
+
+        {/* أعلن معنا */}
+        <AdvertiseCard />
+      </section>
     </AppShell>
   );
 }

@@ -48,17 +48,14 @@ export function FloatingDock() {
           {visible && !dismissed && (
             <div
               key={animKey}
-              /* الفقاعة كانت مُوسَّطة على الزرّ، والزرّ على بُعد ١٦px من
-                 حافّة الشاشة — فكان نصفها يخرج خارج الشاشة على الهاتف
-                 ويُقصّ نصّها. الآن تبدأ من حافّة الزرّ وتمتدّ للداخل. */
-              className="animate-bubble-in absolute bottom-full left-0 mb-2 w-max max-w-[min(220px,calc(100vw-3rem))] rounded-card rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-e2"
+              className="animate-bubble-in absolute bottom-full mb-2 w-max max-w-[190px] rounded-2xl rounded-bl-sm border border-border bg-surface px-3 py-1.5 shadow-glass sm:max-w-[220px]"
             >
               <button
                 onClick={(e) => { e.preventDefault(); setDismissed(true); }}
                 aria-label="إغلاق"
-                className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border border-border bg-surface text-text-muted shadow-e1 transition hover:text-danger"
+                className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full border border-border bg-background text-text-muted transition hover:text-danger"
               >
-                <FontAwesomeIcon icon={faXmark} className="h-2.5 w-2.5" />
+                <FontAwesomeIcon icon={faXmark} className="h-2 w-2" />
               </button>
               <p className={`text-[11px] font-bold leading-snug text-text-primary sm:text-xs ${showSecondary ? "" : "whitespace-nowrap"}`}>
                 {showSecondary ? MSG_SECONDARY : MSG_PRIMARY}

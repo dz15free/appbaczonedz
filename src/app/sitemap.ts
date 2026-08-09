@@ -1,6 +1,4 @@
 import type { MetadataRoute } from "next";
-import { getGuideRows } from "@/features/guide/guide-server";
-import { linkOf } from "@/features/guide/spec-link";
 import { SPEC_INDEX } from "@/features/guide/spec-index";
 import { BRANCHES } from "@/features/calculator/branches";
 
@@ -52,20 +50,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  /* 🐛 كانت الخريطة تُرسل **المعرّف** بينما تُصدر الصفحة canonical
-     بالرابط المخصّص. فكان محرّك البحث يتلقّى إشارتين متناقضتين لكل
-     تخصّص غيّرتَ رابطه. الآن نقرأ الروابط الحقيقية من الخادم —
-     ولا نُدرج إلّا **المنشور** منها: إرسال صفحة «قيد الإعداد» إلى
-     Google يُهدر ميزانية الزحف على لا شيء. */
-  const rows = await getGuideRows().catch(() => []);
-  const specs: MetadataRoute.Sitemap = (rows.length ? rows : SPEC_INDEX.map((s) => ({ ...s, published: true })))
-    .filter((s: { published?: boolean }) => s.published !== false)
-    .map((s: { permalink?: string; slug: string; updatedAt?: number }) => ({
-      url: `${BASE}/specialties/${linkOf(s)}`,
-      lastModified: s.updatedAt ? new Date(s.updatedAt) : now,
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    }));
+  /* نُدرج المعرّف الأصلي: الرابط المخصّص يعيش في قاعدة البيانات ولا
+     تصل إليه الخريطة الساكنة، والصفحة تقبل الشكلين فلا يضيع شيء. */
+  const specs: MetadataRoute.Sitemap = SPEC_INDEX.map((s) => ({
+    url: `${BASE}/specialties/${s.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
 
   const courses: MetadataRoute.Sitemap = (await publishedCourses()).map((c) => ({
     url: `${BASE}/courses/${c.id}`,

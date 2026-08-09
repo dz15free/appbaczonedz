@@ -102,15 +102,15 @@ export default async function BranchCalculatorPage(
 
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-          <nav aria-label="مسار التصفّح" className="mb-3 flex flex-wrap items-center gap-1.5 text-[11.5px] font-semibold text-white/70">
+          <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/home" className="hover:underline">BacZone</Link>
             <span>·</span>
             <Link href="/calculate" className="font-bold text-white hover:underline">حساب المعدل</Link>
           </nav>
-          <h1 className="font-display text-[26px] font-extrabold leading-[1.22] sm:text-[36px]">
+          <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
             حساب معدل البكالوريا — شعبة {b.short}
           </h1>
-          <p className="mt-3 max-w-2xl text-[14.5px] leading-[1.9] text-white/85">
+          <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
             {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)} · نتيجة فورية بلا تسجيل
           </p>
         </div>
@@ -139,18 +139,18 @@ export default async function BranchCalculatorPage(
             {/* جدول المعاملات — يُقرأ ويُفهرَس */}
             <section className="bz-spec-sec">
               <h2>جدول معاملات شعبة {b.short}</h2>
-              <div className="overflow-hidden rounded-card border border-[var(--bz-line)]">
-                <table className="w-full text-[14px]">
-                  <thead className="bg-[var(--bz-canvas)] text-[12px] font-extrabold text-[var(--bz-ink-2)]">
+              <div className="overflow-hidden rounded-xl border border-[var(--bz-line)]">
+                <table className="w-full text-[13px]">
+                  <thead className="bg-[var(--bz-canvas)] text-[11px] text-[var(--bz-ink-3)]">
                     <tr>
-                      <th className="p-2.5 text-right">المادّة</th>
-                      <th className="p-2.5">المعامل</th>
+                      <th className="p-2 text-right">المادّة</th>
+                      <th className="p-2">المعامل</th>
                     </tr>
                   </thead>
                   <tbody>
                     {b.subjects.map((s) => (
                       <tr key={s.name} className="border-t border-[var(--bz-line)]">
-                        <td className="p-2.5 font-bold">
+                        <td className="p-2 font-semibold">
                           {s.name}
                           {s.optional && (
                             <span className="ms-1.5 rounded bg-[var(--bz-amber-050)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--bz-amber)]">
@@ -158,14 +158,14 @@ export default async function BranchCalculatorPage(
                             </span>
                           )}
                         </td>
-                        <td className="p-2.5 text-center font-mono text-[15px] font-extrabold" style={{ color: b.color }}>
+                        <td className="p-2 text-center font-mono font-bold" style={{ color: b.color }}>
                           {s.coef}
                         </td>
                       </tr>
                     ))}
                     <tr className="border-t-2 border-[var(--bz-line-2)] bg-[var(--bz-canvas)]">
-                      <td className="p-2.5 font-extrabold">مجموع المعاملات الإجبارية</td>
-                      <td className="p-2.5 text-center font-mono text-[15px] font-extrabold">{totalCoef(b)}</td>
+                      <td className="p-2 font-extrabold">مجموع المعاملات الإجبارية</td>
+                      <td className="p-2 text-center font-mono font-extrabold">{totalCoef(b)}</td>
                     </tr>
                   </tbody>
                 </table>
