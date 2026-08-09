@@ -349,8 +349,11 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
           </div>
 
           {/* الشُّعب — اختيار متعدّد حقيقي */}
-          <Field label="الشُّعب المستهدَفة" error={errors.branches} required
-            hint="اختر «كل الشعب» أو أي مجموعة منها — مثل «علوم تجريبية + رياضيات».">
+          <Field
+            label={`الشُّعب المستهدَفة${allBranches ? " — الجميع" : ` — ${selected.length} ${selected.length === 1 ? "شعبة" : "شعب"}`}`}
+            error={errors.branches}
+            required
+            hint="اضغط على كل شعبة تريدها — يمكنك اختيار شعبتين أو ثلاث أو أكثر، أو «كل الشعب».">
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

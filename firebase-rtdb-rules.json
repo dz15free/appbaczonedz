@@ -14,7 +14,13 @@
         "track"
       ],
       "$uid": {
-        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && (!newData.hasChild('role') || newData.child('role').val() === 'student' || newData.child('role').val() === 'teacher')) || (auth.uid === $uid && data.exists() && (!newData.hasChild('role') || newData.child('role').val() === data.child('role').val())))"
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && (!newData.hasChild('role') || newData.child('role').val() === 'student' || newData.child('role').val() === 'teacher')) || (auth.uid === $uid && data.exists() && (!newData.hasChild('role') || newData.child('role').val() === data.child('role').val())))",
+        "points": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (root.child('users').child(auth.uid).child('role').val() === 'admin' || !data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 60))"
+        },
+        "level": {
+          ".validate": "newData.isNumber() && newData.val() >= 1"
+        }
       }
     },
     "community": {
@@ -268,6 +274,10 @@
         },
         "marks": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        },
+        "exam": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+          ".validate": "!newData.exists() || (newData.hasChildren(['status','examUrl','durationMin','startedAt','endsAt']) && newData.child('status').val().matches(/^(running|ended)$/) && newData.child('endsAt').isNumber() && newData.child('durationMin').isNumber())"
         }
       }
     },
@@ -527,6 +537,87 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+    "roomExamPapers": {
+      "$roomId": {
+        ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.exists() && root.child('roomLive').child($roomId).child('exam').exists()) || (!newData.exists() && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['name','submittedAt']) && newData.child('submittedAt').isNumber() && newData.child('name').isString() && newData.child('name').val().length <= 80 && (!newData.hasChild('text') || newData.child('text').val().length <= 8000) && (!newData.hasChild('violations') || newData.child('violations').isNumber()))"
+        }
+      }
+    },
+    "roomExamGrades": {
+      "$roomId": {
+        ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['score','max','gradedAt','released']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('max').isNumber() && newData.child('max').val() > 0 && newData.child('score').val() <= newData.child('max').val() && newData.child('released').isBoolean() && (!newData.hasChild('notes') || newData.child('notes').val().length <= 1500))"
+        }
+      }
+    },
+    "studyFeed": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "createdAt",
+        "type"
+      ],
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$itemId": {
+        ".validate": "!newData.exists() || (newData.hasChildren(['type','title','createdAt']) && newData.child('title').isString() && newData.child('title').val().length <= 200 && (!newData.hasChild('xp') || (newData.child('xp').isNumber() && newData.child('xp').val() >= 0 && newData.child('xp').val() <= 40)))"
+      }
+    },
+    "feedVotes": {
+      "$itemId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && root.child('studyFeed').child($itemId).exists()) || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin'))",
+          ".validate": "!newData.exists() || (newData.hasChild('at') && newData.child('at').isNumber() && (!newData.hasChild('choice') || newData.child('choice').isNumber()) && (!newData.hasChild('text') || newData.child('text').val().length <= 2000))"
+        }
+      }
+    },
+    "feedProgress": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$itemId": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists()",
+          ".validate": "newData.hasChild('at') && newData.child('at').isNumber() && newData.child('at').val() <= now && (!newData.hasChild('xpClaimed') || (newData.child('xpClaimed').isNumber() && newData.child('xpClaimed').val() <= 40 && newData.child('xpClaimed').val() <= root.child('studyFeed').child($itemId).child('xp').val()))"
+        }
+      }
+    },
+    "dailyMissions": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$id": {
+        ".validate": "!newData.exists() || (newData.hasChildren(['title','kind','target']) && newData.child('target').isNumber() && newData.child('target').val() >= 1 && (!newData.hasChild('xp') || (newData.child('xp').isNumber() && newData.child('xp').val() >= 0 && newData.child('xp').val() <= 40)))"
+      }
+    },
+    "missionClaims": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$day": {
+          "$missionId": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists()",
+            ".validate": "newData.hasChildren(['xp','at']) && newData.child('at').isNumber() && newData.child('xp').isNumber() && newData.child('xp').val() >= 0 && newData.child('xp').val() <= root.child('dailyMissions').child($missionId).child('xp').val()"
+          }
+        }
+      }
+    },
+    "missionManual": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "sessionReminders": {
+      ".read": "auth != null",
+      "$sessionId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
       }
     }
   }

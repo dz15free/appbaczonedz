@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ref, onValue, set } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { bumpDailyActivity } from "@/features/daily/missions";
 import { useAuth } from "@/features/auth/auth-provider";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AppShell } from "@/components/app-shell";
@@ -132,7 +133,11 @@ export default function TrackerPage() {
   function cycle(id: string) {
     if (!user) return;
     const cur = progress[id] ?? "todo";
-    set(ref(rtdb, `studyProgress/${user.uid}/lessons/${id}`), NEXT[cur]);
+    const next = NEXT[cur];
+    set(ref(rtdb, `studyProgress/${user.uid}/lessons/${id}`), next);
+    /* عدّاد اليوم لمهامّ BacZone Daily: حالة الدرس بلا طابع زمني، فلا
+       تُخبر «أُنجز اليوم». نزيد العدّاد عند الانتقال إلى «أتقنته» فقط. */
+    if (next === "done") void bumpDailyActivity(user.uid, "lessons");
   }
 
   function pickStream(s: string) {

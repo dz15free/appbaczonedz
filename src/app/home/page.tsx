@@ -19,6 +19,10 @@ import { InstallAppBanner } from "@/components/ui/install-app-banner";
 import { FeatureCards, SocialLinks, AdvertiseCard, HomeExternalHighlights, NotificationToggle } from "@/components/ui/home-feature-sections";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { HomeCourses } from "@/components/ui/home-courses";
+import { TeacherTools } from "@/components/ui/teacher-tools";
+import { StudyFeed } from "@/features/feed/study-feed";
+import { DailyPanel } from "@/features/daily/daily-panel";
+import { RoomDiscovery, useSessionReminders } from "@/features/rooms/room-discovery";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -34,7 +38,6 @@ const SECTIONS = [
   { href: "/aibot", label: "الخباشة", icon: faRobot, color: "bg-violet-500/10 text-violet-500" },
   { href: "/community", label: "المجتمع", icon: faUsers, color: "bg-sky-500/10 text-sky-500" },
   { href: "/groups", label: "المجموعات", icon: faPeopleGroup, color: "bg-teal-500/10 text-teal-500" },
-  { href: "/leaderboard", label: "الترتيب", icon: faTrophy, color: "bg-amber-500/10 text-amber-500" },
 ];
 
 const TOOLS = [
@@ -198,6 +201,14 @@ export default function HomePage() {
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
 
+  /* الواجهة تتبع الدور: الأستاذ لا يراجع للبكالوريا، فأدوات الطالب
+     تملأ شاشته بما لا يستعمله. */
+  const isTeacher = profile?.role === "teacher";
+  const track = profile?.track ?? null;
+
+  // تذكير الجلسات المجدولة التي طلبها الطالب وحان وقتها
+  useSessionReminders(isTeacher ? undefined : user?.uid);
+
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
@@ -220,11 +231,20 @@ export default function HomePage() {
           {/* الإشعارات — بارزة ليراها الجميع */}
           <NotificationToggle />
 
+          {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
+          {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
+
           {/* الوصول السريع */}
           <div className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="mb-4 font-display text-base font-extrabold">الوصول السريع</h2>
             <SectionsRow />
           </div>
+
+          {/* مساحة الدراسة — محتوى يفعله الطالب لا يقرؤه فقط */}
+          {!isTeacher && <StudyFeed uid={user.uid} track={track} limit={4} />}
+
+          {/* من يراجع الآن؟ */}
+          <RoomDiscovery uid={user.uid} track={track} subject={profile?.teachSubject ?? null} />
 
           {/* الدورات — قسم مستقلّ يسبق بقيّة المصادر */}
           <HomeCourses track={profile?.track} />
@@ -255,6 +275,8 @@ export default function HomePage() {
           <MiniLeaderboard />
           <SocialLinks />
           <AdvertiseCard />
+          {/* أدوات الباكلوريا — للطالب: مراجعته لا تدريس الأستاذ */}
+          {!isTeacher && (
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">أدوات الباكلوريا</h3>
             <div className="space-y-3">
@@ -272,6 +294,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+          )}
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">مصادر إضافية</h3>
 
@@ -325,11 +348,20 @@ export default function HomePage() {
         {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}
         <NotificationToggle />
 
+        {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
+        {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
+
         {/* الوصول السريع */}
         <div>
           <h2 className="mb-3 font-display text-base font-extrabold">الوصول السريع</h2>
           <SectionsRow />
         </div>
+
+        {/* مساحة الدراسة */}
+        {!isTeacher && <StudyFeed uid={user.uid} track={track} limit={4} />}
+
+        {/* من يراجع الآن؟ */}
+        <RoomDiscovery uid={user.uid} track={track} />
 
         {/* الدورات */}
         <HomeCourses track={profile?.track} />

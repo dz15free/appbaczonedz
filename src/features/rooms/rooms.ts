@@ -20,6 +20,8 @@ export type RoomType = "public" | "private" | "teacher";
 export interface Room {
   id: string;
   name: string;
+  /** الشُّعب المستهدَفة: `{all:true}` أو خريطة معرّفات — تُستعمل في الاكتشاف */
+  branches?: Record<string, boolean> | null;
   type: RoomType;
   ownerId: string;
   ownerName: string;
@@ -55,6 +57,7 @@ export async function createRoom(input: {
   ownerRole?: "teacher";
   isPaid?: boolean;
   price?: number;
+  branches?: Record<string, boolean> | null;
 }): Promise<string> {
   const id = generateRoomId();
   const data: Record<string, unknown> = {
@@ -64,6 +67,7 @@ export async function createRoom(input: {
     ownerId: input.ownerId,
     ownerName: input.ownerName,
     ownerRole: input.ownerRole ?? null,
+    branches: input.branches ?? { all: true },
     createdAt: Date.now(),
   };
   if (input.isPaid && input.price && input.price > 0) {
@@ -341,6 +345,7 @@ export async function scheduleSession(input: {
   ownerRole?: "teacher";
   isPaid?: boolean;
   price?: number;
+  branches?: Record<string, boolean> | null;
 }): Promise<string> {
   // أنشئ غرفة الجلسة فوراً (تصبح جاهزة للانضمام عند حلول الوقت)
   const roomId = await createRoom({

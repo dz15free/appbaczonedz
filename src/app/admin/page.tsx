@@ -17,7 +17,7 @@ import {
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
   faPlus, faXmark, faToggleOn, faToggleOff, faUsers,
   faDoorOpen, faBan, faUnlock, faEye, faBookOpen,
-  faGlobe, faUpRightFromSquare, faGraduationCap,
+  faGlobe, faUpRightFromSquare, faGraduationCap, faClipboardCheck, faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -33,6 +33,8 @@ import { detectBrigading, listenTeacherRatings, computeStats, type TeacherRating
 import { setSupportAccount, useSupportInfo, SUPPORT_DEFAULTS } from "@/features/support/admin-chat";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AdminCourses } from "@/features/courses/admin-courses";
+import { AdminStudyFeed } from "@/features/feed/admin-feed";
+import { AdminMissions } from "@/features/daily/admin-missions";
 
 interface Report {
   firebaseKey: string;
@@ -166,6 +168,8 @@ const TABS = [
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
   { id: "courses",   label: "إدارة الدورات", icon: faGraduationCap },
+  { id: "studyfeed", label: "مساحة الدراسة", icon: faGraduationCap },
+  { id: "missions",  label: "مهامّ اليوم",   icon: faFire },
   { id: "curriculum", label: "المنهج",   icon: faBookOpen },
   { id: "subjects",  label: "المواد",    icon: faBookOpen },
   { id: "guide",     label: "دليل التخصّصات", icon: faBookOpen },
@@ -538,6 +542,10 @@ export default function AdminPage() {
         </div>
 
         {/* ════ إحصائيات ════ */}
+        {tab === "studyfeed" && user && <AdminStudyFeed adminUid={user.uid} />}
+
+        {tab === "missions" && user && <AdminMissions adminUid={user.uid} />}
+
         {/* مراجعة الدورات — التبويب الجديد داخل اللوحة نفسها */}
         {tab === "courses" && user && (
           <AdminCourses admin={{ uid: user.uid, name: profile?.name || user.displayName || "الإدارة" }} />

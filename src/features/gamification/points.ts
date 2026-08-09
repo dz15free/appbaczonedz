@@ -89,3 +89,43 @@ export async function recordDailyVisit(uid: string) {
   }
 }
 
+
+/* ════════════════════════════════════════════════════════════
+   منح نقاط على إنجاز تعليمي (تغذية دراسية · مهامّ اليوم)
+
+   يوسّع النظام القائم ولا يستبدله: النقاط تبقى `users/{uid}/points`
+   والمستوى يبقى مشتقّاً منها، فلوحة الترتيب والأوسمة تعمل بلا تعديل.
+
+   **الحماية طبقتان**، لأنّ باقة Spark لا تحتمل دوالّ خادم:
+
+   1. **سقف الخطوة** في قواعد قاعدة البيانات: لا تزيد النقاط في الكتابة
+      الواحدة أكثر من `MAX_XP_STEP`، ولا تنقص أبداً. فمن يفتح الطرفية
+      ويكتب `points = 999999` تُرفض كتابته — وهذا لم يكن ممكناً قبل
+      هذا التغيير.
+
+   2. **سجلّ إنجاز يُكتب مرّة واحدة** (`feedProgress` · `missionClaims`)
+      يسبق منح النقاط، وقاعدته ترفض الكتابة فوقه. فتكرار الطلب لا يمنح
+      النقاط مرّتين.
+
+   يبقى الربط المباشر بين سجلّ بعينه وزيادة النقاط خارج قدرة قواعد
+   Realtime وحدها — وهو حدّ معروف موثّق، لا سهو.
+════════════════════════════════════════════════════════════ */
+
+/** أقصى زيادة مسموحة في كتابة واحدة — مطابقة لقاعدة قاعدة البيانات */
+export const MAX_XP_STEP = 60;
+
+export async function awardXp(uid: string, amount: number): Promise<boolean> {
+  const xp = Math.max(0, Math.min(MAX_XP_STEP, Math.round(Number(amount) || 0)));
+  if (!uid || !xp) return false;
+  try {
+    await runTransaction(ref(rtdb, `users/${uid}`), (u) => {
+      if (!u) return u;
+      u.points = (u.points || 0) + xp;
+      u.level = levelFromPoints(u.points);
+      return u;
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

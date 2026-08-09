@@ -23,7 +23,8 @@ export type IconName =
   | "page" | "more" | "mic" | "micOff" | "chat" | "hand" | "anon" | "users"
   | "target" | "star" | "book" | "ai" | "timer" | "lock" | "search" | "share"
   | "copy" | "trash" | "check" | "close" | "download" | "expand" | "collapse"
-  | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass" | "warn";
+  | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass" | "warn"
+  | "graduation";
 
 /** مسارات الأيقونات — كلّها على شبكة 24×24 */
 const PATHS: Record<IconName, string[]> = {
@@ -111,6 +112,10 @@ const PATHS: Record<IconName, string[]> = {
               "M5.6 13h3.8a1.6 1.6 0 0 1 1.6 1.6v3.8A1.6 1.6 0 0 1 9.4 20H5.6A1.6 1.6 0 0 1 4 18.4v-3.8A1.6 1.6 0 0 1 5.6 13z",
               "M14.6 13h3.8a1.6 1.6 0 0 1 1.6 1.6v3.8a1.6 1.6 0 0 1-1.6 1.6h-3.8a1.6 1.6 0 0 1-1.6-1.6v-3.8a1.6 1.6 0 0 1 1.6-1.6z"],
   home:      ["M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z", "M9.5 20.5v-6h5v6"],
+  // قبّعة التخرّج — المحاكاة داخل الغرفة
+  graduation: ["M12 4.2 22 9l-10 4.8L2 9z",
+               "M6.6 11.4v4.3c0 1.6 2.4 2.8 5.4 2.8s5.4-1.2 5.4-2.8v-4.3",
+               "M20.6 9.8v4.6"],
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {

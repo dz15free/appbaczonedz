@@ -11,7 +11,10 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "test:rules": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-rules-test \"node rules-test.mjs\"",
-    "test:lifecycle": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-lifecycle-test \"node lifecycle-test.mjs\""
+    "test:lifecycle": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-lifecycle-test \"node lifecycle-test.mjs\"",
+    "test:exam": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-exam-test \"node exam-rules-test.mjs\"",
+    "test:feed": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-feed-test \"node feed-rules-test.mjs\"",
+    "test:all": "npm run test:rules && npm run test:lifecycle && npm run test:exam && npm run test:feed"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",

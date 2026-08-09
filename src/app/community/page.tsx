@@ -28,6 +28,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { AdSlot } from "@/components/ui/ad-slot";
+import { StudyFeed } from "@/features/feed/study-feed";
 import { prepareFile, prepareImagePair, type PreparedImage } from "@/lib/upload";
 import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
@@ -60,14 +61,14 @@ import { PostMediaGrid, isSupportedVideoUrl } from "@/features/community/post-me
 
 const MAX_IMAGES = 6;
 
-type Tab = "feed" | "people" | "messages";
+type Tab = "study" | "feed" | "people" | "messages";
 
 export default function CommunityPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
   const me: Person | null = user ? { uid: user.uid, name: profile?.name || user.displayName || "طالب" } : null;
-  const [tab, setTab] = useState<Tab>("feed");
+  const [tab, setTab] = useState<Tab>("study");
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -76,6 +77,9 @@ export default function CommunityPage() {
   if (loading || !user || !me) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
   const TABS: { id: Tab; label: string }[] = [
+    /* مساحة الدراسة أوّلاً: محتوى يُفعل لا يُقرأ، وهو ما يأتي الطالب
+       لأجله. المنشورات تبقى كما هي في تبويبها. */
+    { id: "study", label: "مساحة الدراسة" },
     { id: "feed", label: "المنشورات" },
     { id: "people", label: "الأصدقاء" },
     { id: "messages", label: "الرسائل" },
@@ -85,12 +89,12 @@ export default function CommunityPage() {
     <AppShell>
       <section className="mx-auto max-w-2xl px-4 py-5">
         <AdSlot placement="community" className="mb-4" />
-        <div className="mb-4 flex gap-1 rounded-lg border border-border bg-surface p-1">
+        <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 rounded-md py-2 text-sm font-bold transition ${
+              className={`min-h-[40px] flex-1 shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-bold transition ${
                 tab === t.id ? "bg-gradient-primary text-white" : "text-text-muted"
               }`}
             >
@@ -98,6 +102,10 @@ export default function CommunityPage() {
             </button>
           ))}
         </div>
+
+        {tab === "study" && (
+          <StudyFeed uid={user.uid} track={profile?.track ?? null} showHeader={false} />
+        )}
 
         {tab === "feed" && <Feed me={me} isAdmin={profile?.role === "admin"} myRole={profile?.role} />}
         {tab === "people" && <People me={me} />}

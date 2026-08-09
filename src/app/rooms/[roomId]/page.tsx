@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash, faGraduationCap, faFilePen } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -42,6 +42,8 @@ import {
   PhoneToolStrip, PhoneToolButton,
 } from "@/components/ui/workspace";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
+import { ExamGradingSheet } from "@/features/rooms/exam-sim/exam-papers";
+import { listenExam, type ExamSession } from "@/features/rooms/exam-sim/exam-session";
 import { FloatingAssistant } from "@/components/ui/floating-assistant";
 import { StatusDot } from "@/components/ui/status-dot";
 import { Icon } from "@/components/ui/icon";
@@ -55,6 +57,12 @@ const loadingTool = () => (
 const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
 const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
 const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
+/* قاعة الامتحان تُحمَّل عند الحاجة فقط: بيانات المحاكاة كبيرة، ولا
+   يجوز أن تُثقل كل غرفة عادية لا امتحان فيها. */
+const ExamStage = dynamic(() => import("@/features/rooms/exam-sim/exam-stage").then((m) => m.ExamStage), { ssr: false, loading: loadingTool });
+/* لوح الإعداد يحمل جدول مواضيع البكالوريا كاملاً — يُحمَّل حين يفتحه
+   الأستاذ لا مع كل غرفة. */
+const ExamSetupSheet = dynamic(() => import("@/features/rooms/exam-sim/exam-setup-sheet").then((m) => m.ExamSetupSheet), { ssr: false });
 
 const TOOLS: { id: RoomTool; label: string; icon: typeof faHouse }[] = [
   { id: "welcome", label: "مرحباً", icon: faHouse },
@@ -163,6 +171,9 @@ export default function RoomPage() {
   const [showParticipants, setShowParticipants] = useState(false);
   // قائمة «المزيد» — تجمع إجراءات الحصة الثانوية فلا يزدحم الشريط
   const [moreOpen, setMoreOpen] = useState(false);
+  const [examSetupOpen, setExamSetupOpen] = useState(false);
+  const [examGradingOpen, setExamGradingOpen] = useState(false);
+  const [exam, setExam] = useState<ExamSession | null>(null);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [dockTab, setDockTab] = useState("chat");
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
@@ -277,6 +288,14 @@ export default function RoomPage() {
   const [rateRoomOpen, setRateRoomOpen] = useState(false);
   const prevAnon = useRef(0);
   const { settings } = useSiteSettings();
+  /* مستمع واحد لجلسة المحاكاة يقرؤه الأستاذ والطالب معاً — لا تكرار،
+     ولا يعمل إلّا ما دامت الصفحة مفتوحة. */
+  useEffect(() => {
+    if (!roomId) return;
+    const unsub = listenExam(roomId, setExam);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
+
   const isMod = !!user && mods.has(user.uid);
   const isPrivileged = isOwner || isMod;
 
@@ -627,6 +646,25 @@ export default function RoomPage() {
         <RoomTimerButton roomId={roomId} open={timerOpen} onOpenChange={setTimerOpen} hideTrigger />
       )}
 
+      {/* ══ محاكاة البكالوريا — ألواح المالك ══ */}
+      {isOwner && user && (
+        <>
+          <ExamSetupSheet
+            roomId={roomId}
+            open={examSetupOpen}
+            onClose={() => setExamSetupOpen(false)}
+            teacherUid={user.uid}
+          />
+          <ExamGradingSheet
+            roomId={roomId}
+            roomName={room?.name ?? "الغرفة"}
+            grader={{ uid: user.uid, name: user.displayName || "الأستاذ" }}
+            open={examGradingOpen}
+            onClose={() => setExamGradingOpen(false)}
+          />
+        </>
+      )}
+
       {/* درج «إجراءات الحصة» — للمالك */}
       {isOwner && (
         <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة">
@@ -669,6 +707,29 @@ export default function RoomPage() {
               <FontAwesomeIcon icon={faBrain} className="h-5 w-5 text-primary" />
               {challenge ? "لوحة التحدّي" : "تحدٍّ"}
             </button>
+
+            {/* 🎓 محاكاة البكالوريا — بنفس شكل بقيّة الإجراءات لا زرّاً غريباً */}
+            <button
+              onClick={() => { exam ? setExamGradingOpen(true) : setExamSetupOpen(true); setMoreOpen(false); }}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
+                exam ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
+              }`}
+            >
+              <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5 text-primary" />
+              {exam ? "أوراق الامتحان" : "محاكاة البكالوريا"}
+            </button>
+
+            {/* التصحيح لا يلزم أن يقع أثناء الحصّة: يبقى الزرّ ما دامت
+                أوراق محفوظة، فيصحّح الأستاذ لاحقاً ويُرسل النتائج. */}
+            {!exam && (
+              <button
+                onClick={() => { setExamGradingOpen(true); setMoreOpen(false); }}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+              >
+                <FontAwesomeIcon icon={faFilePen} className="h-5 w-5 text-primary" />
+                تصحيح الأوراق
+              </button>
+            )}
 
             <button
               onClick={() => { setAnonOpen(true); setMoreOpen(false); }}
@@ -752,6 +813,9 @@ export default function RoomPage() {
                 <RailButton icon="anon" label="الأسئلة المجهولة"
                   badge={anonQs.filter((q) => !q.answered).length}
                   onClick={() => setAnonOpen(true)} />
+                <RailButton icon="graduation" label={exam ? "أوراق الامتحان" : "محاكاة البكالوريا"}
+                  active={Boolean(exam)}
+                  onClick={() => (exam ? setExamGradingOpen(true) : setExamSetupOpen(true))} />
               </>
             )}
             <RailSpacer />
@@ -780,13 +844,29 @@ export default function RoomPage() {
                   {roomState === "focus"
                     ? "وضع التركيز — أُخفيت الأعمدة الجانبية ليبقى المحتوى وحده"
                     : roomState === "exam"
-                      ? "وضع الامتحان — الدردشة مغلقة، ركّز على ورقتك"
+                      ? exam
+                        ? `محاكاة البكالوريا — ${exam.subjectName} · الدردشة مغلقة، ركّز على ورقتك`
+                        : "وضع الامتحان — الدردشة مغلقة، ركّز على ورقتك"
                       : "مراجعة ملفّ — الملفّ معروض والشريط الجانبي مطويّ"}
                 </span>
               </div>
             )}
 
-            {/* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */}
+            {/* ══ قاعة الامتحان ══
+                تحلّ محلّ **محتوى المسرح** لا محلّ الغرفة: الشريط العلوي
+                والمشاركون والصوت وكل ما حولها يبقى حيّاً، فإنهاء المحاكاة
+                يُزيل هذه الطبقة فيعود ما تحتها كما تركه المستخدم. */}
+            {exam && user ? (
+              <ExamStage
+                roomId={roomId}
+                roomName={room?.name ?? "الغرفة"}
+                session={exam}
+                isOwner={isOwner}
+                uid={user.uid}
+                userName={user.displayName || "طالب"}
+              />
+            ) : (
+            /* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */
             <>
               {tool === "welcome" && (
                 <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />
@@ -796,6 +876,7 @@ export default function RoomPage() {
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
               {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
             </>
+            )}
 
             {/* ══ الاستفتاء يعلو المحتوى ولا يحلّ محلّه ══
                 كان يُزيل اللوح تماماً، فيفقد الطالب السياق الذي يُسأل
@@ -839,7 +920,7 @@ export default function RoomPage() {
               </div>
             )}
             {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
-            {!isOwner && !studentFocus && (
+            {!isOwner && !studentFocus && !exam && (
               <StudentChallengeLayer
                 roomId={roomId}
                 uid={user.uid}
@@ -850,7 +931,7 @@ export default function RoomPage() {
             )}
 
             {/* مؤقّت الدرس — يظهر للجميع */}
-            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus || fullscreen} />
+            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus || fullscreen || Boolean(exam)} />
           </div>
 
           {/* ═══ طبقة وضع تركيز الأستاذ ═══ */}
@@ -957,7 +1038,7 @@ export default function RoomPage() {
           الشريط نفسه، فلا يغطّي «انضمام صوتي» كما كان يفعل سابقاً. */}
       {/* للمالك وحده: الطالب يتابع ما يعرضه الأستاذ ولا يبدّله، فإظهار
           الأزرار له يوهمه بتحكّم لا يملكه. */}
-      {isOwner && !studentFocus && !fullscreen && (
+      {isOwner && !studentFocus && !fullscreen && !exam && (
         <PhoneToolStrip>
           <PhoneToolButton icon="home" label="مرحباً" active={tool === "welcome"}
             onClick={() => isOwner && setTool("welcome")} />
@@ -982,7 +1063,7 @@ export default function RoomPage() {
           تُجمع هنا في زرّ واحد بدل أن تختفي. يظهر على الهاتف والجهاز
           اللوحي فقط (lg:hidden) لأنّ الحاسوب يملك الشريط الجانبي.
           ويُخفى في وضع التركيز لأنّ له مساعده الخاص. */}
-      {!studentFocus && !fullscreen && (
+      {!studentFocus && !fullscreen && !exam && (
         <div>
           <FloatingAssistant
             side="left"

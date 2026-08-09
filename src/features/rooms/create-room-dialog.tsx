@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ALL_SUBJECTS } from "@/lib/constants";
 import { useSiteSubjects } from "@/features/study/subjects-store";
+import { BranchPicker } from "@/features/feed/admin-feed";
+import type { BranchMap } from "@/features/feed/targeting";
 import { useRouter } from "next/navigation";
 import { createRoom, type RoomType } from "@/features/rooms/rooms";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -35,6 +37,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState("");
+  const [branches, setBranches] = useState<BranchMap>({ all: true });
 
   const isTeacher = profile?.role === "teacher" || profile?.role === "admin";
   // الأساتذة/الأدمن فقط يرون خيار "غرفة أستاذ"
@@ -54,13 +57,14 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
       ownerRole: profile?.role === "teacher" || profile?.role === "admin" ? "teacher" : undefined,
       isPaid: isPaid && isTeacher,
       price: isPaid && isTeacher ? priceNum : undefined,
+      branches,
     });
     router.push(`/rooms/${id}`);
   }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-5" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-display text-xl font-extrabold">إنشاء غرفة دراسة</h2>
         <div className="mt-5 space-y-4">
           <Input
@@ -76,11 +80,15 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               onChange={(e) => setSubject(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary"
             >
+              <option value="">مراجعة عامّة (بلا مادّة)</option>
               {siteSubjects.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
+
+          {/* استهداف الشُّعب — يقرّر لمن تظهر الغرفة في «من يراجع الآن؟» */}
+          <BranchPicker value={branches} onChange={setBranches} label="لأي شعبة هذه الغرفة؟" />
           <div>
             <span className="mb-2 block text-sm font-semibold">نوع الغرفة</span>
             <div className="grid grid-cols-3 gap-2">
