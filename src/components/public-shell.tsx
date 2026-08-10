@@ -11,6 +11,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LiveAvatar } from "@/components/ui/live-avatar";
+import { Brand } from "@/components/ui/brand";
 
 /* ════════════════════════════════════════════════════════════
    غلاف الصفحات العامّة
@@ -41,19 +42,7 @@ export function PublicHeader() {
   return (
     <header className="bz-pubheader">
       <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
-        <Link href="/" className="flex min-w-0 shrink items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={settings.logoUrl || "/icon.svg"}
-            alt=""
-            width={34}
-            height={34}
-            className="h-[34px] w-[34px] shrink-0 rounded-xl object-contain"
-          />
-          <span className="bz-brand truncate text-[17px] leading-none sm:text-[19px]">
-            {settings.siteName ?? "BacZone"}
-          </span>
-        </Link>
+        <Brand href="/" size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
         <nav className="mx-auto hidden items-center gap-1 md:flex">

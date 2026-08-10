@@ -244,8 +244,9 @@
           ".read": "auth != null"
         },
         "notes": {
-          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-          ".read": "auth != null"
+          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())",
+          ".read": "auth != null",
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200000)"
         },
         "typing": {
           "$uid": {

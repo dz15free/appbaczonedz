@@ -936,6 +936,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .bz-qa-ic[data-tone="amber"]   { background: linear-gradient(135deg, #d97706, #fbbf24); }
 .bz-qa-ic[data-tone="sky"]     { background: linear-gradient(135deg, #0284c7, #38bdf8); }
 .bz-qa-ic[data-tone="teal"]    { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.bz-qa-ic[data-tone="rose"]    { background: linear-gradient(135deg, #e11d48, #fb7185); }
 
 /* الأقسام بتلوين خفيف لا متدرّج ممتلئ: هي أيقونات تنقّل يوميّ،
    ولو صارت كلّها متدرّجات ممتلئة تحوّل الصفحة إلى قوس قزح. */
@@ -1075,6 +1076,313 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .bz-jump:hover { border-color: rgb(var(--bz-primary) / .45); color: rgb(var(--bz-primary)); }
 .bz-jump:active { transform: scale(.97); }
+
+/* ════════════════════════════════════════════════════════════
+   محرّر الملاحظات — بأسلوب Word
+   ════════════════════════════════════════════════════════════ */
+
+/* ــ شريط الأدوات ــ
+   رفّ أفقي منزلق: ثلاثون زرّاً لا تتّسع في ٣٦٠px، وكسرها إلى أربعة
+   صفوف يأكل ثلث الشاشة قبل أن يكتب الأستاذ حرفاً. */
+.bz-wtb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.bz-wtb::-webkit-scrollbar { display: none; }
+
+.bz-wbtn {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+  transition: background-color .13s, color .13s, transform .13s;
+}
+.bz-wbtn:hover { background: rgb(var(--bz-primary) / .1); color: rgb(var(--bz-primary)); }
+.bz-wbtn:active { transform: scale(.92); }
+.bz-wbtn.is-on { background: rgb(var(--bz-primary) / .14); color: rgb(var(--bz-primary)); }
+
+.bz-wsep { flex: 0 0 auto; width: 1px; height: 20px; margin: 0 3px; background: var(--bz-border); }
+
+.bz-wsel {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+  outline: none;
+}
+.bz-wsel:focus { border-color: rgb(var(--bz-primary) / .5); }
+
+.bz-wpal {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, 26px);
+  gap: 5px;
+  padding: 7px;
+  border-radius: 12px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  box-shadow: 0 12px 28px -14px rgba(15,23,42,.4);
+}
+.bz-wpal > button {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid rgba(0,0,0,.12);
+  transition: transform .12s;
+}
+.bz-wpal > button:hover { transform: scale(1.12); }
+
+/* ــ ورقة المستند ــ
+   تبدو ورقة بيضاء مرتفعة قليلاً كما في Word، وعلى الهاتف تمتدّ إلى
+   الحافّة فلا يُهدر عرضٌ ثمين في حواشٍ. */
+.bz-sheet {
+  max-width: 820px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: 18px 16px 40px;
+  border-radius: 14px;
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-border);
+  box-shadow: 0 1px 2px rgba(15,23,42,.03), 0 12px 30px -22px rgba(15,23,42,.3);
+  outline: none;
+}
+@media (min-width: 640px) { .bz-sheet { padding: 34px 40px 56px; border-radius: 18px; } }
+.bz-sheet:focus-visible { outline: 2px solid rgb(var(--bz-primary) / .35); outline-offset: 2px; }
+
+/* ــ تنسيق المستند ــ */
+.bz-doc { font-size: 15.5px; line-height: 1.95; color: var(--bz-text); word-wrap: break-word; }
+.bz-doc > *:first-child { margin-top: 0; }
+.bz-doc p { margin: 0 0 .62em; }
+.bz-doc h1, .bz-doc h2, .bz-doc h3, .bz-doc h4 {
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  color: var(--bz-text);
+  line-height: 1.4;
+  margin: 1.1em 0 .42em;
+}
+.bz-doc h1 { font-size: 1.5em; font-weight: 800; padding-bottom: .25em; border-bottom: 2px solid rgb(var(--bz-primary) / .18); }
+.bz-doc h2 { font-size: 1.28em; font-weight: 800; color: rgb(var(--bz-primary)); }
+.bz-doc h3 { font-size: 1.12em; font-weight: 800; }
+.bz-doc h4 { font-size: 1em; font-weight: 800; color: var(--bz-text-muted); }
+.bz-doc ul, .bz-doc ol { margin: .5em 0 .7em; padding-inline-start: 1.6em; }
+.bz-doc ul { list-style: disc; }
+.bz-doc ol { list-style: decimal; }
+.bz-doc li { margin: .28em 0; }
+.bz-doc li::marker { color: rgb(var(--bz-primary)); font-weight: 700; }
+.bz-doc blockquote {
+  margin: .8em 0;
+  padding: .65em 1em;
+  border-inline-start: 4px solid rgb(var(--bz-primary));
+  border-radius: 10px;
+  background: rgb(var(--bz-primary) / .06);
+  color: var(--bz-text);
+}
+.bz-doc hr { border: none; border-top: 2px dashed var(--bz-border); margin: 1.3em 0; }
+.bz-doc mark { padding: 0 3px; border-radius: 4px; }
+.bz-doc u { text-decoration-color: rgb(var(--bz-primary)); text-decoration-thickness: 2px; }
+.bz-doc a { color: rgb(var(--bz-primary)); text-decoration: underline; }
+.bz-doc code { font-family: ui-monospace, monospace; font-size: .9em; background: var(--bz-bg); padding: .1em .35em; border-radius: 5px; }
+.bz-doc pre {
+  font-family: ui-monospace, monospace;
+  font-size: .88em;
+  direction: ltr;
+  text-align: left;
+  background: var(--bz-bg);
+  border: 1px solid var(--bz-border);
+  border-radius: 10px;
+  padding: .8em 1em;
+  overflow-x: auto;
+  margin: .7em 0;
+}
+.bz-doc img { max-width: 100%; height: auto; border-radius: 10px; margin: .5em 0; }
+
+/* الجدول يتنفّس أفقياً على الهاتف بدل أن يفيض عن الورقة */
+.bz-doc table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-collapse: collapse;
+  width: 100%;
+  margin: .9em 0;
+  font-size: .95em;
+}
+@media (min-width: 640px) { .bz-doc table { display: table; white-space: normal; } }
+.bz-doc th, .bz-doc td {
+  border: 1px solid var(--bz-border);
+  padding: 7px 10px;
+  text-align: start;
+  min-width: 90px;
+}
+.bz-doc th { background: var(--bz-bg); font-weight: 800; }
+
+/* ــ عنصر المعادلة ــ
+   غير قابل للتحرير عمداً: تعديل نصف معادلة بالمؤشّر يُنتج صيغة
+   مكسورة. النقر عليها يفتحها في نافذتها. */
+.bz-eqn {
+  display: inline-block;
+  vertical-align: middle;
+  padding: 1px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color .13s, outline-color .13s;
+  outline: 1px solid transparent;
+}
+.bz-eqn:hover { background: rgb(var(--bz-primary) / .08); outline-color: rgb(var(--bz-primary) / .25); }
+.bz-eqn.is-block { display: block; text-align: center; margin: .8em 0; padding: .5em; }
+/* الصيغة الخام عند تعذّر تحميل KaTeX — تُقرأ ولا تُترك فراغاً */
+.bz-eqn.is-raw {
+  font-family: ui-monospace, monospace;
+  font-size: .92em;
+  direction: ltr;
+  background: rgb(var(--bz-primary) / .07);
+  color: rgb(var(--bz-primary));
+}
+.bz-doc.is-read .bz-eqn { cursor: default; }
+.bz-doc.is-read .bz-eqn:hover { background: transparent; outline-color: transparent; }
+
+/* ــ نافذة المعادلة والتعليمات ــ */
+.bz-eqd-back {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(15, 23, 42, .55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: bz-bs-fade-in .16s ease both;
+}
+@media (min-width: 640px) { .bz-eqd-back { align-items: center; padding: 16px; } }
+
+.bz-eqd {
+  width: 100%;
+  max-width: 34rem;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 22px 22px 0 0;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  box-shadow: 0 -8px 40px -12px rgba(15,23,42,.5);
+  animation: bz-bs-slide-up .26s cubic-bezier(.22,1,.36,1) both;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 640px) {
+  .bz-eqd { border-radius: 22px; animation: bz-srch-in .2s cubic-bezier(.22,1,.36,1) both; }
+}
+
+.bz-eqd-prev {
+  display: grid;
+  place-items: center;
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-bg);
+  font-size: 19px;
+  overflow-x: auto;
+}
+
+.bz-eqd-syms {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 10px;
+}
+@media (min-width: 420px) { .bz-eqd-syms { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+.bz-eqd-syms > button {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bz-text);
+  transition: background-color .13s, border-color .13s, transform .13s;
+}
+.bz-eqd-syms > button:hover {
+  background: rgb(var(--bz-primary) / .09);
+  border-color: rgb(var(--bz-primary) / .35);
+  color: rgb(var(--bz-primary));
+}
+.bz-eqd-syms > button:active { transform: scale(.94); }
+
+/* ════════════════════════════════════════════════════════════
+   قِفل العلامة — الشعار والاسم كوحدة واحدة
+   ════════════════════════════════════════════════════════════ */
+.bz-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  /* الاسم يُقصّ قبل أن يزاحم شيئاً — ولا يلتفّ سطرين أبداً */
+  max-width: 100%;
+}
+
+/* إطار الشعار: هو من يحمل الاستدارة، لا الصورة.
+   والصورة داخله بنسبة ٨٦٪ فتبقى قوس الحرف كاملة. */
+.bz-lock-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: transparent;
+}
+.bz-lock-mark > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* لا `border-radius` على الصورة: هو ما كان يقصّ الحرف */
+}
+.bz-lock.is-sm .bz-lock-mark { width: 34px; height: 34px; border-radius: 11px; }
+
+.bz-lock-name {
+  font-family: var(--font-cairo), var(--font-tajawal), system-ui, sans-serif;
+  /* ٢٢px مع شعار ٣٨px = نسبة ٠٫٥٨، وهي النسبة التي تجعل العين تقرأ
+     الاثنين شيئاً واحداً. كانت ١٧px مع ٣٦px (٠٫٤٧) فيبدو الاسم تابعاً
+     صغيراً معلّقاً بجانب الشعار. */
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--bz-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* محاذاة بصريّة: صندوق الحرف اللاتيني يحمل فراغاً سفليّاً، فتوسيط
+     الصندوق يرفع الاسم عن مركز الشعار. */
+  transform: translateY(0.5px);
+}
+.bz-lock.is-sm .bz-lock-name { font-size: 19.5px; }
+@media (max-width: 359px) { .bz-lock.is-sm .bz-lock-name { font-size: 18px; } }
+
+.bz-lock-beta { flex-shrink: 0; align-self: flex-start; margin-top: 1px; }
+.bz-lock.is-sm .bz-lock-beta { display: none; }
 
 /* ═══ اسم الموقع — هوية احترافية ═══ */
 .bz-brand {

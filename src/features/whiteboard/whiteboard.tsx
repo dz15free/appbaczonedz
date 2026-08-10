@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { pickShape, boundsOf, describeShape, type Bounds } from "@/features/whiteboard/shape-geometry";
+import { drawMath, looksLikeMath } from "@/features/whiteboard/math-render";
 import { ShapeActionsSheet } from "@/features/whiteboard/shape-actions";
 import {
   listenMarks, listenSavedMarks, recordMarkSaved, tagInfo,
@@ -401,16 +402,28 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     } else if (s.kind === "text" && s.text) {
       const a = P(pts[0]);
       const px = s.size * 8 * dpr();
-      ctx.font = `bold ${px}px sans-serif`;
-      /* نُثبّت الاتجاه والمحاذاة صراحةً.
-         البطاقة ولسان النوع وشارة الوسم تضبط `rtl`/`right`؛ ولو تسرّبت
-         أيٌّ منها إلى هنا لرُسم النصّ **يساراً** من نقطته، بينما يحسب
-         boundsOf مداه يميناً — فيظهر إطار التحديد بجانب النصّ لا حوله،
-         وهو بالضبط ما ظهر في لقطة الشاشة. */
-      ctx.direction = "ltr";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText(s.text, a.x, a.y);
+      /* 🐛 المعادلة كانت تُرسَم نصّاً عادياً بعد تحويل الأسّ إلى حرف
+         Unicode مرتفع — وأيّ أسّ ليس رقماً أو `n`/`i` كان يسقط إلى
+         `^${ch}` فيظهر رمز `^` حرفياً على اللوح.
+
+         الآن ما يحتوي علامات رياضية يُخطَّط تخطيطاً حقيقياً: الأسّ
+         مرفوع بخطّ أصغر، والدليل منخفض، والكسر بخطّ أفقي، والجذر
+         بسقفه — فلا يظهر `^` ولا `_` ولا `{}` أبداً، ومع أي أسّ
+         مهما طال (`n+1` مثلاً). */
+      if (looksLikeMath(s.text)) {
+        ctx.fillStyle = s.color || "#131722";
+        drawMath(ctx, s.text, a.x, a.y, px);
+      } else {
+        ctx.font = `bold ${px}px sans-serif`;
+        /* نُثبّت الاتجاه والمحاذاة صراحةً.
+           البطاقة ولسان النوع وشارة الوسم تضبط `rtl`/`right`؛ ولو تسرّبت
+           أيٌّ منها إلى هنا لرُسم النصّ **يساراً** من نقطته، بينما يحسب
+           boundsOf مداه يميناً — فيظهر إطار التحديد بجانب النصّ لا حوله. */
+        ctx.direction = "ltr";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText(s.text, a.x, a.y);
+      }
     }
     ctx.restore();
   }, []);
@@ -707,43 +720,9 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
      كعنصر معادلة أسفل ما كُتب بخطّ اليد — كما في المرجع الذي أرسلته. */
   const [mathBusy, setMathBusy] = useState(false);
 
-  /* اللوح يرسم النصّ بـ fillText، وهو لا يفهم LaTeX. فبدل أن تظهر
-     المعادلة حرفياً `x^{2}` نحوّل الشائع منها إلى رموز يونيكود حقيقية،
-     فتُقرأ رياضياً على اللوح فوراً.
-     النصّ الأصلي بصيغة LaTeX يبقى محفوظاً في الحقل `text` للعرض
-     المنسّق لاحقاً في الملاحظات وبطاقات المراجعة عبر KaTeX. */
-  function latexToUnicode(x: string): string {
-    const SUP: Record<string, string> = {
-      "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
-      "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
-      "+": "⁺", "-": "⁻", n: "ⁿ", i: "ⁱ",
-    };
-    const SUB: Record<string, string> = {
-      "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
-      "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
-    };
-    let t = x;
-    t = t.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, "($1)/($2)");
-    t = t.replace(/\\sqrt\{([^{}]*)\}/g, "√($1)");
-    t = t.replace(/\^\{([^{}]+)\}/g, (_m, g: string) =>
-      [...g].map((ch) => SUP[ch] ?? `^${ch}`).join(""));
-    t = t.replace(/\^(\w)/g, (_m, g: string) => SUP[g] ?? `^${g}`);
-    t = t.replace(/_\{([^{}]+)\}/g, (_m, g: string) =>
-      [...g].map((ch) => SUB[ch] ?? `_${ch}`).join(""));
-    t = t.replace(/_(\w)/g, (_m, g: string) => SUB[g] ?? `_${g}`);
-    const SYM: [RegExp, string][] = [
-      [/\\times/g, "×"], [/\\div/g, "÷"], [/\\pm/g, "±"],
-      [/\\leq/g, "≤"], [/\\geq/g, "≥"], [/\\neq/g, "≠"],
-      [/\\approx/g, "≈"], [/\\infty/g, "∞"], [/\\int/g, "∫"],
-      [/\\sum/g, "∑"], [/\\prod/g, "∏"], [/\\partial/g, "∂"],
-      [/\\alpha/g, "α"], [/\\beta/g, "β"], [/\\theta/g, "θ"],
-      [/\\lambda/g, "λ"], [/\\mu/g, "μ"], [/\\pi/g, "π"],
-      [/\\Delta/g, "Δ"], [/\\Omega/g, "Ω"], [/\\rightarrow/g, "→"],
-      [/\\cdot/g, "·"], [/\\ln/g, "ln"], [/\\log/g, "log"], [/\\lim/g, "lim"],
-    ];
-    for (const [re, ch] of SYM) t = t.replace(re, ch);
-    return t.replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
-  }
+  /* `latexToUnicode` حُذفت: كانت تُسطّح المعادلة إلى حروف Unicode
+     مرتفعة، وأيّ أسّ خارج خريطتها الصغيرة كان يُطبع بالرمز `^`. صار
+     التخطيط الرياضي الحقيقي في `math-render.ts` يتولّى ذلك. */
 
   async function mathWrite() {
     if (mathBusy || multiRef.current.size === 0) return;
@@ -781,7 +760,10 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         return;
       }
       // تُوضع أسفل خطّ اليد مباشرة، فيرى الطالب الأصل والنتيجة معاً
-      const sh = newShape("text", { x: b.x0, y: Math.min(b.y1 + 0.02, 0.97) }, latexToUnicode(data.latex));
+      /* يُحفَظ LaTeX **كما هو**: الراسم يُخطّطه رياضياً عند كل رسم،
+         فتبقى المعادلة قابلة للتصدير والفهم لاحقاً بدل أن تُسطَّح إلى
+         حروف Unicode لا يمكن الرجوع منها. */
+      const sh = newShape("text", { x: b.x0, y: Math.min(b.y1 + 0.02, 0.97) }, data.latex.trim());
       sh.size = TEXT_SIZES[1];
       sh.color = "#2350D9";   // المعادلة المُستخرَجة بالأزرق لتُميَّز عن خطّ اليد
       commit(sh);

@@ -886,7 +886,7 @@ export default function RoomPage() {
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} canEdit={isPrivileged} roomName={room?.name ?? "الغرفة"} />}
             </>
             )}
 
@@ -1208,7 +1208,7 @@ export default function RoomPage() {
               {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
               {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
               {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} />}
+              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} canEdit={isPrivileged} roomName={room?.name ?? "الغرفة"} />}
             </>
           )}
         </StudentFocusMode>
@@ -1220,7 +1220,7 @@ export default function RoomPage() {
         <div className="h-[68vh]"><RoomFiles roomId={roomId} isOwner={isOwner} /></div>
       </BottomSheet>
       <BottomSheet open={focusSheet === "notes"} onClose={() => setFocusSheet(null)} title="ملاحظات الدرس" maxHeight="80vh">
-        <div className="h-[68vh]"><RoomNotes roomId={roomId} isOwner={isOwner} roomName={room?.name ?? "الغرفة"} /></div>
+        <div className="h-[68vh]"><RoomNotes roomId={roomId} isOwner={isOwner} canEdit={isPrivileged} roomName={room?.name ?? "الغرفة"} /></div>
       </BottomSheet>
       <BottomSheet open={focusSheet === "cards"} onClose={() => setFocusSheet(null)} title="بطاقات المراجعة">
         <div className="px-1 py-2">

@@ -19,11 +19,10 @@ import { useSiteSettings } from "@/features/settings/use-site-settings";
    لشيء واحد — والطالب لا يصل إليها أصلاً بعد أن تكثر المنشورات.
 
    الآن كتلة واحدة أعلى الصفحة بثلاث طبقات واضحة:
-     ١. **أقسام المنصّة** — أيقونات دائرية، ما تعيش داخله يومياً.
-     ٢. **محاكاة البكالوريا** — بطاقة بارزة: هي أقرب ما يكون من
-        تجربة يوم الامتحان، فتستحقّ موضعاً لا يُخطئه أحد.
-     ٣. **وجهات البكالوريا** — دروس ومواضيع، بكالوريات سابقة،
-        الحاسبتان، وقناة تيليغرام. شبكة واحدة بلغة واحدة.
+     ١. **أقسام المنصّة** — أيقونات، ما تعيش داخله يومياً.
+     ٢. **وجهات البكالوريا** — دروس ومواضيع، بكالوريات سابقة،
+        الحاسبتان، محاكاة البكالوريا، التخصّصات، وقناة تيليغرام.
+        شبكة واحدة بلغة واحدة.
 
    والتخطيط عمود واحد على الهاتف وعمودان من `sm` وثلاثة من `xl`،
    فلا يتكسّر شيء بين ٣٢٠px وشاشة عريضة.
@@ -72,28 +71,9 @@ const SectionsRow = memo(function SectionsRow() {
   );
 });
 
-/* ── بطاقة المحاكاة ── */
-function SimCard({ href }: { href: string }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="bz-sim-card">
-      <span className="bz-sim-glow" aria-hidden />
-      <span className="bz-sim-ic">
-        <FontAwesomeIcon icon={faClipboardCheck} className="h-6 w-6" />
-      </span>
-      <span className="bz-sim-txt">
-        <span className="bz-sim-top">
-          <span className="bz-sim-t">محاكاة البكالوريا</span>
-          <span className="bz-sim-badge">تجربة حقيقية</span>
-        </span>
-        <span className="bz-sim-d">امتحان بتوقيت رسمي ومواضيع حقيقية — جرّب قبل أن تدخل القاعة.</span>
-      </span>
-      <span className="bz-sim-go">
-        ابدأ
-        <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-      </span>
-    </a>
-  );
-}
+/* بطاقة المحاكاة لم تبقَ شكلاً خاصّاً: صارت بطاقة وجهة مثل بقيّة
+   البطاقات وموضعها بعد «حساب معدّل البكالوريا» — فالقسم كلّه بلغة
+   واحدة، وهو ما يجعله يبدو مصنوعاً لا مجموعاً. */
 
 /* ── بطاقة وجهة ── */
 function DestCard({ d }: { d: Dest }) {
@@ -161,6 +141,13 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
       external: /^https?:\/\//i.test(settings.averageCalcUrl || ""),
     },
     {
+      key: "sim",
+      href: settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html",
+      label: "محاكاة البكالوريا",
+      desc: "امتحان بتوقيت رسمي ومواضيع حقيقية",
+      icon: faClipboardCheck, tone: "rose", external: true,
+    },
+    {
       key: "weighted",
       href: settings.weightedCalcUrl || "https://www.baczonedz.com/p/2026.html",
       label: "حساب المعدّل الموزون",
@@ -186,7 +173,6 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
   return (
     <div className="bz-qa">
       <SectionsRow />
-      <SimCard href={settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html"} />
       <div className="bz-qa-grid">
         {dests.map((d) => <DestCard key={d.key} d={d} />)}
       </div>

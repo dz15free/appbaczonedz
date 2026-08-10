@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNavLinks } from "@/features/admin/nav-store";
-import { BetaBadge } from "@/components/ui/beta-badge";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,6 +19,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { LiveAvatar } from "@/components/ui/live-avatar";
+import { Brand } from "@/components/ui/brand";
 
 /* أيقونات التواصل (SVG مضمّن) */
 function DrawerTelegramIcon({ className = "" }: { className?: string }) {
@@ -349,37 +349,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* على الحاسوب: الشعار في مكانه الطبيعي أوّل الشريط */}
-            <Link href="/home" className="hidden min-w-0 items-center gap-2 lg:flex">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={settings.logoUrl || "/icon.svg"}
-                alt=""
-                width={36}
-                height={36}
-                className="h-9 w-9 shrink-0 rounded-xl object-contain"
-              />
-              <span className="inline-flex min-w-0 items-start gap-1">
-                <span className="bz-brand truncate text-xl leading-none">{settings.siteName ?? "BacZone"}</span>
-                <BetaBadge />
-              </span>
-            </Link>
+            <span className="hidden lg:inline-flex">
+              <Brand href="/home" />
+            </span>
           </div>
 
           {/* ── الوسط: العلامة (هاتف) · التنقّل (حاسوب) ── */}
           <div className="flex min-w-0 items-center justify-center">
-            <Link href="/home" className="flex min-w-0 items-center gap-2 lg:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={settings.logoUrl || "/icon.svg"}
-                alt=""
-                width={32}
-                height={32}
-                className="h-8 w-8 shrink-0 rounded-xl object-contain"
-              />
-              <span className="bz-brand truncate text-[17px] leading-none sm:text-[19px]">
-                {settings.siteName ?? "BacZone"}
-              </span>
-            </Link>
+            <span className="inline-flex min-w-0 lg:hidden">
+              <Brand href="/home" size="sm" beta={false} />
+            </span>
 
             <nav ref={navRef} className="hidden min-w-0 items-center lg:flex">
               <div className="bz-navpill">

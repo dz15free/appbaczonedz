@@ -11,6 +11,8 @@
    اختيار الأشكال دقيقاً في اتجاه ومتساهلاً في الآخر.
 ════════════════════════════════════════════════════════════ */
 
+import { measureMath, looksLikeMath } from "@/features/whiteboard/math-render";
+
 export interface GeoPoint { x: number; y: number }
 
 export interface GeoShape {
