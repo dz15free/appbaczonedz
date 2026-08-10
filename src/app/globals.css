@@ -580,6 +580,374 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .bz-pubcta-alt:hover { color: #fff; text-decoration: underline; }
 
 /* ════════════════════════════════════════════════════════════
+   البطاقة الترحيبية (الهيرو)
+   ════════════════════════════════════════════════════════════ */
+.bz-hero {
+  position: relative;
+  overflow: hidden;
+  /* ٢١٦px: النصّ الترحيبي ثلاثة أسطر على ٣٦٠px، وتحته أزرار التنقّل
+     والنقاط. الارتفاع القديم (١٩٠px) كان يقصّ آخر سطر. */
+  min-height: 216px;
+  padding: 20px 20px 46px;
+  border-radius: 26px;
+  color: #fff;
+  background:
+    radial-gradient(130% 150% at 88% -25%, #3b82f6 0%, transparent 55%),
+    linear-gradient(135deg, #17203A 0%, #1d4ed8 58%, #0ea5e9 130%);
+  /* حلقة داخلية بدل `border`: الحدّ الخارجي كان يرسم خيطاً أبيض
+     شاحباً حول البطاقة، والحلقة الداخلية تُنهي الحافّة بنعومة. */
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.09),
+    0 18px 40px -22px rgba(29, 78, 216, .95);
+}
+@media (min-width: 640px) { .bz-hero { min-height: 200px; padding: 26px 28px 44px; border-radius: 30px; } }
+
+/* شبكة خفيفة جداً تُذكّر بورقة الامتحان دون أن تشتّت */
+.bz-hero-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .1;
+  background-image:
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: linear-gradient(200deg, #000 0%, transparent 72%);
+  -webkit-mask-image: linear-gradient(200deg, #000 0%, transparent 72%);
+}
+
+.bz-hero-nav {
+  position: absolute;
+  bottom: 10px;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: rgba(255,255,255,.72);
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.14);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: background-color .15s, color .15s, transform .15s;
+}
+.bz-hero-nav:hover { background: rgba(255,255,255,.24); color: #fff; }
+.bz-hero-nav:active { transform: scale(.93); }
+
+/* ════════════════════════════════════════════════════════════
+   نافذة البحث
+
+   كانت صندوقاً أبيض بحدّ رماديّ وحقل نصّ عارٍ وسطر «اكتب كلمتين على
+   الأقل» — تفتح فلا تساعد على شيء. الآن: حقل داخل كبسولة، ونتائج
+   بأيقونات ملوّنة حسب النوع، ووجهات سريعة قبل الكتابة، وهيكل تحميل
+   بدل قفزة مفاجئة. وعلى الهاتف تلتصق بالأعلى وتأخذ عرض الشاشة.
+   ════════════════════════════════════════════════════════════ */
+.bz-srch-back {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  padding-top: 8vh;
+  background: rgba(15, 23, 42, .55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: bz-bs-fade-in .16s ease both;
+}
+@media (min-width: 640px) { .bz-srch-back { padding-top: 10vh; } }
+
+.bz-srch {
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  box-shadow: 0 24px 60px -24px rgba(15,23,42,.55);
+  animation: bz-srch-in .2s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes bz-srch-in {
+  from { opacity: 0; transform: translateY(-10px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .bz-srch, .bz-srch-back { animation: none; } }
+
+.bz-srch-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bz-border);
+}
+.bz-srch-glass {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  background: rgb(var(--bz-primary) / .10);
+  color: rgb(var(--bz-primary));
+}
+.bz-srch-x {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: var(--bz-text-muted);
+  transition: background-color .15s, color .15s;
+}
+.bz-srch-x:hover { background: rgb(var(--bz-danger) / .1); color: rgb(var(--bz-danger)); }
+.bz-srch-kbd {
+  display: none;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-bg);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+}
+@media (min-width: 768px) { .bz-srch-kbd { display: inline-block; } }
+
+/* حقل البحث هو العنصر الوحيد في رأس النافذة، والنافذة كلّها مخصّصة
+   له — فحلقة التركيز حوله تُضيف صندوقاً بلا معنى. */
+.bz-srch-head input:focus-visible { outline: none; }
+
+.bz-srch-body { max-height: min(62vh, 520px); overflow-y: auto; padding: 12px; }
+
+.bz-srch-sec {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 7px;
+  padding-inline: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  color: var(--bz-text-muted);
+}
+.bz-srch-sec > span {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bz-bg);
+  border: 1px solid var(--bz-border);
+  font-size: 10.5px;
+}
+
+.bz-srch-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  transition: background-color .14s, transform .14s;
+}
+.bz-srch-row:hover { background: rgb(var(--bz-primary) / .07); }
+.bz-srch-row:active { transform: scale(.99); }
+.bz-srch-ic {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  color: #fff;
+  background: linear-gradient(135deg, rgb(var(--bz-primary)), #38bdf8);
+}
+.bz-srch-ic[data-kind="user"]    { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.bz-srch-ic[data-kind="group"]   { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.bz-srch-ic[data-kind="post"]    { background: linear-gradient(135deg, #0284c7, #38bdf8); }
+.bz-srch-ic[data-kind="library"] { background: linear-gradient(135deg, #059669, #10b981); }
+.bz-srch-t {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--bz-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bz-srch-s {
+  display: block;
+  margin-top: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--bz-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bz-srch-tag {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-bg);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+}
+.bz-srch-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--bz-text-muted);
+  transition: border-color .15s, color .15s, background-color .15s;
+}
+.bz-srch-chip:hover {
+  border-color: rgb(var(--bz-primary) / .45);
+  background: rgb(var(--bz-primary) / .07);
+  color: rgb(var(--bz-primary));
+}
+
+/* ════════════════════════════════════════════════════════════
+   الوصول السريع — الكتلة الموحّدة
+   ════════════════════════════════════════════════════════════ */
+.bz-qa { display: flex; flex-direction: column; gap: 14px; }
+
+/* ــ أقسام المنصّة ــ */
+.bz-qa-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 480px) { .bz-qa-sections { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; } }
+
+.bz-qa-sec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 4px;
+  border-radius: 16px;
+  transition: background-color .16s, transform .16s;
+}
+.bz-qa-sec:hover { background: rgb(var(--bz-primary) / .06); }
+.bz-qa-sec:active { transform: scale(.97); }
+.bz-qa-sec-ic {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 17px;
+  transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s;
+}
+.bz-qa-sec:hover .bz-qa-sec-ic { transform: translateY(-2px); }
+.bz-qa-sec-l {
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--bz-text-muted);
+}
+@media (min-width: 640px) {
+  .bz-qa-sec-ic { width: 58px; height: 58px; border-radius: 19px; }
+  .bz-qa-sec-l { font-size: 12.5px; }
+}
+
+/* ــ شبكة الوجهات ــ */
+.bz-qa-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+/* عمودان فقط حتّى على الشاشات العريضة: الكتلة تعيش داخل عمود بعرض
+   ثلثَي الصفحة، وثلاثة أعمدة فيه تخنق العناوين العربية. */
+@media (min-width: 560px) { .bz-qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.bz-qa-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 68px;
+  padding: 11px 13px;
+  border-radius: 18px;
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  box-shadow: 0 1px 2px rgba(15,23,42,.03);
+  transition: transform .17s cubic-bezier(.22,1,.36,1), box-shadow .17s, border-color .17s;
+}
+@media (hover: hover) {
+  .bz-qa-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--bz-primary) / .32);
+    box-shadow: 0 10px 24px -14px rgba(15,23,42,.38);
+  }
+  .bz-qa-card:hover .bz-qa-arrow { transform: translateX(-3px); color: rgb(var(--bz-primary)); }
+}
+.bz-qa-card:active { transform: translateY(0) scale(.99); }
+
+.bz-qa-ic {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: #fff;
+}
+.bz-qa-txt { min-width: 0; flex: 1; }
+/* العنوان يلتفّ إلى سطرين بدل أن يُقصّ: «حساب المعدّل الموزون» لا
+   يتّسع في سطر واحد داخل بطاقة ضيّقة، وقصّه يُفقده معناه. */
+.bz-qa-t {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -.008em;
+  color: var(--bz-text);
+}
+.bz-qa-d {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--bz-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bz-qa-arrow { flex-shrink: 0; color: var(--bz-text-muted); transition: transform .17s, color .17s; }
+
+/* ألوان الوجهات والأقسام — سلّم واحد يخدم الاثنين */
+.bz-qa-ic[data-tone="indigo"]  { background: linear-gradient(135deg, #4f46e5, #6366f1); }
+.bz-qa-ic[data-tone="emerald"] { background: linear-gradient(135deg, #059669, #10b981); }
+.bz-qa-ic[data-tone="blue"]    { background: linear-gradient(135deg, #2563eb, #38bdf8); }
+.bz-qa-ic[data-tone="violet"]  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.bz-qa-ic[data-tone="amber"]   { background: linear-gradient(135deg, #d97706, #fbbf24); }
+.bz-qa-ic[data-tone="sky"]     { background: linear-gradient(135deg, #0284c7, #38bdf8); }
+.bz-qa-ic[data-tone="teal"]    { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+
+/* الأقسام بتلوين خفيف لا متدرّج ممتلئ: هي أيقونات تنقّل يوميّ،
+   ولو صارت كلّها متدرّجات ممتلئة تحوّل الصفحة إلى قوس قزح. */
+.bz-qa-sec[data-tone="indigo"]  .bz-qa-sec-ic { background: rgb(99 102 241 / .12); color: #4f46e5; }
+.bz-qa-sec[data-tone="blue"]    .bz-qa-sec-ic { background: rgb(var(--bz-primary) / .12); color: rgb(var(--bz-primary)); }
+.bz-qa-sec[data-tone="emerald"] .bz-qa-sec-ic { background: rgb(16 185 129 / .12); color: #059669; }
+.bz-qa-sec[data-tone="violet"]  .bz-qa-sec-ic { background: rgb(139 92 246 / .12); color: #7c3aed; }
+.bz-qa-sec[data-tone="sky"]     .bz-qa-sec-ic { background: rgb(56 189 248 / .14); color: #0284c7; }
+.bz-qa-sec[data-tone="teal"]    .bz-qa-sec-ic { background: rgb(45 212 191 / .14); color: #0d9488; }
+.dark .bz-qa-sec-ic { filter: brightness(1.25); }
+
+/* ════════════════════════════════════════════════════════════
    الوصول السريع — بطاقة المحاكاة وأزرار القفز
    ════════════════════════════════════════════════════════════ */
 
@@ -756,9 +1124,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .dark .bz-header.is-scrolled { box-shadow: 0 8px 24px -12px rgba(0,0,0,.6); }
 
-/* زرّ أيقونة في الهيدر — هدف لمس ٤٤px مضمون على الهاتف */
+/* زرّ أيقونة في الهيدر — هدف لمس ٤٤px مضمون على الهاتف.
+
+   🐛 كان يعلن `display: grid` هنا، وهو ما يهزم `hidden` و`lg:hidden`
+   من Tailwind (كلاهما صنف واحد، والأسبقيّة لترتيب الملفّ — وهذا
+   الملفّ بعد `@tailwind utilities`). النتيجة: زرّ بحث يظهر مرّتين
+   على الهاتف، وأزرار الهاتف تبقى ظاهرة على الحاسوب. الآن `display`
+   يُضبط في الاستعمال بأصناف Tailwind فتعمل الإخفاءات كما يجب. */
 .bz-hbtn {
-  display: grid;
   place-items: center;
   flex-shrink: 0;
   width: 42px;
@@ -784,19 +1157,27 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   border-color: color-mix(in srgb, var(--bz-border) 55%, transparent);
 }
 
+/* بلا `display` هنا عمداً.
+
+   🐛 إعلان `display` في صنف يأتي **بعد** `@tailwind utilities` يهزم
+   `hidden` و`xl:inline-flex` — كلاهما صنف واحد، والأسبقيّة لترتيب
+   الملفّ. فالرابط الذي يُفترض أن يختفي على شاشة ١٠٢٤px يبقى ظاهراً
+   ويتراكب مع أزرار الحساب. `display` يُضبط في الاستعمال بأصناف
+   Tailwind فتعمل الإخفاءات كما يجب. */
 .bz-navlink {
-  display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   height: 38px;
-  padding: 0 11px;
+  /* حشوة أضيق وخطّ أصغر على ١٠٢٤px، ثمّ يتنفّس من ١٢٨٠ فصاعداً */
+  padding: 0 9px;
   border-radius: 12px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   color: var(--bz-text-muted);
   transition: background-color .16s, color .16s;
 }
+@media (min-width: 1280px) { .bz-navlink { gap: 7px; padding: 0 12px; font-size: 13.5px; } }
 .bz-navlink:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
 .bz-navlink.is-active {
   background: var(--bz-surface);
@@ -863,8 +1244,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 
 /* ــ أزرار الزائر ــ */
+/* بلا `display` هنا للسبب نفسه: لا نريد أن يهزم `hidden` من Tailwind */
 .bz-hcta, .bz-hcta-ghost {
-  display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 40px;
@@ -889,8 +1270,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .bz-hcta-ghost:hover { border-color: rgb(var(--bz-primary) / .45); color: rgb(var(--bz-primary)); }
 /* على الشاشات الضيّقة جداً يبقى زرّ واحد: ٣٢٠px لا تتّسع للاثنين
-   مع الشعار وزرّ البحث. */
-@media (max-width: 380px) { .bz-hcta-ghost { display: none; } }
+   مع الشعار وأزرار الأدوات. */
+@media (max-width: 380px) { .bz-hcta-ghost { display: none !important; } }
 
 /* توافق خلفي: صفحات قد تستعمل الاسم القديم */
 .bz-header-bar {

@@ -32,13 +32,17 @@ function DrawerFacebookIcon({ className = "" }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>;
 }
 
+/* `wide`: يظهر من `2xl` (١٥٣٦px) فصاعداً فقط.
+   ستّة روابط + قائمتان + الشعار + أزرار الحساب لا تتّسع حتى في
+   ١٢٨٠px فتتراكب. «المكتبة» و«الترتيب» موجودان في الوصول السريع
+   وفي الدرج أيضاً، فتأخيرهما إلى الشاشات الأعرض لا يُفقد شيئاً. */
 const NAV = [
-  { href: "/home", label: "الرئيسية", icon: faHouse },
-  { href: "/courses", label: "الدورات", icon: faGraduationCap },
-  { href: "/rooms", label: "الغرف", icon: faUsers },
-  { href: "/community", label: "المجتمع", icon: faGlobe },
-  { href: "/library", label: "المكتبة", icon: faBookOpen },
-  { href: "/leaderboard", label: "الترتيب", icon: faTrophy },
+  { href: "/home", label: "الرئيسية", icon: faHouse, wide: false },
+  { href: "/courses", label: "الدورات", icon: faGraduationCap, wide: false },
+  { href: "/rooms", label: "الغرف", icon: faUsers, wide: false },
+  { href: "/community", label: "المجتمع", icon: faGlobe, wide: false },
+  { href: "/library", label: "المكتبة", icon: faBookOpen, wide: true },
+  { href: "/leaderboard", label: "الترتيب", icon: faTrophy, wide: true },
 ];
 
 /* روابط الدورات حسب الدور — الطالب لا يرى «إنشاء دورة»، والأستاذ لا
@@ -323,117 +327,144 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header
         className={`bz-header sticky top-0 z-40 ${scrolled ? "is-scrolled" : ""}`}
       >
-        <div className="mx-auto flex h-[58px] max-w-[1400px] items-center gap-1.5 px-2.5 sm:px-4 lg:h-16">
+        {/* ثلاثة أعمدة: [أدوات] [العلامة] [حساب].
+            العمود الأوسط `1fr` والعلامة مُوسَّطة داخله مع `truncate`،
+            فتقع في **منتصف الشاشة تماماً** ويستحيل أن تتراكب مع
+            الأزرار مهما طال اسم الموقع — وهو ما كان يحدث حين كانت
+            طبقةً مطلقة خارج التدفّق. */}
+        <div className="mx-auto grid h-[58px] max-w-[1400px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 px-2 sm:px-4 lg:h-16 lg:gap-2">
 
-          {/* ── الهاتف: زرّ القائمة ── */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            aria-label="القائمة"
-            aria-expanded={menuOpen}
-            className="bz-hbtn lg:hidden"
-          >
-            <FontAwesomeIcon icon={faBars} className="h-[18px] w-[18px]" />
-          </button>
-
-          {/* ── الشعار ──
-              كان على الهاتف طبقة `absolute` مُوسَّطة بعرض ~١٥٥px فوق صفّ
-              أزرار يستهلك ~١٨٥px في شاشة ٣٦٠px. والعنصر المطلق لا يشارك
-              في التدفّق ولا يُقصَّر، فكان يُرسَم **تحت** الأزرار متى طال
-              اسم الموقع. الآن عنصر عادي بـ`truncate`. */}
-          <Link href="/home" className="flex min-w-0 shrink items-center gap-2 lg:me-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={settings.logoUrl || "/icon.svg"}
-              alt=""
-              width={36}
-              height={36}
-              className="h-9 w-9 shrink-0 rounded-xl object-contain"
-            />
-            <span className="inline-flex min-w-0 items-start gap-1">
-              <span className="bz-brand truncate text-[18px] leading-none sm:text-[19px] lg:text-xl">
-                {settings.siteName ?? "BacZone"}
-              </span>
-              <span className="hidden shrink-0 sm:inline"><BetaBadge /></span>
-            </span>
-          </Link>
-
-          {/* ── تنقّل الحاسوب ── */}
-          <nav ref={navRef} className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
-            <div className="bz-navpill">
-              {NAV.map((n) => (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  aria-current={pathname === n.href ? "page" : undefined}
-                  className={`bz-navlink ${pathname === n.href ? "is-active" : ""}`}
-                >
-                  <FontAwesomeIcon icon={n.icon} className="h-[15px] w-[15px]" />
-                  <span>{n.label}</span>
-                </Link>
-              ))}
-
-              <span className="mx-1 h-5 w-px shrink-0 bg-border" />
-
-              <HeaderMenu
-                id="tools"
-                label={toolsLabel}
-                icon={toolsIcon}
-                open={openMenu === "tools"}
-                onToggle={() => setOpenMenu((v) => (v === "tools" ? null : "tools"))}
-                items={toolsMenu}
-                pathname={pathname}
-              />
-              <HeaderMenu
-                id="more"
-                label="المزيد"
-                icon={faEllipsis}
-                open={openMenu === "more"}
-                onToggle={() => setOpenMenu((v) => (v === "more" ? null : "more"))}
-                items={moreDropdown}
-                pathname={pathname}
-              />
-            </div>
-          </nav>
-
-          {/* ── يمين: بحث + تواصل + حساب ── */}
-          <div className="ms-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
-            <button onClick={() => setSearchOpen(true)} aria-label="بحث" className="bz-hbtn">
+          {/* ── يمين: القائمة ثمّ البحث (هاتف) · الشعار (حاسوب) ── */}
+          <div className="flex items-center gap-0.5 justify-self-start">
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="القائمة"
+              aria-expanded={menuOpen}
+              className="bz-hbtn grid lg:hidden"
+            >
+              <FontAwesomeIcon icon={faBars} className="h-[18px] w-[18px]" />
+            </button>
+            <button onClick={() => setSearchOpen(true)} aria-label="بحث" className="bz-hbtn grid lg:hidden">
               <FontAwesomeIcon icon={faMagnifyingGlass} className="h-[18px] w-[18px]" />
             </button>
 
-            {/* روابط التواصل (حاسوب فقط) */}
-            <span className="hidden items-center gap-0.5 xl:flex">
+            {/* على الحاسوب: الشعار في مكانه الطبيعي أوّل الشريط */}
+            <Link href="/home" className="hidden min-w-0 items-center gap-2 lg:flex">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings.logoUrl || "/icon.svg"}
+                alt=""
+                width={36}
+                height={36}
+                className="h-9 w-9 shrink-0 rounded-xl object-contain"
+              />
+              <span className="inline-flex min-w-0 items-start gap-1">
+                <span className="bz-brand truncate text-xl leading-none">{settings.siteName ?? "BacZone"}</span>
+                <BetaBadge />
+              </span>
+            </Link>
+          </div>
+
+          {/* ── الوسط: العلامة (هاتف) · التنقّل (حاسوب) ── */}
+          <div className="flex min-w-0 items-center justify-center">
+            <Link href="/home" className="flex min-w-0 items-center gap-2 lg:hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings.logoUrl || "/icon.svg"}
+                alt=""
+                width={32}
+                height={32}
+                className="h-8 w-8 shrink-0 rounded-xl object-contain"
+              />
+              <span className="bz-brand truncate text-[17px] leading-none sm:text-[19px]">
+                {settings.siteName ?? "BacZone"}
+              </span>
+            </Link>
+
+            <nav ref={navRef} className="hidden min-w-0 items-center lg:flex">
+              <div className="bz-navpill">
+                {NAV.map((n) => (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    aria-current={pathname === n.href ? "page" : undefined}
+                    className={`bz-navlink ${n.wide ? "hidden 2xl:inline-flex" : "inline-flex"} ${pathname === n.href ? "is-active" : ""}`}
+                  >
+                    <FontAwesomeIcon icon={n.icon} className="h-[15px] w-[15px]" />
+                    <span>{n.label}</span>
+                  </Link>
+                ))}
+
+                <span className="mx-1 h-5 w-px shrink-0 bg-border" />
+
+                <HeaderMenu
+                  id="tools"
+                  label={toolsLabel}
+                  icon={toolsIcon}
+                  open={openMenu === "tools"}
+                  onToggle={() => setOpenMenu((v) => (v === "tools" ? null : "tools"))}
+                  items={toolsMenu}
+                  pathname={pathname}
+                />
+                <HeaderMenu
+                  id="more"
+                  label="المزيد"
+                  icon={faEllipsis}
+                  open={openMenu === "more"}
+                  onToggle={() => setOpenMenu((v) => (v === "more" ? null : "more"))}
+                  items={moreDropdown}
+                  pathname={pathname}
+                />
+              </div>
+            </nav>
+          </div>
+
+          {/* ── يسار: بحث (حاسوب) + تواصل + الوضع الداكن + حساب ── */}
+          <div className="flex shrink-0 items-center gap-0.5 justify-self-end sm:gap-1">
+            <button onClick={() => setSearchOpen(true)} aria-label="بحث" className="bz-hbtn hidden lg:grid">
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="h-[18px] w-[18px]" />
+            </button>
+
+            {/* روابط التواصل (شاشات عريضة) */}
+            <span className="hidden items-center gap-0.5 min-[1700px]:flex">
               {settings.telegramUrl && (
                 <a href={settings.telegramUrl} target="_blank" rel="noopener noreferrer" aria-label="تيليغرام"
-                  className="bz-hbtn text-sky-500 hover:!bg-sky-500/10">
+                  className="bz-hbtn grid text-sky-500 hover:!bg-sky-500/10">
                   <DrawerTelegramIcon className="h-[17px] w-[17px]" />
                 </a>
               )}
               {settings.instagramUrl && (
                 <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="إنستغرام"
-                  className="bz-hbtn text-pink-500 hover:!bg-pink-500/10">
+                  className="bz-hbtn grid text-pink-500 hover:!bg-pink-500/10">
                   <DrawerInstagramIcon className="h-[17px] w-[17px]" />
                 </a>
               )}
               {settings.facebookUrl && (
                 <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="فيسبوك"
-                  className="bz-hbtn text-blue-600 hover:!bg-blue-600/10">
+                  className="bz-hbtn grid text-blue-600 hover:!bg-blue-600/10">
                   <DrawerFacebookIcon className="h-[17px] w-[17px]" />
                 </a>
               )}
-              <span className="mx-1 h-5 w-px bg-border" />
             </span>
 
-            {/* 🐛 الزائر كان يرى **هيدر مستخدم مسجّل**: جرس إشعارات
-                وصورة حساب فارغة، بلا أي طريق إلى التسجيل. من يصل من
-                Google إلى صفحة الدورات لا يجد بابه. */}
+            {/* 🐛 الوضع الداكن كان في **درج الهاتف وحده**، فمستخدم
+                الحاسوب لا يملك أي طريقة لتفعيله إطلاقاً. */}
+            <span className="hidden lg:inline-flex">
+              <ThemeToggle compact />
+            </span>
+
+            {/* 🐛 الزائر كان يرى هيدر مستخدم مسجّل: جرس إشعارات وصورة
+                حساب فارغة، بلا أي طريق إلى التسجيل. */}
             {isGuest ? (
               <span className="flex items-center gap-1.5">
-                <Link href="/login" className="bz-hcta-ghost">
+                {/* «دخول» يختفي بين ٣٨٠px و١٢٨٠px: في الأولى لا تتّسع
+                    الشاشة لزرّين، وفي الثانية يزاحم شريط التنقّل.
+                    و«إنشاء حساب» يبقى دائماً — والتسجيل هو الهدف. */}
+                <Link href="/login" className="bz-hcta-ghost hidden xl:inline-flex min-[381px]:max-lg:inline-flex">
                   <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" />
                   <span>دخول</span>
                 </Link>
-                <Link href="/register" className="bz-hcta">
+                <Link href="/register" className="bz-hcta inline-flex">
                   <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">إنشاء حساب</span>
                   <span className="sm:hidden">حساب</span>
@@ -444,7 +475,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/notifications"
                   aria-label={unread > 0 ? `الإشعارات — ${unread} غير مقروء` : "الإشعارات"}
-                  className="bz-hbtn relative"
+                  className="bz-hbtn relative grid"
                 >
                   <FontAwesomeIcon icon={faBell} className="h-[18px] w-[18px]" />
                   {unread > 0 && (
@@ -504,10 +535,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* دعوة التسجيل للزائر — أوّل ما يراه في الدرج */}
             {isGuest && (
               <div className="grid grid-cols-2 gap-2 border-b border-border p-3">
-                <Link href="/register" onClick={() => setMenuOpen(false)} className="bz-hcta justify-center !h-11">
+                <Link href="/register" onClick={() => setMenuOpen(false)} className="bz-hcta inline-flex justify-center !h-11">
                   <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" /> إنشاء حساب
                 </Link>
-                <Link href="/login" onClick={() => setMenuOpen(false)} className="bz-hcta-ghost justify-center !h-11">
+                <Link href="/login" onClick={() => setMenuOpen(false)} className="bz-hcta-ghost inline-flex justify-center !h-11">
                   <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" /> دخول
                 </Link>
               </div>
@@ -712,7 +743,7 @@ function HeaderMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={`bz-menu-${id}`}
-        className={`bz-navlink ${open || hasActive ? "is-active" : ""}`}
+        className={`bz-navlink inline-flex ${open || hasActive ? "is-active" : ""}`}
       >
         <FontAwesomeIcon icon={icon} className="h-[15px] w-[15px]" />
         <span>{label}</span>

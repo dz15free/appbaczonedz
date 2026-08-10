@@ -77,7 +77,7 @@ export function PublicHeader() {
             <span className="h-10 w-24 animate-pulse rounded-xl bg-border/60" aria-hidden />
           ) : user ? (
             <>
-              <Link href="/home" className="bz-hcta-ghost">
+              <Link href="/home" className="bz-hcta-ghost inline-flex">
                 <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">منصّتي</span>
               </Link>
@@ -88,11 +88,11 @@ export function PublicHeader() {
             </>
           ) : (
             <>
-              <Link href="/login" className="bz-hcta-ghost">
+              <Link href="/login" className="bz-hcta-ghost inline-flex">
                 <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" />
                 <span>دخول</span>
               </Link>
-              <Link href="/register" className="bz-hcta">
+              <Link href="/register" className="bz-hcta inline-flex">
                 <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">إنشاء حساب</span>
                 <span className="sm:hidden">حساب</span>

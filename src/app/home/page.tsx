@@ -10,14 +10,15 @@ import {
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
   faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft,
-  faCompass, faShareNodes, faBullhorn, faAnglesDown } from "@fortawesome/free-solid-svg-icons";
+} from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
-import { FeatureCards, SocialLinks, AdvertiseCard, HomeExternalHighlights, NotificationToggle } from "@/components/ui/home-feature-sections";
+import { SocialLinks, AdvertiseCard, NotificationToggle } from "@/components/ui/home-feature-sections";
+import { QuickAccess } from "@/components/ui/quick-access";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { HomeCourses } from "@/components/ui/home-courses";
 import { TeacherTools } from "@/components/ui/teacher-tools";
@@ -103,90 +104,9 @@ const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
   );
 });
 
-/* ════════════════════════════════════════════════════════════
-   الوصول السريع
-
-   ثلاث طبقات بترتيب مقصود:
-     ١. بطاقة **محاكاة البكالوريا** بارزة بعرض كامل — كانت مدفونة
-        داخل «وجهات مهمّة» أسفل الصفحة باسم «دروس ومواضيع»، وهي
-        أقرب ما تكون إلى تجربة يوم الامتحان الحقيقي.
-     ٢. شبكة الأقسام الستّة.
-     ٣. أزرار قفز (هاتف) تُنزل المستخدم مباشرةً إلى الأقسام التي
-        تعيش أسفل الصفحة — فلا تُدفن تحت المنشورات مهما كثرت.
-   ════════════════════════════════════════════════════════════ */
-
-/** الأقسام التي تعيش في ذيل الصفحة ويقفز إليها الطالب من الأعلى */
-const JUMPS = [
-  { id: "bz-res",     label: "مصادر إضافية",    icon: faCompass,     studentOnly: false },
-  { id: "bz-tools",   label: "أدوات الباكلوريا", icon: faListCheck,   studentOnly: true },
-  { id: "bz-social",  label: "تابعنا",           icon: faShareNodes,  studentOnly: false },
-  { id: "bz-ads",     label: "أعلن معنا",        icon: faBullhorn,    studentOnly: false },
-];
-
-const SectionsRow = memo(function SectionsRow() {
-  return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
-      {SECTIONS.map((s) => (
-        <Link key={s.href} href={s.href} className="group flex flex-col items-center gap-2">
-          <span className={`grid h-14 w-14 place-items-center rounded-2xl transition group-hover:scale-105 sm:h-16 sm:w-16 ${s.color}`}>
-            <FontAwesomeIcon icon={s.icon} className="h-6 w-6 sm:h-7 sm:w-7" />
-          </span>
-          <span className="text-center text-[11.5px] font-bold leading-tight text-text-muted sm:text-xs">{s.label}</span>
-        </Link>
-      ))}
-    </div>
-  );
-});
-
-/** بطاقة المحاكاة — الوجهة الأبرز داخل الوصول السريع */
-function SimCard({ href }: { href: string }) {
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="bz-sim-card">
-      <span className="bz-sim-glow" aria-hidden />
-      <span className="bz-sim-ic">
-        <FontAwesomeIcon icon={faClipboardCheck} className="h-6 w-6" />
-      </span>
-      <span className="bz-sim-txt">
-        <span className="bz-sim-top">
-          <span className="bz-sim-t">محاكاة البكالوريا</span>
-          <span className="bz-sim-badge">تجربة حقيقية</span>
-        </span>
-        <span className="bz-sim-d">امتحان بتوقيت رسمي ومواضيع حقيقية — جرّب قبل أن تدخل القاعة.</span>
-      </span>
-      <span className="bz-sim-go">
-        ابدأ
-        <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-      </span>
-    </a>
-  );
-}
-
-/** أزرار القفز — تظهر على الهاتف فقط (على الحاسوب الأقسام في الشريط الجانبي) */
-function JumpRow({ isTeacher }: { isTeacher: boolean }) {
-  const items = JUMPS.filter((j) => !j.studentOnly || !isTeacher);
-  return (
-    <div className="bz-jumps lg:hidden" aria-label="انتقال سريع لأقسام الصفحة">
-      {items.map((j) => (
-        <a key={j.id} href={`#${j.id}`} className="bz-jump">
-          <FontAwesomeIcon icon={j.icon} className="h-3 w-3" />
-          <span>{j.label}</span>
-          <FontAwesomeIcon icon={faAnglesDown} className="h-2.5 w-2.5 opacity-55" />
-        </a>
-      ))}
-    </div>
-  );
-}
-
-/** الكتلة الكاملة — يستعملها الحاسوب والهاتف بلا اختلاف */
-function QuickAccess({ isTeacher, simUrl }: { isTeacher: boolean; simUrl: string }) {
-  return (
-    <div className="space-y-3">
-      <SimCard href={simUrl} />
-      <SectionsRow />
-      <JumpRow isTeacher={isTeacher} />
-    </div>
-  );
-}
+/* الوصول السريع صار مكوّناً مستقلاًّ في `components/ui/quick-access.tsx`:
+   يجمع أقسام المنصّة وبطاقة المحاكاة وكل وجهات البكالوريا في كتلة
+   واحدة يستعملها الحاسوب والهاتف بلا اختلاف. */
 
 /* بطاقات الأدوات */
 const ToolsGrid = memo(function ToolsGrid() {
@@ -288,8 +208,6 @@ export default function HomePage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   const name = profile?.name || user.displayName || "طالب";
-  /* رابط المحاكاة يضبطه الأدمن من لوحته — والافتراضي هو الرابط القائم */
-  const simUrl = settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html";
 
   return (
     <AppShell>
@@ -309,7 +227,7 @@ export default function HomePage() {
           {/* الوصول السريع */}
           <div className="rounded-2xl border border-border bg-surface p-5">
             <h2 className="mb-4 font-display text-[17px] font-extrabold">الوصول السريع</h2>
-            <QuickAccess isTeacher={isTeacher} simUrl={simUrl} />
+            <QuickAccess isTeacher={isTeacher} />
           </div>
 
           {/* مساحة الدراسة — محتوى يفعله الطالب لا يقرؤه فقط */}
@@ -321,10 +239,10 @@ export default function HomePage() {
           {/* الدورات — قسم مستقلّ يسبق بقيّة المصادر */}
           <HomeCourses track={profile?.track} />
 
-          {/* وجهات مهمّة */}
-          <HomeExternalHighlights />
-
-          <FeatureCards />
+          {/* «وجهات مهمّة» و«بطاقات المزايا» انتقلتا بالكامل إلى
+              «الوصول السريع» أعلى الصفحة: كانتا قسمين منفصلين بتصميمين
+              مختلفين لشيء واحد، وفي موضع لا يصله الطالب بعد أن تكثر
+              المنشورات. */}
           <AdSlot placement="home" />
           <div>
             <div className="mb-3 flex items-center justify-between">
@@ -426,7 +344,7 @@ export default function HomePage() {
         {/* الوصول السريع */}
         <div>
           <h2 className="mb-3 font-display text-[17px] font-extrabold">الوصول السريع</h2>
-          <QuickAccess isTeacher={isTeacher} simUrl={simUrl} />
+          <QuickAccess isTeacher={isTeacher} />
         </div>
 
         {/* مساحة الدراسة */}
@@ -438,10 +356,7 @@ export default function HomePage() {
         {/* الدورات */}
         <HomeCourses track={profile?.track} />
 
-        {/* وجهات مهمّة */}
-        <HomeExternalHighlights />
-
-        <FeatureCards />
+        {/* «وجهات مهمّة» و«بطاقات المزايا» صارتا داخل «الوصول السريع» */}
 
         {/* آخر المنشورات */}
         <div>

@@ -140,22 +140,19 @@ export function SearchModal({ onClose }: Props) {
   function Section({ title, items }: { title: string; items: Result[] }) {
     if (!items.length) return null;
     return (
-      <div className="mb-3">
-        <p className="mb-1.5 px-1 text-[10px] font-extrabold uppercase tracking-wider text-text-muted">{title}</p>
+      <div className="mb-3.5 last:mb-0">
+        <p className="bz-srch-sec">{title}<span>{items.length}</span></p>
         <div className="space-y-1">
           {items.map((r) => (
-            <Link key={r.id} href={r.href} onClick={onClose}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-primary/5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                <FontAwesomeIcon icon={ICON[r.kind]} className="h-3.5 w-3.5" />
+            <Link key={r.id} href={r.href} onClick={onClose} className="bz-srch-row">
+              <span className="bz-srch-ic" data-kind={r.kind}>
+                <FontAwesomeIcon icon={ICON[r.kind]} className="h-4 w-4" />
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{r.name}</p>
-                {r.sub && <p className="text-xs text-text-muted">{r.sub}</p>}
-              </div>
-              <span className="shrink-0 rounded-full bg-border px-2 py-0.5 text-[10px] text-text-muted">
-                {LABEL[r.kind]}
+              <span className="min-w-0 flex-1">
+                <span className="bz-srch-t">{r.name}</span>
+                {r.sub && <span className="bz-srch-s">{r.sub}</span>}
               </span>
+              <span className="bz-srch-tag">{LABEL[r.kind]}</span>
             </Link>
           ))}
         </div>
@@ -163,39 +160,84 @@ export function SearchModal({ onClose }: Props) {
     );
   }
 
+  /* اقتراحات جاهزة: نافذة بحث فارغة تُخبر المستخدم «اكتب» ولا تساعده.
+     هذه الوجهات هي أكثر ما يُبحث عنه فعلاً. */
+  const SUGGEST = [
+    { href: "/courses", label: "الدورات" },
+    { href: "/rooms", label: "غرف المراجعة" },
+    { href: "/library", label: "المكتبة" },
+    { href: "/specialties", label: "التخصّصات الجامعية" },
+    { href: "/calculate", label: "حساب المعدّل" },
+  ];
+
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black/60 p-4 pt-[10vh]"
-      onClick={onClose}>
-      <div className="mx-auto w-full max-w-xl rounded-2xl bg-surface shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
-        {/* حقل البحث */}
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
-          <FontAwesomeIcon icon={faMagnifyingGlass} className="h-5 w-5 shrink-0 text-text-muted" />
+    <div className="bz-srch-back" onClick={onClose} role="dialog" aria-modal="true" aria-label="البحث">
+      <div className="bz-srch" onClick={(e) => e.stopPropagation()}>
+        {/* ــ حقل البحث ــ */}
+        <div className="bz-srch-head">
+          <span className="bz-srch-glass">
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="h-[17px] w-[17px]" />
+          </span>
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="ابحث عن غرفة أو مجموعة أو مستخدم..."
-            className="flex-1 bg-transparent text-base outline-none placeholder:text-text-muted"
+            placeholder="ابحث عن دورة، غرفة، ملخّص، أو زميل…"
+            aria-label="ابحث في المنصّة"
+            /* ١٦px إلزامي: أقلّ منه يجعل Safari على iPhone يُكبّر
+               الصفحة لحظة اللمس فتخرج النافذة عن مكانها. */
+            className="min-w-0 flex-1 bg-transparent text-[16px] font-bold outline-none placeholder:font-medium placeholder:text-text-muted"
           />
-          {loading
-            ? <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 animate-spin text-text-muted" />
-            : q && <button onClick={() => setQ("")} className="text-text-muted hover:text-primary">
-                <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
-              </button>
-          }
+          {loading ? (
+            <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 shrink-0 animate-spin text-primary" />
+          ) : q ? (
+            <button onClick={() => setQ("")} aria-label="مسح" className="bz-srch-x">
+              <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            /* تلميح لوحة المفاتيح — يظهر على الحاسوب وحده */
+            <kbd className="bz-srch-kbd">Esc</kbd>
+          )}
         </div>
 
-        {/* النتائج */}
-        <div className="max-h-[60vh] overflow-y-auto p-3">
+        {/* ــ النتائج ــ */}
+        <div className="bz-srch-body">
           {q.trim().length < 2 ? (
-            <p className="py-8 text-center text-sm text-text-muted">
-              اكتب كلمتين على الأقل للبحث
-            </p>
-          ) : !loading && results.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-muted">
-              لا نتائج لـ «{q}»
-            </p>
+            <div className="px-1 py-2">
+              <p className="bz-srch-sec">وجهات سريعة</p>
+              <div className="flex flex-wrap gap-2 px-1 pt-1">
+                {SUGGEST.map((x) => (
+                  <Link key={x.href} href={x.href} onClick={onClose} className="bz-srch-chip">
+                    {x.label}
+                  </Link>
+                ))}
+              </div>
+              <p className="mt-4 px-1 text-[12px] font-semibold text-text-muted">
+                اكتب حرفين على الأقل للبحث في الدورات والغرف والمكتبة والمنشورات والأعضاء.
+              </p>
+            </div>
+          ) : loading && results.length === 0 ? (
+            <div className="space-y-2 p-1">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5">
+                  <span className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-border/70" />
+                  <span className="flex-1 space-y-1.5">
+                    <span className="block h-3 w-1/3 animate-pulse rounded bg-border/70" />
+                    <span className="block h-2.5 w-1/5 animate-pulse rounded bg-border/50" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : results.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="h-5 w-5" />
+              </span>
+              <p className="text-[14.5px] font-extrabold text-text-primary">لا نتائج لـ «{q}»</p>
+              <p className="mx-auto mt-1.5 max-w-xs text-[12.5px] leading-relaxed text-text-muted">
+                جرّب كلمة أقصر، أو تصفّح الوجهات السريعة.
+              </p>
+            </div>
           ) : (
             <>
               <Section title="المستخدمون" items={users} />

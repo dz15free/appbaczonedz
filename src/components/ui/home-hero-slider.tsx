@@ -56,19 +56,25 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
   const go = (dir: 1 | -1) => setIdx((i) => (i + dir + slides) % slides);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 p-5 sm:p-7"
-      style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #0ea5e9 100%)", minHeight: "190px" }}>
-      {/* توهّجات */}
-      <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/5 blur-3xl" />
-      <div className="pointer-events-none absolute -left-8 -bottom-12 h-44 w-44 rounded-full bg-fuchsia-500/10 blur-3xl" />
+    /* ══ البطاقة الترحيبية ══
+       كانت مستطيلاً بتدرّج فاقع وحدّ `border-white/10` يظهر خيطاً
+       أبيض شاحباً على الحافّة، وتوهّجاً بنفسجياً (fuchsia) لا علاقة
+       له بهويّة المنصّة الزرقاء. والأزرار ٢٨px — تحت أي حدّ لمس.
+
+       الآن: حافّة بلا خطّ شاحب، وظلّ مصبوغ بلون البطاقة نفسها فتبدو
+       مرتفعة لا ملصوقة، وشبكة خفيفة تُذكّر بورقة الامتحان، وحلقة
+       داخلية ناعمة تُنهي الحافّة بدل الخطّ. */
+    <div className="bz-hero">
+      {/* توهّجات — بلون الهويّة */}
+      <div className="pointer-events-none absolute -right-12 -top-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-10 -bottom-16 h-52 w-52 rounded-full bg-sky-300/15 blur-3xl" />
+      <span className="bz-hero-grid" aria-hidden />
 
       {/* أزرار التنقّل — في الأسفل لتجنّب حجب الأرقام */}
-      <button onClick={() => go(-1)} aria-label="السابق"
-        className="absolute bottom-2.5 right-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white">
+      <button onClick={() => go(-1)} aria-label="الشريحة السابقة" className="bz-hero-nav right-3">
         <FontAwesomeIcon icon={faChevronRight} className="h-3 w-3" />
       </button>
-      <button onClick={() => go(1)} aria-label="التالي"
-        className="absolute bottom-2.5 left-3 z-10 grid h-7 w-7 place-items-center rounded-full bg-white/10 text-white/60 backdrop-blur-sm transition hover:bg-white/20 hover:text-white">
+      <button onClick={() => go(1)} aria-label="الشريحة التالية" className="bz-hero-nav left-3">
         <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" />
       </button>
 
@@ -148,11 +154,14 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
         </div>
       </div>
 
-      {/* نقاط المؤشّر */}
-      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+      {/* نقاط المؤشّر — هدف اللمس ٢٤px حول نقطة ٦px */}
+      <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 items-center">
         {Array.from({ length: slides }).map((_, i) => (
-          <button key={i} onClick={() => setIdx(i)} aria-label={`شريحة ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all ${i === idx ? "w-5 bg-white" : "w-1.5 bg-white/30"}`} />
+          <button key={i} onClick={() => setIdx(i)} aria-label={`الشريحة ${i + 1}`}
+            aria-current={i === idx ? "true" : undefined}
+            className="grid h-8 w-6 place-items-center">
+            <span className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? "w-6 bg-white" : "w-1.5 bg-white/35"}`} />
+          </button>
         ))}
       </div>
     </div>
