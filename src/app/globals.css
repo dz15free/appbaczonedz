@@ -1131,12 +1131,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .bz-wsel:focus { border-color: rgb(var(--bz-primary) / .5); }
 
-/* ــ منتقي الجدول ــ */
+/* ــ منتقي الجدول ــ
+   ⚠️ لا `position` ولا `top` ولا `inset-inline-start` هنا: القائمة
+   تُبنى في `document.body` ويُحسب موضعها بـ`position: fixed` من
+   JavaScript — لأنّ شريط الأدوات المنزلق (`overflow-x: auto`) كان
+   يقصّها بكاملها. ولو بقي `inset-inline-start` لتعارض مع `left`
+   المحسوب: عنصر بعرض ثابت مع `left` و`right` معاً يُهمَل أحدهما في
+   RTL، فتظهر القائمة في الجهة الخطأ. */
 .bz-wtbl {
-  position: absolute;
-  top: calc(100% + 6px);
-  inset-inline-start: 0;
-  z-index: 25;
+  z-index: 60;
   display: block;
   width: 216px;
   padding: 10px;
@@ -1214,11 +1217,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   background: rgb(var(--bz-danger) / .07);
 }
 
+/* لوحة الألوان: تُبنى في `document.body` أيضاً — لنفس سبب الجدول */
 .bz-wpal {
-  position: absolute;
-  top: calc(100% + 6px);
-  inset-inline-start: 0;
-  z-index: 20;
+  z-index: 60;
   display: grid;
   grid-template-columns: repeat(3, 26px);
   gap: 5px;

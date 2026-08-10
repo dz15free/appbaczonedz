@@ -953,16 +953,21 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       }
       if (e.touches.length === 1) {
         const now = Date.now();
-        if (now - lastTap < 300) {
+        /* النقر المزدوج يُعيد الملء — لكن **فقط إن كان مكبّراً**. بلا
+           هذا الشرط كان كل نقر مزدوج على لوح عادي يستهلك الحدث. */
+        if (now - lastTap < 300 && viewRef.current.k > 1.02) {
           setView({ k: 1, tx: 0, ty: 0 });
           lastTap = 0;
           e.preventDefault();
           return;
         }
         lastTap = now;
-        /* إصبع واحد يحرّك فقط إن كان المستخدم لا يرسم أصلاً، أو كان
-           اللوح مكبّراً — وإلّا خطف التحريك ضربة القلم. */
-        if (!canDrawRef.current || viewRef.current.k > 1.02) {
+        /* 🐛 إصبع واحد كان يحرّك اللوح لكل من لا يرسم — أي **لكل طالب
+           منضمّ**. ومع `preventDefault` صار تمرير الصفحة فوق اللوح
+           مستحيلاً، فتبدو الشاشة كأنّها تقفز وحدها. الآن التحريك
+           بإصبع واحد لا يعمل إلّا واللوح مكبّر فعلاً؛ وما دام بحجمه
+           الطبيعي يمرّر الطالب الصفحة كأيّ صفحة أخرى. */
+        if (viewRef.current.k > 1.02) {
           const v = viewRef.current;
           pan = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx: v.tx, ty: v.ty };
         }
@@ -1016,6 +1021,23 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     const main = mainRef.current;
     const prev = previewRef.current;
     if (!wrap || !board || !main || !prev) return;
+
+    /* 🐛 **اللوح كان يرتجف على الهاتف ويظهر ويختفي بسرعة.**
+
+       السبب حلقة تغذية راجعة مُغلقة: `resize` يكتب `wrap.style.height`،
+       فيتغيّر مقاس العنصر الذي يراقبه `ResizeObserver` نفسه، فيُطلق
+       `resize` مرّة أخرى. وفي الجولة الثانية صار ارتفاع الحاوية = ارتفاع
+       اللوح (٠٫٦٢٥ × العرض) فسقط شرط «هاتف رأسي» (`height > width×1.15`)،
+       فيُحذف الارتفاع، فتتمدّد الحاوية، فيعود الشرط صحيحاً… ذهاباً
+       وإياباً ستّين مرّة في الثانية. هذا هو الوميض بعينه.
+
+       إصلاحان معاً:
+       ١. قرار «رأسي» يُؤخذ من **نافذة العرض** لا من ارتفاع الحاوية —
+          فما نكتبه لا يمكن أن يغيّر القرار.
+       ٢. بصمة للمقاس المُطبَّق: إن لم يتغيّر شيء نخرج فوراً قبل أيّ
+          كتابة، فتنقطع الحلقة عند أوّل دورة. */
+    let lastKey = "";
+
     const resize = () => {
       const r = wrap.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return;
@@ -1026,33 +1048,51 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const cs = getComputedStyle(wrap);
       const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
       const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-      const availW = Math.max(1, r.width - padX);
-      const availH = Math.max(1, r.height - padY);
+      const bordY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+      const bordX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+      const availW = Math.max(1, r.width - padX - bordX);
+      const availH = Math.max(1, r.height - padY - bordY);
 
-      /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة.
-         نأخذ **الأصغر** من القيدين صراحةً بدل تصحيح بعديّ — أوضح، ولا
-         يمكن أن يتجاوز أيّاً منهما مهما كانت أبعاد الحاوية. */
-      const bw0 = Math.min(availW, availH * BOARD_AR);
-      let bw = Math.floor(Math.max(1, bw0));
-      let bh = Math.floor(Math.max(1, bw / BOARD_AR));
+      /* **السبورة على الهاتف كانت شريطاً صغيراً وسط فراغ رمادي هائل.**
 
-      /* 🐛 **السبورة على الهاتف كانت شريطاً صغيراً وسط فراغ رمادي هائل.**
+         اللوح بنسبة ١٦:١٠ ثابتة (وهذا صحيح — الدائرة يجب أن تصل الطالب
+         دائرةً)، والحاوية `flex-1` تأخذ كل ارتفاع الشاشة. على هاتف بنسبة
+         ٩:٢٠ يكون العرض هو القيد، فيصير ارتفاع اللوح ~٦٠٪ من عرض الشاشة،
+         ويبقى أكثر من ثلثَي الشاشة فراغاً ميّتاً فوقه وتحته.
 
-         السبب: اللوح بنسبة ١٦:١٠ ثابتة (وهذا صحيح — الدائرة يجب أن
-         تصل الطالب دائرةً)، والحاوية `flex-1` تأخذ كل ارتفاع الشاشة.
-         على هاتف بنسبة ٩:٢٠ يكون العرض هو القيد، فيصير ارتفاع اللوح
-         ~٦٠٪ من عرض الشاشة، ويبقى أكثر من ثلثَي الشاشة فراغاً ميّتاً
-         فوقه وتحته — كما في لقطتك.
+         على الهاتف الرأسي: العرض هو القيد **حتماً**، فنحسب من العرض
+         وحده ونتجاهل الارتفاع المتاح تماماً. هذا ليس تبسيطاً فقط — هو
+         شرط الاستقرار: لو أدخلنا `availH` في الحساب بعد أن نكتب الارتفاع
+         لتقلّص اللوح بكسلاً في كل دورة مراقبة حتى يتلاشى. */
+      const vpPortrait =
+        typeof window !== "undefined" &&
+        window.innerHeight > window.innerWidth * 1.15 &&
+        window.innerWidth < 900;
 
-         الحلّ: على الهاتف الرأسي تتقلّص الحاوية إلى ارتفاع اللوح، فيصعد
-         اللوح إلى أعلى المساحة بعرض الشاشة كاملاً بلا فراغ. والمحتوى
-         **هو نفسه** الذي على الحاسوب — لم نقصّ شيئاً ولا مطّطنا شيئاً. */
-      const portrait = r.height > r.width * 1.15 && r.width < 900;
-      if (portrait) {
+      let bw: number;
+      if (vpPortrait) {
+        bw = Math.floor(Math.max(1, availW));
+      } else {
+        /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة. */
+        bw = Math.floor(Math.max(1, Math.min(availW, availH * BOARD_AR)));
+      }
+      const bh = Math.floor(Math.max(1, bw / BOARD_AR));
+
+      /* بصمة: نفس المقاس ونفس الوضع ⇒ لا كتابة ولا إعادة رسم. هذه هي
+         التي تقطع حلقة `ResizeObserver` فيثبت اللوح. */
+      const key = `${vpPortrait ? "p" : "l"}:${bw}x${bh}:${dpr()}`;
+      if (key === lastKey) return;
+      lastKey = key;
+
+      if (vpPortrait) {
         wrap.style.flexGrow = "0";
         wrap.style.flexShrink = "0";
         wrap.style.flexBasis = "auto";
-        wrap.style.height = `${Math.round(bh + padY)}px`;
+        /* `height` تُقاس على صندوق المحتوى في `content-box` وعلى الصندوق
+           الكامل في `border-box`. تجاهُل هذا يترك شريطاً ميّتاً بمقدار
+           الحشوة كاملةً أسفل اللوح. */
+        const outer = cs.boxSizing === "border-box" ? bh + padY + bordY : bh;
+        wrap.style.height = `${Math.round(outer)}px`;
       } else {
         wrap.style.removeProperty("flex-grow");
         wrap.style.removeProperty("flex-shrink");
@@ -1072,13 +1112,33 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       fullRedraw();
     };
     resize();
-    const ro = new ResizeObserver(resize);
+
+    /* المراقب يُخطر بعد كل كتابة تخطيط. نُجمّع الإخطارات في إطار واحد
+       (`requestAnimationFrame`) حتى لا نقيس ونكتب داخل دورة المراقب
+       نفسها — هذا ما يُخرج تحذير «ResizeObserver loop» ويجعل الرسم
+       يتقطّع على الأجهزة الضعيفة. */
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; resize(); });
+    };
+    const ro = new ResizeObserver(schedule);
     ro.observe(wrap);
-    // تغيّر اتجاه الهاتف لا يُطلق ResizeObserver دائمًا
-    window.addEventListener("orientationchange", resize);
+
+    // تغيّر اتجاه الهاتف لا يُطلق ResizeObserver دائمًا — والمقاسات
+    // الجديدة لا تكون جاهزة لحظة الحدث، فنُعيد القياس بعده أيضاً.
+    const onOrient = () => {
+      lastKey = "";
+      schedule();
+      setTimeout(() => { lastKey = ""; resize(); }, 260);
+    };
+    window.addEventListener("orientationchange", onOrient);
+    window.addEventListener("resize", schedule);
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
-      window.removeEventListener("orientationchange", resize);
+      window.removeEventListener("orientationchange", onOrient);
+      window.removeEventListener("resize", schedule);
     };
   }, [fullRedraw]);
 

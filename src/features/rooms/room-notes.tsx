@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFilePdf, faNoteSticky, faBold, faItalic, faUnderline, faStrikethrough,
@@ -663,7 +664,7 @@ setTimeout(function(){window.print();},450);};<\/script>
           <Sep />
           <TBtn icon={faQuoteRight} t="اقتباس" on={() => block("BLOCKQUOTE")} />
           <TBtn icon={faMinus} t="خطّ فاصل" on={() => cmd("insertHorizontalRule")} />
-          <TablePicker onInsert={insertTable} onOp={tableOp} />
+          <TablePicker onInsert={insertTable} onOp={tableOp} onOpen={rememberRange} />
           <TBtn icon={faLink} t="رابط" on={insertLink} />
           <Sep />
           <TBtn icon={faSquareRootVariable} t="معادلة داخل السطر" on={() => openEqn(false)} />
@@ -939,32 +940,126 @@ function HBtn({ icon, label, onClick }: { icon: typeof faBold; label: string; on
   );
 }
 
+/* ════════════════════════════════════════════════════════════
+   طبقة القوائم المنسدلة — `Pop`
+
+   🐛 **زرّ الجدول لم يكن يُظهر شيئاً على الإطلاق.**
+
+   السبب ليس في المنطق: شريط الأدوات `.bz-wtb` يحمل `overflow-x: auto`
+   ليحوي ثلاثين زرّاً في ٣٦٠px. وبحسب المواصفة، إذا كان أحد محورَي
+   `overflow` غير `visible` صار الآخر `auto` أيضاً — فالشريط يقصّ
+   عمودياً كذلك. والقائمة موضوعة `position: absolute; top: 100% + 6px`
+   أي **أسفل حدّ الشريط تماماً**، فتُقصّ بكاملها. كانت تُبنى في DOM
+   وتُقصّ من الشاشة.
+
+   ولنفس السبب كانت لوحتا اللون والتظليل لا تظهران أيضاً.
+
+   الحلّ الصحيح ليس إلغاء انزلاق الشريط (نحتاجه على الهاتف)، بل إخراج
+   القائمة من الشريط كلّياً: تُبنى في `document.body` بـ`position: fixed`
+   وتُثبَّت مقابل الزرّ بـ`getBoundingClientRect`. لا سلف يقصّها بعد
+   الآن، وتُقلَب إلى أعلى الزرّ إن لم يبقَ متّسع أسفله.
+   ════════════════════════════════════════════════════════════ */
+function Pop({
+  anchor, onClose, className, children,
+}: {
+  anchor: React.RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const place = () => {
+      const a = anchor.current, b = box.current;
+      if (!a || !b) return;
+      const r = a.getBoundingClientRect();
+      const w = b.offsetWidth || 216;
+      const h = b.offsetHeight || 200;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      /* نُوسّطها تحت الزرّ ثمّ نُدخلها في الشاشة — على ٣٢٠px يكون الزرّ
+         قريباً من الحافّة فتخرج القائمة لولا هذا الحصر. */
+      const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, vw - w - 8));
+      const below = r.bottom + 6;
+      const top = below + h > vh - 8 ? Math.max(8, r.top - h - 6) : below;
+      setPos({ top, left });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [anchor]);
+
+  useEffect(() => {
+    const outside = (e: Event) => {
+      const t = e.target as Node;
+      if (box.current?.contains(t) || anchor.current?.contains(t)) return;
+      onClose();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchor, onClose]);
+
+  return createPortal(
+    <div
+      ref={box}
+      className={className}
+      /* قبل أوّل قياس نُخفيها بـ`visibility` لا بـ`display`: بلا مقاس
+         محسوب لا يمكن حساب موضعها، ومع `display:none` تبقى بلا مقاس. */
+      style={{
+        position: "fixed",
+        top: pos?.top ?? 0,
+        left: pos?.left ?? 0,
+        visibility: pos ? "visible" : "hidden",
+      }}
+      dir="rtl"
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
 /* ── منتقي الجدول ──
    شبكة ٦×٦ يمرّ عليها الإصبع/الفأر فيرى المقاس قبل الإدراج — كما في
    Word تماماً. وتحته عمليات الجدول القائم: صفّ، عمود، حذف. */
 function TablePicker({
-  onInsert, onOp,
+  onInsert, onOp, onOpen,
 }: {
   onInsert: (rows: number, cols: number, header: boolean) => void;
   onOp: (op: "row+" | "row-" | "col+" | "col-" | "del") => void;
+  /** يُحفظ موضع المؤشّر لحظة الفتح: بلا هذا يُدرَج الجدول في رأس
+      المستند لأنّ `focus()` يُعيد المؤشّر إلى البداية. */
+  onOpen: () => void;
 }) {
+  const btn = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState({ r: 0, c: 0 });
   const [header, setHeader] = useState(true);
   const MAX_R = 6, MAX_C = 6;
+  const close = useCallback(() => setOpen(false), []);
 
   return (
-    <span className="relative">
-      <button type="button" title="جدول" aria-label="جدول"
-        onMouseDown={(e) => { e.preventDefault(); setOpen((v) => !v); }}
+    <>
+      <button ref={btn} type="button" title="جدول" aria-label="جدول" aria-expanded={open}
+        onMouseDown={(e) => { e.preventDefault(); if (!open) onOpen(); setOpen((v) => !v); }}
         className={`bz-wbtn ${open ? "is-on" : ""}`}>
         <FontAwesomeIcon icon={faTable} className="h-[15px] w-[15px]" />
       </button>
 
       {open && (
-        <span className="bz-wtbl">
+        <Pop anchor={btn} onClose={close} className="bz-wtbl">
           <span className="bz-wtbl-h">
-            {hover.r > 0 ? `${hover.r} × ${hover.c}` : "اختر مقاس الجدول"}
+            {hover.r > 0 ? `جدول ${hover.r} × ${hover.c}` : "اختر مقاس الجدول"}
           </span>
 
           <span className="bz-wtbl-grid" onMouseLeave={() => setHover({ r: 0, c: 0 })}>
@@ -977,8 +1072,10 @@ function TablePicker({
                   key={i}
                   type="button"
                   aria-label={`${r} × ${c}`}
-                  onMouseEnter={() => setHover({ r, c })}
-                  onMouseDown={(e) => { e.preventDefault(); setHover({ r, c }); }}
+                  /* `pointerenter` يعمل للفأر وللقلم، و`pointerdown`
+                     يغطّي اللمس حيث لا يوجد تحويم أصلاً. */
+                  onPointerEnter={() => setHover({ r, c })}
+                  onPointerDown={(e) => { e.preventDefault(); setHover({ r, c }); }}
                   onClick={() => { onInsert(r, c, header); setOpen(false); }}
                   data-on={on ? "1" : undefined}
                 />
@@ -1009,9 +1106,9 @@ function TablePicker({
               <FontAwesomeIcon icon={faTrashCan} className="h-2.5 w-2.5" /> حذف الجدول
             </button>
           </span>
-        </span>
+        </Pop>
       )}
-    </span>
+    </>
   );
 }
 
@@ -1026,24 +1123,27 @@ function Swatches({
   colors: string[];
   onPick: (c: string) => void;
 }) {
+  const btn = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
   return (
-    <span className="relative">
-      <button type="button" title={title} aria-label={title}
+    <>
+      <button ref={btn} type="button" title={title} aria-label={title} aria-expanded={open}
         onMouseDown={(e) => { e.preventDefault(); setOpen((v) => !v); }}
         className={`bz-wbtn ${open ? "is-on" : ""}`}>
         <FontAwesomeIcon icon={icon} className="h-[15px] w-[15px]" />
       </button>
       {open && (
-        <span className="bz-wpal">
+        /* لوحة الألوان كانت مقصوصة بانزلاق الشريط مثل الجدول تماماً */
+        <Pop anchor={btn} onClose={close} className="bz-wpal">
           {colors.map((c) => (
             <button key={c} type="button" title={c} aria-label={c}
               onMouseDown={(e) => { e.preventDefault(); onPick(c); setOpen(false); }}
               style={{ background: c }} />
           ))}
-        </span>
+        </Pop>
       )}
-    </span>
+    </>
   );
 }
 
