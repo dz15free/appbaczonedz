@@ -3031,18 +3031,25 @@ body.bz-fullscreen-active .bz-voicebar {
 }
 
 /* ════════════════════════════════════════════════════════════
-   تنبيه السبورة للطالب المنضمّ — على الهاتف وحده
+   تنبيه السبورة للطالب المنضمّ
 
-   الشرطان معاً لا أحدهما:
-   • عرض أصغر من 640px — حدّ الهاتف.
-   • `pointer: coarse` — إصبع لا فأرة.
+   الحصر في الهاتف كان هنا بـ`display:none` تُرفع على الهاتف وحده.
+   ونُقل إلى JavaScript (`isPhone` في `whiteboard.tsx`) بنفس الشرطين
+   — عرض أصغر من 640px مع `pointer: coarse` — لأنّ التنبيه صار **هو
+   زرّ ملء الشاشة متوسّعاً**، فقاعدةٌ تُخفيه هنا كانت تُخفي الزرّ نفسه
+   من الحاسوب كلّه.
 
-   لماذا الاثنان؟ لأنّ العرض وحده يُظهر التنبيه لمن ضيّق نافذة حاسوبه
-   (والتنبيه يتحدّث عن تدوير الهاتف — بلا معنى هناك)، وخشونة المؤشّر
-   وحدها تُظهره على لوح رقمي كبير. الاجتماع هو الهاتف.
+   وما بقي من التنسيق حركةُ التوسّع وحدها: الزرّ يتّسع للنصّ بلا قفزة.
    ════════════════════════════════════════════════════════════ */
-.bz-wb-hint { display: none; }
+.bz-fshint {
+  animation: bz-fshint-in .26s cubic-bezier(.22, 1, .36, 1) both;
+}
 
-@media (max-width: 639.98px) and (pointer: coarse) {
-  .bz-wb-hint { display: flex; }
+@keyframes bz-fshint-in {
+  from { opacity: 0; transform: translateY(-4px) scale(.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bz-fshint { animation: none; }
 }

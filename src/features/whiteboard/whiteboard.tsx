@@ -1065,34 +1065,64 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     return () => window.removeEventListener("resize", read);
   }, []);
 
-  /* ══ تنبيه الطالب المنضمّ: أدر هاتفك، وكبّر بإصبعين ══
+  /* ══ «هل نحن على هاتف؟» — انتقل من CSS إلى JS، ولسبب لا خيار فيه ══
+
+     كان الحصر في الهاتف بقاعدة `.bz-wb-hint { display: none }` تُرفع
+     على الهاتف وحده. وهذا كان يعمل يوم كان التنبيه عنصراً مستقلّاً.
+     أمّا الآن وقد صار التنبيه **هو زرّ ملء الشاشة متوسّعاً**، فلو بقي
+     الحصر بالتنسيق لأخفى القاعدةُ الزرَّ نفسه — فيختفي زرّ ملء الشاشة
+     من الحاسوب كلّه. خطأ صامت يكسر ميزةً كاملة لإظهار تنبيه.
+
+     والشرطان هما نفسهما بلا تغيير: عرض أصغر من ٦٤٠px **و**مؤشّر خشن.
+     العرض وحده يُظهره لمن ضيّق نافذة حاسوبه (والنصّ يتحدّث عن تدوير
+     هاتف — بلا معنى هناك)، والخشونة وحدها تُظهره على لوح رقمي كبير. */
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639.98px) and (pointer: coarse)");
+    const read = () => setIsPhone(mq.matches);
+    read();
+    /* `addEventListener` على MediaQueryList غير مدعوم في سفاري القديم،
+       فنُبقي `addListener` بديلاً — وإلّا لم يتحدّث الحصر عند التدوير. */
+    if (mq.addEventListener) mq.addEventListener("change", read);
+    else mq.addListener(read);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", read);
+      else mq.removeListener(read);
+    };
+  }, []);
+
+  /* ══ تنبيه الطالب المنضمّ: «أدر هاتفك أفقياً لترى السبورة أكبر» ══
 
      الطالب يفتح السبورة على هاتفٍ رأسيّ فيرى لوحاً بعرض الشاشة
-     وارتفاعٍ يقارب نصفها، ولا شيء يخبره أنّ بيده أمرين يُضاعفان ما
-     يراه: التدوير الأفقي، والتكبير بإصبعين. الأدوات موجودة والمعرفة
-     غائبة — وهذا أسوأ أنواع الغياب لأنّ الطالب يظنّ أنّ هذا كل ما
-     في الأمر.
+     وارتفاعٍ يقارب نصفها، ولا شيء يخبره أنّ تدويرةً واحدة تُضاعف ما
+     يراه. الأداة موجودة والمعرفة غائبة — وهذا أسوأ أنواع الغياب لأنّ
+     الطالب يظنّ أنّ هذا كل ما في الأمر.
 
-     وأربعة قيود على هذا التنبيه، كلّها من الطلب نفسه:
+     والتنبيه **هو زرّ ملء الشاشة نفسه متوسّعاً**، لا عنصراً ثانياً
+     يطفو قربه. ولهذا الاختيار فائدة لم تكن في العنصر المستقلّ: النصّ
+     يشرح الزرّ الذي يلمسه الطالب في نفس المكان، فلا يبقى تخمينٌ عن
+     أيّ زرّ يتحدّث. وبعد الإغلاق يعود أيقونةً وحدها كما كان.
+
+     وأربعة قيود، كلّها من الطلب:
 
      ١) **للمنضمّين وحدهم** (`!canDraw`) — الأستاذ يعرف لوحه.
-     ٢) **على الهاتف وحده** — والفصل بعرض الشاشة **مع** خشونة المؤشّر
-        (`pointer: coarse`) لا بالعرض وحده، وإلّا ظهر لمن ضيّق نافذة
-        حاسوبه. حاسوبٌ بلمس نادر، ونافذة ضيّقة شائعة.
-     ٣) **في فراغ مقيس** — لا يُعرض إلّا إن كان الهامش الرمادي فوق
-        اللوح يتّسع له فعلاً (٣٤px)، فلا يغطّي اللوح ولا زرّاً.
+     ٢) **على الهاتف وحده** — بالعرض مع خشونة المؤشّر (انظر `isPhone`).
+     ٣) **في فراغ مقيس** — لا يتوسّع إلّا إن كان الهامش الرمادي فوق
+        اللوح يتّسع له (٣٤px)، فلا يغطّي اللوح.
      ٤) **لا يُلاحق** — يُغلق بضغطة ويُنسى إلى الأبد، ويختفي وحده بمجرّد
-        أن يفعل الطالب أحد الأمرين: يُدير الهاتف أو يُكبّر. التنبيه الذي
-        يبقى بعد أن أدّى معناه يصير ضجيجاً.
+        أن يُدير الطالب هاتفه أو يُكبّر. التنبيه الذي يبقى بعد أن أدّى
+        معناه يصير ضجيجاً.
 
-     ولا يبتلع أيّ لمسة: الحاوية `pointer-events-none` وزرّ الإغلاق
-     وحده يستقبل الضغط — لمسةٌ على اللوح تحته تصل اللوح. */
+     ولا يبتلع لمسة: جسم الفقاعة **هو الزرّ** (فلمسه تُملأ الشاشة —
+     وهو المقصود)، وزرّ الإغلاق يوقف الانتشار فلا يُملأ الشاشة معه. */
   const HINT_KEY = "bz-wb-rotate-hint";
+  /* يبدأ مطفأً ثم يُقرأ الحفظ بعد التركيب: `localStorage` غير موجود على
+     الخادم، وقراءته في أوّل رسم تُنتج HTML مختلفاً عن العميل. والبداية
+     من «مطفأ» مقصودة — أن يظهر التنبيه ثمّ يقفز مختفياً أسوأ من تأخّره
+     إطاراً واحداً. */
   const [hintOff, setHintOff] = useState(true);
 
   useEffect(() => {
-    /* يُقرأ بعد التركيب: `localStorage` غير موجود على الخادم، وقراءته
-       في أوّل رسم تُنتج HTML مختلفاً عن العميل. */
     try { setHintOff(localStorage.getItem(HINT_KEY) === "1"); }
     catch { setHintOff(false); }
   }, []);
@@ -1102,7 +1132,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     try { localStorage.setItem(HINT_KEY, "1"); } catch { /* وضع التصفّح الخاصّ */ }
   }, []);
 
-  const showHint = !canDraw && !hintOff && portrait && topGap >= 34 && view.k <= 1.02;
+  const showHint =
+    !canDraw && !hintOff && isPhone && portrait && topGap >= 34 && view.k <= 1.02;
 
   const toggleFs = useCallback(async () => {
     /* الطلب يجب أن يبقى داخل نبضة النقرة — لا `await` قبله ولا مؤقّت،
@@ -2034,51 +2065,72 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
            ضائعة، وشكوى «اللوح يبدو صغيراً على الحاسوب» نصفها منه. */
         className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-1 sm:p-1.5"
       >
-        {/* ملء الشاشة (ومعه التدوير الأفقي حيث يسمح النظام) — للأستاذ والطالب */}
-        <button
-          onClick={toggleFs}
-          title={
-            isFs
-              ? "خروج من ملء الشاشة"
-              : canLock
-                ? "ملء الشاشة — وعلى الهاتف يُدار اللوح أفقياً ليكبر"
-                : "ملء الشاشة (أدر هاتفك بنفسك ليكبر اللوح)"
+        {/* ══ زرّ ملء الشاشة — وهو نفسه تنبيه الطالب متوسّعاً ══
+
+            عنصر واحد في حالتين، لا عنصران:
+            • عادةً: أيقونة دائرية ٣٦×٣٦ في الزاوية.
+            • للطالب على هاتف رأسيّ: يتوسّع فقاعةً تحمل النصّ و«×»،
+              ثمّ يعود أيقونةً بعد الإغلاق.
+
+            الحاوية `div` لا `button`: زرٌّ داخل زرّ ليس HTML صحيحاً،
+            ويكسر التنقّل بالكيبورد وقارئ الشاشة. فالجسم زرّ، والإغلاق
+            زرٌّ شقيقه، ويجمعهما إطار واحد. */}
+        <div
+          className={
+            showHint
+              ? "bz-fshint absolute start-2 top-2 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-2xl border border-white/10 bg-slate-900/85 py-1 pe-1 ps-2 text-white shadow-lg backdrop-blur-sm"
+              : "absolute start-2 top-2 z-30"
           }
-          aria-label={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-          className="absolute start-2 top-2 z-30 grid h-9 w-9 place-items-center rounded-full bg-slate-900/55 text-white backdrop-blur-sm transition hover:bg-slate-900/75 active:scale-95"
         >
-          <Icon name={isFs ? "collapse" : "expand"} size={15} />
-        </button>
-
-        {/* إرشاد التدوير — يظهر حيث لا يملك النظام قفل اتجاه (iPhone)،
-            فلا نعِد بما لا نقدر عليه: نطلب من المستخدم أن يُدير هاتفه.
-            ويختفي وحده بمجرّد أن يصير الهاتف أفقياً. */}
-        {isFs && portrait && !canLock && (
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900/80 px-3.5 py-1.5 text-[11.5px] font-extrabold text-white backdrop-blur-sm">
-            <Icon name="expand" size={12} />
-            أدر هاتفك أفقياً ليكبر اللوح
-          </div>
-        )}
-
-        {/* تنبيه الطالب — يسكن الهامش الرمادي المقيس فوق اللوح.
-            `bz-wb-hint` هي التي تحصره في الهاتف (عرض صغير + مؤشّر خشن). */}
-        {showHint && (
-          <div
-            className="bz-wb-hint pointer-events-none absolute left-1/2 z-20 flex max-w-[calc(100%-16px)] -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-slate-900/85 py-1.5 pe-1 ps-3 text-white shadow-lg backdrop-blur-sm"
-            style={{ top: Math.max(2, (topGap - 30) / 2) }}
-            role="status"
+          <button
+            onClick={toggleFs}
+            title={
+              isFs
+                ? "خروج من ملء الشاشة"
+                : canLock
+                  ? "ملء الشاشة — وعلى الهاتف يُدار اللوح أفقياً ليكبر"
+                  : "ملء الشاشة (أدر هاتفك بنفسك ليكبر اللوح)"
+            }
+            aria-label={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+            className={
+              showHint
+                ? "flex min-w-0 items-center gap-1.5 rounded-xl px-1 py-0.5 text-start transition active:scale-[0.98]"
+                : "grid h-9 w-9 place-items-center rounded-full bg-slate-900/55 text-white backdrop-blur-sm transition hover:bg-slate-900/75 active:scale-95"
+            }
           >
-            <Icon name="expand" size={13} className="shrink-0 opacity-90" />
-            <span className="truncate text-[11px] font-extrabold leading-tight">
-              أدر هاتفك أفقياً لترى السبورة أكبر · وبإصبعين تُكبّر وتُصغّر
-            </span>
+            <Icon name={isFs ? "collapse" : "expand"} size={15} className="shrink-0" />
+            {/* النصّ لا يُقطع بنقاط على أيّ عرض: يلتفّ سطرين على أضيق
+                هاتف ويبقى سطراً واحداً حيث يتّسع. `text-balance` توزّع
+                السطرين بالتساوي فلا تبقى كلمة وحدها في سطر. */}
+            {showHint && (
+              <span className="min-w-0 whitespace-normal text-balance text-[11.5px] font-extrabold leading-[1.35] min-[380px]:text-[12px] min-[430px]:text-[12.5px]">
+                أدر هاتفك أفقياً لترى السبورة أكبر
+              </span>
+            )}
+          </button>
+
+          {showHint && (
             <button
-              onClick={dismissHint}
+              /* `stopPropagation` ضروريّة: بلاها تصعد النقرة إلى جسم
+                 الفقاعة فتُملأ الشاشة في اللحظة التي أراد الطالب فيها
+                 إخفاء التنبيه وحده. */
+              onClick={(e) => { e.stopPropagation(); dismissHint(); }}
               aria-label="إخفاء التنبيه"
-              className="pointer-events-auto grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white active:scale-95"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/65 transition hover:bg-white/15 hover:text-white active:scale-95"
             >
               <Icon name="close" size={12} />
             </button>
+          )}
+        </div>
+
+        {/* إرشاد التدوير داخل ملء الشاشة — حيث لا يملك النظام قفل اتجاه
+            (iPhone) فلا نعِد بما لا نقدر عليه. ويُكتم إن كان تنبيه
+            الطالب ظاهراً: رسالتان بالمعنى نفسه على شاشة واحدة تُقرأ
+            خللاً لا تأكيداً. */}
+        {isFs && portrait && !canLock && !showHint && (
+          <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900/80 px-3.5 py-1.5 text-[11.5px] font-extrabold text-white backdrop-blur-sm">
+            <Icon name="expand" size={12} />
+            أدر هاتفك أفقياً ليكبر اللوح
           </div>
         )}
 
