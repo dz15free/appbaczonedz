@@ -35,6 +35,9 @@ import {
 import { recognize } from "@/features/whiteboard/smart/recognize";
 import { FORMULA_GROUPS, formulaGroup, type FormulaGroupId } from "@/features/whiteboard/formula-palette";
 import { useRouter } from "next/navigation";
+import {
+  toggleFullscreen, isFullscreen, onFullscreenChange, orientationLockSupported,
+} from "@/lib/fullscreen";
 import { useAuth } from "@/features/auth/auth-provider";
 
 interface Point {
@@ -1026,51 +1029,56 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
      الوحيدة الحقيقية أن يصير الهاتف أفقياً: حينها تتقارب نسبته من
      نسبة اللوح فيكبر اللوح أضعافاً.
 
-     ولذلك زرّ واحد يفعل الأمرين معاً: ملء الشاشة ثمّ محاولة تثبيت
-     الاتجاه أفقياً. القفل غير مدعوم في كل المتصفّحات (سفاري iOS لا
-     يدعمه)، فلا نُبنى عليه: نطلبه ونتجاهل فشله، ويبقى ملء الشاشة
-     مكسباً في ذاته. وهو متاح **للأستاذ والطالب معاً** — الطالب يشاهد
-     ويحتاج الوضوح أكثر. */
+     🐛 **الزرّ كان ميّتاً على الـiPhone** — التفصيل الكامل في
+     `src/lib/fullscreen.ts`. الخلاصة: `requestFullscreen` غير موجود
+     على iPhone، فكان النداء يذهب هدراً بلا خطأ ولا أثر. الآن يمرّ كل
+     شيء عبر تلك الوحدة: ملء شاشة حقيقي حيث يوجد، وبديل بالتنسيق حيث
+     لا يوجد — فالزرّ يعمل على كل جهاز.
+
+     ولا نكذب على المستخدم في ما لا نقدر عليه: تثبيت الاتجاه أفقياً
+     مستحيل على iOS (لا API له). فإن كان الهاتف رأسياً ولا قفل، يقول
+     الزرّ صراحةً «أدر هاتفك» بدل أن يوهم بأنّه سيُديره.
+
+     والزرّ متاح **للأستاذ والطالب معاً** — الطالب يشاهد ويحتاج الوضوح
+     أكثر. */
   const [isFs, setIsFs] = useState(false);
+  const [portrait, setPortrait] = useState(false);
+  /* يُقرأ بعد التركيب لا في أوّل رسم: قراءته على الخادم تُنتج HTML
+     مختلفاً عن العميل فيصرخ React بعدم تطابق التوليد. */
+  const [canLock, setCanLock] = useState(false);
+  useEffect(() => { setCanLock(orientationLockSupported()); }, []);
 
   useEffect(() => {
-    const onChange = () => {
-      const d = document as Document & { webkitFullscreenElement?: Element };
-      setIsFs(Boolean(document.fullscreenElement || d.webkitFullscreenElement));
-    };
-    document.addEventListener("fullscreenchange", onChange);
-    document.addEventListener("webkitfullscreenchange", onChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onChange);
-      document.removeEventListener("webkitfullscreenchange", onChange);
-    };
+    const sync = () => setIsFs(isFullscreen());
+    sync();
+    return onFullscreenChange(sync);
+  }, []);
+
+  /* اتجاه الشاشة يُقاس بالقياس لا بالحدس: `orientation` مهجورة وتكذب
+     في التطبيق المثبَّت. ونحتاجه لنعرف هل نقترح التدوير أم لا. */
+  useEffect(() => {
+    const read = () => setPortrait(window.innerHeight > window.innerWidth);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
   }, []);
 
   const toggleFs = useCallback(async () => {
-    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
-    const d = document as Document & {
-      webkitFullscreenElement?: Element;
-      webkitExitFullscreen?: () => Promise<void>;
-    };
-    const active = Boolean(document.fullscreenElement || d.webkitFullscreenElement);
-    try {
-      if (active) {
-        const so = screen.orientation as (ScreenOrientation & { unlock?: () => void }) | undefined;
-        so?.unlock?.();
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else await d.webkitExitFullscreen?.();
-        return;
-      }
-      if (!el) return;
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else await el.webkitRequestFullscreen?.();
-      /* القفل يجب أن يأتي **بعد** ملء الشاشة: المواصفة ترفضه خارجها. */
-      const so = screen.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
-      if (window.innerHeight > window.innerWidth) {
-        await so?.lock?.("landscape").catch(() => { /* غير مدعوم — لا يضرّ */ });
-      }
-    } catch { /* المتصفّح رفض — نتجاهل بصمت بدل إفساد الحصّة */ }
+    /* الطلب يجب أن يبقى داخل نبضة النقرة — لا `await` قبله ولا مؤقّت،
+       وإلّا فقد المتصفّح «تفعيل المستخدم» ورفض الطلب. */
+    const on = await toggleFullscreen(rootRef.current, { landscape: true });
+    setIsFs(on);
   }, []);
+
+  /* البديل بالتنسيق لا يُشغّل `ResizeObserver` على الـwrap في كل
+     المتصفّحات (الأب يتغيّر لا هو)، فنُجبر إعادة القياس عند التبديل —
+     بلا هذا يبقى اللوح بمقاس ما قبل ملء الشاشة على الـiPhone. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t1 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 60);
+    const t2 = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 320);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [isFs]);
 
   // ── تهيئة + تجاوب ──
   useEffect(() => {
@@ -1975,15 +1983,31 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
            ضائعة، وشكوى «اللوح يبدو صغيراً على الحاسوب» نصفها منه. */
         className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-1 sm:p-1.5"
       >
-        {/* ملء الشاشة (ومعه التدوير الأفقي على الهاتف) — للأستاذ والطالب */}
+        {/* ملء الشاشة (ومعه التدوير الأفقي حيث يسمح النظام) — للأستاذ والطالب */}
         <button
           onClick={toggleFs}
-          title={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة — وعلى الهاتف يُدار اللوح أفقياً ليكبر"}
+          title={
+            isFs
+              ? "خروج من ملء الشاشة"
+              : canLock
+                ? "ملء الشاشة — وعلى الهاتف يُدار اللوح أفقياً ليكبر"
+                : "ملء الشاشة (أدر هاتفك بنفسك ليكبر اللوح)"
+          }
           aria-label={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-          className="absolute start-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-slate-900/55 text-white backdrop-blur-sm transition hover:bg-slate-900/75 active:scale-95"
+          className="absolute start-2 top-2 z-30 grid h-9 w-9 place-items-center rounded-full bg-slate-900/55 text-white backdrop-blur-sm transition hover:bg-slate-900/75 active:scale-95"
         >
           <Icon name={isFs ? "collapse" : "expand"} size={15} />
         </button>
+
+        {/* إرشاد التدوير — يظهر حيث لا يملك النظام قفل اتجاه (iPhone)،
+            فلا نعِد بما لا نقدر عليه: نطلب من المستخدم أن يُدير هاتفه.
+            ويختفي وحده بمجرّد أن يصير الهاتف أفقياً. */}
+        {isFs && portrait && !canLock && (
+          <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900/80 px-3.5 py-1.5 text-[11.5px] font-extrabold text-white backdrop-blur-sm">
+            <Icon name="expand" size={12} />
+            أدر هاتفك أفقياً ليكبر اللوح
+          </div>
+        )}
 
         {/* شارة التكبير — تظهر عند التكبير وحده، وتُعيد اللوح بنقرة */}
         {(view.k > 1.02 || view.tx !== 0 || view.ty !== 0) && (

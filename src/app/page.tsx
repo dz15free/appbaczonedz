@@ -22,15 +22,34 @@ export default function LandingPage() {
   const year = new Date().getFullYear();
   const [scrolled, setScrolled] = useState(false);
 
+  /* 🐛 هذا المقطع كان نصف سبب «الأيقونة القديمة على أندرويد».
+
+     كان يأخذ **أوّل** `link[rel~=icon]` ويكتب فيه الرابط المحفوظ في
+     الإعدادات (وكان افتراضيّه شعاراً قديماً على Blogger). فأندرويد
+     الذي يقرأ أيقونة التبويب من `rel="icon"` يرى القديم، وiOS الذي
+     يقرأ من `apple-touch-icon` يرى الجديد — فانقسمت الأيقونة بين
+     النظامين، وهو عين ما شُوهد.
+
+     الآن: الافتراضيّ ملفّ محلّي (انظر `use-site-settings.ts`)، ونُدير
+     رابطاً **مخصّصاً لنا** بدل العبث بأوّل رابط نجده، ونكتب معه
+     `apple-touch-icon` حتى لا يبقى النظامان مختلفَين أبداً. */
   useEffect(() => {
     if (!s.faviconUrl) return;
-    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    link.href = s.faviconUrl;
+    const href = s.faviconUrl;
+
+    const put = (rel: string, key: string) => {
+      let link = document.querySelector<HTMLLinkElement>(`link[data-bz="${key}"]`);
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = rel;
+        link.dataset.bz = key;
+        document.head.appendChild(link);
+      }
+      if (link.getAttribute("href") !== href) link.setAttribute("href", href);
+    };
+
+    put("icon", "icon");
+    put("apple-touch-icon", "apple");
   }, [s.faviconUrl]);
 
   useEffect(() => {
@@ -50,10 +69,29 @@ export default function LandingPage() {
             : "bg-transparent"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
+        {/* 🐛 **الشعار كان يتداخل مع أزرار الهيدر على الهاتف.**
+
+            الحساب يشرح نفسه على شاشة ٣٦٠px: الحشوة ٣٢ + مجموعة الأزرار
+            ٢٤٥ (زرّ «أنشئ حسابك وابدأ» ونصّه يُحرّره الأدمن فيطول) +
+            الفراغ ١٦ ⇒ يبقى للشعار ٦٧px، وهو يحتاج ١٠١. وبما أنّ
+            مجموعة الأزرار كانت `shrink-0` فهي لا تتنازل عن بكسل، فكان
+            الشعار وحده يُسحق: تحوّل اسم الموقع إلى «…cZoneDZ» ولاصق زرّ
+            الثيم بلا فراغ — وهو ما يُرى تداخلاً.
+
+            والإصلاح ثلاثة أسطر لا حيلة فيها:
+            ١) الاسم النصّي يظهر من ٤٠٠px فصاعداً فقط. الشعار المرسوم
+               يكفي على الشاشات الأضيق، والاسم المقطوع ليس هويّة.
+            ٢) مجموعة الأزرار تقبل التقلّص (`min-w-0` بلا `shrink-0`)،
+               ونصّ الزرّ يُقطع بأدب إن أطاله الأدمن.
+            ٣) فراغ أضيق على الهاتف وأوسع على الحاسوب. */}
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:h-[4.25rem] sm:gap-4 sm:px-6">
+          {/* `shrink-0` على الشعار مقصود: هو الهويّة، فهو آخر ما يتنازل.
+              ولا يكفي `shrink-0` على الصورة وحدها لأنّ Tailwind يضع
+              `img{max-width:100%}` في preflight — فحاوية بعرض ٢px تسحق
+              صورةً «لا تتقلّص» إلى ٢px. القيد الحقيقي هو حجم الحاوية. */}
           <Link
             href="/"
-            className="group flex min-w-0 items-center gap-2.5 overflow-hidden"
+            className="group flex shrink-0 items-center gap-2.5 overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -61,12 +99,12 @@ export default function LandingPage() {
               alt={s.siteName || "BacZoneDZ"}
               className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-white/10 transition group-hover:ring-white/25 sm:h-10 sm:w-10"
             />
-            <span className="truncate font-display text-[15px] font-bold tracking-tight text-white sm:text-lg">
+            <span className="hidden truncate font-display text-[15px] font-bold tracking-tight text-white min-[400px]:block sm:text-lg">
               {s.siteName || "BacZoneDZ"}
             </span>
           </Link>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3">
             <ThemeToggle />
             <Link
               href="/login"
@@ -76,9 +114,9 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/register"
-              className="rounded-xl bg-white px-4 py-2.5 text-[13px] font-bold text-slate-900 shadow-lg shadow-white/10 transition hover:bg-white/95 active:scale-[0.97] sm:px-5 sm:text-sm"
+              className="min-w-0 shrink truncate whitespace-nowrap rounded-xl bg-white px-3.5 py-2.5 text-[13px] font-bold text-slate-900 shadow-lg shadow-white/10 transition hover:bg-white/95 active:scale-[0.97] sm:px-5 sm:text-sm"
             >
-              {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "…"}
+              {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "أنشئ حسابك"}
             </Link>
           </div>
         </div>

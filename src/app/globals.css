@@ -2965,6 +2965,19 @@ body.bz-fullscreen-active .bz-voicebar {
   background: var(--bz-bg, #eef1f6);
 }
 
+/* وعلى الـiPhone لا يوجد ملء شاشة حقيقي لعنصر عادي، فنستعمل البديل
+   `bz-fullscreen` المعرَّف أعلى الملفّ. يبقى أن نُعطيه تخطيطه
+   وخلفيّته — بلا هذا يظهر ما تحته من الصفحة خلف اللوح. */
+.bz-wbroot.bz-fullscreen {
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--bz-bg, #eef1f6) !important;
+  /* المنطقة الآمنة: على الهواتف ذات النتوء يقع الزرّ تحته بلا هذا */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left) !important;
+}
+.dark .bz-wbroot.bz-fullscreen { background: #101319 !important; }
+
 /* ــ شارات حالة نشر الملاحظات ــ
    الأستاذ يجب أن يعرف بنظرة أنّ الطلبة **لم يروا** آخر ما كتبه؛ بلا
    هذه الشارة يظنّ أنّ عمله وصل وهو لم يصل. */

@@ -103,12 +103,33 @@ export interface AdSlotConfig {
 
 export interface FooterLink { label: string; href: string }
 
-const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png";
+/* 🐛 **هنا كان سرّ «الأيقونة القديمة على أندرويد والجديدة على iPhone».**
+
+   كان الافتراضيّ صورةً مستضافة على Blogger — وهي الشعار القديم:
+
+     const LOGO_URL = "https://blogger.googleusercontent.com/.../BACZONEDZ (2).png"
+
+   وصفحة الهبوط تأخذ `faviconUrl` وتكتبه في `<link rel="icon">` وقت
+   التشغيل. فكانت النتيجة انقساماً بين النظامين لا صدفةً فيه:
+
+   • أندرويد (Chrome) يأخذ أيقونة التبويب والاختصار من `rel="icon"` —
+     أي من الصورة القديمة التي كتبها الجافاسكربت. ⇒ القديمة.
+   • iOS يأخذ أيقونة الشاشة الرئيسية من `apple-touch-icon` ولا يمسّها
+     ذلك الجافاسكربت إطلاقاً. ⇒ الجديدة.
+
+   ولذلك صارت الافتراضيّات ملفّات `public` المحلّية: مصدر واحد للأيقونة
+   على كل الأجهزة. ويبقى بإمكان الأدمن رفع شعار مخصّص من لوحة الإعدادات
+   — الفرق أنّ الافتراضيّ لم يعد شعاراً قديماً على خادم غريب.
+
+   وفائدة ثانية: الشعار لم يعد يُحمَّل من نطاق خارجي في أوّل رسم
+   للصفحة، فلا يتعلّق ظهوره بخادم Blogger ولا بسرعته. */
+const LOGO_URL = "/icon.svg";
+const FAVICON_URL = "/icon-192.png";
 
 const DEFAULTS: SiteSettings = {
   siteName: "BacZone",
   logoUrl: LOGO_URL,
-  faviconUrl: LOGO_URL,
+  faviconUrl: FAVICON_URL,
   heroTitle: "ادرس بذكاء. ونجح في البكالوريا.",
   heroSubtitle: "غرف دراسة مباشرة، مساعدة ذكية، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.",
   footerText: `© ${new Date().getFullYear()} BacZoneDZ. جميع الحقوق محفوظة.`,
@@ -196,6 +217,24 @@ const DEFAULTS: SiteSettings = {
   adsWhatsapp: "+213657498876",
 };
 
+/* تصحيح الشعار القديم المحفوظ في قاعدة البيانات.
+
+   تغيير الافتراضيّ وحده لا يكفي: إن كان الشعار القديم قد **حُفظ** في
+   `settings` من قبل (وهو الأرجح، فلوحة الأدمن تحفظ كل الحقول معاً)
+   فالقيمة المحفوظة تغلب الافتراضيّ وتبقى الأيقونة القديمة على أندرويد
+   إلى الأبد. فنُحيّد المصدر القديم وحده — أيّ شعار آخر يرفعه الأدمن
+   يُحترم كما هو. */
+const LEGACY_LOGO_HOST = "blogger.googleusercontent.com";
+
+function normalizeBranding(s: SiteSettings): SiteSettings {
+  const stale = (v?: string) => !v || v.includes(LEGACY_LOGO_HOST);
+  return {
+    ...s,
+    logoUrl: stale(s.logoUrl) ? LOGO_URL : s.logoUrl,
+    faviconUrl: stale(s.faviconUrl) ? FAVICON_URL : s.faviconUrl,
+  };
+}
+
 /* ─── Hook: قراءة الإعدادات الكاملة ─── */
 export function useSiteSettings() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULTS);
@@ -204,7 +243,7 @@ export function useSiteSettings() {
   useEffect(() => {
     const unsub = onValue(ref(rtdb, "settings"), (snap) => {
       const val = snap.val() as SiteSettings | null;
-      setSettings({ ...DEFAULTS, ...(val ?? {}) });
+      setSettings(normalizeBranding({ ...DEFAULTS, ...(val ?? {}) }));
       setLoaded(true);
     });
     return () => { if (typeof unsub === "function") unsub(); };

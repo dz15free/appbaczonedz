@@ -53,7 +53,10 @@ export const metadata: Metadata = {
   },
   description: SITE_DESC,
   applicationName: SITE_NAME,
-  manifest: "/manifest.json",
+  /* `?v=3` على المانيفست أيضاً: أندرويد يُخزّنه ولا يُعيد قراءته إلّا
+     إذا تغيّر رابطه — وبلا إعادة قراءته يبقى `orientation: portrait`
+     القديم فاعلاً فلا يدور التطبيق المثبَّت. */
+  manifest: "/manifest.json?v=3",
   alternates: { canonical: "/" },
   robots: {
     index: true,
@@ -66,17 +69,24 @@ export const metadata: Metadata = {
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
-  /* الأيقونات محلّية: كانت تُحمَّل من `blogger.googleusercontent.com`
-     — نداء إلى نطاق ثالث على المسار الحرج لكل صفحة، وخارج سيطرتنا
-     تماماً لو تغيّر أو حُذف. الملفّات في `public/` أصلاً. */
+  /* الأيقونات كلّها محلّية من `public/` — لا نطاق ثالث على المسار
+     الحرج لكل صفحة. والترتيب مقصود، و`?v=3` مقصود:
+
+     • `favicon.ico` أوّلاً وبمقاسات متعدّدة: كان ١٦×١٦ وحده، فكان
+       أندرويد يُكبّره في التبويب والاختصار فيبدو باهتاً «قديماً».
+       صار يحمل ١٦ و٣٢ و٤٨ و٦٤ و١٢٨ فيختار كل جهاز مقاسه.
+     • `apple-touch-icon` ١٨٠×١٨٠ بلا شفافية — iOS يُسوّد الشفّاف.
+     • `?v=3` يكسر كاش الأيقونات، وهو عنيد جداً في أندرويد ويدوم
+       أسابيع بلا هذه الحيلة. */
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=3", sizes: "16x16 32x32 48x48 64x64 128x128" },
+      { url: "/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png?v=3", sizes: "512x512", type: "image/png" },
+      { url: "/icon.svg?v=3", type: "image/svg+xml" },
     ],
-    apple: "/icon-192.png",
-    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png?v=3", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico?v=3",
   },
   openGraph: {
     type: "website",
