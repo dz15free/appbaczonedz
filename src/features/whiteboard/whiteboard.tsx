@@ -90,7 +90,12 @@ const TEXT_SIZE_LABEL = ["صغير", "عادي", "كبير", "عنوان"];
    فالدائرة المرسومة على الحاسوب (نسبة ١٫٦٧) تصل الهاتف (نسبة ٠٫٥٨) بيضاويّةً
    ممطوطة، والكتابة تبدو طويلة. الآن اللوح يحتفظ بنسبة واحدة على كل الأجهزة
    ويُوسَّط داخل المساحة المتاحة، فما يراه الأستاذ هو ما يراه الطالب بالضبط. */
-const BOARD_AR = 16 / 10;
+/* نسبة اللوح: ١٦:٩ — واحدة للأستاذ والطالب، وعلى الحاسوب والهاتف معاً.
+   كانت ١٦:١٠، وهي نسبة لا تطابق شكل أيّ شاشة حديثة فيبقى هامش لا
+   يُستعمل. ١٦:٩ نسبة الشاشات نفسها، فيكبر اللوح على الحاسوب إلى أقصى
+   ما تسمح به المساحة، ويظلّ على الهاتف **نفس اللوح** موسّطاً لا شكلاً
+   آخر — فما يراه الطالب هو ما يراه الأستاذ بالضبط. */
+const BOARD_AR = 16 / 9;
 
 /* الاختيار أداة تفاعل لا نوع شكل — لذلك يبقى خارج Kind
    فلا يتسرّب إلى قاعدة البيانات ولا يُخزَّن كشكل. */
@@ -120,6 +125,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 }) {
   const { user } = useAuth();
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLCanvasElement>(null);
@@ -1014,6 +1020,58 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     };
   }, []);
 
+  /* ══ ملء الشاشة + التدوير الأفقي ══
+     اللوح ١٦:٩، وشاشة الهاتف الرأسية ٩:٢٠ — فالعرض هو القيد دائماً
+     ويبقى فوقه وتحته فراغ لا حيلة فيه **ما دام الهاتف رأسياً**. الحيلة
+     الوحيدة الحقيقية أن يصير الهاتف أفقياً: حينها تتقارب نسبته من
+     نسبة اللوح فيكبر اللوح أضعافاً.
+
+     ولذلك زرّ واحد يفعل الأمرين معاً: ملء الشاشة ثمّ محاولة تثبيت
+     الاتجاه أفقياً. القفل غير مدعوم في كل المتصفّحات (سفاري iOS لا
+     يدعمه)، فلا نُبنى عليه: نطلبه ونتجاهل فشله، ويبقى ملء الشاشة
+     مكسباً في ذاته. وهو متاح **للأستاذ والطالب معاً** — الطالب يشاهد
+     ويحتاج الوضوح أكثر. */
+  const [isFs, setIsFs] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => {
+      const d = document as Document & { webkitFullscreenElement?: Element };
+      setIsFs(Boolean(document.fullscreenElement || d.webkitFullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
+  }, []);
+
+  const toggleFs = useCallback(async () => {
+    const el = rootRef.current as (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
+    const d = document as Document & {
+      webkitFullscreenElement?: Element;
+      webkitExitFullscreen?: () => Promise<void>;
+    };
+    const active = Boolean(document.fullscreenElement || d.webkitFullscreenElement);
+    try {
+      if (active) {
+        const so = screen.orientation as (ScreenOrientation & { unlock?: () => void }) | undefined;
+        so?.unlock?.();
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else await d.webkitExitFullscreen?.();
+        return;
+      }
+      if (!el) return;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else await el.webkitRequestFullscreen?.();
+      /* القفل يجب أن يأتي **بعد** ملء الشاشة: المواصفة ترفضه خارجها. */
+      const so = screen.orientation as (ScreenOrientation & { lock?: (o: string) => Promise<void> }) | undefined;
+      if (window.innerHeight > window.innerWidth) {
+        await so?.lock?.("landscape").catch(() => { /* غير مدعوم — لا يضرّ */ });
+      }
+    } catch { /* المتصفّح رفض — نتجاهل بصمت بدل إفساد الحصّة */ }
+  }, []);
+
   // ── تهيئة + تجاوب ──
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -1053,52 +1111,22 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const availW = Math.max(1, r.width - padX - bordX);
       const availH = Math.max(1, r.height - padY - bordY);
 
-      /* **السبورة على الهاتف كانت شريطاً صغيراً وسط فراغ رمادي هائل.**
+      /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة —
+         مقياس واحد لكل الأجهزة، فاللوح على الهاتف هو **نفسه** الذي على
+         الحاسوب موسّطاً لا شكلاً آخر، والدائرة تصل الطالب دائرةً.
 
-         اللوح بنسبة ١٦:١٠ ثابتة (وهذا صحيح — الدائرة يجب أن تصل الطالب
-         دائرةً)، والحاوية `flex-1` تأخذ كل ارتفاع الشاشة. على هاتف بنسبة
-         ٩:٢٠ يكون العرض هو القيد، فيصير ارتفاع اللوح ~٦٠٪ من عرض الشاشة،
-         ويبقى أكثر من ثلثَي الشاشة فراغاً ميّتاً فوقه وتحته.
-
-         على الهاتف الرأسي: العرض هو القيد **حتماً**، فنحسب من العرض
-         وحده ونتجاهل الارتفاع المتاح تماماً. هذا ليس تبسيطاً فقط — هو
-         شرط الاستقرار: لو أدخلنا `availH` في الحساب بعد أن نكتب الارتفاع
-         لتقلّص اللوح بكسلاً في كل دورة مراقبة حتى يتلاشى. */
-      const vpPortrait =
-        typeof window !== "undefined" &&
-        window.innerHeight > window.innerWidth * 1.15 &&
-        window.innerWidth < 900;
-
-      let bw: number;
-      if (vpPortrait) {
-        bw = Math.floor(Math.max(1, availW));
-      } else {
-        /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة. */
-        bw = Math.floor(Math.max(1, Math.min(availW, availH * BOARD_AR)));
-      }
+         (كانت هنا محاولة سابقة تُلصق اللوح بأعلى الشاشة على الهاتف
+         الرأسي وتُقلّص الحاوية إلى ارتفاعه — أُزيلت بالكامل: لا فرق في
+         التخطيط بين الجهازَين بعد الآن.) */
+      const bw = Math.floor(Math.max(1, Math.min(availW, availH * BOARD_AR)));
       const bh = Math.floor(Math.max(1, bw / BOARD_AR));
 
-      /* بصمة: نفس المقاس ونفس الوضع ⇒ لا كتابة ولا إعادة رسم. هذه هي
-         التي تقطع حلقة `ResizeObserver` فيثبت اللوح. */
-      const key = `${vpPortrait ? "p" : "l"}:${bw}x${bh}:${dpr()}`;
+      /* بصمة: نفس المقاس ⇒ لا كتابة ولا إعادة رسم. هذه هي التي تقطع
+         حلقة `ResizeObserver` (الكتابة تُخطر المراقب فيقيس فيكتب…)
+         فيثبت اللوح بدل أن يرتجف. */
+      const key = `${bw}x${bh}:${dpr()}`;
       if (key === lastKey) return;
       lastKey = key;
-
-      if (vpPortrait) {
-        wrap.style.flexGrow = "0";
-        wrap.style.flexShrink = "0";
-        wrap.style.flexBasis = "auto";
-        /* `height` تُقاس على صندوق المحتوى في `content-box` وعلى الصندوق
-           الكامل في `border-box`. تجاهُل هذا يترك شريطاً ميّتاً بمقدار
-           الحشوة كاملةً أسفل اللوح. */
-        const outer = cs.boxSizing === "border-box" ? bh + padY + bordY : bh;
-        wrap.style.height = `${Math.round(outer)}px`;
-      } else {
-        wrap.style.removeProperty("flex-grow");
-        wrap.style.removeProperty("flex-shrink");
-        wrap.style.removeProperty("flex-basis");
-        wrap.style.removeProperty("height");
-      }
 
       board.style.width = `${bw}px`;
       board.style.height = `${bh}px`;
@@ -1934,7 +1962,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div ref={rootRef} className="bz-wbroot flex h-full flex-col">
 
       <div
         ref={wrapRef}
@@ -1942,8 +1970,21 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
            `min-width: auto`، فيستطيع العنصر **تجاوز حاويته** حين يكون
            محتواه عريضاً. فتُقاس المنصّة أوسع من الشاشة على الهاتف،
            ويُبنى اللوح على ذلك القياس فيظهر مقصوصاً. */
-        className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-3"
+        /* الحشوة صارت أدقّ ما يمكن: كل بكسل هنا يُقتطع من ضلع اللوح
+           مضروباً في اثنين. الهامش الرمادي ليس زينة — هو مساحة تدريس
+           ضائعة، وشكوى «اللوح يبدو صغيراً على الحاسوب» نصفها منه. */
+        className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-1 sm:p-1.5"
       >
+        {/* ملء الشاشة (ومعه التدوير الأفقي على الهاتف) — للأستاذ والطالب */}
+        <button
+          onClick={toggleFs}
+          title={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة — وعلى الهاتف يُدار اللوح أفقياً ليكبر"}
+          aria-label={isFs ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+          className="absolute start-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-slate-900/55 text-white backdrop-blur-sm transition hover:bg-slate-900/75 active:scale-95"
+        >
+          <Icon name={isFs ? "collapse" : "expand"} size={15} />
+        </button>
+
         {/* شارة التكبير — تظهر عند التكبير وحده، وتُعيد اللوح بنقرة */}
         {(view.k > 1.02 || view.tx !== 0 || view.ty !== 0) && (
           <button

@@ -431,12 +431,34 @@ export function listenRoomTimer(roomId: string, cb: (t: RoomTimer | null) => voi
 /* ══════════════════════════════════════════
    الملاحظات المشتركة (Shared Notes)
 ══════════════════════════════════════════ */
+/* ── نسختان: مسودّة ومنشور ──
+   كان ما يكتبه الأستاذ يصل الطلبة **حرفاً بحرف** لحظة كتابته: يرون
+   الأخطاء المطبعية، والجملة نصفها، والفكرة تُكتب ثمّ تُحذف. الآن:
+
+     `notesDraft/$roomId`     — مسودّة الأستاذ والمشرفين، لا يقرأها الطالب.
+     `roomLive/$roomId/notes` — النسخة المنشورة، وهي التي يقرأها الطالب.
+
+   المسودّة عقدة **مستقلّة** لا تحت `roomLive`: ذلك المسار يمنح القراءة
+   لكل مصادَق عليه، وقاعدة `.read` على عقدة ابنة لا تستطيع سحب صلاحية
+   منحها الأب — فلو وضعناها تحته لكانت مقروءة للطلبة فعلياً.
+
+   والطالب لا يزال يقرأ نفس المسار القديم، فلا شيء يتعطّل، وكل ملاحظة
+   محفوظة سابقاً تبقى منشورة كما هي. */
 export async function saveRoomNotes(roomId: string, text: string) {
   await set(ref(rtdb, `roomLive/${roomId}/notes`), text);
 }
 export function listenRoomNotes(roomId: string, cb: (text: string) => void) {
   return onValue(ref(rtdb, `roomLive/${roomId}/notes`), (snap) => {
     cb((snap.val() as string) ?? "");
+  });
+}
+export async function saveRoomNotesDraft(roomId: string, text: string) {
+  await set(ref(rtdb, `notesDraft/${roomId}`), text);
+}
+/** `null` تعني «لا مسودّة بعد» — فنبدأ من النسخة المنشورة */
+export function listenRoomNotesDraft(roomId: string, cb: (text: string | null) => void) {
+  return onValue(ref(rtdb, `notesDraft/${roomId}`), (snap) => {
+    cb(snap.exists() ? ((snap.val() as string) ?? "") : null);
   });
 }
 

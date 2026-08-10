@@ -9,9 +9,11 @@ import {
   faQuoteRight, faMinus, faTable, faLink, faSquareRootVariable, faEye, faPen,
   faRotateLeft, faRotateRight, faEraser, faFileWord, faSpinner, faPalette,
   faHighlighter, faCircleInfo, faXmark, faIndent, faOutdent, faCheck,
-  faPlus, faTrashCan,
+  faPlus, faTrashCan, faChevronLeft, faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { saveRoomNotes, listenRoomNotes } from "@/features/rooms/rooms";
+import {
+  saveRoomNotes, listenRoomNotes, saveRoomNotesDraft, listenRoomNotesDraft,
+} from "@/features/rooms/rooms";
 import { useKatex } from "@/features/rooms/use-katex";
 
 /* ════════════════════════════════════════════════════════════
@@ -218,7 +220,10 @@ export function RoomNotes({
 }) {
   const editable = canEdit ?? isOwner;
   const [html, setHtml] = useState("");
+  /** آخر نسخة **منشورة** — بها نعرف إن كانت المسودّة تحمل جديداً */
+  const [published, setPublished] = useState<string | null>(null);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
+  const [publishing, setPublishing] = useState(false);
   const [preview, setPreview] = useState(!editable);
   const [eqnOpen, setEqnOpen] = useState<null | { tex: string; block: boolean; el?: HTMLElement }>(null);
   const [docxBusy, setDocxBusy] = useState(false);
@@ -233,16 +238,44 @@ export function RoomNotes({
   const savedRange = useRef<Range | null>(null);
   const katexReady = useKatex();
 
-  /* ── المزامنة الحيّة ── */
+  /* ── المزامنة ──
+     🐛 كان الطالب يرى الكتابة **حرفاً بحرف**: الأخطاء المطبعية، والجملة
+        نصفها، والفكرة تُكتب ثمّ تُمحى. الآن:
+
+     • الطالب يستمع للنسخة **المنشورة** وحدها.
+     • الأستاذ والمشرفون يستمعون للمسودّة (وأوّل مرّة: ينسخونها من
+       المنشور إن لم تكن هناك مسودّة بعد) — فيبقون متزامنين بينهم
+       ويرى الأستاذ عمله على أيّ جهاز يدخل منه. */
+  const norm = (raw: string) => (!raw ? "" : /^\s*</.test(raw) ? raw : legacyToHtml(raw));
+
   useEffect(() => {
     const unsub = listenRoomNotes(roomId, (raw) => {
-      if (typing.current) return;   // لا نقطع من يكتب الآن
-      const next = !raw ? "" : /^\s*</.test(raw) ? raw : legacyToHtml(raw);
+      const next = norm(raw);
+      setPublished(next);
+      if (editable) return;                 // المحرّر يعمل على المسودّة
+      if (typing.current) return;
       setHtml(next);
       if (edRef.current && edRef.current.innerHTML !== next) edRef.current.innerHTML = next || "<p><br></p>";
     });
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, editable]);
+
+  useEffect(() => {
+    if (!editable) return;
+    let seeded = false;
+    const unsub = listenRoomNotesDraft(roomId, (raw) => {
+      if (typing.current) return;
+      /* لا مسودّة بعد؟ نبدأ من المنشور — فلا يفتح الأستاذ محرّراً فارغاً
+         وملاحظاته منشورة أمام الطلبة. */
+      const next = raw === null ? (seeded ? html : (published ?? "")) : norm(raw);
+      seeded = true;
+      setHtml(next);
+      if (edRef.current && edRef.current.innerHTML !== next) edRef.current.innerHTML = next || "<p><br></p>";
+    });
+    return () => { if (typeof unsub === "function") unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, editable, published === null]);
 
   /* أوّل تركيب: نضع المحتوى في سطح التحرير مرّة واحدة */
   useEffect(() => {
@@ -262,11 +295,30 @@ export function RoomNotes({
     setSaving("saving");
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      await saveRoomNotes(roomId, next.slice(0, MAX_CHARS));
+      /* الحفظ التلقائي يذهب إلى **المسودّة** لا إلى المنشور: هكذا لا
+         يضيع عمل الأستاذ إن أغلق الصفحة، ولا يراه الطالب قبل النشر. */
+      await saveRoomNotesDraft(roomId, next.slice(0, MAX_CHARS));
       setSaving("saved");
       typing.current = false;
     }, 800);
   }, [roomId]);
+
+  /* ── النشر ──
+     زرّ «معاينة» نفسه ينشر — كما طلبت: الأستاذ يعاين فيرى الشكل النهائي،
+     وفي اللحظة نفسها تصل النسخة إلى الطلبة كاملةً لا نصف جملة. */
+  const publish = useCallback(async () => {
+    const next = edRef.current ? serialize(edRef.current) : html;
+    setPublishing(true);
+    if (debounce.current) clearTimeout(debounce.current);
+    try {
+      await saveRoomNotesDraft(roomId, next.slice(0, MAX_CHARS));
+      await saveRoomNotes(roomId, next.slice(0, MAX_CHARS));
+      typing.current = false;
+      setSaving("saved");
+    } finally {
+      setPublishing(false);
+    }
+  }, [roomId, html]);
 
   const sync = useCallback(() => {
     if (!edRef.current) return;
@@ -589,6 +641,10 @@ setTimeout(function(){window.print();},450);};<\/script>
   }
 
   const empty = !html || html === "<p><br></p>";
+  const blank = (s: string | null) => !s || s === "<p><br></p>";
+  /* «غير منشور» = المسودّة تختلف عن المنشور فعلاً. المقارنة على النصّ
+     المُسلسَل نفسه، فلا تُطلق شارةً لأنّ المتصفّح أعاد ترتيب سمة. */
+  const unpublished = editable && !(blank(html) && blank(published)) && html !== (published ?? "");
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -597,15 +653,38 @@ setTimeout(function(){window.print();},450);};<\/script>
         <FontAwesomeIcon icon={faNoteSticky} className="h-4 w-4 shrink-0 text-amber-500" />
         <span className="text-[13.5px] font-extrabold text-text-primary">ملاحظات مشتركة</span>
         {editable && saving === "saving" && <span className="text-[11px] font-bold text-text-muted">جارٍ الحفظ…</span>}
-        {editable && saving === "saved" && <span className="text-[11px] font-bold text-secondary">محفوظ ✓</span>}
+        {editable && saving === "saved" && !unpublished && <span className="text-[11px] font-bold text-secondary">محفوظ ✓</span>}
+
+        {/* حالة النشر — الأستاذ يجب أن يعرف بنظرة أنّ الطلبة لم يروا
+            آخر ما كتبه، وإلّا ظنّ أنّه وصلهم وهو لم يصل. */}
+        {editable && unpublished && (
+          <span className="bz-nchip is-draft">
+            <FontAwesomeIcon icon={faPen} className="h-2.5 w-2.5" /> مسودّة — لم تُنشر بعد
+          </span>
+        )}
+        {editable && !unpublished && published !== null && !empty && (
+          <span className="bz-nchip is-live">
+            <FontAwesomeIcon icon={faCheck} className="h-2.5 w-2.5" /> منشور للطلبة
+          </span>
+        )}
 
         <span className="ms-auto flex items-center gap-1">
           <HBtn icon={faCircleInfo} label="كيف أستعمل المحرّر" onClick={() => setHelpOpen(true)} />
           {editable && (
-            <button onClick={() => setPreview((p) => !p)}
-              className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-primary transition hover:bg-primary/10">
-              <FontAwesomeIcon icon={preview ? faPen : faEye} className="h-3.5 w-3.5" />
-              {preview ? "تحرير" : "معاينة"}
+            /* «معاينة» = معاينة + نشر. والتسمية تقول ذلك صراحةً حتى لا
+               يفاجَأ الأستاذ بأنّ ما عاينه قد وصل الطلبة. */
+            <button
+              onClick={() => { if (!preview) { publish(); setPreview(true); } else setPreview(false); }}
+              disabled={publishing}
+              title={preview ? "الرجوع إلى التحرير" : "عرض الشكل النهائي ونشره للطلبة"}
+              className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold transition disabled:opacity-60 ${
+                preview ? "text-primary hover:bg-primary/10"
+                        : unpublished ? "bg-gradient-primary px-3 text-white shadow-sm hover:brightness-105"
+                                      : "text-primary hover:bg-primary/10"}`}
+            >
+              <FontAwesomeIcon icon={publishing ? faSpinner : preview ? faPen : faEye}
+                className={`h-3.5 w-3.5 ${publishing ? "animate-spin" : ""}`} />
+              {preview ? "تحرير" : unpublished ? "معاينة ونشر" : "معاينة"}
             </button>
           )}
           {!empty && (
@@ -620,7 +699,7 @@ setTimeout(function(){window.print();},450);};<\/script>
       {/* ── شريط الأدوات ──
           رفّ أفقي منزلق على الهاتف بدل أن ينكسر إلى أربعة صفوف */}
       {editable && !preview && (
-        <div className="bz-wtb">
+        <ScrollBar>
           <TBtn icon={faRotateRight} t="تراجع" on={() => cmd("undo")} />
           <TBtn icon={faRotateLeft} t="إعادة" on={() => cmd("redo")} />
           <Sep />
@@ -678,7 +757,7 @@ setTimeout(function(){window.print();},450);};<\/script>
           />
           <TBtn icon={faEraser} t="إزالة التنسيق" on={() => cmd("removeFormat")} />
           <input ref={fileRef} type="file" accept=".docx" hidden onChange={onDocx} />
-        </div>
+        </ScrollBar>
       )}
 
       {tooBig && (
@@ -709,8 +788,15 @@ setTimeout(function(){window.print();},450);};<\/script>
             <div>
               <FontAwesomeIcon icon={faNoteSticky} className="h-10 w-10 text-amber-400 opacity-25" />
               <p className="mt-3 text-[13.5px] font-bold text-text-muted">
-                {editable ? "ابدأ الكتابة، أو ارفع ملفّ Word." : "سيكتب الأستاذ ملاحظات الدرس هنا…"}
+                {editable ? "ابدأ الكتابة، أو ارفع ملفّ Word." : "لم ينشر الأستاذ ملاحظات بعد…"}
               </p>
+              {/* الطالب يجب أن يعرف أنّ الفراغ ليس خللاً بل انتظاراً:
+                  الأستاذ قد يكون يكتب الآن وما نشر. */}
+              {!editable && (
+                <p className="mt-1.5 text-[11.5px] font-bold text-text-muted/70">
+                  تظهر هنا حين يضغط «معاينة ونشر»
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -877,16 +963,23 @@ function HelpDialog({ onClose, editable }: { onClose: () => void; editable: bool
                 <code className="font-mono"> $…$ </code> أو
                 <code className="font-mono"> $$…$$ </code> فتتحوّل تلقائياً.
               </Help>
-              <Help t="الحفظ والمشاركة">
-                الحفظ تلقائي، والطلبة يرون التعديل لحظةً بلحظة. وزرّ <b>PDF</b> يُخرج
-                المستند بترويسة المنصّة جاهزاً للطباعة أو للمشاركة.
+              <Help t="لا يرى الطلبة شيئاً حتى تنشر">
+                ما تكتبه يُحفظ تلقائياً في <b>مسودّتك الخاصّة</b> — لا يراها الطلبة.
+                وحين تضغط <b>معاينة ونشر</b> ترى الشكل النهائي، وتصل النسخة كاملةً
+                إلى الجميع في اللحظة نفسها. وما دامت لديك تغييرات لم تُنشر تبقى شارة
+                <b> مسودّة — لم تُنشر بعد</b> ظاهرة أمامك.
+              </Help>
+              <Help t="الحفظ وتصدير PDF">
+                الحفظ تلقائي فلا يضيع عملك إن أُغلقت الصفحة، والمسودّة تتبعك على أيّ
+                جهاز تدخل منه. وزرّ <b>PDF</b> يُخرج المستند بترويسة المنصّة جاهزاً
+                للطباعة أو للمشاركة.
               </Help>
             </>
           ) : (
             <>
               <Help t="هذه ملاحظات الدرس">
-                يكتبها الأستاذ أو مشرف الغرفة، وتتحدّث أمامك لحظةً بلحظة بلا أن تُحدّث
-                الصفحة.
+                يكتبها الأستاذ أو مشرف الغرفة، وتظهر لك حين ينشرها — نسخةً كاملة لا
+                نصف جملة — بلا أن تُحدّث الصفحة.
               </Help>
               <Help t="خُذها معك">
                 زرّ <b>PDF</b> يُخرج الملاحظات كاملة بترويسة المنصّة — راجعها بعد
@@ -1113,6 +1206,65 @@ function TablePicker({
 }
 
 function Sep() { return <span className="bz-wsep" />; }
+
+/* ── غلاف شريط الأدوات ──
+   🐛 **على الحاسوب لم يكن هناك مؤشّر تمرير للشريط.** كان
+   `scrollbar-width: none` يُخفيه في كل الأجهزة — وهو صحيح على الهاتف
+   (المؤشّر هناك عائم ويظهر عند اللمس) وخطأ على الحاسوب: أزرارٌ كاملة
+   تعيش خلف الحافّة ولا شيء يقول إنّها موجودة.
+
+   الآن: مؤشّر رقيق ظاهر على الأجهزة ذات الفأرة (بـ`@media (hover:hover)`)،
+   وسهمان يمرّران بالنقر ويظهران **فقط** إن كان هناك فعلاً ما يُمرَّر —
+   سهمٌ معطّل دائماً أسوأ من لا سهم. */
+function ScrollBar({ children }: { children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ start: false, end: false });
+
+  const measure = useCallback(() => {
+    const el = box.current;
+    if (!el) return;
+    /* في RTL يكون `scrollLeft` سالباً في المتصفّحات الحديثة، فنقيس
+       بالمطلق — بلا هذا يبقى السهمان معطّلين إلى الأبد في العربية. */
+    const x = Math.abs(el.scrollLeft);
+    const max = el.scrollWidth - el.clientWidth;
+    setEdge({ start: x > 4, end: max > 4 && x < max - 4 });
+  }, []);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", measure); ro.disconnect(); };
+  }, [measure]);
+
+  const by = (dir: -1 | 1) => {
+    const el = box.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(140, el.clientWidth * 0.7), behavior: "smooth" });
+  };
+
+  return (
+    <div className="bz-wtbwrap">
+      {/* في RTL «السابق» على اليمين: نحرّك بالموجب للرجوع */}
+      <button type="button" aria-label="أدوات قبل" tabIndex={-1}
+        onMouseDown={(e) => { e.preventDefault(); by(1); }}
+        className={`bz-wtbar ${edge.start ? "is-on" : ""}`}>
+        <FontAwesomeIcon icon={faChevronRight} className="h-3 w-3" />
+      </button>
+
+      <div ref={box} className="bz-wtb">{children}</div>
+
+      <button type="button" aria-label="أدوات بعد" tabIndex={-1}
+        onMouseDown={(e) => { e.preventDefault(); by(-1); }}
+        className={`bz-wtbar ${edge.end ? "is-on" : ""}`}>
+        <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
 
 /** لوحة ألوان صغيرة تُفتح تحت الزرّ */
 function Swatches({

@@ -2952,3 +2952,67 @@ body.bz-fullscreen-active .bz-voicebar {
   font-size: 12.5px;
 }
 .bz-page-html hr { margin: 18px 0; border: 0; border-top: 1px solid var(--bz-line); }
+
+/* ════════════════════════════════════════════════════════════
+   السبورة في ملء الشاشة
+   العنصر في `:fullscreen` يفقد أبعاد أسلافه، فبلا هذا يبقى بارتفاع
+   المحتوى وحده وسط شاشة سوداء.
+   ════════════════════════════════════════════════════════════ */
+.bz-wbroot:fullscreen,
+.bz-wbroot:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  background: var(--bz-bg, #eef1f6);
+}
+
+/* ــ شارات حالة نشر الملاحظات ــ
+   الأستاذ يجب أن يعرف بنظرة أنّ الطلبة **لم يروا** آخر ما كتبه؛ بلا
+   هذه الشارة يظنّ أنّ عمله وصل وهو لم يصل. */
+.bz-nchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.bz-nchip.is-draft {
+  background: #fef3c7;
+  background: rgb(245 158 11 / .16);
+  color: #b45309;
+}
+.bz-nchip.is-live {
+  background: #d1fae5;
+  background: rgb(16 185 129 / .16);
+  color: #047857;
+}
+
+/* ــ شريط أدوات المحرّر: مؤشّر تمرير مرئي + سهمان ــ
+   كان `scrollbar-width: none` يُخفي المؤشّر على الحاسوب أيضاً، فتختفي
+   أزرار خلف الحافّة بلا أيّ دليل على وجودها. الآن مؤشّر رقيق ظاهر على
+   الأجهزة ذات الفأرة، وسهمان يمرّران بالنقر. */
+.bz-wtbwrap { position: relative; display: flex; align-items: center; border-bottom: 1px solid var(--bz-border); background: var(--bz-surface); }
+.bz-wtbwrap > .bz-wtb { border-bottom: 0; flex: 1; min-width: 0; }
+.bz-wtbar {
+  flex: 0 0 auto;
+  display: none;
+  place-items: center;
+  width: 26px;
+  align-self: stretch;
+  color: var(--bz-text-muted);
+  background: var(--bz-surface);
+  transition: color .12s, background-color .12s;
+}
+.bz-wtbar:hover { color: rgb(var(--bz-primary)); background: rgb(var(--bz-primary) / .08); }
+.bz-wtbar:disabled { opacity: .28; cursor: default; }
+.bz-wtbar.is-on { display: grid; }
+
+@media (hover: hover) and (pointer: fine) {
+  .bz-wtb { scrollbar-width: thin; scrollbar-color: var(--bz-border) transparent; padding-bottom: 2px; }
+  .bz-wtb::-webkit-scrollbar { display: block; height: 6px; }
+  .bz-wtb::-webkit-scrollbar-track { background: transparent; }
+  .bz-wtb::-webkit-scrollbar-thumb { background: var(--bz-border); border-radius: 99px; }
+  .bz-wtb::-webkit-scrollbar-thumb:hover { background: rgb(var(--bz-primary) / .5); }
+}
