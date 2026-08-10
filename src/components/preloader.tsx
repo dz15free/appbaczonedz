@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-const LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png";
+/* 🐛 **شاشة التحميل كانت تعرض الشعار القديم** — وهي أوّل ما يراه كل
+   زائر، على كل جهاز. كان الرابط مكتوباً بيده هنا نسخةً ثالثة من شعار
+   على خادم Blogger، فلم يمسّه أيّ تغيير في بقيّة الموقع.
+
+   ويُقرأ من الملفّ المحلّي لا من الإعدادات عن قصد: هذه الشاشة تظهر
+   **قبل** أن تتّصل قاعدة البيانات، فربطها بالإعدادات يعني شعاراً
+   فارغاً في أوّل ثانية — وهي الثانية الوحيدة التي تُرى فيها. */
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
+
+const LOGO_URL = DEFAULT_LOGO;
 
 export function Preloader() {
   const [hide, setHide] = useState(false);

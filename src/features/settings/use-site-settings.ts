@@ -1,5 +1,7 @@
 "use client";
 
+import { DEFAULT_LOGO, DEFAULT_FAVICON } from "@/lib/brand-assets";
+export { DEFAULT_LOGO, DEFAULT_FAVICON };
 import { useEffect, useState } from "react";
 import { ref, onValue, set, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -123,8 +125,15 @@ export interface FooterLink { label: string; href: string }
 
    وفائدة ثانية: الشعار لم يعد يُحمَّل من نطاق خارجي في أوّل رسم
    للصفحة، فلا يتعلّق ظهوره بخادم Blogger ولا بسرعته. */
-const LOGO_URL = "/icon.svg";
-const FAVICON_URL = "/icon-192.png";
+/* الشعار يأتي من `@/lib/brand-assets` — الملفّ الوحيد الذي يعرّفه.
+
+   كان مكتوباً بيده في ثلاثة ملفّات (`preloader.tsx` و`(auth)/layout.tsx`
+   مرّتين) وبفواصل احتياطية متفرّقة في خمسة أخرى. ونتيجة ذلك المتوقّعة:
+   بقي الشعار **القديم** في شاشة التحميل وفي صفحتَي الدخول والتسجيل بعد
+   تغييره في بقيّة الموقع. أيّ توحيد لا يبدأ بمصدر واحد يُستورَد هو
+   توحيد يُنقَض عند أوّل تعديل. */
+const LOGO_URL = DEFAULT_LOGO;
+const FAVICON_URL = DEFAULT_FAVICON;
 
 const DEFAULTS: SiteSettings = {
   siteName: "BacZone",

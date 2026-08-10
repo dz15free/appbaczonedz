@@ -1043,6 +1043,8 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
      أكثر. */
   const [isFs, setIsFs] = useState(false);
   const [portrait, setPortrait] = useState(false);
+  /** ارتفاع الهامش الرمادي فوق اللوح — يُقاس في دورة التحجيم */
+  const [topGap, setTopGap] = useState(0);
   /* يُقرأ بعد التركيب لا في أوّل رسم: قراءته على الخادم تُنتج HTML
      مختلفاً عن العميل فيصرخ React بعدم تطابق التوليد. */
   const [canLock, setCanLock] = useState(false);
@@ -1062,6 +1064,45 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     window.addEventListener("resize", read);
     return () => window.removeEventListener("resize", read);
   }, []);
+
+  /* ══ تنبيه الطالب المنضمّ: أدر هاتفك، وكبّر بإصبعين ══
+
+     الطالب يفتح السبورة على هاتفٍ رأسيّ فيرى لوحاً بعرض الشاشة
+     وارتفاعٍ يقارب نصفها، ولا شيء يخبره أنّ بيده أمرين يُضاعفان ما
+     يراه: التدوير الأفقي، والتكبير بإصبعين. الأدوات موجودة والمعرفة
+     غائبة — وهذا أسوأ أنواع الغياب لأنّ الطالب يظنّ أنّ هذا كل ما
+     في الأمر.
+
+     وأربعة قيود على هذا التنبيه، كلّها من الطلب نفسه:
+
+     ١) **للمنضمّين وحدهم** (`!canDraw`) — الأستاذ يعرف لوحه.
+     ٢) **على الهاتف وحده** — والفصل بعرض الشاشة **مع** خشونة المؤشّر
+        (`pointer: coarse`) لا بالعرض وحده، وإلّا ظهر لمن ضيّق نافذة
+        حاسوبه. حاسوبٌ بلمس نادر، ونافذة ضيّقة شائعة.
+     ٣) **في فراغ مقيس** — لا يُعرض إلّا إن كان الهامش الرمادي فوق
+        اللوح يتّسع له فعلاً (٣٤px)، فلا يغطّي اللوح ولا زرّاً.
+     ٤) **لا يُلاحق** — يُغلق بضغطة ويُنسى إلى الأبد، ويختفي وحده بمجرّد
+        أن يفعل الطالب أحد الأمرين: يُدير الهاتف أو يُكبّر. التنبيه الذي
+        يبقى بعد أن أدّى معناه يصير ضجيجاً.
+
+     ولا يبتلع أيّ لمسة: الحاوية `pointer-events-none` وزرّ الإغلاق
+     وحده يستقبل الضغط — لمسةٌ على اللوح تحته تصل اللوح. */
+  const HINT_KEY = "bz-wb-rotate-hint";
+  const [hintOff, setHintOff] = useState(true);
+
+  useEffect(() => {
+    /* يُقرأ بعد التركيب: `localStorage` غير موجود على الخادم، وقراءته
+       في أوّل رسم تُنتج HTML مختلفاً عن العميل. */
+    try { setHintOff(localStorage.getItem(HINT_KEY) === "1"); }
+    catch { setHintOff(false); }
+  }, []);
+
+  const dismissHint = useCallback(() => {
+    setHintOff(true);
+    try { localStorage.setItem(HINT_KEY, "1"); } catch { /* وضع التصفّح الخاصّ */ }
+  }, []);
+
+  const showHint = !canDraw && !hintOff && portrait && topGap >= 34 && view.k <= 1.02;
 
   const toggleFs = useCallback(async () => {
     /* الطلب يجب أن يبقى داخل نبضة النقرة — لا `await` قبله ولا مؤقّت،
@@ -1128,6 +1169,16 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
          التخطيط بين الجهازَين بعد الآن.) */
       const bw = Math.floor(Math.max(1, Math.min(availW, availH * BOARD_AR)));
       const bh = Math.floor(Math.max(1, bw / BOARD_AR));
+
+      /* الهامش الرمادي فوق اللوح — يُقاس ولا يُخمَّن.
+
+         تنبيه الطالب («أدر هاتفك، وكبّر بإصبعين») يجب أن يسكن مساحةً
+         فارغة فعلاً ولا يغطّي شيئاً. والفراغ هنا ليس ثابتاً: يوجد على
+         الهاتف الرأسي حيث العرض هو القيد، ويتلاشى في الوضع الأفقي حيث
+         يملأ اللوح الارتفاع. فنقيسه في كل دورة، ولا نعرض التنبيه إلّا
+         إن وجد فيه سعة حقيقية. القياس هو الفرق بين وعدٍ بألّا نغطّي
+         شيئاً وبين رجاءٍ ألّا نغطّي. */
+      setTopGap(Math.floor(Math.max(0, (availH - bh) / 2)));
 
       /* بصمة: نفس المقاس ⇒ لا كتابة ولا إعادة رسم. هذه هي التي تقطع
          حلقة `ResizeObserver` (الكتابة تُخطر المراقب فيقيس فيكتب…)
@@ -2006,6 +2057,28 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-slate-900/80 px-3.5 py-1.5 text-[11.5px] font-extrabold text-white backdrop-blur-sm">
             <Icon name="expand" size={12} />
             أدر هاتفك أفقياً ليكبر اللوح
+          </div>
+        )}
+
+        {/* تنبيه الطالب — يسكن الهامش الرمادي المقيس فوق اللوح.
+            `bz-wb-hint` هي التي تحصره في الهاتف (عرض صغير + مؤشّر خشن). */}
+        {showHint && (
+          <div
+            className="bz-wb-hint pointer-events-none absolute left-1/2 z-20 flex max-w-[calc(100%-16px)] -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-slate-900/85 py-1.5 pe-1 ps-3 text-white shadow-lg backdrop-blur-sm"
+            style={{ top: Math.max(2, (topGap - 30) / 2) }}
+            role="status"
+          >
+            <Icon name="expand" size={13} className="shrink-0 opacity-90" />
+            <span className="truncate text-[11px] font-extrabold leading-tight">
+              أدر هاتفك أفقياً لترى السبورة أكبر · وبإصبعين تُكبّر وتُصغّر
+            </span>
+            <button
+              onClick={dismissHint}
+              aria-label="إخفاء التنبيه"
+              className="pointer-events-auto grid h-7 w-7 shrink-0 place-items-center rounded-full text-white/70 transition hover:bg-white/15 hover:text-white active:scale-95"
+            >
+              <Icon name="close" size={12} />
+            </button>
           </div>
         )}
 

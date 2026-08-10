@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+/* الشعار من المصدر الوحيد — كان مكتوباً بيده هنا مرّتين */
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,7 +33,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png"
+              src={DEFAULT_LOGO}
               alt="BacZoneDZ"
               className="h-11 w-11 rounded-2xl object-contain shadow-[0_8px_24px_-4px_rgba(59,130,246,0.45)] transition duration-300 group-hover:scale-105 group-hover:shadow-[0_12px_28px_-4px_rgba(59,130,246,0.55)]"
             />
@@ -104,7 +106,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhJkmGMz82JN543z5uysVeFEY71uvdHDH_Qq25wvcVlY_M0xyuSzDC2RfXwXovZ-2JYkNdQGsrES5QSWnvVxf7zb0h-2TezVm6aUJgtVfLIc0TLCVESOixhNH1VucRv76rVu1Cy9p52DyOgHQRxCtQkH8PmHrhxN5uHDFKa4XUlibN4pOzDIZJxCHq9Uxs/s320/BACZONEDZ%20(2).png"
+            src={DEFAULT_LOGO}
             alt="BacZoneDZ"
             className="h-11 w-11 rounded-2xl object-contain shadow-[0_8px_24px_-4px_rgba(59,130,246,0.35)]"
           />

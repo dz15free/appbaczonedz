@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHouseChimney, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
 export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 text-center">
       {/* شعار */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/icon.svg" alt="BacZoneDZ" className="mb-6 h-16 w-16 rounded-2xl shadow-glow" />
+      <img src={DEFAULT_LOGO} alt="BacZoneDZ" className="mb-6 h-16 w-16 rounded-2xl shadow-glow" />
 
       {/* الرقم */}
       <h1 className="font-display text-8xl font-extrabold leading-none">

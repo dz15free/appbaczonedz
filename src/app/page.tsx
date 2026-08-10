@@ -14,6 +14,7 @@ import {
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -95,7 +96,7 @@ export default function LandingPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={s.logoUrl || "/icon.svg"}
+              src={s.logoUrl || DEFAULT_LOGO}
               alt={s.siteName || "BacZoneDZ"}
               className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-white/10 transition group-hover:ring-white/25 sm:h-10 sm:w-10"
             />
@@ -416,7 +417,7 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-xl text-center text-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={s.logoUrl || "/icon.svg"}
+            src={s.logoUrl || DEFAULT_LOGO}
             alt=""
             className="mx-auto mb-6 h-16 w-16 rounded-2xl object-contain shadow-[0_0_48px_-8px_rgba(59,130,246,0.6)] sm:mb-7 sm:h-[4.5rem] sm:w-[4.5rem]"
           />
@@ -457,7 +458,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={s.logoUrl || "/icon.svg"}
+              src={s.logoUrl || DEFAULT_LOGO}
               alt=""
               className="h-8 w-8 rounded-lg object-contain"
             />

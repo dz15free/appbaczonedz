@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { BetaBadge } from "@/components/ui/beta-badge";
 
 /* ════════════════════════════════════════════════════════════
@@ -51,7 +52,7 @@ export function Brand({
     >
       <span className="bz-lock-mark">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={settings.logoUrl || "/icon.svg"} alt="" width={40} height={40} />
+        <img src={settings.logoUrl || DEFAULT_LOGO} alt="" width={40} height={40} />
       </span>
       <span className="bz-lock-name">{name}</span>
       {beta && <span className="bz-lock-beta"><BetaBadge /></span>}

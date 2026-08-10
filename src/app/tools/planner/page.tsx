@@ -6,6 +6,7 @@ import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload
 import { AppShell } from "@/components/app-shell";
 import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
 type Template = "daily" | "weekly" | "exam" | "goals";
 type Size = "a4" | "mobile";
@@ -25,7 +26,7 @@ export default function PlannerPage() {
   const [template, setTemplate] = useState<Template>("daily");
   const [size, setSize] = useState<Size>("a4");
   const [accent, setAccent] = useState("#2563eb");
-  const logo = settings.logoUrl;
+  const logo = settings.logoUrl || DEFAULT_LOGO;
 
   /* النصيحة تُختار بعد التركيب لا أثناء الرسم.
      كان `Math.random()` يُنفَّذ في الرسم فيختار الخادم نصيحة والمتصفّح أخرى،

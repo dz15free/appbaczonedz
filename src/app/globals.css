@@ -3029,3 +3029,20 @@ body.bz-fullscreen-active .bz-voicebar {
   .bz-wtb::-webkit-scrollbar-thumb { background: var(--bz-border); border-radius: 99px; }
   .bz-wtb::-webkit-scrollbar-thumb:hover { background: rgb(var(--bz-primary) / .5); }
 }
+
+/* ════════════════════════════════════════════════════════════
+   تنبيه السبورة للطالب المنضمّ — على الهاتف وحده
+
+   الشرطان معاً لا أحدهما:
+   • عرض أصغر من 640px — حدّ الهاتف.
+   • `pointer: coarse` — إصبع لا فأرة.
+
+   لماذا الاثنان؟ لأنّ العرض وحده يُظهر التنبيه لمن ضيّق نافذة حاسوبه
+   (والتنبيه يتحدّث عن تدوير الهاتف — بلا معنى هناك)، وخشونة المؤشّر
+   وحدها تُظهره على لوح رقمي كبير. الاجتماع هو الهاتف.
+   ════════════════════════════════════════════════════════════ */
+.bz-wb-hint { display: none; }
+
+@media (max-width: 639.98px) and (pointer: coarse) {
+  .bz-wb-hint { display: flex; }
+}
