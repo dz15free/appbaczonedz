@@ -8,6 +8,7 @@ import {
   faQuoteRight, faMinus, faTable, faLink, faSquareRootVariable, faEye, faPen,
   faRotateLeft, faRotateRight, faEraser, faFileWord, faSpinner, faPalette,
   faHighlighter, faCircleInfo, faXmark, faIndent, faOutdent, faCheck,
+  faPlus, faTrashCan,
 } from "@fortawesome/free-solid-svg-icons";
 import { saveRoomNotes, listenRoomNotes } from "@/features/rooms/rooms";
 import { useKatex } from "@/features/rooms/use-katex";
@@ -311,14 +312,72 @@ export function RoomNotes({
     sync();
   }
 
-  function insertTable() {
-    const rows = 3, cols = 3;
+  /* ── اتجاه النصّ ──
+     المستند عربي، لكنّ الملاحظة قد تحمل فقرة معادلات أو مصطلحات
+     لاتينية تُقرأ من اليسار. `execCommand` لا يملك أمراً للاتجاه،
+     فنضبطه على **الكتلة الحالية** مباشرةً: نجد أقرب كتلة للمؤشّر
+     ونضع عليها `dir` والمحاذاة المناسبة. */
+  function setDir(dir: "rtl" | "ltr") {
+    const ed = edRef.current;
+    if (!ed) return;
+    ed.focus();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+
+    const blocks = new Set<HTMLElement>();
+    const range = sel.getRangeAt(0);
+
+    const blockOf = (n: Node | null): HTMLElement | null => {
+      let cur: Node | null = n;
+      while (cur && cur !== ed) {
+        if (cur.nodeType === 1) {
+          const el = cur as HTMLElement;
+          if (/^(P|H1|H2|H3|H4|LI|BLOCKQUOTE|DIV|TD|TH|PRE)$/.test(el.tagName)) return el;
+        }
+        cur = cur.parentNode;
+      }
+      return null;
+    };
+
+    /* التحديد قد يمتدّ على عدّة فقرات — نضبطها كلّها */
+    const walker = document.createTreeWalker(ed, NodeFilter.SHOW_ELEMENT);
+    let node: Node | null = walker.currentNode;
+    while (node) {
+      const el = node as HTMLElement;
+      if (el !== ed && range.intersectsNode(el)) {
+        const b = blockOf(el);
+        if (b) blocks.add(b);
+      }
+      node = walker.nextNode();
+    }
+    const anchorBlock = blockOf(sel.anchorNode);
+    if (anchorBlock) blocks.add(anchorBlock);
+
+    if (!blocks.size) {
+      /* لا كتلة بعد؟ نُغلّف المحتوى في فقرة أوّلاً */
+      document.execCommand("formatBlock", false, "P");
+      const b = blockOf(window.getSelection()?.anchorNode ?? null);
+      if (b) blocks.add(b);
+    }
+
+    for (const b of blocks) {
+      b.setAttribute("dir", dir);
+      b.style.textAlign = dir === "rtl" ? "right" : "left";
+    }
+    sync();
+  }
+
+  /* ── الجداول ──
+     كان جدولاً واحداً ٣×٣ ثابتاً. الأستاذ يحتاج جدول معاملات بسطرين،
+     أو جدول مقارنة بخمسة أعمدة — فصار المقاس بالاختيار، ومعه إضافة
+     صفّ/عمود وحذفهما داخل الجدول القائم. */
+  function insertTable(rows: number, cols: number, header: boolean) {
     const t = document.createElement("table");
     const tb = document.createElement("tbody");
     for (let r = 0; r < rows; r++) {
       const tr = document.createElement("tr");
       for (let c = 0; c < cols; c++) {
-        const cell = document.createElement(r === 0 ? "th" : "td");
+        const cell = document.createElement(header && r === 0 ? "th" : "td");
         cell.innerHTML = "<br>";
         tr.appendChild(cell);
       }
@@ -326,6 +385,60 @@ export function RoomNotes({
     }
     t.appendChild(tb);
     insertNode(t);
+    /* فقرة فارغة بعد الجدول: بلا هذا لا يستطيع الأستاذ الكتابة تحته */
+    const after = document.createElement("p");
+    after.innerHTML = "<br>";
+    t.parentNode?.insertBefore(after, t.nextSibling);
+    sync();
+  }
+
+  /** الخليّة التي فيها المؤشّر الآن — أساس كل عمليات الجدول */
+  function currentCell(): HTMLTableCellElement | null {
+    const sel = window.getSelection();
+    let n: Node | null = sel?.anchorNode ?? null;
+    while (n && n !== edRef.current) {
+      if (n.nodeType === 1 && /^(TD|TH)$/.test((n as HTMLElement).tagName)) return n as HTMLTableCellElement;
+      n = n.parentNode;
+    }
+    return null;
+  }
+
+  function tableOp(op: "row+" | "row-" | "col+" | "col-" | "del") {
+    const cell = currentCell();
+    if (!cell) { alert("ضع المؤشّر داخل خليّة في الجدول أوّلاً."); return; }
+    const row = cell.parentElement as HTMLTableRowElement;
+    const table = cell.closest("table");
+    if (!row || !table) return;
+    const idx = Array.from(row.cells).indexOf(cell);
+
+    if (op === "del") { table.remove(); sync(); return; }
+
+    if (op === "row+") {
+      const tr = row.cloneNode(false) as HTMLTableRowElement;
+      for (let i = 0; i < row.cells.length; i++) {
+        const c = document.createElement("td");
+        c.innerHTML = "<br>";
+        tr.appendChild(c);
+      }
+      row.parentNode?.insertBefore(tr, row.nextSibling);
+    }
+    if (op === "row-") {
+      if (table.rows.length <= 1) { table.remove(); sync(); return; }
+      row.remove();
+    }
+    if (op === "col+") {
+      for (const r of Array.from(table.rows)) {
+        const proto = r.cells[idx];
+        const c = document.createElement(proto?.tagName === "TH" ? "th" : "td");
+        c.innerHTML = "<br>";
+        r.insertBefore(c, proto?.nextSibling ?? null);
+      }
+    }
+    if (op === "col-") {
+      if ((table.rows[0]?.cells.length ?? 0) <= 1) { table.remove(); sync(); return; }
+      for (const r of Array.from(table.rows)) r.cells[idx]?.remove();
+    }
+    sync();
   }
 
   function insertLink() {
@@ -543,9 +656,14 @@ setTimeout(function(){window.print();},450);};<\/script>
           <TBtn icon={faAlignLeft} t="لليسار" on={() => cmd("justifyLeft")} />
           <TBtn icon={faAlignJustify} t="ضبط" on={() => cmd("justifyFull")} />
           <Sep />
+          <Sep />
+          {/* اتجاه النصّ — المستند عربي، والفقرة اللاتينية تحتاج LTR */}
+          <TBtn label="ع" t="اتجاه عربي (يمين ← يسار)" on={() => setDir("rtl")} />
+          <TBtn label="A" t="اتجاه لاتيني (يسار → يمين)" on={() => setDir("ltr")} />
+          <Sep />
           <TBtn icon={faQuoteRight} t="اقتباس" on={() => block("BLOCKQUOTE")} />
           <TBtn icon={faMinus} t="خطّ فاصل" on={() => cmd("insertHorizontalRule")} />
-          <TBtn icon={faTable} t="جدول ٣×٣" on={insertTable} />
+          <TablePicker onInsert={insertTable} onOp={tableOp} />
           <TBtn icon={faLink} t="رابط" on={insertLink} />
           <Sep />
           <TBtn icon={faSquareRootVariable} t="معادلة داخل السطر" on={() => openEqn(false)} />
@@ -818,6 +936,82 @@ function HBtn({ icon, label, onClick }: { icon: typeof faBold; label: string; on
       className="grid h-9 w-9 place-items-center rounded-lg text-text-muted transition hover:bg-primary/10 hover:text-primary">
       <FontAwesomeIcon icon={icon} className="h-4 w-4" />
     </button>
+  );
+}
+
+/* ── منتقي الجدول ──
+   شبكة ٦×٦ يمرّ عليها الإصبع/الفأر فيرى المقاس قبل الإدراج — كما في
+   Word تماماً. وتحته عمليات الجدول القائم: صفّ، عمود، حذف. */
+function TablePicker({
+  onInsert, onOp,
+}: {
+  onInsert: (rows: number, cols: number, header: boolean) => void;
+  onOp: (op: "row+" | "row-" | "col+" | "col-" | "del") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState({ r: 0, c: 0 });
+  const [header, setHeader] = useState(true);
+  const MAX_R = 6, MAX_C = 6;
+
+  return (
+    <span className="relative">
+      <button type="button" title="جدول" aria-label="جدول"
+        onMouseDown={(e) => { e.preventDefault(); setOpen((v) => !v); }}
+        className={`bz-wbtn ${open ? "is-on" : ""}`}>
+        <FontAwesomeIcon icon={faTable} className="h-[15px] w-[15px]" />
+      </button>
+
+      {open && (
+        <span className="bz-wtbl">
+          <span className="bz-wtbl-h">
+            {hover.r > 0 ? `${hover.r} × ${hover.c}` : "اختر مقاس الجدول"}
+          </span>
+
+          <span className="bz-wtbl-grid" onMouseLeave={() => setHover({ r: 0, c: 0 })}>
+            {Array.from({ length: MAX_R * MAX_C }).map((_, i) => {
+              const r = Math.floor(i / MAX_C) + 1;
+              const c = (i % MAX_C) + 1;
+              const on = r <= hover.r && c <= hover.c;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`${r} × ${c}`}
+                  onMouseEnter={() => setHover({ r, c })}
+                  onMouseDown={(e) => { e.preventDefault(); setHover({ r, c }); }}
+                  onClick={() => { onInsert(r, c, header); setOpen(false); }}
+                  data-on={on ? "1" : undefined}
+                />
+              );
+            })}
+          </span>
+
+          <label className="bz-wtbl-chk">
+            <input type="checkbox" checked={header} onChange={(e) => setHeader(e.target.checked)} />
+            صفّ عناوين
+          </label>
+
+          <span className="bz-wtbl-ops">
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); onOp("row+"); }}>
+              <FontAwesomeIcon icon={faPlus} className="h-2.5 w-2.5" /> صفّ
+            </button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); onOp("col+"); }}>
+              <FontAwesomeIcon icon={faPlus} className="h-2.5 w-2.5" /> عمود
+            </button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); onOp("row-"); }}>
+              <FontAwesomeIcon icon={faMinus} className="h-2.5 w-2.5" /> صفّ
+            </button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); onOp("col-"); }}>
+              <FontAwesomeIcon icon={faMinus} className="h-2.5 w-2.5" /> عمود
+            </button>
+            <button type="button" className="is-del"
+              onMouseDown={(e) => { e.preventDefault(); onOp("del"); setOpen(false); }}>
+              <FontAwesomeIcon icon={faTrashCan} className="h-2.5 w-2.5" /> حذف الجدول
+            </button>
+          </span>
+        </span>
+      )}
+    </span>
   );
 }
 

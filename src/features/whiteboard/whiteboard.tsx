@@ -173,6 +173,16 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     b: { x0: number; y0: number; x1: number; y1: number };
   } | null>(null);
   const [grid, setGrid] = useState(true);
+
+  /* ── تكبير وتحريك اللوح ──
+     على شاشة ٦ إنش يكون خطّ يد الأستاذ صغيراً جداً حتى واللوح بعرض
+     الشاشة كاملاً. التكبير يحلّ ذلك بلا أن يمسّ نظام الإحداثيات:
+     تحويل CSS على عنصر اللوح، و`getPoint` يقيس بـ
+     `getBoundingClientRect` فيحسب النسبة صحيحةً تلقائياً مهما كان
+     التكبير — فلا سطر واحد في منطق الرسم يتغيّر. */
+  const [view, setView] = useState({ k: 1, tx: 0, ty: 0 });
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const [stamp, setStamp] = useState<string | null>(null);
   // التحديد: الحالة للواجهة، والمرجع ليقرأه الرسم دون إعادة إنشاء الدوال
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -763,10 +773,22 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       /* يُحفَظ LaTeX **كما هو**: الراسم يُخطّطه رياضياً عند كل رسم،
          فتبقى المعادلة قابلة للتصدير والفهم لاحقاً بدل أن تُسطَّح إلى
          حروف Unicode لا يمكن الرجوع منها. */
-      const sh = newShape("text", { x: b.x0, y: Math.min(b.y1 + 0.02, 0.97) }, data.latex.trim());
+
+      /* المعادلة تحلّ **محلّ** خطّ اليد لا تُضاف تحته.
+         كان الاثنان يبقيان معاً فيتراكمان على اللوح: خطّ يد ومعادلة
+         لكل تحويل، والطالب يرى الشيء نفسه مكتوباً مرّتين. الآن تُوضع
+         المعادلة في موضع ما كُتب، ويُحذف خطّ اليد. */
+      const sh = newShape("text", { x: b.x0, y: b.y0 }, data.latex.trim());
       sh.size = TEXT_SIZES[1];
       sh.color = "#2350D9";   // المعادلة المُستخرَجة بالأزرق لتُميَّز عن خطّ اليد
+
+      const captured = [...multiRef.current];
       commit(sh);
+      for (const id of captured) {
+        drawnIds.current.delete(id);
+        remove(ref(rtdb, `${strokesPath}/${id}`));
+      }
+      shapes.current = shapes.current.filter((x) => !captured.includes(x.id));
       clearMulti();
       fullRedraw();
     } catch {
@@ -886,6 +908,107 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, scheduleRedraw, strokesPath]);
 
+  /* ── إيماءات اللمس ──
+     إصبعان: تكبير وتحريك. إصبع واحد: تحريك **لمن لا يرسم** (الطالب)
+     أو حين يكون اللوح مكبّراً وقلم الرسم غير نشط. نقرتان: عودة. */
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+
+    let start: { d: number; k: number; cx: number; cy: number; tx: number; ty: number } | null = null;
+    let pan: { x: number; y: number; tx: number; ty: number } | null = null;
+    let lastTap = 0;
+
+    const dist = (t: TouchList) => {
+      const dx = t[0].clientX - t[1].clientX;
+      const dy = t[0].clientY - t[1].clientY;
+      return Math.hypot(dx, dy);
+    };
+    const mid = (t: TouchList) => ({
+      x: (t[0].clientX + t[1].clientX) / 2,
+      y: (t[0].clientY + t[1].clientY) / 2,
+    });
+
+    const clamp = (v: { k: number; tx: number; ty: number }) => {
+      const k = Math.min(4, Math.max(1, v.k));
+      /* لا يُسمح بسحب اللوح خارج الإطار: أقصى إزاحة نصف الفائض */
+      const b = boardRef.current;
+      const maxX = b ? (b.clientWidth * (k - 1)) / 2 : 0;
+      const maxY = b ? (b.clientHeight * (k - 1)) / 2 : 0;
+      return {
+        k,
+        tx: Math.min(maxX, Math.max(-maxX, v.tx)),
+        ty: Math.min(maxY, Math.max(-maxY, v.ty)),
+      };
+    };
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const v = viewRef.current;
+        const m = mid(e.touches);
+        start = { d: dist(e.touches), k: v.k, cx: m.x, cy: m.y, tx: v.tx, ty: v.ty };
+        pan = null;
+        e.preventDefault();
+        return;
+      }
+      if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+          setView({ k: 1, tx: 0, ty: 0 });
+          lastTap = 0;
+          e.preventDefault();
+          return;
+        }
+        lastTap = now;
+        /* إصبع واحد يحرّك فقط إن كان المستخدم لا يرسم أصلاً، أو كان
+           اللوح مكبّراً — وإلّا خطف التحريك ضربة القلم. */
+        if (!canDrawRef.current || viewRef.current.k > 1.02) {
+          const v = viewRef.current;
+          pan = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx: v.tx, ty: v.ty };
+        }
+      }
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (start && e.touches.length === 2) {
+        const d = dist(e.touches);
+        const m = mid(e.touches);
+        const k = start.k * (d / (start.d || 1));
+        setView(clamp({
+          k,
+          tx: start.tx + (m.x - start.cx),
+          ty: start.ty + (m.y - start.cy),
+        }));
+        e.preventDefault();
+        return;
+      }
+      if (pan && e.touches.length === 1) {
+        setView((v) => clamp({
+          k: v.k,
+          tx: pan!.tx + (e.touches[0].clientX - pan!.x),
+          ty: pan!.ty + (e.touches[0].clientY - pan!.y),
+        }));
+        e.preventDefault();
+      }
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) start = null;
+      if (e.touches.length === 0) pan = null;
+    };
+
+    wrap.addEventListener("touchstart", onStart, { passive: false });
+    wrap.addEventListener("touchmove", onMove, { passive: false });
+    wrap.addEventListener("touchend", onEnd);
+    wrap.addEventListener("touchcancel", onEnd);
+    return () => {
+      wrap.removeEventListener("touchstart", onStart);
+      wrap.removeEventListener("touchmove", onMove);
+      wrap.removeEventListener("touchend", onEnd);
+      wrap.removeEventListener("touchcancel", onEnd);
+    };
+  }, []);
+
   // ── تهيئة + تجاوب ──
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -897,12 +1020,45 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const r = wrap.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return;
 
-      /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في الحاوية.
+      /* الحشوة تُخصَم أوّلاً: كانت القياسات تُحسب من `getBoundingClientRect`
+         كاملاً بينما اللوح يعيش **داخل** حشوة `p-2/p-3`، فيزيد عرضه
+         عن مساحته المتاحة بمقدار الحشوة ويُقصّ طرفه. */
+      const cs = getComputedStyle(wrap);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      const availW = Math.max(1, r.width - padX);
+      const availH = Math.max(1, r.height - padY);
+
+      /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة.
          نأخذ **الأصغر** من القيدين صراحةً بدل تصحيح بعديّ — أوضح، ولا
          يمكن أن يتجاوز أيّاً منهما مهما كانت أبعاد الحاوية. */
-      const bw0 = Math.min(r.width, r.height * BOARD_AR);
+      const bw0 = Math.min(availW, availH * BOARD_AR);
       let bw = Math.floor(Math.max(1, bw0));
       let bh = Math.floor(Math.max(1, bw / BOARD_AR));
+
+      /* 🐛 **السبورة على الهاتف كانت شريطاً صغيراً وسط فراغ رمادي هائل.**
+
+         السبب: اللوح بنسبة ١٦:١٠ ثابتة (وهذا صحيح — الدائرة يجب أن
+         تصل الطالب دائرةً)، والحاوية `flex-1` تأخذ كل ارتفاع الشاشة.
+         على هاتف بنسبة ٩:٢٠ يكون العرض هو القيد، فيصير ارتفاع اللوح
+         ~٦٠٪ من عرض الشاشة، ويبقى أكثر من ثلثَي الشاشة فراغاً ميّتاً
+         فوقه وتحته — كما في لقطتك.
+
+         الحلّ: على الهاتف الرأسي تتقلّص الحاوية إلى ارتفاع اللوح، فيصعد
+         اللوح إلى أعلى المساحة بعرض الشاشة كاملاً بلا فراغ. والمحتوى
+         **هو نفسه** الذي على الحاسوب — لم نقصّ شيئاً ولا مطّطنا شيئاً. */
+      const portrait = r.height > r.width * 1.15 && r.width < 900;
+      if (portrait) {
+        wrap.style.flexGrow = "0";
+        wrap.style.flexShrink = "0";
+        wrap.style.flexBasis = "auto";
+        wrap.style.height = `${Math.round(bh + padY)}px`;
+      } else {
+        wrap.style.removeProperty("flex-grow");
+        wrap.style.removeProperty("flex-shrink");
+        wrap.style.removeProperty("flex-basis");
+        wrap.style.removeProperty("height");
+      }
 
       board.style.width = `${bw}px`;
       board.style.height = `${bh}px`;
@@ -1728,11 +1884,24 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
            ويُبنى اللوح على ذلك القياس فيظهر مقصوصاً. */
         className="bz-stage relative flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-2 sm:p-3"
       >
+        {/* شارة التكبير — تظهر عند التكبير وحده، وتُعيد اللوح بنقرة */}
+        {(view.k > 1.02 || view.tx !== 0 || view.ty !== 0) && (
+          <button
+            onClick={() => setView({ k: 1, tx: 0, ty: 0 })}
+            className="absolute end-3 top-3 z-20 flex min-h-9 items-center gap-1.5 rounded-full bg-slate-900/80 px-3 text-[11.5px] font-extrabold text-white backdrop-blur-sm transition active:scale-95"
+          >
+            {Math.round(view.k * 100)}٪ — ملء اللوح
+          </button>
+        )}
+
         {/* اللوح — نسبة ثابتة، موسّط، وما حوله هامش محايد بدل تمطيط المحتوى */}
         <div
           ref={boardRef}
           className="bz-board relative shrink-0 overflow-hidden rounded-xl bg-white"
           style={{
+            transform: `translate(${view.tx}px, ${view.ty}px) scale(${view.k})`,
+            transformOrigin: "center center",
+            transition: view.k === 1 && view.tx === 0 && view.ty === 0 ? "transform .22s cubic-bezier(.22,1,.36,1)" : "none",
             boxShadow:
               "0 0 0 1px rgba(19,23,34,.07), 0 1px 3px rgba(19,23,34,.05), 0 12px 32px -8px rgba(19,23,34,.14)",
             ...(grid
