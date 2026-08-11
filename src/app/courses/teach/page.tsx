@@ -45,7 +45,7 @@ const FILTERS: { id: "all" | CourseStatus; label: string }[] = [
 export default function TeacherCoursesPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const { isStaff, isAdmin, ready } = useRole(user?.uid);
+  const { isStaff, isAdmin, ready, role } = useRole(user?.uid);
   const profile = useProfile(user?.uid);
   const submitted = useQueryParam("submitted");
   const focusCourse = useQueryParam("course");
