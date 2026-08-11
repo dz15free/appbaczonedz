@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site-url";
 
 /* ════════════════════════════════════════════════════════════
    بيانات الصفحة لمحرّكات البحث ولروابط المشاركة
@@ -10,8 +9,7 @@ import { SITE_URL } from "@/lib/site-url";
 ════════════════════════════════════════════════════════════ */
 
 const DB = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
-/* العنوان من المصدر الوحيد */
-const SITE = SITE_URL;
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
 
 interface PublicCourse {
   title?: string;

@@ -15,7 +15,7 @@ import { redeemCode } from "@/features/paid/paid-access";
 import { useCourseReviews } from "@/features/courses/reviews";
 import {
   type Course, type CourseStatus, COURSE_STATUS_LABEL, COURSE_STATUS_TONE,
-  branchLabel, formatDuration, matchesTrack,
+  branchLabel, formatDuration, matchesTrack, levelName,
 } from "@/features/courses/types";
 
 /* ════════════════════════════════════════════════════════════
@@ -339,6 +339,10 @@ export function CourseMeta({ course }: { course: Course }) {
       <span className="inline-flex items-center gap-1.5">
         <FontAwesomeIcon icon={faClock} className="h-3.5 w-3.5 text-primary" />
         {formatDuration(course.totalDuration)}
+      </span>
+      <span className="inline-flex items-center gap-1.5">
+        <FontAwesomeIcon icon={faGraduationCap} className="h-3.5 w-3.5 text-primary" />
+        {levelName(course.level)}
       </span>
     </div>
   );

@@ -135,6 +135,7 @@ export interface CourseDraftInput {
   coverUrl?: string;
   subject: string;
   branches: Course["branches"];
+  level?: string;
   outcomes?: string[];
   type: "free" | "paid";
   price?: number;
@@ -181,6 +182,7 @@ function baseRow(input: CourseDraftInput, teacher: { uid: string; name: string }
     coverUrl: input.coverUrl?.trim().slice(0, 600) || null,
     subject: input.subject,
     branches: input.branches,
+    level: input.level || null,
     outcomes: (input.outcomes ?? []).map((o) => o.trim().slice(0, 200)).filter(Boolean).slice(0, 10),
     teacherId: teacher.uid,
     teacherName: teacher.name,

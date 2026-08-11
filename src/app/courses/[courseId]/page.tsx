@@ -29,7 +29,7 @@ import {
 } from "@/features/courses/course-ui";
 import {
   type Course, type CourseLesson, LESSON_KIND_LABEL, branchLabel, formatDuration,
-  matchesTrack,
+  matchesTrack, levelName,
 } from "@/features/courses/types";
 
 /* ════════════════════════════════════════════════════════════
@@ -168,6 +168,7 @@ export default function CourseDetailsPage() {
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-extrabold text-primary">{subjectLabel}</span>
                   <span className="rounded-full bg-border px-2.5 py-1 text-[11px] font-bold text-text-muted">{branchLabel(course.branches)}</span>
+                  <span className="rounded-full bg-border px-2.5 py-1 text-[11px] font-bold text-text-muted">{levelName(course.level)}</span>
                   {relevant && (
                     <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-extrabold text-emerald-600">مناسب لشعبتك</span>
                   )}

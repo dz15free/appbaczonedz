@@ -16,7 +16,7 @@ import {
 } from "@/features/courses/courses";
 import {
   type Course, type CourseSection, type CourseLesson, type LessonContent, type LessonKind,
-  COURSE_BRANCHES, LESSON_KIND_LABEL, COURSE_STATUS_LABEL,
+  COURSE_BRANCHES, COURSE_LEVELS, LESSON_KIND_LABEL, COURSE_STATUS_LABEL,
   branchIds, isAllBranches, newId, validateLessonUrl, countLessons, sumDuration,
   formatDuration, providerOf,
 } from "@/features/courses/types";
@@ -59,6 +59,7 @@ function emptyDraft(): Draft {
     coverUrl: "",
     subject: "",
     branches: { all: true },
+    level: "intermediate",
     outcomes: [],
     type: "free",
     price: undefined,
@@ -76,6 +77,7 @@ function draftFrom(course: Course, content: Record<string, LessonContent>): Draf
     coverUrl: course.coverUrl ?? "",
     subject: course.subject,
     branches: course.branches ?? { all: true },
+    level: course.level ?? "intermediate",
     outcomes: course.outcomes ?? [],
     type: course.type,
     price: course.price,
@@ -332,19 +334,23 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
             )}
           </Field>
 
-          <Field label="المادة" error={errors.subject} required>
-            <select value={draft.subject} onChange={(e) => set("subject", e.target.value)} className={inputCls(errors.subject)}>
-              <option value="">اختر المادة</option>
-              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="المادة" error={errors.subject} required>
+              <select value={draft.subject} onChange={(e) => set("subject", e.target.value)} className={inputCls(errors.subject)}>
+                <option value="">اختر المادة</option>
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </Field>
+            <Field label="المستوى">
+              <select value={draft.level} onChange={(e) => set("level", e.target.value)} className={inputCls()}>
+                {COURSE_LEVELS.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </Field>
+          </div>
 
           {/* الشُّعب — اختيار متعدّد حقيقي */}
-          <Field
-            label={`الشُّعب المستهدَفة${allBranches ? " — الجميع" : ` — ${selected.length} ${selected.length === 1 ? "شعبة" : "شعب"}`}`}
-            error={errors.branches}
-            required
-            hint="اضغط على كل شعبة تريدها — يمكنك اختيار شعبتين أو ثلاث أو أكثر، أو «كل الشعب».">
+          <Field label="الشُّعب المستهدَفة" error={errors.branches} required
+            hint="اختر «كل الشعب» أو أي مجموعة منها — مثل «علوم تجريبية + رياضيات».">
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
