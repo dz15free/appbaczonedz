@@ -40,6 +40,11 @@ export interface SiteSettings {
   accentColor?: string;       // لون التمييز الأساسي hex
   footerText?: string;        // نص الفوتر
   footerLinks?: FooterLink[]; // روابط الفوتر
+  /* راية «فُرِّغت عمداً»: Firebase يحذف المصفوفة الفارغة، فبدونها لا
+     نُميّز «حذف الأدمن كل الروابط» عن «لم تُضبط بعد» فتعود الافتراضية.
+     ولا بدّ من تعريفها هنا وإلّا رفض `saveSetting` المفتاح (النوع
+     `keyof SiteSettings`). */
+  footerLinksCleared?: boolean;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
