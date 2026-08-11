@@ -61,17 +61,9 @@ export const LESSON_KIND_LABEL: Record<LessonKind, string> = {
   external: "مصدر خارجي",
 };
 
-/** المستوى الدراسي — قائمة قصيرة مقصودة */
-export const COURSE_LEVELS = [
-  { id: "beginner", name: "تأسيسي" },
-  { id: "intermediate", name: "متوسّط" },
-  { id: "advanced", name: "متقدّم" },
-  { id: "revision", name: "مراجعة نهائية" },
-] as const;
-
-export function levelName(id?: string) {
-  return COURSE_LEVELS.find((l) => l.id === id)?.name ?? "عامّ";
-}
+/* «المستوى» (تأسيسي/متوسّط/متقدّم/مراجعة) أُزيل بالكامل: تسمية لا معنى
+   لها في البكالوريا — الشُّعبة والمادّة تكفيان لوصف من تخاطبه الدورة،
+   وحقل زائد في المعالج يُبطئ الأستاذ بلا فائدة. */
 
 /** وصف الدرس كما يراه الطالب — بلا رابط إلّا إن كان مجّاني المعاينة */
 export interface CourseLesson {
@@ -111,7 +103,6 @@ export interface Course {
   subject: string;
   /** الشُّعب: `all` أو خريطة معرّفات — الأستاذ يختار واحدة أو أكثر */
   branches: Record<string, true> | { all: true };
-  level?: string;
   outcomes?: string[];
   teacherId: string;
   teacherName: string;

@@ -29,6 +29,9 @@ import { COURSE_STATUS_LABEL, formatDuration, type Course, type CourseStatus } f
    ولا أزرار إدارية هنا: لا نشر ولا موافقة. ما لا يستطيعه لا يُعرض.
 ════════════════════════════════════════════════════════════ */
 
+/** الحالات التي تبقى الدورة فيها ملك الأستاذ — وقواعد Firebase تسمح بحذفها */
+const CAN_DELETE: string[] = ["draft", "changes", "rejected"];
+
 const FILTERS: { id: "all" | CourseStatus; label: string }[] = [
   { id: "all", label: "الكلّ" },
   { id: "draft", label: "مسوّدات" },
@@ -235,9 +238,12 @@ function TeacherCourseCard({
           <FontAwesomeIcon icon={faComments} className="h-3 w-3" /> ملاحظات المراجعة
         </button>
 
-        {course.status === "draft" && (
+        {/* الحذف كان لـ«مسوّدة» وحدها، فكانت دورة مرفوضة أو مُعادة للتعديل
+            تبقى في القائمة إلى الأبد بلا زرّ حذف. صار متاحاً في كل حالة
+            تبقى فيها الدورة ملك الأستاذ وحده — والقاعدة تسمح بها. */}
+        {CAN_DELETE.includes(course.status) && (
           <button
-            onClick={() => { if (confirm("حذف هذه المسوّدة نهائياً؟")) void deleteCourse(course.id, course.teacherId); }}
+            onClick={() => { if (confirm(`حذف «${course.title}» نهائياً؟ لا يمكن التراجع.`)) void deleteCourse(course.id, course.teacherId); }}
             className="ms-auto flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[12px] font-extrabold text-text-muted transition hover:border-danger hover:text-danger">
             <FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> حذف
           </button>

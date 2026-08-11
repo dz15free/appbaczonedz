@@ -19,7 +19,7 @@ import { listenEnrollCount } from "@/features/courses/enrollment";
 import { createAccessCode, splitAmount, getCommissionPct } from "@/features/paid/paid-access";
 import {
   type Course, type CourseStatus, type LessonContent,
-  COURSE_STATUS_LABEL, LESSON_KIND_LABEL, branchLabel, formatDuration, levelName,
+  COURSE_STATUS_LABEL, LESSON_KIND_LABEL, branchLabel, formatDuration,
 } from "@/features/courses/types";
 
 /* ════════════════════════════════════════════════════════════
@@ -182,7 +182,7 @@ function AdminCourseRow({
           <p className="mt-1 line-clamp-2 text-[13px] font-extrabold leading-snug text-text-primary">{course.title || "بلا عنوان"}</p>
           <p className="mt-0.5 text-[11px] text-text-muted">
             <Link href={`/u/${course.teacherId}`} className="font-bold text-primary hover:underline">{course.teacherName}</Link>
-            {" · "}{branchLabel(course.branches)}{" · "}{levelName(course.level)}
+            {" · "}{branchLabel(course.branches)}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-text-muted">
             <span><FontAwesomeIcon icon={faLayerGroup} className="me-1 h-2.5 w-2.5" />{course.lessonCount ?? 0} درساً</span>
