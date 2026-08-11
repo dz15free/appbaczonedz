@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 336" width="640" height="336" role="img" aria-label="البداية">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#1e40af"/></linearGradient></defs>
+<rect width="640" height="336" fill="url(#g)"/>
+<g opacity=".18" fill="none" stroke="#fff" stroke-width="2">
+<line x1="0" y1="0" x2="640" y2="0"/><line x1="0" y1="28" x2="640" y2="28"/><line x1="0" y1="56" x2="640" y2="56"/><line x1="0" y1="84" x2="640" y2="84"/><line x1="0" y1="112" x2="640" y2="112"/><line x1="0" y1="140" x2="640" y2="140"/><line x1="0" y1="168" x2="640" y2="168"/><line x1="0" y1="196" x2="640" y2="196"/><line x1="0" y1="224" x2="640" y2="224"/><line x1="0" y1="252" x2="640" y2="252"/><line x1="0" y1="280" x2="640" y2="280"/><line x1="0" y1="308" x2="640" y2="308"/>
+</g>
+<path d="M120 300 L220 220 L320 260 L420 160 L520 200" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".92" transform="scale(0.62) translate(60,40)"/>
+<text x="600" y="290" text-anchor="end" font-family="system-ui,sans-serif" font-size="30" font-weight="800" fill="#fff" opacity=".95">البداية</text>
+<text x="600" y="322" text-anchor="end" font-family="system-ui,sans-serif" font-size="17" font-weight="700" fill="#fff" opacity=".7">BacZoneDZ</text>
+</svg>

@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus, faPen, faTrash, faEye, faEyeSlash, faUpRightFromSquare,
   faFloppyDisk, faArrowRight, faCircleCheck, faCircleHalfStroke, faTriangleExclamation,
+  faFileImport,
 } from "@fortawesome/free-solid-svg-icons";
 import { ArticleEditor } from "@/features/blog/article-editor";
 import {
   useBlogIndex, loadContent, saveArticle, setStatus, deleteArticle, slugTaken,
+  type DraftInput,
 } from "@/features/blog/blog-store";
 import { BLOG_LABELS, slugify, estimateReadMinutes, type BlogIndexEntry } from "@/features/blog/types";
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
@@ -64,12 +66,15 @@ export function BlogAdmin({ uid }: { uid: string }) {
             {loaded ? `${live.length} منشور · ${drafts.length} مسودّة` : "جارٍ التحميل…"}
           </p>
         </div>
-        <button
-          onClick={() => setMode({ kind: "edit" })}
-          className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2.5 text-sm font-bold text-white"
-        >
-          <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" /> مقال جديد
-        </button>
+        <div className="flex items-center gap-2">
+          <ImportButton uid={uid} />
+          <button
+            onClick={() => setMode({ kind: "edit" })}
+            className="flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2.5 text-sm font-bold text-white"
+          >
+            <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" /> مقال جديد
+          </button>
+        </div>
       </div>
 
       {loaded && rows.length === 0 && (
@@ -91,6 +96,72 @@ export function BlogAdmin({ uid }: { uid: string }) {
         ),
       )}
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   استيراد مقالات جاهزة
+
+   يُكمل الحلقة التي أردتَها: محتوى يُكتب خارج اللوحة (منّي أو من أيّ
+   مصدر) يدخل النظام **مسوّدةً** فتراجعه وتنشره بنفسك.
+
+   وقاعدتان لا تُكسران:
+   • **كل مستورَد مسوّدة.** لا يُنشر شيء بلا قراءتك — ولو كان الملفّ
+     يقول `published`. باب استيراد ينشر مباشرةً هو باب لنشر ما لم
+     تقرأه.
+   • **الاستيراد لا يدهس.** المقال ذو الرابط المستعمل يُتخطّى ويُذكر في
+     التقرير، فلا يمحو ملفٌّ مقالاً حرّرتَه بيدك.
+   ════════════════════════════════════════════════════════════ */
+function ImportButton({ uid }: { uid: string }) {
+  const pick = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<string>("");
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true); setReport("");
+    try {
+      const raw = JSON.parse(await file.text());
+      const list: DraftInput[] = Array.isArray(raw) ? raw : Array.isArray(raw?.articles) ? raw.articles : [];
+      if (!list.length) throw new Error("الملفّ لا يحوي مقالات");
+
+      let added = 0;
+      const skipped: string[] = [];
+      for (const a of list) {
+        if (!a?.title || !a?.html) { skipped.push(a?.title || "بلا عنوان"); continue; }
+        const slug = slugify(a.slug || a.title);
+        if (await slugTaken(slug)) { skipped.push(`${a.title} (الرابط مستعمل)`); continue; }
+        await saveArticle(uid, { ...a, slug }, "draft");
+        added++;
+      }
+      setReport(
+        `أُضيف ${added} مقالاً كمسودّات.` +
+        (skipped.length ? ` وتُخطّي ${skipped.length}: ${skipped.join("، ")}` : ""),
+      );
+    } catch (err) {
+      setReport(err instanceof Error ? `تعذّر الاستيراد: ${err.message}` : "ملفّ غير صالح.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <button onClick={() => pick.current?.click()} disabled={busy}
+        title="استيراد مقالات من ملفّ JSON — تدخل كمسوّدات"
+        className="flex items-center gap-2 rounded-md border border-border px-3 py-2.5 text-sm font-bold text-text-muted transition hover:border-primary/40 hover:text-primary disabled:opacity-40">
+        <FontAwesomeIcon icon={faFileImport} className="h-3.5 w-3.5" />
+        {busy ? "جارٍ الاستيراد…" : "استيراد"}
+      </button>
+      <input ref={pick} type="file" accept="application/json,.json" hidden onChange={onFile} />
+      {report && (
+        <p className="w-full rounded-md border border-primary/40 bg-primary/5 p-2 text-[12px] font-bold text-primary">
+          {report}
+        </p>
+      )}
+    </>
   );
 }
 
