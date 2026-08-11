@@ -82,6 +82,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/courses`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
+    { url: `${BASE}/tools`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/tools/weighted-average`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
     ...BRANCHES.map((b) => ({

@@ -3323,3 +3323,51 @@ body.bz-fullscreen-active .bz-voicebar {
   white-space: nowrap;
 }
 .bz-all-chip > span { opacity: .6; font-weight: 700; }
+
+/* ── بطاقات الأدوات ──
+   ليست شبكة بطاقات عادية: كل بطاقة تقول ما الأداة **وما تنفعك به**،
+   والفائدة أهمّ من الوصف عند من يزور الموقع أوّل مرّة. */
+.bz-tool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+  padding: 16px 16px 14px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--bz-line);
+  background: var(--bz-surface, #fff);
+  transition: transform .16s cubic-bezier(.2,.8,.2,1), box-shadow .16s, border-color .16s;
+}
+.bz-tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -16px rgba(19, 23, 34, .32);
+  border-color: var(--bz-line-2);
+}
+.bz-tool-card:active { transform: translateY(0) scale(.995); }
+.bz-tool-bar { position: absolute; inset-inline-start: 0; inset-block: 0; width: 4px; }
+
+.bz-tool-head { display: flex; align-items: center; gap: 8px; }
+.bz-tool-name { font-size: 15px; font-weight: 800; color: var(--bz-ink); }
+.bz-tool-tag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--bz-ink-3);
+  background: var(--bz-canvas);
+  border: 1px solid var(--bz-line);
+}
+.bz-tool-desc { font-size: 12.5px; line-height: 1.85; color: var(--bz-ink-2); }
+/* الفائدة بخطّ مائل خفيف: تُقرأ كصوت ناصح لا كسطر تسويقي */
+.bz-tool-benefit {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--bz-ink-3);
+  padding-inline-start: 9px;
+  border-inline-start: 2px solid var(--bz-line);
+}
+.bz-tool-cta { margin-top: 4px; font-size: 12.5px; font-weight: 800; }
+
+.dark .bz-tool-card { background: #1B1F27; }
