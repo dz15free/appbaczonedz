@@ -20,6 +20,7 @@ import { AdSlot } from "@/components/ui/ad-slot";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { Brand } from "@/components/ui/brand";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 /* أيقونات التواصل (SVG مضمّن) */
 function DrawerTelegramIcon({ className = "" }: { className?: string }) {
@@ -618,20 +619,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </div>
 
-      {/* الفوتر */}
-      {settings.footerText && (
-        <footer className="border-t border-border bg-surface px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4">
-          <p>{settings.footerText}</p>
-          {(settings.footerLinks?.length ?? 0) > 0 && (
-            <div className="mt-1.5 flex flex-wrap justify-center gap-3">
-              {settings.footerLinks?.map((l, i) => (
-                <a key={i} href={l.href} target="_blank" rel="noopener noreferrer"
-                  className="hover:text-primary hover:underline">{l.label}</a>
-              ))}
-            </div>
-          )}
-        </footer>
-      )}
+      {/* الفوتر — مكوّن واحد للموقع كلّه (كان نسخةً محلّية تتفرّق عن
+          نسخة صفحة الهبوط، وكانت تفتح الروابط الداخلية في تبويب جديد).
+          ولا يُشترط `footerText` بعد الآن: الروابط القانونية يجب أن
+          تظهر دائماً وإن أفرغ الأدمن نصّ الفوتر. */}
+      <SiteFooter />
 
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 

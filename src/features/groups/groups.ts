@@ -12,6 +12,8 @@ import {
   limitToLast,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import { pruneMentions, type MentionMap } from "@/features/community/mentions";
+import { addNotification } from "@/features/community/social";
 import type { Person } from "@/features/community/social";
 
 export interface StudyGroup {
@@ -37,6 +39,8 @@ export interface GroupMessage {
   senderName: string;
   text: string;
   createdAt: number;
+  /** الإشارات (@): معرّف ← اسم */
+  mentions?: MentionMap;
 }
 
 // SUBJECTS للاختيار (الشعب + عام)
@@ -111,14 +115,31 @@ export async function deleteGroup(groupId: string) {
 export async function sendGroupMessage(
   groupId: string,
   sender: { uid: string; name: string },
-  text: string
+  text: string,
+  mentions?: MentionMap
 ) {
-  await push(ref(rtdb, `groupMessages/${groupId}`), {
+  const body = text.trim();
+  const clean = mentions ? pruneMentions(body, mentions) : {};
+  const msg: Record<string, unknown> = {
     senderId: sender.uid,
     senderName: sender.name,
-    text: text.trim(),
+    text: body,
     createdAt: Date.now(),
-  });
+  };
+  if (Object.keys(clean).length) msg.mentions = clean;
+  await push(ref(rtdb, `groupMessages/${groupId}`), msg);
+
+  /* إشعار المُشار إليهم. ولا نُشعر بكل رسالة في المجموعة — الإشارة
+     وحدها هي ما يستدعي تنبيهاً، وإلّا صارت المجموعة النشطة مصنع
+     اشعارات يُطفئها الطالب فيخسر المهمّ معها. */
+  const targets = Object.keys(clean).filter((uid) => uid !== sender.uid);
+  if (targets.length) {
+    await Promise.allSettled(targets.map((uid) => addNotification(uid, {
+      type: "mention",
+      text: `${sender.name} أشار إليك في مجموعة`,
+      link: `/groups/${groupId}`,
+    })));
+  }
 }
 
 export function listenGroups(cb: (list: StudyGroup[]) => void) {

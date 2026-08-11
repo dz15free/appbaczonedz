@@ -30,6 +30,8 @@ import {
   type Person,
 } from "@/features/community/social";
 import { RichText } from "@/components/ui/linkify";
+import { MentionInput } from "@/components/ui/mention-input";
+import type { MentionMap } from "@/features/community/mentions";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { PostMediaGrid } from "@/features/community/post-media";
 
@@ -48,6 +50,27 @@ export default function PostPage() {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
+  const [highlight, setHighlight] = useState<string | null>(null);
+  /* خريطة الإشارات في التعليق الجاري كتابته — يجمعها المنتقي */
+  const [mentions, setMentions] = useState<MentionMap>({});
+
+  /* ══ القدوم من إشعار تعليق ══
+     الاشعار الجديد يحمل `#c-<id>`. والتمرير التلقائي للمرساة لا يقع
+     هنا: التعليقات تُحمَّل بعد الرسم الأوّل، فالمتصفّح يبحث عن المرساة
+     قبل أن توجد ويستسلم. فنُمرّر بأنفسنا **بعد** وصول التعليقات.
+
+     والإبراز مؤقّت: تعليقٌ يبقى مُعلَّماً إلى الأبد يوهم أنّه مميّز. */
+  useEffect(() => {
+    if (!comments.length) return;
+    const id = window.location.hash.replace(/^#c-/, "");
+    if (!id || !comments.some((c) => c.id === id)) return;
+    const el = document.getElementById(`c-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlight(id);
+    const t = window.setTimeout(() => setHighlight(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [comments]);
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -95,10 +118,12 @@ export default function PostPage() {
   async function send() {
     if (!text.trim() || !user) return;
     const t = text;
+    const m = mentions;
     setText("");
+    setMentions({});
     const parent = replyTo?.id;
     setReplyTo(null);
-    await addComment(postId, user.uid, myName, t, parent, profile?.role);
+    await addComment(postId, user.uid, myName, t, parent, profile?.role, m);
   }
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
@@ -108,10 +133,18 @@ export default function PostPage() {
 
   function CommentCard({ c, isReply, parentId }: { c: Comment; isReply?: boolean; parentId?: string }) {
     if (!user) return null;
-    const showAdd = c.authorId !== user.uid && !friendIds.has(c.authorId);
+    /* الإدارة لا تُضاف صديقاً — والدور محفوظ على التعليق (`authorRole`) */
+    const showAdd = c.authorId !== user.uid && !friendIds.has(c.authorId)
+      && c.authorRole !== "admin";
     const isSent = sent[c.authorId] || sentSet.has(c.authorId);
     return (
-      <div className={`rounded-lg border border-border bg-surface p-3 ${isReply ? "ms-6 mt-2 border-r-2 border-r-primary/40" : ""}`}>
+      /* `id` مرساةٌ يقصدها رابط الاشعار (`#c-<id>`)، و`scroll-mt` تُبعد
+         التعليق عن تحت الترويسة الثابتة — بلاها يقف الهدف مخفيّاً وراءها
+         فيظنّ الطالب أنّ الرابط لم يعمل. */
+      <div
+        id={`c-${c.id}`}
+        className={`scroll-mt-24 rounded-lg border border-border bg-surface p-3 transition-colors ${isReply ? "ms-6 mt-2 border-r-2 border-r-primary/40" : ""} ${highlight === c.id ? "!border-primary bg-primary/5" : ""}`}
+      >
         <div className="flex items-start justify-between gap-2">
           <Link href={`/u/${c.authorId}?name=${encodeURIComponent(c.authorName)}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs font-bold text-primary hover:underline">
             <span className="truncate">{c.authorName}</span>
@@ -165,7 +198,7 @@ export default function PostPage() {
             )}
           </div>
         </div>
-        <div className="mt-1 whitespace-pre-wrap text-sm"><RichText text={c.text} compact /></div>
+        <div className="mt-1 whitespace-pre-wrap text-sm"><RichText text={c.text} compact mentions={c.mentions} /></div>
       </div>
     );
   }
@@ -274,7 +307,7 @@ export default function PostPage() {
               ) : (
                 post.text && (
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">
-                    <RichText text={post.text} noPreview={!!post.media?.length || !!post.attachmentId} />
+                    <RichText text={post.text} noPreview={!!post.media?.length || !!post.attachmentId} mentions={post.mentions} />
                     {post.editedAt && <span className="ms-2 text-xs text-text-muted">(مُعدّل)</span>}
                   </p>
                 )
@@ -328,14 +361,22 @@ export default function PostPage() {
                       </button>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && send()}
-                      placeholder={replyTo ? `ردّك على ${replyTo.name}...` : "اكتب تعليقك..."}
-                      className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                    />
+                  <div className="flex items-end gap-2">
+                    {/* حقل يدعم الإشارة (@). المرشَّحون أصدقاؤك —
+                        وهم من تستطيع قراءة أسماءهم فعلاً. */}
+                    <div className="min-w-0 flex-1">
+                      <MentionInput
+                        value={text}
+                        onChange={setText}
+                        onMentionsChange={setMentions}
+                        candidates={friends}
+                        onSubmit={send}
+                        rows={1}
+                        ariaLabel="اكتب تعليقك"
+                        placeholder={replyTo ? `ردّك على ${replyTo.name}...` : "اكتب تعليقك… واستعمل @ للإشارة"}
+                        className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                      />
+                    </div>
                     <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="grid h-11 w-11 place-items-center rounded-md bg-gradient-primary text-white disabled:opacity-50">
                       <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
                     </button>

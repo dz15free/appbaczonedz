@@ -15,6 +15,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
+import { SiteFooter } from "@/components/ui/site-footer";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -453,32 +454,10 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════ FOOTER ═══════════════ */}
-      <footer className="border-t border-border/60 bg-surface px-5 py-10 sm:py-12">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={s.logoUrl || DEFAULT_LOGO}
-              alt=""
-              className="h-8 w-8 rounded-lg object-contain"
-            />
-            <span className="font-display text-base font-bold">
-              {s.siteName || "BacZoneDZ"}
-            </span>
-          </div>
-          <p className="text-[13px] text-text-muted">
-            {s.footerText || `© ${year} BacZoneDZ`}
-          </p>
-          <div className="flex gap-6 text-[12px] text-text-muted">
-            <Link href="/login" className="transition hover:text-primary">
-              تسجيل الدخول
-            </Link>
-            <Link href="/register" className="transition hover:text-primary">
-              تسجيل جديد
-            </Link>
-          </div>
-        </div>
-      </footer>
+      {/* 🐛 كان هذا الفوتر **يتجاهل `footerLinks` تماماً** ويكتب رابطَي
+          الدخول والتسجيل بيده — فما يضيفه الأدمن من لوحته لا يظهر في
+          أهمّ صفحة عامّة في الموقع. صار المكوّن الموحّد نفسه. */}
+      <SiteFooter variant="full" />
     </main>
   );
 }

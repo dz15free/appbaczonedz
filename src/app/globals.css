@@ -366,6 +366,103 @@ body.bz-fullscreen-active {
 .bz-marwa-content .bz-math-inline { direction: ltr; display: inline-block; }
 .bz-marwa-content strong { font-weight: 800; color: var(--bz-text); }
 .bz-marwa-content em { font-style: italic; }
+.bz-marwa-content del { opacity: .6; }
+.bz-marwa-content .bz-a {
+  color: rgb(var(--bz-primary));
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;   /* رابط طويل لا يمدّ الفقاعة خارج الشاشة */
+}
+
+/* ══ الجداول ══
+   🐛 لم تكن مدعومة إطلاقاً فكانت تُطبع بأنابيبها نصّاً خاماً.
+
+   والغلاف `bz-tablewrap` هو ما يمنعها من كسر شاشة الهاتف: الجدول
+   بطبعه يأخذ عرض محتواه، فجدولٌ بخمسة أعمدة يمتدّ إلى ضِعف عرض الهاتف
+   ويدفع الصفحة كلّها أفقياً. البطاقة تحصر التمرير داخلها وحدها.
+
+   و`-webkit-overflow-scrolling` تُعطي تمريراً بالقصور الذاتي على iOS —
+   بلاها يبدو التمريرُ عالقاً. */
+.bz-marwa-content .bz-tablewrap {
+  margin: 0.6rem 0;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;   /* لا يسحب الصفحة معه عند نهايته */
+  border: 1px solid var(--bz-border);
+  border-radius: 0.75rem;
+  background: var(--bz-surface);
+  /* ظلّ داخليّ خفيف على الحافّة يقول «هنا بقيّة» بلا نصّ */
+  background-image: linear-gradient(to left, rgb(0 0 0 / .05), transparent 12px);
+  scrollbar-width: thin;
+}
+.bz-marwa-content .bz-table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 0.8125rem;
+}
+.bz-marwa-content .bz-table th,
+.bz-marwa-content .bz-table td {
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--bz-border);
+  vertical-align: top;
+  line-height: 1.6;
+  /* الخلايا لا تلتفّ إلى حرف واحد لكل سطر: حدّ أدنى مقروء */
+  min-width: 6.5rem;
+}
+.bz-marwa-content .bz-table th {
+  background: rgb(var(--bz-primary) / .07);
+  font-weight: 800;
+  color: var(--bz-text);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+.bz-marwa-content .bz-table tbody tr:last-child td { border-bottom: none; }
+.bz-marwa-content .bz-table tbody tr:nth-child(even) { background: rgb(0 0 0 / .015); }
+.dark .bz-marwa-content .bz-table tbody tr:nth-child(even) { background: rgb(255 255 255 / .03); }
+.bz-marwa-content .bz-table td br { content: ""; }
+
+@media (max-width: 480px) {
+  .bz-marwa-content .bz-table { font-size: 0.78rem; }
+  .bz-marwa-content .bz-table th,
+  .bz-marwa-content .bz-table td { padding: 0.42rem 0.55rem; min-width: 5.5rem; }
+}
+
+/* ══ الملاحظات والتنبيهات ══ */
+.bz-marwa-content .bz-callout {
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.7rem;
+  border-inline-start: 3px solid var(--c, rgb(var(--bz-primary)));
+  background: color-mix(in srgb, var(--c, rgb(var(--bz-primary))) 8%, transparent);
+  font-size: 0.83rem;
+  line-height: 1.7;
+}
+.bz-marwa-content .bz-callout-t {
+  display: block;
+  font-weight: 800;
+  font-size: 0.78rem;
+  margin-bottom: 0.15rem;
+  color: var(--c, rgb(var(--bz-primary)));
+}
+.bz-marwa-content .bz-callout.is-note      { --c: #2563eb; }
+.bz-marwa-content .bz-callout.is-tip       { --c: #059669; }
+.bz-marwa-content .bz-callout.is-important { --c: #7c3aed; }
+.bz-marwa-content .bz-callout.is-warning   { --c: #d97706; }
+.bz-marwa-content .bz-callout.is-danger    { --c: #dc2626; }
+
+/* عناوين دلاليّة: تُصفَّر مقاساتها الافتراضية فلا تقفز الفقاعة */
+.bz-marwa-content h2,
+.bz-marwa-content h3,
+.bz-marwa-content h4,
+.bz-marwa-content h5 { all: unset; display: block; }
+.bz-marwa-content h2.bz-h1 { font-size: 1.15rem; font-weight: 800; margin: 0.6rem 0 0.4rem; color: var(--bz-text); }
+.bz-marwa-content h2.bz-h2 { font-size: 1.05rem; font-weight: 800; margin: 0.6rem 0 0.35rem; color: var(--bz-text); }
+.bz-marwa-content h3.bz-h3 { font-size: 0.95rem; font-weight: 700; margin: 0.5rem 0 0.3rem; color: rgb(var(--bz-primary)); }
+.bz-marwa-content h4.bz-h4 { font-size: 0.9rem; font-weight: 700; margin: 0.4rem 0 0.25rem; }
 
 /* ═══ حركات شاشة الانتظار والغرفة ═══ */
 @keyframes bz-pulse-slow {
@@ -3052,4 +3149,159 @@ body.bz-fullscreen-active .bz-voicebar {
 
 @media (prefers-reduced-motion: reduce) {
   .bz-fshint { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   الصفحات القانونية والتعريفية — طباعة نصّية للقراءة الطويلة
+
+   لا `prose` من إضافة Tailwind: إضافتها ليست في المشروع، وإدخال
+   تبعيّة من أجل أربع صفحات نصّية ثمنٌ لا يُقابله عائد.
+
+   والقياسات مقصودة: عرض السطر محدود بالحاوية (٣xl) لأنّ السطر الطويل
+   يُفقد القارئ موضعه عند الانتقال، وارتفاع السطر ١٫٩ لأنّ العربية
+   بحروفها المتّصلة تحتاج تنفّساً أكثر من اللاتينية.
+   ════════════════════════════════════════════════════════════ */
+.bz-legal { color: var(--bz-text); font-size: 14.5px; line-height: 1.95; }
+.bz-legal > * + * { margin-top: 0.9rem; }
+
+.bz-legal h2 {
+  font-family: var(--font-cairo), inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.45;
+  margin-top: 2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--bz-border);
+}
+.bz-legal h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 1.4rem;
+  color: rgb(var(--bz-primary));
+}
+.bz-legal p { color: var(--bz-text-2, var(--bz-text)); }
+.bz-legal strong { font-weight: 800; }
+.bz-legal a {
+  color: rgb(var(--bz-primary));
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+.bz-legal ul, .bz-legal ol { padding-inline-start: 1.35rem; }
+.bz-legal ul { list-style: disc; }
+.bz-legal ol { list-style: decimal; }
+.bz-legal li + li { margin-top: 0.4rem; }
+.bz-legal li::marker { color: rgb(var(--bz-primary)); }
+
+/* بطاقة تُبرز التزاماً أو تنبيهاً داخل النصّ */
+.bz-legal .box {
+  border: 1px solid var(--bz-border);
+  border-inline-start: 3px solid rgb(var(--bz-primary));
+  border-radius: 0.75rem;
+  background: rgb(var(--bz-primary) / .05);
+  padding: 0.85rem 1rem;
+  font-size: 13.5px;
+}
+
+/* جدول موجز — يُمرَّر أفقياً على الهاتف بدل أن يكسر الشاشة */
+.bz-legal .tablewrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--bz-border);
+  border-radius: 0.75rem;
+}
+.bz-legal table { border-collapse: collapse; width: max-content; min-width: 100%; font-size: 13px; }
+.bz-legal th, .bz-legal td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--bz-border);
+  text-align: start;
+  vertical-align: top;
+  min-width: 8rem;
+}
+.bz-legal th { background: rgb(var(--bz-primary) / .07); font-weight: 800; white-space: nowrap; }
+.bz-legal tbody tr:last-child td { border-bottom: none; }
+
+@media (max-width: 480px) {
+  .bz-legal { font-size: 14px; }
+  .bz-legal h2 { font-size: 1.08rem; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   طباعة المقال — تُعاد أنماط الوسوم التي صفّرها Tailwind preflight
+
+   المقال يأتي HTML من قاعدة البيانات، فلا تصل إليه أصناف Tailwind.
+   وpreflight يُصفّر `h2` و`ul` و`blockquote`… فلولا هذا الملفّ لظهر
+   المقال كتلةً واحدة بلا عناوين ولا قوائم.
+
+   والقياسات للقراءة الطويلة بالعربية: سطر ١٫٩، وعرضٌ محدود بالحاوية.
+   ════════════════════════════════════════════════════════════ */
+.bz-article { color: var(--bz-text); font-size: 15.5px; line-height: 1.95; }
+.bz-article > * + * { margin-top: 1rem; }
+
+.bz-article h2 {
+  font-family: var(--font-cairo), inherit;
+  font-size: 1.35rem; font-weight: 800; line-height: 1.45;
+  margin-top: 2.2rem; padding-bottom: .5rem;
+  border-bottom: 1px solid var(--bz-border);
+}
+.bz-article h3 { font-size: 1.12rem; font-weight: 800; margin-top: 1.7rem; color: rgb(var(--bz-primary)); }
+.bz-article h4 { font-size: 1rem; font-weight: 800; margin-top: 1.3rem; }
+.bz-article strong { font-weight: 800; }
+.bz-article em { font-style: italic; }
+.bz-article mark { background: rgb(var(--bz-primary) / .16); padding: 0 .2em; border-radius: 3px; }
+
+.bz-article a {
+  color: rgb(var(--bz-primary)); font-weight: 700;
+  text-decoration: underline; text-underline-offset: 2px; word-break: break-word;
+}
+
+.bz-article ul, .bz-article ol { padding-inline-start: 1.4rem; }
+.bz-article ul { list-style: disc; }
+.bz-article ol { list-style: decimal; }
+.bz-article li + li { margin-top: .45rem; }
+.bz-article li::marker { color: rgb(var(--bz-primary)); }
+
+.bz-article blockquote {
+  border-inline-start: 3px solid rgb(var(--bz-primary));
+  background: rgb(var(--bz-primary) / .05);
+  border-radius: .6rem; padding: .8rem 1rem; color: var(--bz-text-muted);
+}
+
+/* الصور: `height:auto` مع الأبعاد المصرّحة تمنع قفزة التخطيط (CLS) */
+.bz-article img {
+  max-width: 100%; height: auto; border-radius: .75rem; display: block;
+  margin-inline: auto;
+}
+.bz-article figure { margin-block: 1.4rem; }
+.bz-article figcaption {
+  margin-top: .5rem; text-align: center;
+  font-size: 12.5px; color: var(--bz-text-muted);
+}
+
+.bz-article code {
+  font-family: ui-monospace, monospace; font-size: .88em; direction: ltr;
+  background: var(--bz-surface); border: 1px solid var(--bz-border);
+  border-radius: .35rem; padding: .1em .35em;
+}
+.bz-article pre {
+  direction: ltr; overflow-x: auto; background: var(--bz-surface);
+  border: 1px solid var(--bz-border); border-radius: .75rem; padding: .9rem;
+}
+.bz-article pre code { border: none; background: none; padding: 0; }
+
+.bz-article hr { border: none; border-top: 1px solid var(--bz-border); margin-block: 1.8rem; }
+
+/* الجدول داخل بطاقة تُمرَّر — نفس علاج جداول الشات بوت */
+.bz-article table { border-collapse: collapse; width: 100%; font-size: 13.5px; display: block; overflow-x: auto; }
+.bz-article th, .bz-article td {
+  padding: .55rem .75rem; border: 1px solid var(--bz-border);
+  text-align: start; vertical-align: top; min-width: 7rem;
+}
+.bz-article th { background: rgb(var(--bz-primary) / .07); font-weight: 800; }
+
+@media (max-width: 480px) {
+  .bz-article { font-size: 15px; }
+  .bz-article h2 { font-size: 1.2rem; }
+  .bz-article h3 { font-size: 1.05rem; }
 }

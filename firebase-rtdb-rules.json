@@ -408,6 +408,29 @@
         ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length <= 120"
       }
     },
+    "blog": {
+      // ══ المدوّنة ══
+      // قراءة عامّة: الخادم يقرأ المقالات عبر REST بلا مفتاح ليُصيّرها
+      // في HTML (شرط الفهرسة). والمسوّدات مقروءة أيضاً — ولا ضرر:
+      // صفحة المقال ترفض عرض ما ليس `published`، والمسوّدة ليست سرّاً
+      // بل مقالٌ لم يُنشر بعد.
+      // الكتابة للأدمن وحده — كما `guide/specialities` تماماً.
+      ".read": true,
+      "index": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".indexOn": ["publishedAt", "status"],
+        "$postId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['slug','title','status']) && newData.child('slug').val().length <= 80 && newData.child('title').val().length <= 200 && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'published'))"
+        }
+      },
+      "content": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$postId": {
+          // حدّ الحجم يحمي الباقة: مقال ٣٠٠ ألف حرف ليس مقالاً
+          ".validate": "!newData.exists() || (newData.hasChild('html') && newData.child('html').val().length <= 300000)"
+        }
+      }
+    },
     "guide": {
       ".read": true,
       "specialities": {

@@ -6,10 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash, faGraduationCap, faFilePen } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash, faGraduationCap, faFilePen, faUserGroup } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
+import { InviteSheet } from "@/features/rooms/invite-sheet";
 import { getRoom, type Room, promoteToMod, demoteMod, kickUser, unbanUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
@@ -175,6 +176,7 @@ export default function RoomPage() {
   const [examGradingOpen, setExamGradingOpen] = useState(false);
   const [exam, setExam] = useState<ExamSession | null>(null);
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [dockTab, setDockTab] = useState("chat");
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
@@ -789,8 +791,30 @@ export default function RoomPage() {
               <FontAwesomeIcon icon={faShareNodes} className="h-5 w-5 text-primary" />
               مشاركة الرابط
             </button>
+
+            {/* دعوة الأصدقاء — للمالك والمشرفين وحدهم. ولو أتحناها لكل
+                مشارك لصارت أداة إزعاج جماعيّ: كل مشارك × قائمة أصدقائه. */}
+            {isPrivileged && (
+              <button
+                onClick={() => { setMoreOpen(false); setInviteOpen(true); }}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
+              >
+                <FontAwesomeIcon icon={faUserGroup} className="h-5 w-5 text-primary" />
+                دعوة أصدقاء
+              </button>
+            )}
           </div>
         </BottomSheet>
+      )}
+
+      {/* درج دعوة الأصدقاء */}
+      {isPrivileged && room && (
+        <InviteSheet
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          roomId={roomId}
+          roomName={room.name || "غرفة دراسة"}
+        />
       )}
 
       {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}

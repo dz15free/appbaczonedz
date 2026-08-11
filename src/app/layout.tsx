@@ -5,6 +5,8 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
+import { Analytics } from "@/components/analytics";
+import { SITE_URL } from "@/lib/site-url";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
@@ -33,7 +35,7 @@ const cairo = Cairo({
   adjustFontFallback: true,
 });
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
+/* العنوان من المصدر الوحيد — كان مكرّراً في ثمانية ملفّات */
 const SITE_NAME = "BacZoneDZ";
 const SITE_TITLE = "BacZoneDZ — منصّة ومجتمع طلاب البكالوريا في الجزائر";
 const SITE_DESC =
@@ -158,6 +160,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <Preloader />
         <Providers>{children}</Providers>
+        {/* آخر ما في الصفحة، وبعد التفاعل — فلا يزاحم الرسم الأوّل */}
+        <Analytics />
       </body>
     </html>
   );

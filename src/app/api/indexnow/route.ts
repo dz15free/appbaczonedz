@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SITE_URL } from "@/lib/site-url";
 
 /* ════════════════════════════════════════════════════════════
    IndexNow — إبلاغ محرّكات البحث فور النشر
@@ -21,7 +22,8 @@ import { NextResponse } from "next/server";
    يستطيع أي أحد قصف محرّكات البحث به باسم موقعك.
    ════════════════════════════════════════════════════════════ */
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
+/* العنوان من المصدر الوحيد */
+const SITE = SITE_URL;
 const KEY = process.env.INDEXNOW_KEY || "";
 const DB = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
 const SECRET = process.env.FIREBASE_DB_SECRET || "";

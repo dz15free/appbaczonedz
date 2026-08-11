@@ -17,6 +17,9 @@ import {
   increment,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+import {
+  pruneMentions, mentionTargets, type MentionMap,
+} from "@/features/community/mentions";
 import { awardActivity } from "@/features/gamification/points";
 import { tryPushNotification } from "@/lib/push";
 
@@ -49,6 +52,8 @@ export interface Post {
   subject?: string;
   locked?: boolean;
   editedAt?: number;
+  /** الإشارات (@): معرّف ← اسم. النصّ يبقى نظيفاً والربط بالمعرّف. */
+  mentions?: MentionMap;
 }
 export interface Comment {
   id: string;
@@ -58,10 +63,14 @@ export interface Comment {
   text: string;
   createdAt: number;
   parentId?: string;
+  mentions?: MentionMap;
 }
 export interface Person {
   uid: string;
   name: string;
+  /** الدور — يُستعمل لمنع «إضافة صديق» للإدارة. اختياريّ فلا يكسر
+      المواضع التي تبني `Person` من اسم ومعرّف وحدهما. */
+  role?: string;
 }
 export interface Thread {
   uid: string;
@@ -88,7 +97,8 @@ export async function createPost(
   visibility: "public" | "friends" | "private" = "public",
   subject?: string,
   authorRole?: string,
-  media?: { kind: "image" | "video"; thumb?: string; full?: string; url?: string; name?: string }[]
+  media?: { kind: "image" | "video"; thumb?: string; full?: string; url?: string; name?: string }[],
+  mentions?: MentionMap
 ) {
   const post: Record<string, unknown> = {
     authorId,
@@ -130,9 +140,24 @@ export async function createPost(
     post.attachmentKind = attachment.kind;
     if (attachment.name) post.fileName = attachment.name;
   }
+  const clean = mentions ? pruneMentions(post.text as string, mentions) : {};
+  if (Object.keys(clean).length) post.mentions = clean;
+
   // حماية أخيرة: أي `undefined` متبقٍّ يجعل RTDB يرفض الكتابة كاملةً
-  await push(ref(rtdb, "community/posts"), stripUndefined(post));
+  const added = await push(ref(rtdb, "community/posts"), stripUndefined(post));
   await awardActivity(authorId, "post");
+
+  /* إشعار المُشار إليهم — بعد نجاح النشر لا قبله، فلا يصل إشعار إلى
+     منشور لم يُنشر. ولا يُشعر المُشير نفسه. */
+  const targets = mentionTargets(clean, authorId);
+  if (targets.length) {
+    const who = await getUserName(authorId);
+    await Promise.allSettled(targets.map((uid) => addNotification(uid, {
+      type: "mention",
+      text: `${who} أشار إليك في منشور`,
+      link: `/community/${added.key}`,
+    })));
+  }
 }
 
 /** يحذف كل الحقول ذات القيمة undefined (RTDB يرفضها ويُلغي الكتابة) */
@@ -293,11 +318,55 @@ export function listenUserPosts(authorUid: string, myUid: string, cb: (posts: Po
   });
 }
 
+/** (منشور:مصوّت) أُشعِر في هذه الجلسة — يمنع مصنع الاشعارات بالتذبذب */
+const upvoteNotified = new Set<string>();
+
 // تصويت: 1 (إعجاب/رفع) أو -1 (خفض)؛ الضغط مجدداً يلغي
 export async function votePost(postId: string, uid: string, value: 1 | -1, current: number) {
   const r = ref(rtdb, `community/posts/${postId}/votes/${uid}`);
-  if (current === value) await remove(r);
-  else await set(r, value);
+  if (current === value) { await remove(r); return; }
+  await set(r, value);
+
+  /* 🐛 لم يكن هناك أيّ إشعار للتصويت — يرفع الطلبة منشوراً فلا يعلم
+     صاحبه. نُشعره الآن، وبأربعة قيود تمنع الإزعاج:
+
+     ١) عند الرفع وحده. إشعار «أحدهم خفّض منشورك» عقاب لا خبر.
+     ٢) عند التحوّل من «بلا تصويت» إلى رفع فقط — لا عند الانتقال من
+        خفضٍ إلى رفع، وإلّا صار التذبذب على الزرّ مصنعَ اشعارات.
+     ٣) لا يُشعر أحد نفسه.
+     ٤) الفشل صامت: `addNotification` تكتم أخطاءها، والتصويت نفسه
+        وقع قبلها فلا يُبطله فشل إشعار. */
+  if (value !== 1 || current === 1 || current === -1) return;
+
+  /* ولا يكفي شرط «من صفر إلى رفع»: الضغط المتكرّر يمرّ ١ ← ٠ ← ١ …
+     فيصير الزرّ مصنع اشعارات. فنمنع التكرار لكل (منشور، مصوّت).
+
+     ولماذا في الذاكرة لا في قاعدة البيانات؟ لأنّ قواعد RTDB تسمح
+     بالكتابة تحت `community/posts/$id` في `votes/$uid` و`commentCount`
+     و`locked` وحدها — فعلامةُ «أُشعِر» تحتاج سطراً في القواعد، وتغييرُ
+     القواعد ممنوع في هذه المرحلة. وقراءة اشعارات الطرف الآخر ممنوعة
+     أيضاً (كلٌّ يقرأ اشعاراته).
+
+     فهذا يمنع التكرار داخل الجلسة — وهو موضع الإزعاج الفعليّ — ويبقى
+     التكرار ممكناً بعد تحديث الصفحة. الحلّ الدائم سطرٌ واحد في القواعد
+     (`voteNotified`)، وهو متاح متى أذنتَ به. */
+  const once = `${postId}:${uid}`;
+  if (upvoteNotified.has(once)) return;
+  upvoteNotified.add(once);
+
+  try {
+    const snap = await get(ref(rtdb, `community/posts/${postId}`));
+    const post = snap.val() as { authorId?: string; text?: string } | null;
+    if (!post?.authorId || post.authorId === uid) return;
+    const who = await getUserName(uid);
+    await addNotification(post.authorId, {
+      type: "post_upvote",
+      text: `${who} صوّت لمنشورك`,
+      link: `/community/${postId}`,
+    });
+  } catch {
+    /* قراءة المنشور فشلت — لا نُفشل التصويت من أجل إشعار */
+  }
 }
 
 /* ───────── التعليقات ───────── */
@@ -307,7 +376,8 @@ export async function addComment(
   authorName: string,
   text: string,
   parentId?: string,
-  authorRole?: string
+  authorRole?: string,
+  mentions?: MentionMap
 ) {
   const data: Record<string, unknown> = {
     authorId,
@@ -317,9 +387,62 @@ export async function addComment(
   };
   if (authorRole) data.authorRole = authorRole;
   if (parentId) data.parentId = parentId;
-  await push(ref(rtdb, `community/comments/${postId}`), data);
+  const cleanMentions = mentions ? pruneMentions(text.trim(), mentions) : {};
+  if (Object.keys(cleanMentions).length) data.mentions = cleanMentions;
+  const added = await push(ref(rtdb, `community/comments/${postId}`), data);
   await update(ref(rtdb, `community/posts/${postId}`), { commentCount: increment(1) });
   await awardActivity(authorId, "comment");
+
+  /* 🐛 لم يكن هناك أيّ إشعار للتعليقات ولا للردود — يُعلّق أحدهم على
+     منشورك أو يردّ على تعليقك فلا تعلم إلّا إن عدتَ إلى المنشور بنفسك.
+
+     ونُرسل **إشعاراً واحداً لكل شخص** لا اثنين: من يردّ على تعليقٍ
+     داخل منشوره صاحبُه يجب أن يصله «ردّ على تعليقك» وحده، لا هو
+     و«تعليق على منشورك» معه. `seen` تحرس ذلك، وتحرس أيضاً ألّا يُشعر
+     المعلّق نفسه. */
+  try {
+    const commentId = added.key ?? "";
+    const link = commentId ? `/community/${postId}#c-${commentId}` : `/community/${postId}`;
+    const who = await getUserName(authorId);
+    const seen = new Set<string>([authorId]);
+
+    /* الإشارة أوّلاً وأخصّ: من أُشير إليه صراحةً يصله «أشار إليك» لا
+       «علّق على منشورك». إشعاران عن فعلٍ واحد يُقرأان خللاً. */
+    for (const uid of mentionTargets(cleanMentions, authorId)) {
+      if (seen.has(uid)) continue;
+      seen.add(uid);
+      await addNotification(uid, {
+        type: "mention",
+        text: `${who} أشار إليك في تعليق`,
+        link,
+      });
+    }
+
+    if (parentId) {
+      const ps = await get(ref(rtdb, `community/comments/${postId}/${parentId}`));
+      const parent = ps.val() as { authorId?: string } | null;
+      if (parent?.authorId && !seen.has(parent.authorId)) {
+        seen.add(parent.authorId);
+        await addNotification(parent.authorId, {
+          type: "comment_reply",
+          text: `${who} ردّ على تعليقك`,
+          link,
+        });
+      }
+    }
+
+    const snap = await get(ref(rtdb, `community/posts/${postId}`));
+    const post = snap.val() as { authorId?: string } | null;
+    if (post?.authorId && !seen.has(post.authorId)) {
+      await addNotification(post.authorId, {
+        type: "post_comment",
+        text: `${who} علّق على منشورك`,
+        link,
+      });
+    }
+  } catch {
+    /* التعليق نُشر فعلاً — لا نُفشله من أجل إشعار */
+  }
 }
 
 export function listenComments(postId: string, cb: (comments: Comment[]) => void) {
@@ -343,7 +466,7 @@ export async function searchUsers(term: string, myUid: string): Promise<Person[]
   for (const snap of [sn, se]) {
     const val = (snap.val() as Record<string, any>) ?? {};
     for (const [uid, u] of Object.entries(val) as [string, any][]) {
-      if (uid !== myUid) out.set(uid, { uid, name: u.name ?? "طالب" });
+      if (uid !== myUid) out.set(uid, { uid, name: u.name ?? "طالب", role: u.role });
     }
   }
   return [...out.values()];
@@ -362,7 +485,10 @@ export async function sendFriendRequest(from: Person, toUid: string) {
     const notifRef = await push(ref(rtdb, `notifications/${toUid}`), {
       type: "friend_request",
       text: `${from.name} أرسل لك طلب صداقة`,
-      link: "/community",
+      /* 🐛 كان `/community` فيهبط المستقبِل على تبويب المنشورات وواجهة
+         القبول في تبويب «الأشخاص» لا يصل إليه. والوجهة مفروضة أيضاً في
+         `notif-registry` فتُصلَح الاشعارات المخزَّنة من قبل. */
+      link: "/community?tab=people",
       read: false,
       createdAt: Date.now(),
     });
@@ -375,7 +501,7 @@ export async function sendFriendRequest(from: Person, toUid: string) {
   tryPushNotification(toUid, {
     title: "طلب صداقة جديد 👋",
     body: `${from.name} أرسل لك طلب صداقة`,
-    link: "/community",
+    link: "/community?tab=people",
   });
 }
 
@@ -420,6 +546,9 @@ export async function rejectFriendRequest(myUid: string, fromUid: string) {
   await remove(ref(rtdb, `friendRequests/${myUid}/${fromUid}`));
 }
 
+/* 🐛 هذه الدالّة كانت مكتوبة ومكتملة و**لا تُستدعى من أيّ مكان** —
+   لا زرّ في المنصّة كلّها يحذف صداقة. صارت الآن معروضة في صفحة الملفّ
+   الشخصي وفي قائمة «أصدقائي». */
 export async function removeFriend(myUid: string, otherUid: string) {
   await remove(ref(rtdb, `friends/${myUid}/${otherUid}`));
   await remove(ref(rtdb, `friends/${otherUid}/${myUid}`));
@@ -620,7 +749,9 @@ export async function getFriendSuggestions(
     );
     const val = (snap.val() as Record<string, any>) ?? {};
     return Object.entries(val)
-      .filter(([id, u]) => id !== uid && !excludeUids.has(id) && u.name)
+      /* الإدارة تُستثنى من الاقتراحات: التواصل معها بالدعم لا بالصداقة،
+         فاقتراحُها يدفع الطالب إلى طلبٍ لا يُقبل أبداً. */
+      .filter(([id, u]) => id !== uid && !excludeUids.has(id) && u.name && u.role !== "admin")
       .slice(0, limit)
       .map(([id, u]) => ({ uid: id, name: u.name, track: u.track }));
   } catch { return []; }

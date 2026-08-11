@@ -11,6 +11,7 @@ import {
   faLocationDot,
   faStar,
   faUserPlus,
+  faUserMinus,
   faUserXmark,
   faMessage,
   faArrowUp,
@@ -34,6 +35,7 @@ import {
   listenUserPosts,
   listenFriends,
   listenSentRequests,
+  removeFriend,
   sendFriendRequest,
   cancelFriendRequest,
   votePost,
@@ -62,6 +64,7 @@ export default function UserProfilePage() {
   const [theirFriends, setTheirFriends] = useState<Person[]>([]);
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [sentLocal, setSentLocal] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [nameParam, setNameParam] = useState("");
 
   const isMe = user?.uid === uid;
@@ -113,6 +116,15 @@ export default function UserProfilePage() {
     if (!user) return;
     await cancelFriendRequest(user.uid, uid);
     setSentLocal(false);
+  }
+  async function unfriend() {
+    if (!user) return;
+    /* تأكيد لازم: الحذف يمسّ الطرفين ولا تراجع عنه، والزرّ بجوار
+       «مراسلة» فيُضغط خطأً. */
+    if (!window.confirm(`حذف ${name} من أصدقائك؟`)) return;
+    setBusy(true);
+    try { await removeFriend(user.uid, uid); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -170,12 +182,24 @@ export default function UserProfilePage() {
           {!isMe && !isAdmin && (
             <div className="mt-4 flex gap-2">
               {isFriend ? (
-                <Link
-                  href={`/messages/${uid}?name=${encodeURIComponent(name)}`}
-                  className="flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white"
-                >
-                  <FontAwesomeIcon icon={faMessage} className="h-4 w-4" /> مراسلة
-                </Link>
+                <>
+                  <Link
+                    href={`/messages/${uid}?name=${encodeURIComponent(name)}`}
+                    className="flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-2 text-sm font-bold text-white"
+                  >
+                    <FontAwesomeIcon icon={faMessage} className="h-4 w-4" /> مراسلة
+                  </Link>
+                  {/* 🐛 لم يكن في المنصّة زرّ لحذف الصداقة إطلاقاً — وهو
+                      المكان الطبيعي للبحث عنه: ملفّ الشخص نفسه. */}
+                  <button
+                    onClick={unfriend}
+                    disabled={busy}
+                    className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger/10 hover:text-danger disabled:opacity-40"
+                  >
+                    <FontAwesomeIcon icon={faUserMinus} className="h-4 w-4" />
+                    {busy ? "…" : "حذف الصداقة"}
+                  </button>
+                </>
               ) : isSent ? (
                 <button onClick={cancelReq} className="flex items-center gap-2 rounded-md bg-surface px-5 py-2 text-sm text-text-muted hover:text-danger">
                   <FontAwesomeIcon icon={faUserXmark} className="h-4 w-4" /> إلغاء الطلب

@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBell, faUserPlus, faUserCheck, faMessage, faCheckDouble, faBellSlash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBell, faUserPlus, faUserCheck, faMessage, faCheckDouble, faBellSlash,
+  faComment, faReply, faArrowUp, faAt, faUsers, faCalendarCheck, faBookOpen,
+  faCartShopping, faStar, faBullseye, faGraduationCap, faBullhorn, faHeadset,
+  faCreditCard,
+} from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { AppShell } from "@/components/app-shell";
 import { isPushSupported, subscribePush, unsubscribePush } from "@/lib/push";
@@ -15,13 +20,29 @@ import {
   type AppNotification,
 } from "@/features/community/social";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { notifMeta, notifLink, type NotifIcon, type NotifTone } from "@/features/notifications/registry";
 
-function icon(type: string) {
-  if (type === "friend_request") return faUserPlus;
-  if (type === "friend_accept") return faUserCheck;
-  if (type === "dm") return faMessage;
-  return faBell;
-}
+/* 🐛 كانت الأيقونة ثلاثة `if` وما بقي جرس عامّ — فلا يعرف الطالب صنف
+   الاشعار قبل قراءته. الآن كل نوع أيقونته ونبرته من السجلّ الموحّد.
+   والترجمة إلى FontAwesome تبقى **هنا** فقط، فلا يجرّ السجلّ مكتبة
+   أيقونات معه ويبقى صالحاً للخادم. */
+const ICONS: Record<NotifIcon, typeof faBell> = {
+  userPlus: faUserPlus, userCheck: faUserCheck, message: faMessage,
+  comment: faComment, reply: faReply, upvote: faArrowUp, at: faAt,
+  room: faUsers, calendar: faCalendarCheck, course: faBookOpen,
+  cart: faCartShopping, star: faStar, target: faBullseye,
+  graduation: faGraduationCap, megaphone: faBullhorn, support: faHeadset,
+  payment: faCreditCard, bell: faBell,
+};
+
+const TONES: Record<NotifTone, string> = {
+  primary: "bg-primary/10 text-primary",
+  green: "bg-emerald-500/10 text-emerald-600",
+  amber: "bg-amber-500/10 text-amber-600",
+  red: "bg-red-500/10 text-red-600",
+  violet: "bg-violet-500/10 text-violet-600",
+  muted: "bg-text-muted/10 text-text-muted",
+};
 
 function timeAgo(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -119,22 +140,26 @@ export default function NotificationsPage() {
         ) : (
           <div className="space-y-2">
             {items.map((n) => {
+              const meta = notifMeta(n.type);
               const body = (
-                <div className={`flex items-center gap-3 rounded-lg border p-3 ${n.read ? "border-border bg-surface" : "border-primary/40 bg-primary/5"}`}>
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
-                    <FontAwesomeIcon icon={icon(n.type)} className="h-4 w-4" />
+                <div className={`flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 ${n.read ? "border-border bg-surface" : "border-primary/40 bg-primary/5"}`}>
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${TONES[meta.tone]}`}>
+                    <FontAwesomeIcon icon={ICONS[meta.icon]} className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
+                    <span className="text-[10.5px] font-extrabold text-text-muted">{meta.label}</span>
                     <p className="text-sm">{n.text}</p>
                     <span className="text-xs text-text-muted">{timeAgo(n.createdAt)}</span>
                   </div>
                   {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </div>
               );
-              return n.link ? (
-                <Link key={n.id} href={n.link}>{body}</Link>
-              ) : (
-                <div key={n.id}>{body}</div>
+              /* كل اشعار قابل للنقر الآن. وكان الاشعار بلا `link` يُعرض
+                 `<div>` أصمّ — والحقل يُملأ بسلسلة فارغة افتراضياً في
+                 `addNotification`، فكان أيّ منشئ ينسى الرابط يُنتج
+                 اشعاراً ميّتاً. `notifLink` تضمن وجهةً دائماً. */
+              return (
+                <Link key={n.id} href={notifLink(n)}>{body}</Link>
               );
             })}
           </div>

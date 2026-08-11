@@ -25,6 +25,7 @@ import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
 import { useSiteSettings, saveSetting, saveSiteSettings, type FooterLink, type AdSlotConfig } from "@/features/settings/use-site-settings";
 import { AD_PLACEMENTS } from "@/components/ui/ad-slot";
+import { LEGAL_LINKS } from "@/features/settings/legal-links";
 import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllCodes, deleteAccessCode, splitAmount, markSettled, type AccessCode } from "@/features/paid/paid-access";
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
@@ -36,6 +37,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AdminCourses } from "@/features/courses/admin-courses";
 import { AdminStudyFeed } from "@/features/feed/admin-feed";
 import { AdminMissions } from "@/features/daily/admin-missions";
+import { BlogAdmin } from "@/features/blog/blog-admin";
 
 interface Report {
   firebaseKey: string;
@@ -162,6 +164,7 @@ const TABS = [
   { id: "identity",  label: "الهوية",     icon: faImage },
   { id: "landing",   label: "الرئيسية (قبل الدخول)", icon: faFont },
   { id: "welcome",   label: "مرحباً بعودتك", icon: faFont },
+  { id: "blog",      label: "المقالات",   icon: faFont },
   { id: "footer",    label: "الفوتر",     icon: faLink },
   { id: "control",   label: "التحكّم",    icon: faWrench },
   { id: "ads",       label: "الإعلانات",  icon: faBullhorn },
@@ -707,6 +710,12 @@ export default function AdminPage() {
         {tab === "welcome" && <WelcomeEditor />}
 
         {/* ════ الفوتر ════ */}
+        {tab === "blog" && user && (
+          /* ⚠️ لا علاقة لهذا بمحرّر الغرف (`room-notes.tsx`) — محرّر
+             مستقلّ في `features/blog`، فتعديل المدوّنة لا يمسّ حصّة. */
+          <BlogAdmin uid={user.uid} />
+        )}
+
         {tab === "footer" && (
           <div className="space-y-4">
             <Card icon={faFont} title="نص الفوتر">
@@ -732,6 +741,34 @@ export default function AdminPage() {
                 </button>
               </div>
               <SaveBtn onClick={() => save("footerLinks", () => saveSetting("footerLinks", footerLinks))} loading={!!saving.footerLinks} />
+            </Card>
+
+            {/* بطاقة تفسير — بلاها يظنّ الأدمن أنّ الروابط القانونية
+                اختفت أو أنّها مكتوبة في مكان لا يجده. */}
+            <Card icon={faLink} title="الروابط القانونية (ثابتة)">
+              <p className="text-[12.5px] leading-[1.9] text-text-muted">
+                هذه الروابط تظهر في الفوتر <b>تلقائياً في كل صفحات الموقع</b>،
+                ولا تُضاف من الأعلى ولا تُحذف من هنا. وذلك مقصود: وجود سياسة
+                الخصوصية شرطٌ في سياسات Google AdSense، فلا يصحّ أن يتعلّق قبول
+                الموقع بألّا يُحذف صفٌّ سهواً.
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                {LEGAL_LINKS.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] font-bold text-primary hover:underline"
+                  >
+                    {l.label} <span className="text-text-muted" dir="ltr">{l.href}</span>
+                  </a>
+                ))}
+              </div>
+              <p className="mt-2.5 text-[12px] text-text-muted">
+                لتعديل نصوص هذه الصفحات، يُطلب التغيير من المطوّر — نصٌّ قانونيّ
+                يُراجع قبل نشره لا يُحرَّر في حقل إدخال.
+              </p>
             </Card>
           </div>
         )}

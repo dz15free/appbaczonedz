@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { splitMentions, type MentionMap } from "@/features/community/mentions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLink } from "@fortawesome/free-solid-svg-icons";
 
@@ -62,7 +64,19 @@ async function fetchPreview(url: string): Promise<PreviewData | null> {
 }
 
 /* ─────────── نص بروابط قابلة للضغط ─────────── */
-export function Linkify({ text, className }: { text: string; className?: string }) {
+/* ════════════════════════════════════════════════════════════
+   الإشارات (@) داخل النصّ
+
+   أُضيفت هنا لا في مكوّن جديد، لأنّ `Linkify` هي بوّابة كل نصّ في
+   المنصّة: المنشورات، والتعليقات، والرسائل الخاصّة، ودردشة الغرفة.
+   إضافتها هنا تُعطي المنشن لكل هذه الأسطح بحقل واحد، ومكوّنٌ منفصل
+   كان سيعني إدراكاً ناقصاً في بعضها.
+
+   والترتيب مقصود: الإشارات تُقطَّع **أوّلاً**، ثم يُبحث عن الروابط داخل
+   المقاطع العادية وحدها. بلا هذا الترتيب قد يبتلع محدّد النطاقات جزءاً
+   من اسمٍ فيه نقطة.
+   ════════════════════════════════════════════════════════════ */
+function linkifyPlain(text: string, keyBase: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let last = 0;
   let i = 0;
@@ -71,7 +85,7 @@ export function Linkify({ text, className }: { text: string; className?: string 
     if (offset > last) parts.push(text.slice(last, offset));
     parts.push(
       <a
-        key={`l${i++}`}
+        key={`${keyBase}l${i++}`}
         href={normalizeHref(match)}
         target="_blank"
         rel="noopener noreferrer nofollow"
@@ -87,7 +101,38 @@ export function Linkify({ text, className }: { text: string; className?: string 
   });
 
   if (last < text.length) parts.push(text.slice(last));
-  return <span className={className}>{parts.length ? parts : text}</span>;
+  return parts.length ? parts : [text];
+}
+
+export function Linkify({ text, className, mentions }: {
+  text: string;
+  className?: string;
+  /** خريطة الإشارات المحفوظة مع النصّ: معرّف ← اسم */
+  mentions?: MentionMap | null;
+}) {
+  const segments = splitMentions(text, mentions);
+  const out: ReactNode[] = [];
+
+  segments.forEach((seg, si) => {
+    if (seg.uid) {
+      out.push(
+        <Link
+          key={`m${si}`}
+          href={`/u/${seg.uid}`}
+          /* `stopPropagation` ضروريّة: التعليق أو المنشور نفسه قابل
+             للنقر في بعض المواضع، فبلاها يفتح المنشور بدل الملفّ. */
+          onClick={(e) => e.stopPropagation()}
+          className="rounded font-extrabold text-primary transition hover:bg-primary/10 hover:underline"
+        >
+          {seg.text}
+        </Link>,
+      );
+      return;
+    }
+    out.push(...linkifyPlain(seg.text, `s${si}`));
+  });
+
+  return <span className={className}>{out.length ? out : text}</span>;
 }
 
 /* ─────────── بطاقة المعاينة ─────────── */
@@ -161,13 +206,14 @@ export function LinkPreview({ url, compact }: { url: string; compact?: boolean }
  * noPreview: يُمرَّر حين يحوي المنشور صوراً أو فيديو — عندها الوسائط
  * هي المحتوى، وبطاقة المعاينة تصبح تكراراً بصرياً مزعجاً (سلوك فيسبوك).
  */
-export function RichText({ text, className, compact, noPreview }: {
+export function RichText({ text, className, compact, noPreview, mentions }: {
   text: string; className?: string; compact?: boolean; noPreview?: boolean;
+  mentions?: MentionMap | null;
 }) {
   const url = extractFirstUrl(text);
   return (
     <>
-      <Linkify text={text} className={className} />
+      <Linkify text={text} className={className} mentions={mentions} />
       {url && !noPreview && <LinkPreview url={url} compact={compact} />}
     </>
   );

@@ -7,6 +7,7 @@ import {
   faLink, faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
+import { SITE_URL } from "@/lib/site-url";
 
 /* ════════════════════════════════════════════════════════════
    الأرشفة — لوحة الأدمن
@@ -21,7 +22,8 @@ import { useAuth } from "@/features/auth/auth-provider";
      ٣. زرّ الإبلاغ هنا: يدفع الروابط إلى شبكة IndexNow فوراً.
    ════════════════════════════════════════════════════════════ */
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
+/* العنوان من المصدر الوحيد */
+const SITE = SITE_URL;
 
 export function SeoPanel() {
   const { user } = useAuth();

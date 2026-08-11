@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faComment,
   faUserPlus,
+  faUserMinus,
   faCheck,
   faXmark,
   faMessage,
@@ -48,6 +49,7 @@ import {
   rejectFriendRequest,
   listenFriendRequests,
   listenFriends,
+  removeFriend,
   listenSentRequests,
   listenThreads,
   getFriendSuggestions,
@@ -58,6 +60,8 @@ import {
 import { RichText } from "@/components/ui/linkify";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { ShareButton } from "@/components/ui/share-sheet";
+import { MentionInput } from "@/components/ui/mention-input";
+import type { MentionMap } from "@/features/community/mentions";
 import { PostMediaGrid, isSupportedVideoUrl } from "@/features/community/post-media";
 
 const MAX_IMAGES = 6;
@@ -70,6 +74,32 @@ export default function CommunityPage() {
   const profile = useProfile(user?.uid);
   const me: Person | null = user ? { uid: user.uid, name: profile?.name || user.displayName || "طالب" } : null;
   const [tab, setTab] = useState<Tab>("feed");
+
+  /* 🐛 **إشعار طلب الصداقة كان يهبط على تبويب المنشورات.** الصفحة تفتح
+     على `feed` دائماً و**لا تقرأ `?tab=` إطلاقاً**، فكان الرابط «يعمل»
+     ولا يوصل: الطالب يرى الأخبار وواجهة القبول/الرفض في تبويب آخر لا
+     يعرف أنّ عليه فتحه.
+
+     ويُقرأ من `window.location` لا بـ`useSearchParams`: الأخيرة تُلزم
+     Next بحدّ `Suspense` وتُخرج الصفحة من التصيير الساكن، وهذا ثمن لا
+     داعي له لقراءة معامل واحد في صفحة عميل أصلاً.
+
+     ويُحدَّث العنوان عند تبديل التبويب (`replaceState` بلا تنقّل) حتى
+     يصير التبويب قابلاً للمشاركة وللرجوع إليه. */
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "people" || t === "messages" || t === "feed") setTab(t);
+  }, []);
+
+  function goTab(next: Tab) {
+    setTab(next);
+    try {
+      const url = new URL(window.location.href);
+      if (next === "feed") url.searchParams.delete("tab");
+      else url.searchParams.set("tab", next);
+      window.history.replaceState(null, "", url.toString());
+    } catch { /* بلا History API — التبويب يعمل والعنوان لا يتحدّث */ }
+  }
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -94,7 +124,7 @@ export default function CommunityPage() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => goTab(t.id)}
               className={`min-h-[40px] flex-1 shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-bold transition ${
                 tab === t.id ? "bg-gradient-primary text-white" : "text-text-muted"
               }`}
@@ -154,6 +184,7 @@ function Feed({ me, isAdmin, myRole, track }: {
   const imageInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const [mentions, setMentions] = useState<MentionMap>({});
 
   /* `?compose=1` يفتح المحرّر مباشرة — يأتي من زرّ «أضف منشوراً» في
      أدوات التدريس. بلا هذا يهبط الأستاذ على القائمة ويبحث عن الحقل. */
@@ -227,8 +258,9 @@ function Feed({ me, isAdmin, myRole, track }: {
       ...pendingImages.map((i) => ({ kind: "image" as const, thumb: i.thumb, full: i.full, name: i.name })),
     ];
     try {
-      await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media);
+      await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media, mentions);
       setText("");
+      setMentions({});
       setPending(null);
       setPendingImages([]);
       setVideoUrl("");
@@ -273,14 +305,20 @@ function Feed({ me, isAdmin, myRole, track }: {
       <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4">
         <div className="flex gap-3">
           <LiveAvatar uid={me.uid} name={me.name || "ط"} size="md" className="shrink-0" />
-          <textarea
-            ref={composerRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="شارك سؤالاً أو فكرة أو ملخّصاً..."
-            rows={2}
-            className="min-h-[44px] flex-1 resize-none bg-transparent pt-2 text-sm outline-none placeholder:text-text-muted"
-          />
+          {/* حقل يدعم الإشارة (@) — والمرشَّحون أصدقاؤك */}
+          <div className="min-w-0 flex-1">
+            <MentionInput
+              textareaRef={composerRef}
+              value={text}
+              onChange={setText}
+              onMentionsChange={setMentions}
+              candidates={friends}
+              rows={2}
+              ariaLabel="اكتب منشوراً"
+              placeholder="شارك سؤالاً أو فكرة أو ملخّصاً… واستعمل @ للإشارة"
+              className="min-h-[44px] w-full resize-none bg-transparent pt-2 text-sm outline-none placeholder:text-text-muted"
+            />
+          </div>
         </div>
 
         {/* معاينة المرفق */}
@@ -421,7 +459,10 @@ function Feed({ me, isAdmin, myRole, track }: {
       )}
 
       {shown.map((p, pi) => {
-        const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId);
+        /* الإدارة لا تُضاف صديقاً — والدور محفوظ على المنشور نفسه
+           (`authorRole`) فلا حاجة لقراءة إضافية. */
+        const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId)
+          && p.authorRole !== "admin";
         /* عنصر دراسي بعد كل ثلاثة منشورات — لا اثنان متتاليان ولا
            خمسة في صفّ واحد. الأوّل عُرض فوق القائمة، فنبدأ من الثاني. */
         const inject = pi > 0 && (pi + 1) % 3 === 0
@@ -482,7 +523,7 @@ function Feed({ me, isAdmin, myRole, track }: {
             <div className="px-4 pt-2.5">
               {p.text && (
                 <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
-                  <RichText text={p.text} noPreview={!!p.media?.length || !!p.attachmentId} />
+                  <RichText text={p.text} noPreview={!!p.media?.length || !!p.attachmentId} mentions={p.mentions} />
                 </div>
               )}
             </div>
@@ -564,8 +605,21 @@ function People({ me }: { me: Person }) {
   const [sent, setSent] = useState<Record<string, boolean>>({});
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [suggestions, setSuggestions] = useState<{ uid: string; name: string; track?: string }[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const { user } = useAuth();
   const profile = useProfile(user?.uid);
+
+  async function unfriend(f: Person) {
+    if (!window.confirm(`حذف ${f.name} من أصدقائك؟`)) return;
+    setBusy(f.uid);
+    try {
+      await removeFriend(me.uid, f.uid);
+      /* لا تحديث يدويّ للقائمة: `listenFriends` مشترك حيّ فيصل الحذف
+         من قاعدة البيانات — وتحديثٌ يدويّ فوقه يُنتج وميضاً. */
+    } finally {
+      setBusy(null);
+    }
+  }
 
   useEffect(() => {
     const unsub = listenFriendRequests(me.uid, setRequests);
@@ -653,7 +707,12 @@ function People({ me }: { me: Person }) {
                   <LiveAvatar uid={p.uid} name={p.name} size="sm" />
                   {p.name}
                 </Link>
-                {isFriend ? (
+                {/* الإدارة لا تُضاف صديقاً — التواصل معها بالدعم. وكان
+                    الزرّ يظهر لها هنا فيُرسل الطالب طلباً لا يُقبل أبداً.
+                    وتُعرض شارة «الإدارة» فيُفهم غيابُ الزرّ ولا يُظنّ خللاً. */}
+                {p.role === "admin" ? (
+                  <span className="rounded-md bg-violet-500/10 px-2 py-1 text-[11px] font-extrabold text-violet-600">الإدارة</span>
+                ) : isFriend ? (
                   <span className="text-xs text-secondary">صديق</span>
                 ) : sent[p.uid] || sentSet.has(p.uid) ? (
                   <button onClick={() => cancelReq(p.uid)} className="rounded-md px-2 py-1 text-xs text-text-muted hover:text-danger">
@@ -683,10 +742,27 @@ function People({ me }: { me: Person }) {
                   <LiveAvatar uid={f.uid} name={f.name} size="sm" />
                   {f.name}
                 </Link>
-                <Link href={`/messages/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
-                  <FontAwesomeIcon icon={faMessage} className="h-3.5 w-3.5" />
-                  مراسلة
-                </Link>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Link href={`/messages/${f.uid}?name=${encodeURIComponent(f.name)}`} className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-1.5 text-sm text-primary">
+                    <FontAwesomeIcon icon={faMessage} className="h-3.5 w-3.5" />
+                    مراسلة
+                  </Link>
+                  {/* 🐛 لم يكن في المنصّة كلّها زرّ لحذف الصداقة، والدالّة
+                      `removeFriend` مكتوبة ولا تُستدعى. وهو حقّ أساسيّ في
+                      كل الشبكات: من أضفتَه تستطيع إزالته.
+
+                      وبتأكيد قبل التنفيذ: الحذف يمسّ الطرفين ولا تراجع
+                      عنه، وزرٌّ بضغطة واحدة بجوار «مراسلة» يُضغط خطأً. */}
+                  <button
+                    onClick={() => unfriend(f)}
+                    disabled={busy === f.uid}
+                    aria-label={`حذف صداقة ${f.name}`}
+                    title="حذف الصداقة"
+                    className="grid h-9 w-9 place-items-center rounded-md text-text-muted transition hover:bg-danger/10 hover:text-danger disabled:opacity-40"
+                  >
+                    <FontAwesomeIcon icon={faUserMinus} className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

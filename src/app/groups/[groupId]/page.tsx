@@ -29,6 +29,9 @@ import {
   type GroupMessage,
 } from "@/features/groups/groups";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
+import { MentionInput } from "@/components/ui/mention-input";
+import { Linkify } from "@/components/ui/linkify";
+import type { MentionMap } from "@/features/community/mentions";
 
 function timeHm(ts: number) {
   return new Date(ts).toLocaleTimeString("ar-DZ", { hour: "2-digit", minute: "2-digit" });
@@ -45,6 +48,7 @@ export default function GroupPage() {
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [myIds, setMyIds] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"chat" | "members" | "files">("chat");
+  const [mentions, setMentions] = useState<MentionMap>({});
   const [text, setText] = useState("");
   const [joining, setJoining] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -117,8 +121,10 @@ export default function GroupPage() {
   async function send() {
     if (!text.trim() || !isMember || !user) return;
     const t = text;
+    const m = mentions;
     setText("");
-    await sendGroupMessage(groupId, me, t);
+    setMentions({});
+    await sendGroupMessage(groupId, me, t, m);
   }
 
   return (
@@ -173,7 +179,7 @@ export default function GroupPage() {
                     <LiveAvatar uid={m.senderId} name={m.senderName} size="sm" className="h-8 w-8 self-end" />
                     <div className={`max-w-[75%] rounded-xl px-3 py-2 ${isMe ? "bg-primary text-white" : "bg-surface border border-border"}`}>
                       {!isMe && <span className="mb-0.5 block text-[11px] font-bold text-primary">{m.senderName}</span>}
-                      <p className="whitespace-pre-wrap text-sm">{m.text}</p>
+                      <p className="whitespace-pre-wrap text-sm"><Linkify text={m.text} mentions={m.mentions} /></p>
                       <span className={`mt-1 block text-[10px] ${isMe ? "text-white/70 text-left" : "text-text-muted text-right"}`}>{timeHm(m.createdAt)}</span>
                     </div>
                   </div>
@@ -183,13 +189,22 @@ export default function GroupPage() {
             </div>
             {isMember ? (
               <div className="flex items-center gap-2 border-t border-border bg-surface px-4 py-3">
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-                  placeholder="اكتب رسالتك..."
-                  className="flex-1 rounded-xl border border-border bg-background px-4 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-primary"
-                />
+                {/* المرشَّحون هنا **أعضاء المجموعة** لا الأصدقاء: الإشارة
+                    في مجموعة تخصّ من فيها، ومن ليس عضواً لا يرى الرسالة
+                    فإشعاره يُحيله إلى صفحة لا محتوى فيها له. */}
+                <div className="min-w-0 flex-1">
+                  <MentionInput
+                    value={text}
+                    onChange={setText}
+                    onMentionsChange={setMentions}
+                    candidates={members.map((m) => ({ uid: m.uid, name: m.name }))}
+                    onSubmit={send}
+                    rows={1}
+                    ariaLabel="اكتب رسالتك"
+                    placeholder="اكتب رسالتك… واستعمل @ للإشارة"
+                    className="w-full resize-none rounded-xl border border-border bg-background px-4 py-2 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-primary"
+                  />
+                </div>
                 <button onClick={send} disabled={!text.trim()} aria-label="إرسال" className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary text-white disabled:opacity-50">
                   <FontAwesomeIcon icon={faPaperPlane} className="h-4 w-4 -scale-x-100" />
                 </button>

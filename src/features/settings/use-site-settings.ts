@@ -142,9 +142,12 @@ const DEFAULTS: SiteSettings = {
   heroTitle: "ادرس بذكاء. ونجح في البكالوريا.",
   heroSubtitle: "غرف دراسة مباشرة، مساعدة ذكية، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.",
   footerText: `© ${new Date().getFullYear()} BacZoneDZ. جميع الحقوق محفوظة.`,
+  /* «اتصل بنا» كان يخرج إلى المدوّنة (`baczonedz.com/p/contact.html`)
+     مع أنّ للمنصّة صفحةً خاصّة بها الآن. والروابط القانونية لا تُكتب
+     هنا: هي ثابتة في `legal-links.ts` ويرسمها الفوتر في صفٍّ لا يُحذف
+     — فامتثال AdSense لا يجوز أن يتعلّق بألّا يحذف أحدٌ صفّاً سهواً. */
   footerLinks: [
     { label: "الموقع الرئيسي", href: "https://www.baczonedz.com" },
-    { label: "اتصل بنا", href: "https://www.baczonedz.com/p/contact.html" },
   ],
   maintenanceMode: false,
   allowRegistration: true,
