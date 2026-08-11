@@ -311,9 +311,17 @@ export function RoomNotes({
     setPublishing(true);
     if (debounce.current) clearTimeout(debounce.current);
     try {
-      await saveRoomNotesDraft(roomId, next.slice(0, MAX_CHARS));
-      await saveRoomNotes(roomId, next.slice(0, MAX_CHARS));
+      const body = next.slice(0, MAX_CHARS);
+      await saveRoomNotesDraft(roomId, body);
+      await saveRoomNotes(roomId, body);
       typing.current = false;
+      /* 🐛 كانت الشارة تبقى «مسودّة» بعد نشر ناجح.
+         السبب: `unpublished` تقارن `html` بـ`published`، والنشر يكتب
+         ما في المحرّر (`next`) بينما حالة `html` قد تكون متأخّرة عن
+         آخر ضغطة (الحفظ مؤجَّل بـdebounce). فيختلفان رغم أنّ المكتوب
+         في قاعدة البيانات هو الأحدث.
+         نُزامن الحالة مع ما نُشر فعلاً — فتُطابق المقارنةُ الواقع. */
+      setHtml(body);
       setSaving("saved");
     } finally {
       setPublishing(false);

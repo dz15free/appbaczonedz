@@ -71,13 +71,29 @@ export function useProfileState(uid?: string) {
   // من الذاكرة فور التركيب.
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  /* 🐛 **سبب اختفاء صفحة «إنشاء دورة»** — سباق حالة لا صلاحيات.
+
+     حين تكون المصادقة قيد التحميل يصل `uid` غير معرّف، فكنّا نضع
+     `loading=false` → أي `ready=true` بينما `profile=null` → `isStaff`
+     خطأ. ثم تصل المصادقة، وفي **التصيير الذي يلي وصول المستخدم مباشرة**
+     — قبل أن يُعيد هذا الخطّاف اشتراكه — تبقى الحالة القديمة، فيرى
+     الحارس «جاهز ولستَ أستاذاً» ويُعيد التوجيه.
+
+     الحلّ: `ready` تعني **«حمّلتُ هذا المعرّف بعينه»** لا «لستُ
+     مشغولاً». نحفظ المعرّف الذي اكتملت قراءته، فتُصبح الجاهزية
+     **متزامنة مع الـuid** ولا يمكن أن تسبقه. ويُصلح هذا كل حارس في
+     الموقع لا صفحة الدورات وحدها. */
+  const [loadedUid, setLoadedUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (!uid) {
       setProfile(null);
       setLoading(false);
+      setLoadedUid(null);
       return;
     }
+    // معرّف جديد: نعود إلى «قيد التحميل» حتى تصل بياناته
+    setLoading(true);
 
     const cached = readCache(uid);
     if (cached) setProfile(cached);   // العرض فوري بلا وميض
@@ -102,6 +118,7 @@ export function useProfileState(uid?: string) {
 
         setProfile(next);
         setLoading(false);
+        setLoadedUid(uid);
         // لا نكتب null فوق نسخة صالحة: قد تكون قراءة عابرة فاشلة
         if (next) writeCache(uid, next);
       },
@@ -109,12 +126,18 @@ export function useProfileState(uid?: string) {
         // فشل القراءة: نُبقي النسخة المحفوظة بدل إسقاط المستخدم إلى
         // واجهة الطالب، ونرفع التحميل حتى لا تتجمّد الشاشة.
         setLoading(false);
+        setLoadedUid(uid);
       },
     );
     return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
 
-  return { profile, loading };
+  /* الجاهزية تُقارن بالمعرّف الحالي: في التصيير العالق (uid جديد
+     وحالة قديمة) تكون `loadedUid !== uid` فتبقى غير جاهزة — ولا
+     يُعيد الحارس التوجيه. */
+  const ready = uid ? loadedUid === uid : !loading;
+
+  return { profile, loading: uid ? !ready : loading, ready };
 }
 
 /** التوقيع القديم — يستعمله 18 موضعاً بلا تعديل */
@@ -124,7 +147,7 @@ export function useProfile(uid?: string) {
 
 /** الدور مع تمييز «لم يُعرف بعد» — للحرّاس وإعادة التوجيه */
 export function useRole(uid?: string) {
-  const { profile, loading } = useProfileState(uid);
+  const { profile, loading, ready } = useProfileState(uid);
   return {
     role: profile?.role,
     loading,
@@ -132,7 +155,7 @@ export function useRole(uid?: string) {
     isTeacher: profile?.role === "teacher",
     isStaff: profile?.role === "admin" || profile?.role === "teacher",
     /** لا تتّخذ قراراً نهائياً قبل أن تصير true */
-    ready: !loading,
+    ready,
   };
 }
 

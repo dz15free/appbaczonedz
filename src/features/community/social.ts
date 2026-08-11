@@ -250,6 +250,10 @@ export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
         // كانت هذه الحقول تُكتب في القاعدة لكن لا تُقرأ أبداً،
         // فيظهر المنشور نصّاً فقط بلا صور ولا فيديو.
         media: p.media,
+        /* 🐛 كانت `mentions` تُحفظ ولا تُقرأ — فيصل النصّ إلى العارض بلا
+           خريطة، فيعرض «@الاسم» نصّاً عادياً. نفس صنف العطب الذي أصاب
+           `media` سابقاً: الكتابة سليمة والقراءة ناقصة. */
+        mentions: p.mentions,
         subject: p.subject,
         locked: p.locked,
       };
@@ -280,6 +284,10 @@ export function listenPost(postId: string, myUid: string, cb: (post: Post | null
       attachmentKind: p.attachmentKind,
       fileName: p.fileName,
       media: p.media,
+      /* 🐛 كانت `mentions` تُحفظ ولا تُقرأ — فيصل النصّ إلى العارض بلا
+         خريطة، فيعرض «@الاسم» نصّاً عادياً. نفس صنف العطب الذي أصاب
+         `media` سابقاً: الكتابة سليمة والقراءة ناقصة. */
+      mentions: p.mentions,
       subject: p.subject,
       locked: p.locked,
     });
@@ -309,6 +317,10 @@ export function listenUserPosts(authorUid: string, myUid: string, cb: (posts: Po
         fileName: p.fileName,
         authorRole: p.authorRole,
         media: p.media,
+        /* 🐛 كانت `mentions` تُحفظ ولا تُقرأ — فيصل النصّ إلى العارض بلا
+           خريطة، فيعرض «@الاسم» نصّاً عادياً. نفس صنف العطب الذي أصاب
+           `media` سابقاً: الكتابة سليمة والقراءة ناقصة. */
+        mentions: p.mentions,
         subject: p.subject,
         locked: p.locked,
       } as Post;
