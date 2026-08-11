@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { listenBroadcasts, isBroadcastId, markBroadcastRead } from "@/features/notifications/broadcast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -56,6 +57,9 @@ export default function NotificationsPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
+  /* البثّ الجماعي (@all) يُقرأ من مصدر مستقلّ ويُدمج مع الإشعارات
+     الشخصية — سجلّ واحد للجميع بدل إشعار لكل مستخدم. */
+  const [casts, setCasts] = useState<AppNotification[]>([]);
   const [pushPerm, setPushPerm] = useState<"granted" | "denied" | "default" | "na">("na");
   const [pushBusy, setPushBusy] = useState(false);
 
@@ -70,10 +74,24 @@ export default function NotificationsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || items.length === 0) return;
-    const unread = items.filter((n) => !n.read).map((n) => n.id);
-    if (unread.length) markNotificationsRead(user.uid, unread);
-  }, [user, items]);
+    if (!user) return;
+    // نطاقات المستخدم تُضاف لاحقاً؛ بثّ الموقع يصل للجميع الآن
+    const unsub = listenBroadcasts(user.uid, [], setCasts);
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [user]);
+
+  /* الدمج والترتيب في مكان واحد: الأحدث أوّلاً بغضّ النظر عن مصدره،
+     فلا يشعر المستخدم بوجود قائمتين. */
+  const merged = [...items, ...casts].sort((a, b) => b.createdAt - a.createdAt);
+
+  useEffect(() => {
+    if (!user || merged.length === 0) return;
+    const unread = merged.filter((n) => !n.read).map((n) => n.id);
+    // البثّ يُعلَّم عند القارئ لا في السجلّ العامّ (لا صلاحية كتابة فيه)
+    const own = unread.filter((id) => !isBroadcastId(id));
+    if (own.length) markNotificationsRead(user.uid, own);
+    for (const id of unread.filter(isBroadcastId)) void markBroadcastRead(user.uid, id);
+  }, [user, merged.length]);
 
   useEffect(() => {
     if (!isPushSupported()) { setPushPerm("na"); return; }
@@ -132,14 +150,14 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {items.length === 0 ? (
+        {merged.length === 0 ? (
           <div className="grid place-items-center py-20 text-center">
             <FontAwesomeIcon icon={faBell} className="h-10 w-10 text-text-muted" />
             <p className="mt-3 text-sm text-text-muted">لا إشعارات بعد.</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((n) => {
+            {merged.map((n) => {
               const meta = notifMeta(n.type);
               const body = (
                 <div className={`flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 ${n.read ? "border-border bg-surface" : "border-primary/40 bg-primary/5"}`}>

@@ -56,8 +56,11 @@ export default function TeacherCoursesPage() {
   useEffect(() => {
     if (loading) return;
     if (!user) { router.replace(loginHrefFor("/courses/teach")); return; }
-    if (ready && !isStaff) router.replace("/courses");
-  }, [loading, user, ready, isStaff, router]);
+    /* 🛡️ لا نطرد إلّا بدور **معروف** صراحةً. لو غاب الدور لأي سبب
+       (قراءة فاشلة، شبكة متقطّعة) فالصواب انتظارٌ لا طرد: طرد أستاذ
+       من صفحته خطأٌ لا يُصلحه إلّا هو بإعادة المحاولة. */
+    if (ready && role && !isStaff) router.replace("/courses");
+  }, [loading, user, ready, role, isStaff, router]);
 
   useEffect(() => {
     if (!user?.uid) return;

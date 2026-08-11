@@ -408,6 +408,27 @@
         ".validate": "newData.hasChild('name') && newData.child('name').isString() && newData.child('name').val().length <= 120"
       }
     },
+    "broadcasts": {
+      // ══ الإشارة الجماعية @all ══
+      // سجلّ واحد يقرؤه الجميع بدل إشعار لكل مستخدم: تكلفة الكتابة
+      // ثابتة مهما بلغ عدد الطلبة.
+      ".read": "auth != null",
+      "$id": {
+        // الأدمن وحده يبثّ للموقع كلّه. والأستاذ داخل غرفته: يُتحقّق
+        // من ملكيته للغرفة لا من دور تُرسله الواجهة.
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (newData.child('scope').val() !== 'site' && root.child('users').child(auth.uid).child('role').val() === 'teacher' && root.child('rooms').child(newData.child('scopeId').val()).child('ownerId').val() === auth.uid))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['text','scope','fromUid','createdAt']) && newData.child('fromUid').val() === auth.uid && newData.child('text').val().length <= 300 && newData.child('scope').val().matches(/^(site|room|group)$/))"
+      }
+    },
+    "broadcastReads": {
+      // «مقروء» عند القارئ لا في البثّ — وإلّا احتاج كل قارئ صلاحية
+      // الكتابة في سجلّ يراه الجميع.
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$bid": { ".validate": "newData.isBoolean()" }
+      }
+    },
     "blog": {
       // ══ المدوّنة ══
       // قراءة عامّة: الخادم يقرأ المقالات عبر REST بلا مفتاح ليُصيّرها

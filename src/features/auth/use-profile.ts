@@ -123,10 +123,17 @@ export function useProfileState(uid?: string) {
         if (next) writeCache(uid, next);
       },
       () => {
-        // فشل القراءة: نُبقي النسخة المحفوظة بدل إسقاط المستخدم إلى
-        // واجهة الطالب، ونرفع التحميل حتى لا تتجمّد الشاشة.
+        /* 🐛 ثغرة أُغلقت: كنّا نُعلن الجاهزية هنا حتى بلا ملفّ، فتصير
+           `ready=true` و`profile=null` → `isStaff=false` → **يُطرد
+           الأستاذ من صفحته**.
+
+           القاعدة: **الجاهزية تعني «عرفتُ الدور»**، لا «توقّفت عن
+           المحاولة». فإن كانت لدينا نسخة محفوظة أعلنّا الجاهزية بها،
+           وإلّا بقينا غير جاهزين — والحارس يعرض «جارٍ التحميل» بدل أن
+           يطرد صاحب الحقّ. */
         setLoading(false);
-        setLoadedUid(uid);
+        const cached = readCache(uid);
+        if (cached) { setProfile(cached); setLoadedUid(uid); }
       },
     );
     return () => { if (typeof unsub === "function") unsub(); };
@@ -135,7 +142,10 @@ export function useProfileState(uid?: string) {
   /* الجاهزية تُقارن بالمعرّف الحالي: في التصيير العالق (uid جديد
      وحالة قديمة) تكون `loadedUid !== uid` فتبقى غير جاهزة — ولا
      يُعيد الحارس التوجيه. */
-  const ready = uid ? loadedUid === uid : !loading;
+  /* الجاهزية = «حمّلتُ هذا المعرّف **وأعرف دوره**».
+     بلا الشرط الثاني يستطيع حارسٌ أن يتّخذ قراراً نهائياً على ملفّ
+     فارغ — وهو بالضبط ما كان يطرد الأستاذ. */
+  const ready = uid ? loadedUid === uid && Boolean(profile) : !loading;
 
   return { profile, loading: uid ? !ready : loading, ready };
 }

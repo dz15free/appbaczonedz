@@ -16,14 +16,17 @@ import { CourseBuilder } from "@/features/courses/course-builder";
 export default function NewCoursePage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const { isStaff, ready } = useRole(user?.uid);
+  const { isStaff, ready, role } = useRole(user?.uid);
   const profile = useProfile(user?.uid);
 
   useEffect(() => {
     if (loading) return;
     if (!user) { router.replace(loginHrefFor("/courses/new")); return; }
-    if (ready && !isStaff) router.replace("/courses");
-  }, [loading, user, ready, isStaff, router]);
+    /* 🛡️ لا نطرد إلّا بدور **معروف** صراحةً. لو غاب الدور لأي سبب
+       (قراءة فاشلة، شبكة متقطّعة) فالصواب انتظارٌ لا طرد: طرد أستاذ
+       من صفحته خطأٌ لا يُصلحه إلّا هو بإعادة المحاولة. */
+    if (ready && role && !isStaff) router.replace("/courses");
+  }, [loading, user, ready, role, isStaff, router]);
 
   if (loading || !user || !ready) {
     return <AppShell><div className="p-10 text-center text-text-muted">جارٍ التحميل…</div></AppShell>;

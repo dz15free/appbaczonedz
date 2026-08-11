@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { hasAllMention, canBroadcast, sendBroadcast } from "@/features/notifications/broadcast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -259,6 +260,20 @@ function Feed({ me, isAdmin, myRole, track }: {
     ];
     try {
       await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media, mentions);
+
+      /* @all — بثّ واحد لا إشعار لكل مستخدم.
+         الصلاحية تُفحص هنا للتجربة، وقواعد قاعدة البيانات هي الحارس
+         الحقيقي: الأدمن وحده يكتب بثّ الموقع. */
+      if (hasAllMention(text) && canBroadcast(myRole, "site")) {
+        await sendBroadcast({
+          type: "announcement",
+          text: `${me.name}: ${text.replace(/@all/gi, "").trim()}`.slice(0, 300),
+          link: "/community",
+          scope: "site",
+          fromUid: me.uid,
+          fromName: me.name,
+        });
+      }
       setText("");
       setMentions({});
       setPending(null);
