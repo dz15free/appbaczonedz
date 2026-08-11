@@ -3305,3 +3305,21 @@ body.bz-fullscreen-active .bz-voicebar {
   .bz-article h2 { font-size: 1.2rem; }
   .bz-article h3 { font-size: 1.05rem; }
 }
+
+/* شارة الإشارة الجماعية @all — تُقرأ «الكل» لا نصّاً خامّاً */
+.bz-all-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  margin-inline: 1px;
+  border-radius: 999px;
+  font-size: .92em;
+  font-weight: 800;
+  line-height: 1.6;
+  color: #7C3AED;
+  background: rgba(124, 58, 237, .1);
+  border: 1px solid rgba(124, 58, 237, .22);
+  white-space: nowrap;
+}
+.bz-all-chip > span { opacity: .6; font-weight: 700; }

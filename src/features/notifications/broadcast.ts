@@ -42,6 +42,8 @@ export interface Broadcast {
   fromUid: string;
   fromName: string;
   createdAt: number;
+  /** المنشور الذي وُلد منه البثّ — لحذفه معه */
+  sourceId?: string;
 }
 
 /** هل يملك هذا المستخدم حقّ الإشارة الجماعية في هذا النطاق؟ */
@@ -59,6 +61,20 @@ export function canBroadcast(
 /** هل يحوي النصّ إشارة جماعية؟ (كلمة مستقلّة لا جزءاً من كلمة) */
 export function hasAllMention(text: string): boolean {
   return /(^|\s)@all(\s|$|[.,!؟:]);?/i.test(text ?? "");
+}
+
+/* حذف بثّ منشور معيّن.
+   الإشعار المرتبط بمنشور محذوف يقود إلى صفحة مفقودة، وهو أسوأ من عدم
+   وجوده. فنحذفه مع مصدره. */
+export async function deleteBroadcastsFor(sourceId: string) {
+  if (!sourceId) return;
+  const snap = await get(ref(rtdb, "broadcasts"));
+  const val = (snap.val() as Record<string, Broadcast> | null) ?? {};
+  for (const [id, b] of Object.entries(val)) {
+    if (b?.sourceId === sourceId) {
+      await set(ref(rtdb, `broadcasts/${id}`), null);
+    }
+  }
 }
 
 export async function sendBroadcast(b: Omit<Broadcast, "id" | "createdAt">) {

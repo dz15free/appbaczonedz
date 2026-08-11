@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 
 /* ════════════════════════════════════════════════════════════
@@ -50,16 +54,47 @@ import Script from "next/script";
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-8LXY3YV9W4";
 
 export function Analytics() {
+  const pathname = usePathname();
+  const search = useSearchParams();
+
+  /* 🐛 **سبب ظهور بعض الصفحات دون غيرها في Analytics.**
+
+     `gtag('config')` يُرسل زيارة **مرّة واحدة عند تحميل المستند**.
+     ومسيّر Next لا يُعيد تحميل المستند عند التنقّل الداخلي — يُبدّل
+     المحتوى فقط. فتُسجَّل صفحة الدخول وحدها، وكل ما يزوره الطالب بعدها
+     بالضغط على الروابط **لا يُسجَّل إطلاقاً**.
+
+     ولهذا تبدو صفحات «موضوعاً فيها الكود» وأخرى لا — والكود واحد في
+     كلّها؛ الفرق أنّ الأولى دخلها الزائر مباشرة من Google.
+
+     الحلّ: نُرسل `page_view` صراحةً عند كل تغيّر مسار. */
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" || !GA_ID) return;
+    const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+    if (typeof w.gtag !== "function") return;   // السكربت لم يصل بعد
+    const qs = search?.toString();
+    w.gtag("event", "page_view", {
+      page_path: pathname + (qs ? `?${qs}` : ""),
+      page_location: window.location.href,
+      page_title: document.title,
+    });
+  }, [pathname, search]);
+
   if (process.env.NODE_ENV !== "production" || !GA_ID) return null;
 
   return (
     <>
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="lazyOnload"
+        /* `afterInteractive` لا `lazyOnload`: الأخيرة تنتظر خمول
+           المتصفّح، فمن يغادر بسرعة لا يُحتسب أصلاً. وهي لا تحجب
+           الرسم الأوّل فلا تضرّ Core Web Vitals. */
+        strategy="afterInteractive"
       />
-      <Script id="ga4-init" strategy="lazyOnload">
-        {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');`}
+      <Script id="ga4-init" strategy="afterInteractive">
+        {/* `send_page_view:false` يمنع ازدواج أوّل زيارة: الخطّاف أعلاه
+            يرسلها، ولولا ذلك لعُدّت مرّتين. */}
+        {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}',{send_page_view:false});`}
       </Script>
     </>
   );

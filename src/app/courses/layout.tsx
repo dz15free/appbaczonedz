@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "دورات البكالوريا", "دروس البكالوريا الجزائر", "دورات أونلاين",
     "أستاذ خصوصي", "مراجعة البكالوريا", "BacZone",
   ],
+  /* ⚠️ هذا `canonical` يرث إلى كل الصفحات المتفرّعة، وصفحة `/courses`
+     وحدها هي المقصودة به. فكل صفحة فرعية **تُلغيه بقيمتها الخاصّة**
+     (انظر `new` و`mine` و`teach` و`[courseId]`) — وإلّا أعلنت أنّ
+     نسختها الأصلية هي `/courses` فيُهمل Google فهرستها. */
   alternates: { canonical: "/courses" },
   openGraph: {
     type: "website", locale: "ar_DZ", url: "/courses",

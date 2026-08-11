@@ -22,6 +22,7 @@ import {
 } from "@/features/community/mentions";
 import { awardActivity } from "@/features/gamification/points";
 import { tryPushNotification } from "@/lib/push";
+import { deleteBroadcastsFor } from "@/features/notifications/broadcast";
 
 /** عنصر وسائط في المنشور */
 export interface PostMedia {
@@ -158,6 +159,9 @@ export async function createPost(
       link: `/community/${added.key}`,
     })));
   }
+
+  // نُرجع المعرّف: المستدعي يربط به البثّ فيُحذف مع المنشور
+  return added.key ?? "";
 }
 
 /** يحذف كل الحقول ذات القيمة undefined (RTDB يرفضها ويُلغي الكتابة) */
@@ -197,6 +201,9 @@ export async function getPostAttachment(attachmentId: string): Promise<string | 
 export async function deletePost(post: { id: string; attachmentId?: string }) {
   await remove(ref(rtdb, `community/posts/${post.id}`));
   if (post.attachmentId) await remove(ref(rtdb, `community/postAttachments/${post.attachmentId}`));
+  /* بثّ `@all` المرتبط بالمنشور يُحذف معه: إشعار يقود إلى منشور محذوف
+     أسوأ من غياب الإشعار. ولا نُوقف الحذف إن فشل — المنشور ذهب فعلاً. */
+  try { await deleteBroadcastsFor(post.id); } catch { /* غير حرج */ }
 }
 
 /** قفل/فتح منشور (يمنع/يسمح بإضافة تعليقات جديدة) — للإدارة فقط */

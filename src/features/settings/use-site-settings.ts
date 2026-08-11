@@ -255,7 +255,23 @@ export function useSiteSettings() {
   useEffect(() => {
     const unsub = onValue(ref(rtdb, "settings"), (snap) => {
       const val = snap.val() as SiteSettings | null;
-      setSettings(normalizeBranding({ ...DEFAULTS, ...(val ?? {}) }));
+
+      /* 🐛 **سبب عودة رابط الفوتر بعد حذفه.**
+
+         حذف آخر رابط يجعل المصفوفة فارغة، **وFirebase لا يخزّن القيم
+         الفارغة — يحذف المفتاح كلّه**. فتغيب `footerLinks` من القراءة،
+         فيملأها الدمج من `DEFAULTS` ويعود «الموقع الرئيسي».
+
+         وهذه علّة عامّة في هذا الدمج: أي إعداد يُفرَّغ عمداً يعود إلى
+         افتراضيّه. فنُميّز **«محذوف عمداً»** عن **«لم يُضبط بعد»**
+         براية صريحة، ونطبّقها على كل قائمة قابلة للتفريغ. */
+      const merged = normalizeBranding({ ...DEFAULTS, ...(val ?? {}) }) as SiteSettings & {
+        footerLinksCleared?: boolean;
+      };
+      if ((val as { footerLinksCleared?: boolean } | null)?.footerLinksCleared) {
+        merged.footerLinks = [];
+      }
+      setSettings(merged);
       setLoaded(true);
     });
     return () => { if (typeof unsub === "function") unsub(); };

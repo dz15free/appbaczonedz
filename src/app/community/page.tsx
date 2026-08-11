@@ -259,7 +259,7 @@ function Feed({ me, isAdmin, myRole, track }: {
       ...pendingImages.map((i) => ({ kind: "image" as const, thumb: i.thumb, full: i.full, name: i.name })),
     ];
     try {
-      await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media, mentions);
+      const newPostId = await createPost(me.uid, me.name, text, pending ?? undefined, visibility, postSubject || undefined, myRole, media, mentions);
 
       /* @all — بثّ واحد لا إشعار لكل مستخدم.
          الصلاحية تُفحص هنا للتجربة، وقواعد قاعدة البيانات هي الحارس
@@ -268,10 +268,12 @@ function Feed({ me, isAdmin, myRole, track }: {
         await sendBroadcast({
           type: "announcement",
           text: `${me.name}: ${text.replace(/@all/gi, "").trim()}`.slice(0, 300),
-          link: "/community",
+          link: typeof newPostId === "string" ? `/community/${newPostId}` : "/community",
           scope: "site",
           fromUid: me.uid,
           fromName: me.name,
+          // يُربط بالمنشور فيُحذف معه
+          sourceId: typeof newPostId === "string" ? newPostId : undefined,
         });
       }
       setText("");

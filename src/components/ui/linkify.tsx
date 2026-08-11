@@ -129,7 +129,21 @@ export function Linkify({ text, className, mentions }: {
       );
       return;
     }
-    out.push(...linkifyPlain(seg.text, `s${si}`));
+    /* `@all` تُعرض شارة «الكل» أنيقة لا نصّاً خامّاً.
+       ليست إشارة إلى شخص فلا `uid` لها، ولذلك تُعالَج هنا لا في خريطة
+       الإشارات. والتقسيم يحترم حدود الكلمة فلا يلتقط `@allan`. */
+    const parts = seg.text.split(/(?<=^|\s)(@all)(?=\s|$|[.,!؟:])/gi);
+    parts.forEach((part, pi) => {
+      if (/^@all$/i.test(part)) {
+        out.push(
+          <span key={`a${si}-${pi}`} className="bz-all-chip">
+            <span aria-hidden>@</span>الكل
+          </span>,
+        );
+        return;
+      }
+      out.push(...linkifyPlain(part, `s${si}-${pi}`));
+    });
   });
 
   return <span className={className}>{out.length ? out : text}</span>;

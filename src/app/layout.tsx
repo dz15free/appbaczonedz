@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Tajawal, Cairo } from "next/font/google";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -161,7 +162,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Preloader />
         <Providers>{children}</Providers>
         {/* آخر ما في الصفحة، وبعد التفاعل — فلا يزاحم الرسم الأوّل */}
-        <Analytics />
+        {/* ⚠️ `Suspense` إلزامية هنا: `Analytics` تستعمل
+            `useSearchParams`، وبدون حدّ Suspense يُخرج Next **كل صفحة**
+            من التصيير الساكن إلى الديناميكي — فتخسر المدوّنة والأدوات
+            فهرستها السريعة كلّها لأجل سكربت تتبّع. */}
+        <Suspense fallback={null}>
+          <Analytics />
+        </Suspense>
       </body>
     </html>
   );

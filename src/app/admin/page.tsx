@@ -740,7 +740,13 @@ export default function AdminPage() {
                   <FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" /> إضافة رابط
                 </button>
               </div>
-              <SaveBtn onClick={() => save("footerLinks", () => saveSetting("footerLinks", footerLinks))} loading={!!saving.footerLinks} />
+              <SaveBtn onClick={() => save("footerLinks", async () => {
+                /* التفريغ المتعمَّد يُسجَّل براية: Firebase يحذف المصفوفة
+                   الفارغة، فبلا الراية لا نعرف أنّه حذف قصداً. */
+                const clean = footerLinks.filter((l) => l.label.trim() && l.href.trim());
+                await saveSetting("footerLinks", clean);
+                await saveSetting("footerLinksCleared", clean.length === 0);
+              })} loading={!!saving.footerLinks} />
             </Card>
 
             {/* بطاقة تفسير — بلاها يظنّ الأدمن أنّ الروابط القانونية

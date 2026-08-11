@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { listenBroadcasts } from "@/features/notifications/broadcast";
 import { useNavLinks } from "@/features/admin/nav-store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -279,11 +280,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [user?.uid]);
 
+  /* 🐛 كانت الشارة تقرأ الإشعارات الشخصية وحدها، فلا تظهر أبداً لبثّ
+     `@all` — والبثّ سجلّ واحد مشترك لا إشعار في صندوق كل مستخدم.
+     نجمع العدّادين، فيرى المستخدم الرقم الصحيح. */
+  const [unreadOwn, setUnreadOwn] = useState(0);
+  const [unreadCast, setUnreadCast] = useState(0);
+
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = listenNotifications(user.uid, (list) => setUnread(list.filter((n) => !n.read).length));
+    const unsub = listenNotifications(user.uid, (list) => setUnreadOwn(list.filter((n) => !n.read).length));
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = listenBroadcasts(user.uid, [], (list) => setUnreadCast(list.filter((n) => !n.read).length));
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [user?.uid]);
+
+  useEffect(() => { setUnread(unreadOwn + unreadCast); }, [unreadOwn, unreadCast]);
 
   /* القوائم المنسدلة: تُغلق بالنقر خارجها وبـ Escape */
   useEffect(() => {
