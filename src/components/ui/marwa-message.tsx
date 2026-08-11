@@ -60,13 +60,23 @@ import { useEffect, useRef } from "react";
       حزمةً منفصلة (code-split) لا تُنزَّل إلّا عند أوّل معادلة فعليّة.
       رسالةٌ بلا رياضيات لا تُنزّل بايتاً واحداً من KaTeX.
 
-   ٢) **`katex-swap.min.css` لا `katex.min.css`.** النسخة الأولى تحمل
-      `font-display: swap` في كل `@font-face`، فلا تحتجب المعادلة أثناء
-      تحميل الخطّ. والخطوط (٦٠ ملفّاً) لا تُطلب إلّا حين يحتاجها محرفٌ
-      معروض فعلاً — المتصفّح لا يجلب خطّاً لا يستعمله.
+   ٢) **`katex.min.css` لا `katex-swap.min.css`.**
+
+      🐛 كان هنا `katex-swap.min.css` فانهار البناء:
+
+        Module not found: Can't resolve 'katex/dist/katex-swap.min.css'
+
+      والملفّ موجود فعلاً — لكنّه أُضيف في KaTeX **0.17**، ولا وجود له
+      في 0.16.x. فأيّ بيئة تُثبّت نسخةً أقدم (قفلٌ قديم، أو ذاكرة بناء
+      محفوظة عند المزوّد) تُسقط البناء كلّه من أجل ملفّ تنسيق واحد.
+
+      و`katex.min.css` موجود في **كل** النسخ بلا استثناء. فالمكسب من
+      `-swap` هو `font-display: swap` على خطوط الرياضيات — تحسينٌ هامشيّ
+      لأنّ تلك الخطوط لا تُطلب إلّا حين تُعرض معادلة فعلاً — والثمن كان
+      بناءً يفشل. لا مقايضة هنا.
 
    ٣) **الوحدة تُحفظ بعد أوّل تحميل** فلا يتكرّر الاستيراد لكل رسالة. */
-import "katex/dist/katex-swap.min.css";
+import "katex/dist/katex.min.css";
 
 type KatexModule = typeof import("katex");
 let katexMod: KatexModule["default"] | null = null;

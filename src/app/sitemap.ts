@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { SPEC_INDEX } from "@/features/guide/spec-index";
 import { BRANCHES } from "@/features/calculator/branches";
+import { SITE_URL } from "@/lib/site-url";
+import { LEGAL_PATHS } from "@/features/settings/legal-links";
 
 /* ════════════════════════════════════════════════════════════
    خريطة الموقع
@@ -13,7 +15,11 @@ import { BRANCHES } from "@/features/calculator/branches";
    يستطيع الزائر رؤيتها يُهدر ميزانية الزحف ويُضعف تقييم الموقع.
 ════════════════════════════════════════════════════════════ */
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com";
+/* العنوان من المصدر الوحيد (`@/lib/site-url`) — كان مكتوباً هنا بالدومين
+   القديم `app.baczonedz.com`. وخريطةٌ تُعلن الدومين القديم بعد نقله تعني
+   أنّ Google يزحف روابط تُحوّل كلّها 301: هدرٌ لميزانية الزحف وإشارة
+   متناقضة مع `canonical` الذي يقول baczone.app. */
+const BASE = SITE_URL;
 
 /* ════════════════════════════════════════════════════════════
    محتوى الأدمن — يُقرأ من Firebase وقت توليد الخريطة
@@ -83,6 +89,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.85,
+    })),
+    /* الصفحات القانونية والتعريفية — مراجعة AdSense تبحث عن سياسة
+       الخصوصية أوّلاً، وغيابها عن الخريطة يُبطئ فهرستها.
+       و`/blog` ليست هنا: لها خريطتها الخاصّة `/blog/sitemap.xml` لأنّها
+       تتغيّر مع كل مقال، فلا يُبطَل تخزين هذه الخريطة معها. */
+    ...LEGAL_PATHS.filter((path) => path !== "/blog").map((path) => ({
+      url: `${BASE}${path}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.4,
     })),
   ];
 
