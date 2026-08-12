@@ -31,28 +31,6 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
-/**
- * عناصر الشريط الجانبي للمدونة التي تديرها لوحة الإدارة.
- * الحقول الاختيارية تسمح بالحفاظ على توافق الإعدادات القديمة مع أنواع
- * العناصر التي قد تضيفها اللوحة مستقبلاً، بينما يبقى `id` ثابتاً للتعريف.
- */
-export interface BlogSidebarBlock {
-  id: string;
-  type?: string;
-  title?: string;
-  enabled?: boolean;
-  content?: string;
-  html?: string;
-  [key: string]: unknown;
-}
-
-/** الإعداد الكامل للشريط الجانبي للمدونة. */
-export interface BlogSidebarSettings {
-  enabled?: boolean;
-  blocks: BlogSidebarBlock[];
-  [key: string]: unknown;
-}
-
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -118,8 +96,6 @@ export interface SiteSettings {
   /* ── جهات التواصل للإعلانات ── */
   adsEmail?: string;
   adsWhatsapp?: string;
-  /* ── إعدادات الشريط الجانبي للمدونة ── */
-  blogSidebar?: BlogSidebarSettings;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
 }
