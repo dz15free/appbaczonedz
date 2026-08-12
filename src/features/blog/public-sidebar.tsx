@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faBullhorn, faImage, faLink as faLinkIcon, faQuoteRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBullhorn, faImage, faLink as faLinkIcon, faQuoteRight, faCode } from "@fortawesome/free-solid-svg-icons";
 import { useSiteSettings, type BlogSidebarBlock } from "@/features/settings/use-site-settings";
 
 function safeHref(value?: string) {
@@ -16,13 +16,30 @@ function isExternal(href: string) {
 }
 
 function BlockIcon({ type }: { type: BlogSidebarBlock["type"] }) {
-  const icon = type === "image" ? faImage : type === "link" ? faLinkIcon : type === "cta" ? faBullhorn : faQuoteRight;
+  const icon = type === "image" ? faImage : type === "link" ? faLinkIcon : type === "cta" ? faBullhorn : type === "embed" ? faCode : faQuoteRight;
   return <FontAwesomeIcon icon={icon} className="h-3.5 w-3.5" aria-hidden />;
+}
+
+function EmbedWidget({ block }: { block: BlogSidebarBlock }) {
+  const html = block.html || block.content || "";
+  const css = block.css || "";
+  const javascript = block.javascript || "";
+  if (!html && !css && !javascript) return null;
+  const srcDoc = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;padding:0;background:transparent;font-family:Arial,sans-serif;color:#172033}*{box-sizing:border-box}a{color:inherit}${css}</style></head><body>${html}${javascript ? `<script>${javascript.replace(/<\/script/gi, "<\\/script")}</script>` : ""}</body></html>`;
+  const sandbox = block.sandbox === "allow-scripts" ? "allow-scripts allow-forms allow-popups" : "";
+  return (
+    <div className="bz-blog-widget bz-blog-embed-widget">
+      {block.title && <h3 className="bz-blog-widget-title"><BlockIcon type="embed" />{block.title}</h3>}
+      <iframe title={block.title || "Widget مضمّن"} srcDoc={srcDoc} sandbox={sandbox} loading="lazy" className="min-h-[120px] w-full rounded-xl border-0 bg-transparent" />
+    </div>
+  );
 }
 
 function SidebarBlock({ block }: { block: BlogSidebarBlock }) {
   const href = safeHref(block.href);
   const external = isExternal(href);
+
+  if (block.type === "embed") return <EmbedWidget block={block} />;
 
   if (block.type === "image" && block.imageUrl) {
     const image = (
@@ -76,7 +93,7 @@ export function BlogSidebar() {
 
   return (
     <aside className="bz-blog-sidebar" aria-label="محتوى إضافي في المدونة">
-      <p className="bz-blog-sidebar-label">محتوى إضافي</p>
+      <p className="bz-blog-sidebar-label">أدوات ومصادر BacZone</p>
       <div className="space-y-3">
         {blocks.map((block) => <SidebarBlock key={block.id} block={block} />)}
       </div>

@@ -8,6 +8,7 @@ import {
   faArrowRight,
   faCalendarDays,
   faCheck,
+  faDownload,
   faClock,
   faLightbulb,
   faPlus,
@@ -37,6 +38,7 @@ export function StudyPlanner() {
   const [slots, setSlots] = useState<Slot[]>(DEFAULT_SLOTS);
   const [grid, setGrid] = useState<Record<string, string>>({});
   const gridRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const selectedBranch = useMemo(() => getBranch(branch), [branch]);
   const options = useMemo(() => (branch ? cellOptions(branch) : []), [branch]);
@@ -59,6 +61,54 @@ export function StudyPlanner() {
     if (nextStep === 3 && (days.length === 0 || slots.length === 0)) return;
     setStep(nextStep);
     window.setTimeout(() => gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
+  function downloadAsImage() {
+    const node = exportRef.current;
+    if (!node) return;
+    const width = 1200;
+    const height = Math.max(520, node.scrollHeight + 48);
+    const markup = node.innerHTML;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;min-height:${height}px;background:#ffffff;padding:24px;box-sizing:border-box;direction:rtl;font-family:Arial,sans-serif;">${markup}</div></foreignObject></svg>`;
+    const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+    const filename = `baczone-study-planner-${selectedBranch?.name || "schedule"}`;
+    let completed = false;
+    const downloadSvgFallback = () => {
+      if (completed) return;
+      completed = true;
+      const fallback = document.createElement("a");
+      fallback.download = `${filename}.svg`;
+      fallback.href = svgUrl;
+      fallback.click();
+      window.setTimeout(() => URL.revokeObjectURL(svgUrl), 1200);
+    };
+    const fallbackTimer = window.setTimeout(downloadSvgFallback, 2500);
+    const image = new Image();
+    image.onload = () => {
+      if (completed) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("canvas unavailable");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.scale(2, 2);
+        context.drawImage(image, 0, 0, width, height);
+        const link = document.createElement("a");
+        link.download = `${filename}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        completed = true;
+        window.clearTimeout(fallbackTimer);
+        window.setTimeout(() => URL.revokeObjectURL(svgUrl), 1200);
+      } catch {
+        downloadSvgFallback();
+      }
+    };
+    image.onerror = downloadSvgFallback;
+    image.src = svgUrl;
   }
 
   return (
@@ -231,9 +281,23 @@ export function StudyPlanner() {
             </table>
           </div>
 
-          <div className="bz-calc-actions">
+            <div className="bz-calc-actions">
             <button onClick={() => setStep(2)} className="bz-calc-reset"><FontAwesomeIcon icon={faArrowRight} className="me-1.5 h-3.5 w-3.5" />تعديل الإعدادات</button>
             <button onClick={() => window.print()} className="bz-calc-go" style={{ background: color }}><FontAwesomeIcon icon={faPrint} className="me-2 h-3.5 w-3.5" />اطبع جدولي</button>
+            <button onClick={downloadAsImage} className="bz-calc-reset"><FontAwesomeIcon icon={faDownload} className="me-2 h-3.5 w-3.5" />تحميل كصورة</button>
+          </div>
+
+          <div ref={exportRef} className="bz-plan-export" aria-hidden="true" style={{ position: "fixed", left: "-100000px", top: 0, width: "1120px", background: "#fff", color: "#172033", padding: "24px", direction: "rtl", fontFamily: "Arial, sans-serif" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #2350D9", paddingBottom: "14px", marginBottom: "18px" }}>
+              <div><div style={{ fontSize: "24px", fontWeight: 800 }}>BacZone</div><div style={{ marginTop: "4px", fontSize: "13px", color: "#667085" }}>برنامج المراجعة الأسبوعي</div></div>
+              <div style={{ textAlign: "left", fontSize: "13px", color: "#667085" }}><strong style={{ color: "#172033" }}>{selectedBranch?.name}</strong><br />{days.length} أيام · {slots.length} فترات</div>
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed", fontSize: "13px", textAlign: "center" }}>
+              <caption style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden" }}>جدول مراجعة {selectedBranch?.name}</caption>
+              <thead><tr><th style={{ border: "1px solid #cbd5e1", background: "#edf2fe", padding: "12px", width: "130px" }}>الفترة</th>{days.map((day) => <th key={day} style={{ border: "1px solid #cbd5e1", background: color, color: "#fff", padding: "12px" }}>{day}</th>)}</tr></thead>
+              <tbody>{slots.map((slot, slotIndex) => <tr key={slotIndex}><th style={{ border: "1px solid #cbd5e1", background: "#f8fafc", padding: "12px", fontWeight: 800 }}>{slot.from} — {slot.to}</th>{days.map((day) => { const value = grid[`${day}|${slotIndex}`] || "—"; return <td key={`${day}|${slotIndex}`} style={{ border: "1px solid #cbd5e1", padding: "14px 8px", minHeight: "56px", color: value === "—" ? "#94a3b8" : color, fontWeight: value === "—" ? 400 : 700, wordBreak: "break-word" }}>{value}</td>; })}</tr>)}</tbody>
+            </table>
+            <div style={{ marginTop: "16px", borderTop: "1px solid #e2e8f0", paddingTop: "10px", fontSize: "11px", color: "#667085" }}>BacZone.app · خطتك تُبنى على وقتك، لا على المثالية.</div>
           </div>
 
           <div className="bz-calc-next">

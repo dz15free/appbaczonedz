@@ -31,7 +31,7 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
-export type BlogSidebarBlockType = "text" | "link" | "image" | "cta";
+export type BlogSidebarBlockType = "text" | "link" | "image" | "cta" | "embed";
 export interface BlogSidebarBlock {
   id: string;
   type: BlogSidebarBlockType;
@@ -39,6 +39,11 @@ export interface BlogSidebarBlock {
   content?: string;
   href?: string;
   imageUrl?: string;
+  /** محتوى Widget مضمّن؛ يُعرض داخل sandbox معزول ولا يُحقن في React. */
+  html?: string;
+  css?: string;
+  javascript?: string;
+  sandbox?: "strict" | "allow-scripts";
   active?: boolean;
   order?: number;
 }
@@ -115,7 +120,7 @@ export interface SiteSettings {
   adsWhatsapp?: string;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
-  /* ── Sidebar المدونة: blocks آمنة بلا JavaScript عام ── */
+  /* ── Sidebar المدونة: Native blocks أو embed معزول داخل sandbox ── */
   blogSidebar?: BlogSidebarConfig;
 }
 

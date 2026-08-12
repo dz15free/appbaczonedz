@@ -131,7 +131,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <header className="border-b border-border bg-surface">
+        <header className="bz-article-hero border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
               <Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link>
@@ -160,7 +160,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               </p>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-text-muted">
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-[12px] text-text-muted" aria-label="بيانات المقال">
               <span>{post.authorName}</span>
               {post.publishedAt ? (
                 <>
@@ -186,7 +186,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             height={630}
             loading="eager"
             decoding="async"
-            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-xl object-cover px-4"
+            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-2xl object-cover px-4 shadow-xl shadow-slate-900/10"
           />
         )}
         <AdSlot placement="article-top" className="mx-auto max-w-5xl px-4 pt-5" />
@@ -194,7 +194,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <BlogLayout>
           <div className="w-full max-w-3xl">
           {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
-          <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
+          <article className="bz-article bz-article-paper" dangerouslySetInnerHTML={{ __html: html }} />
           <AdSlot placement="article-middle" className="mt-8" />
 
           <PublicCta />
@@ -207,9 +207,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {related.map((r) => (
                   <li key={r.id}>
                     <Link href={`/blog/${r.slug}`}
-                      className="block h-full rounded-xl border border-border bg-surface p-3 transition hover:border-primary/40">
-                      <span className="block text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span>
-                      <span className="mt-1 block text-[11.5px] text-text-muted">{r.readMinutes} دقائق</span>
+                      className="block h-full overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                      {r.cover && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.cover} alt={r.coverAlt || r.title} width={480} height={250} loading="lazy" className="aspect-[480/250] w-full object-cover" />
+                      )}
+                      <span className="block p-3"><span className="block text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span>
+                        <span className="mt-1 block text-[11.5px] text-text-muted">{r.readMinutes} دقائق</span></span>
                     </Link>
                   </li>
                 ))}

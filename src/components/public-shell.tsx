@@ -40,13 +40,14 @@ export function PublicHeader() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
+  const brandHref = loading ? "/" : user ? "/home" : "/";
 
   const isActive = (href: string) => href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
     <header className="bz-pubheader">
       <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
-        <Brand href="/" size="sm" beta={false} className="shrink" />
+        <Brand href={brandHref} size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
         <nav className="bz-pubnav-list mx-auto hidden items-center gap-1 overflow-x-auto md:flex">

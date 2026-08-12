@@ -3660,3 +3660,48 @@ body.bz-fullscreen-active .bz-voicebar {
 @media print {
   .bz-blog-sidebar, .bz-ad-slot { display: none !important; }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   قاعة الامتحان — تجربة المحاكي الجديدة
+   ───────────────────────────────────────────────────────────── */
+.bz-sim-exam-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:10px 0;padding:9px 12px;border:1px solid var(--bz-border);border-radius:12px;background:var(--bz-surface);font-size:11px;font-weight:800;color:var(--bz-ink-3)}
+.bz-sim-exam-meta span{display:inline-flex;align-items:center;gap:6px}
+.bz-sim-pledge{margin-top:16px;border:1px solid color-mix(in srgb,var(--bz-primary) 18%,var(--bz-border));border-radius:18px;background:color-mix(in srgb,var(--bz-primary) 4%,var(--bz-surface));padding:14px}
+.bz-sim-pledge>div:first-child{margin-bottom:10px}
+.bz-sim-pledge label{display:flex;align-items:flex-start;gap:8px;margin-top:8px;border:1px solid var(--bz-border);border-radius:12px;background:var(--bz-bg);padding:9px 10px;cursor:pointer;font-size:12px;font-weight:700;line-height:1.7;color:var(--bz-ink-2)}
+.bz-sim-pledge input,.bz-sim-options input{margin-top:3px;accent-color:var(--bz-primary);flex:0 0 auto}
+.bz-sim-options{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bz-border)}
+.bz-sim-options label{display:inline-flex;align-items:center;gap:5px;margin:0;border:0;background:transparent;padding:4px 6px;font-size:11px;color:var(--bz-ink-3)}
+.bz-sim-result{display:flex;align-items:flex-start;gap:9px;margin-top:12px;border:1px solid;border-radius:14px;padding:12px 14px;font-size:12px;font-weight:700;line-height:1.8}
+.bz-sim-result.is-ok{border-color:color-mix(in srgb,#059669 25%,var(--bz-border));background:color-mix(in srgb,#059669 7%,var(--bz-surface));color:#047857}
+.bz-sim-result.is-bad{border-color:color-mix(in srgb,#dc2626 25%,var(--bz-border));background:color-mix(in srgb,#dc2626 7%,var(--bz-surface));color:#b91c1c}
+.bz-sim-alarm,.bz-sim-confirm{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:20px;background:rgba(78,7,7,.78);backdrop-filter:blur(8px)}
+.bz-sim-confirm{z-index:2147481000;background:rgba(15,23,42,.62)}
+.bz-sim-alarm-card,.bz-sim-confirm-card{width:min(100%,420px);border-radius:24px;background:var(--bz-surface);padding:24px;text-align:center;box-shadow:0 25px 70px rgba(0,0,0,.28)}
+.bz-sim-alarm-card{background:#7f1d1d;color:#fff}
+.bz-sim-alarm-icon{display:grid;place-items:center;width:70px;height:70px;margin:0 auto 14px;border-radius:50%;background:rgba(255,255,255,.14)}
+.bz-sim-alarm-card h3,.bz-sim-confirm-card h3{font-family:var(--font-cairo),sans-serif;font-size:21px;font-weight:900}
+.bz-sim-alarm-card p,.bz-sim-confirm-card p{margin-top:9px;font-size:13px;line-height:1.8;opacity:.88}
+.bz-sim-alarm-count{display:inline-block!important;margin:14px 0!important;border-radius:999px;background:rgba(0,0,0,.2);padding:7px 15px;font-weight:900;opacity:1!important}
+.bz-sim-alarm-card button{display:inline-flex;align-items:center;justify-content:center;width:100%;margin-top:12px;border:0;border-radius:13px;background:#fff;padding:12px;color:#991b1b;font-weight:900;cursor:pointer}
+.bz-sim-confirm-card{color:var(--bz-ink)}
+.bz-sim-confirm-actions{display:flex;gap:8px;margin-top:18px}
+.bz-sim-confirm-actions .bz-sim-btn{flex:1;justify-content:center}
+@media (max-width:640px){.bz-sim-exam-meta{font-size:10px}.bz-sim-pledge{padding:12px}.bz-sim-alarm-card,.bz-sim-confirm-card{padding:20px}.bz-sim-alarm-card h3,.bz-sim-confirm-card h3{font-size:18px}}
+@media (prefers-reduced-motion:reduce){.bz-sim-alarm,.bz-sim-confirm{backdrop-filter:none}}
+
+/* ─────────────────────────────────────────────────────────────
+   Study Planner Export View — الجدول فقط في الطباعة
+   ───────────────────────────────────────────────────────────── */
+.bz-plan-export{direction:rtl}
+@media print{
+  @page{size:auto;margin:12mm}
+  body{background:#fff!important;color:#172033!important}
+  body *{visibility:hidden!important}
+  .bz-plan-export,.bz-plan-export *{visibility:visible!important}
+  .bz-plan-export{position:static!important;left:auto!important;top:auto!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;color:#172033!important;box-shadow:none!important}
+  .bz-plan-export table{width:100%!important;border-collapse:collapse!important;table-layout:fixed!important;page-break-inside:auto!important}
+  .bz-plan-export tr{page-break-inside:avoid!important;page-break-after:auto!important}
+  .bz-plan-export th,.bz-plan-export td{border:1px solid #94a3b8!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+  .bz-plan-export+*{display:none!important}
+}
