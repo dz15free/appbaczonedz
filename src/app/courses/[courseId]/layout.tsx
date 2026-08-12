@@ -43,7 +43,11 @@ export async function generateMetadata(
   const url = `${SITE}/courses/${courseId}`;
 
   if (!c?.title) {
-    return { title: "دورة — BacZoneDZ", robots: { index: false, follow: false } };
+    return {
+      title: "دورة غير موجودة — BacZoneDZ",
+      robots: { index: false, follow: false },
+      alternates: { canonical: url },
+    };
   }
 
   const title = `${c.title} — دورة على BacZoneDZ`;

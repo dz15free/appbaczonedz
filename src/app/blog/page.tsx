@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-shell";
 import { SiteFooter } from "@/components/ui/site-footer";
+import { BlogLayout } from "@/features/blog/public-sidebar";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { BLOG_LABELS, labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
@@ -65,6 +66,8 @@ export default async function BlogIndex(
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
+        <BlogLayout placement="blog-index">
+          <>
         <header className="border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
@@ -140,6 +143,8 @@ export default async function BlogIndex(
             </ul>
           )}
         </div>
+          </>
+        </BlogLayout>
       </main>
       <SiteFooter />
     </>

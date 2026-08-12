@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
-import { SPEC_INDEX } from "@/features/guide/spec-index";
+import { mergeGuide } from "@/features/guide/guide-merge";
 import { BRANCHES } from "@/features/calculator/branches";
 import { GUIDES } from "@/features/guides/guides-data";
+import { getPublishedEntries } from "@/features/blog/blog-server";
 import { SITE_URL } from "@/lib/site-url";
 import { LEGAL_PATHS } from "@/features/settings/legal-links";
 
@@ -78,11 +79,19 @@ async function publishedCourses(): Promise<{ id: string; at: number }[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const blogEntries = await getPublishedEntries();
 
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/courses`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
+    { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+    ...blogEntries.filter((p) => !p.noindex).map((p) => ({
+      url: `${BASE}/blog/${encodeURIComponent(p.slug)}`,
+      lastModified: new Date(p.updatedAt || p.publishedAt || now),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     { url: `${BASE}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     // صفحة لكل دليل — محتوى مرجعي يستحقّ الفهرسة منفرداً
     ...GUIDES.map((g) => ({
@@ -95,7 +104,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tools/study-planner`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/tools/youtube-channels`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/exam-simulator`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
-    { url: `${BASE}/tools/weighted-average`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE}/tools/weighted-average`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.85 },
+    { url: `${BASE}/tools/planner`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.8 },
+    { url: `${BASE}/tools/pomodoro`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
     ...BRANCHES.map((b) => ({
@@ -106,8 +117,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     /* الصفحات القانونية والتعريفية — مراجعة AdSense تبحث عن سياسة
        الخصوصية أوّلاً، وغيابها عن الخريطة يُبطئ فهرستها.
-       و`/blog` ليست هنا: لها خريطتها الخاصّة `/blog/sitemap.xml` لأنّها
-       تتغيّر مع كل مقال، فلا يُبطَل تخزين هذه الخريطة معها. */
+       وتوجد أيضاً خريطة فرعية للمدونة، لكن إدراجها هنا يجعل sitemap
+       الرئيسي مفهوماً حتى عند أدوات الفحص التي لا تتبع خريطةً ثانية. */
     ...LEGAL_PATHS.filter((path) => path !== "/blog").map((path) => ({
       url: `${BASE}${path}`,
       lastModified: now,
@@ -126,9 +137,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.8,
       }))
-    : SPEC_INDEX.map((s) => ({
-        url: `${BASE}/specialties/${s.slug}`,
-        lastModified: now,
+    : mergeGuide({}).filter((s) => s.published).map((s) => ({
+        url: `${BASE}/specialties/${s.permalink?.trim() || s.slug}`,
+        lastModified: s.updatedAt ? new Date(s.updatedAt) : now,
         changeFrequency: "monthly" as const,
         priority: 0.8,
       }));

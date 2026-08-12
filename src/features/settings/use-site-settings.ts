@@ -31,6 +31,29 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
+export type BlogSidebarBlockType = "native" | "text" | "image" | "link" | "cta";
+export type BlogSidebarPlacement = "blog-index" | "article" | "both";
+
+export interface BlogSidebarBlock {
+  id: string;
+  type: BlogSidebarBlockType;
+  title?: string;
+  content?: string;
+  html?: string;
+  css?: string;
+  javascript?: string;
+  href?: string;
+  imageUrl?: string;
+  active?: boolean;
+  order: number;
+  placement: BlogSidebarPlacement;
+}
+
+export interface BlogSidebarSettings {
+  enabled: boolean;
+  blocks: BlogSidebarBlock[];
+}
+
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -45,6 +68,8 @@ export interface SiteSettings {
      ولا بدّ من تعريفها هنا وإلّا رفض `saveSetting` المفتاح (النوع
      `keyof SiteSettings`). */
   footerLinksCleared?: boolean;
+  /** Widgets اختيارية للمدونة؛ لا يُنشأ محتوى افتراضي للمستخدم. */
+  blogSidebar?: BlogSidebarSettings;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
@@ -154,6 +179,8 @@ const DEFAULTS: SiteSettings = {
   footerLinks: [
     { label: "الموقع الرئيسي", href: "https://www.baczonedz.com" },
   ],
+  footerLinksCleared: false,
+  blogSidebar: { enabled: false, blocks: [] },
   maintenanceMode: false,
   allowRegistration: true,
 

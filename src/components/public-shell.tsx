@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRightToBracket, faUserPlus, faGraduationCap, faCalculator,
-  faHouse, faBookOpen, faArrowLeft, faCheckCircle,
+  faHouse, faBookOpen, faArrowLeft, faCheckCircle, faToolbox,
+  faNewspaper, faCircleInfo, faEnvelope, faFileLines,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -29,8 +30,13 @@ import { Brand } from "@/components/ui/brand";
 
 const PUBLIC_NAV = [
   { href: "/courses", label: "الدورات", icon: faGraduationCap },
+  { href: "/tools", label: "الأدوات", icon: faToolbox },
+  { href: "/guides", label: "الأدلّة", icon: faFileLines },
   { href: "/specialties", label: "التخصّصات", icon: faBookOpen },
+  { href: "/blog", label: "المدونة", icon: faNewspaper },
   { href: "/calculate", label: "حساب المعدّل", icon: faCalculator },
+  { href: "/about", label: "عن BacZone", icon: faCircleInfo },
+  { href: "/contact", label: "تواصل معنا", icon: faEnvelope },
 ];
 
 export function PublicHeader() {
@@ -42,7 +48,7 @@ export function PublicHeader() {
   return (
     <header className="bz-pubheader">
       <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
-        <Brand href="/" size="sm" beta={false} className="shrink" />
+        <Brand href={user ? "/home" : "/"} size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
         <nav className="mx-auto hidden items-center gap-1 md:flex">

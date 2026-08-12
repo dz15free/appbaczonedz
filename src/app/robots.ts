@@ -17,8 +17,7 @@ export default function robots(): MetadataRoute.Robots {
            تبحث عن سياسة الخصوصية أوّلاً، ومنعُها بالخطأ يُوجب الرفض. */
         allow: [
           "/", "/specialties", "/specialties/", "/calculate", "/calculate/",
-          /* `/blog` تأتي ضمن LEGAL_PATHS — فلا تُكرَّر هنا */
-          "/courses", "/courses/", "/blog/", ...LEGAL_PATHS,
+          "/courses", "/courses/", "/blog", "/blog/", ...LEGAL_PATHS,
           /* الأدوات العامّة: صفحة الأدوات والموزون والمخطّط والمؤقّت
              محتوى حقيقي مفيد ويجب أن يُفهرَس. */
           "/guides", "/guides/",
@@ -48,6 +47,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${BASE}/sitemap.xml`,
+    sitemap: [`${BASE}/sitemap.xml`, `${BASE}/blog/sitemap.xml`],
   };
 }

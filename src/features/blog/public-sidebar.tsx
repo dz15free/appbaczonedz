@@ -8,7 +8,7 @@ import { useSiteSettings, type BlogSidebarBlock } from "@/features/settings/use-
 
 function safeHref(value?: string) {
   const href = (value ?? "").trim();
-  return href.startsWith("/") || /^https?:\/\//i.test(href) || href.startsWith("mailto:") ? href : "#";
+  return href.startsWith("/") || href === "#" || href.startsWith("#") || /^https?:\/\//i.test(href) || href.startsWith("mailto:") ? href : "#";
 }
 
 function isExternal(href: string) {
@@ -60,7 +60,7 @@ function SafeNativeMarkup({ html, css }: { html: string; css: string }) {
     body.innerHTML = sanitizeHtml(html);
     body.querySelectorAll("a").forEach((anchor) => {
       const href = anchor.getAttribute("href") || "#";
-      if (!(href.startsWith("/") || /^https?:\/\//i.test(href) || href.startsWith("mailto:") || href.startsWith("#"))) {
+      if (!(href.startsWith("/") || href.startsWith("#") || /^https?:\/\//i.test(href) || href.startsWith("mailto:"))) {
         anchor.removeAttribute("href");
       }
       if (/^https?:\/\//i.test(href)) {

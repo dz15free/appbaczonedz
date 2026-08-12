@@ -38,6 +38,7 @@ import { AdminCourses } from "@/features/courses/admin-courses";
 import { AdminStudyFeed } from "@/features/feed/admin-feed";
 import { AdminMissions } from "@/features/daily/admin-missions";
 import { BlogAdmin } from "@/features/blog/blog-admin";
+import { BlogSidebarAdmin } from "@/features/blog/blog-sidebar-admin";
 
 interface Report {
   firebaseKey: string;
@@ -713,7 +714,10 @@ export default function AdminPage() {
         {tab === "blog" && user && (
           /* ⚠️ لا علاقة لهذا بمحرّر الغرف (`room-notes.tsx`) — محرّر
              مستقلّ في `features/blog`، فتعديل المدوّنة لا يمسّ حصّة. */
-          <BlogAdmin uid={user.uid} />
+          <div className="space-y-6">
+            <BlogAdmin uid={user.uid} />
+            <BlogSidebarAdmin />
+          </div>
         )}
 
         {tab === "footer" && (
