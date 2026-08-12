@@ -41,6 +41,8 @@ export interface NavLink {
 export const DEFAULT_NAV: NavLink[] = [
   { id: "specialties", label: "التخصصات الجامعية", href: "/specialties", icon: "book", order: 10 },
   { id: "calculate", label: "حساب معدل البكالوريا", href: "/calculate", icon: "poll", order: 20 },
+  { id: "tools", label: "أدوات البكالوريا", href: "/tools", icon: "grid", order: 22 },
+  { id: "guides", label: "أدلّة التوجيه", href: "/guides", icon: "book", order: 24 },
   { id: "planner", label: "مخطّط البكالوريا للطباعة", href: "/tools/planner", icon: "file", order: 30 },
   { id: "weighted", label: "حساب المعدّل الموزون", href: "https://www.baczonedz.com/p/2026.html", icon: "target", external: true, order: 40 },
   { id: "past", label: "بكالوريات سابقة", href: "https://www.baczonedz.com/p/blog-page_9.html", icon: "file", external: true, order: 50 },

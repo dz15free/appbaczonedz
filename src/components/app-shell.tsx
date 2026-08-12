@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faNewspaper, faLink, faChalkboardUser, faRightToBracket, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -43,7 +43,6 @@ const NAV = [
   { href: "/courses", label: "الدورات", icon: faGraduationCap, wide: false },
   { href: "/rooms", label: "الغرف", icon: faUsers, wide: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, wide: false },
-  { href: "/blog", label: "المدونة", icon: faNewspaper, wide: true },
   { href: "/library", label: "المكتبة", icon: faBookOpen, wide: true },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, wide: true },
 ];
@@ -99,6 +98,8 @@ const NAV_FA: Record<string, typeof faLink> = {
   book: faBookOpen, poll: faCalculator, file: faFileLines, target: faScaleBalanced,
   check: faClipboardCheck, timer: faCalendarCheck, users: faUsers, home: faHouse,
   graduation: faGraduationCap, calendar: faCalendarDays,
+  // `grid` لأدوات الموقع — بلا تعريفها ترجع إلى أيقونة رابط عامّة
+  grid: faLayerGroup,
 };
 
 const MORE_DROPDOWN_BASE = [
@@ -143,7 +144,6 @@ const MENU_ITEMS_TEACHER = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
-  { href: "/blog", label: "المدونة", icon: faNewspaper, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
 ];
 // روابط خارجية ثابتة تُضاف بعد الروابط القابلة للتعديل من الأدمن

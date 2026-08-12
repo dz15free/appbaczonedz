@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
-import { PublicHeader } from "@/components/public-shell";
-import { SiteFooter } from "@/components/ui/site-footer";
+import { AppShell } from "@/components/app-shell";
 import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
@@ -151,8 +150,7 @@ export default function PlannerPage() {
   }
 
   return (
-    <>
-      <PublicHeader />
+    <AppShell>
       {/* أدوات التحكّم — تختفي عند الطباعة */}
       <div className="no-print mx-auto max-w-5xl px-4 py-4">
         <button onClick={() => history.back()} className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary">
@@ -280,9 +278,8 @@ export default function PlannerPage() {
           }
           .no-print, .no-print * { display: none !important; }
         }
-      `}      </style>
-      <SiteFooter />
-    </>
+      `}</style>
+    </AppShell>
   );
 }
 

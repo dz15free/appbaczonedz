@@ -8,7 +8,6 @@ import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
 import { BlogLayout } from "@/features/blog/public-sidebar";
-import { AdSlot } from "@/components/ui/ad-slot";
 
 /* ════════════════════════════════════════════════════════════
    صفحة المقال — مكوّن خادم
@@ -131,7 +130,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <header className="bz-article-hero border-b border-border bg-surface">
+        <BlogLayout placement="article">
+        <header className="border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
               <Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link>
@@ -160,7 +160,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               </p>
             )}
 
-            <div className="mt-5 flex flex-wrap items-center gap-2 text-[12px] text-text-muted" aria-label="بيانات المقال">
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-text-muted">
               <span>{post.authorName}</span>
               {post.publishedAt ? (
                 <>
@@ -186,19 +186,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             height={630}
             loading="eager"
             decoding="async"
-            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-2xl object-cover px-4 shadow-xl shadow-slate-900/10"
+            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-xl object-cover px-4"
           />
         )}
-        <AdSlot placement="article-top" className="mx-auto max-w-5xl px-4 pt-5" />
 
-        <BlogLayout>
-          <div className="w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
           {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
-          <article className="bz-article bz-article-paper" dangerouslySetInnerHTML={{ __html: html }} />
-          <AdSlot placement="article-middle" className="mt-8" />
+          <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
 
           <PublicCta />
-          <AdSlot placement="article-bottom" className="mt-4" />
 
           {related.length > 0 && (
             <section className="mt-10 border-t border-border pt-6">
@@ -207,20 +203,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 {related.map((r) => (
                   <li key={r.id}>
                     <Link href={`/blog/${r.slug}`}
-                      className="block h-full overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-                      {r.cover && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r.cover} alt={r.coverAlt || r.title} width={480} height={250} loading="lazy" className="aspect-[480/250] w-full object-cover" />
-                      )}
-                      <span className="block p-3"><span className="block text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span>
-                        <span className="mt-1 block text-[11.5px] text-text-muted">{r.readMinutes} دقائق</span></span>
+                      className="block h-full rounded-xl border border-border bg-surface p-3 transition hover:border-primary/40">
+                      <span className="block text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span>
+                      <span className="mt-1 block text-[11.5px] text-text-muted">{r.readMinutes} دقائق</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </section>
           )}
-          </div>
+        </div>
         </BlogLayout>
       </main>
       <SiteFooter />

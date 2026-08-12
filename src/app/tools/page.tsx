@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { absUrl } from "@/features/guide/site-url";
-import { PublicHeader } from "@/components/public-shell";
-import { SiteFooter } from "@/components/ui/site-footer";
 
 /* ════════════════════════════════════════════════════════════
    أدوات البكالوريا — الصفحة الأمّ
@@ -169,9 +167,7 @@ export default function ToolsPage() {
   };
 
   return (
-    <>
-      <PublicHeader />
-      <main className="bz-guide min-h-screen">
+    <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -212,9 +208,7 @@ export default function ToolsPage() {
           </div>
         </section>
       </div>
-      </main>
-      <SiteFooter />
-    </>
+    </main>
   );
 }
 

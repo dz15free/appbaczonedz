@@ -31,28 +31,6 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
-export type BlogSidebarBlockType = "text" | "link" | "image" | "cta" | "embed";
-export interface BlogSidebarBlock {
-  id: string;
-  type: BlogSidebarBlockType;
-  title?: string;
-  content?: string;
-  href?: string;
-  imageUrl?: string;
-  /** محتوى Widget مضمّن؛ يُعرض داخل sandbox معزول ولا يُحقن في React. */
-  html?: string;
-  css?: string;
-  javascript?: string;
-  sandbox?: "strict" | "allow-scripts";
-  active?: boolean;
-  order?: number;
-}
-
-export interface BlogSidebarConfig {
-  enabled: boolean;
-  blocks: BlogSidebarBlock[];
-}
-
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -118,10 +96,10 @@ export interface SiteSettings {
   /* ── جهات التواصل للإعلانات ── */
   adsEmail?: string;
   adsWhatsapp?: string;
+  /* ── Widgets Sidebar للمدونة: لا تُعرض افتراضياً ولا تُنشئ محتوى وهمياً ── */
+  blogSidebar?: BlogSidebarSettings;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
-  /* ── Sidebar المدونة: Native blocks أو embed معزول داخل sandbox ── */
-  blogSidebar?: BlogSidebarConfig;
 }
 
 export interface AdSlotConfig {
@@ -133,6 +111,30 @@ export interface AdSlotConfig {
 }
 
 export interface FooterLink { label: string; href: string }
+
+export type BlogSidebarBlockType = "text" | "image" | "link" | "cta" | "native";
+
+export interface BlogSidebarBlock {
+  id: string;
+  type: BlogSidebarBlockType;
+  title?: string;
+  html?: string;
+  css?: string;
+  javascript?: string;
+  content?: string;
+  imageUrl?: string;
+  href?: string;
+  active: boolean;
+  order: number;
+  placement: "blog-index" | "article" | "both";
+  /** JS is retained for future reviewed integrations but is not executed in the app. */
+  scriptEnabled?: boolean;
+}
+
+export interface BlogSidebarSettings {
+  enabled: boolean;
+  blocks: BlogSidebarBlock[];
+}
 
 /* 🐛 **هنا كان سرّ «الأيقونة القديمة على أندرويد والجديدة على iPhone».**
 
@@ -256,7 +258,6 @@ const DEFAULTS: SiteSettings = {
   weightedCalcUrl: "https://www.baczonedz.com/p/2026.html",
   adsEmail: "saidaouina22@gmail.com",
   adsWhatsapp: "+213657498876",
-  blogSidebar: { enabled: false, blocks: [] },
 };
 
 /* تصحيح الشعار القديم المحفوظ في قاعدة البيانات.

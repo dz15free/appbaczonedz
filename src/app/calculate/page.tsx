@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
-import { BRANCHES } from "@/features/calculator/branches";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faCalculator } from "@fortawesome/free-solid-svg-icons";
+import { BRANCHES, totalCoef } from "@/features/calculator/branches";
 import { absUrl } from "@/features/guide/site-url";
 
 /* ════════════════════════════════════════════════════════════
@@ -133,18 +131,19 @@ export default function CalculateHub() {
           />
 
           {/* Hero */}
-          <header className="bz-guide-hero bz-calc-hero">
+          <header className="bz-guide-hero">
             <div className="mx-auto w-full max-w-4xl px-4 py-9 sm:py-12">
-              <span className="bz-guide-kicker">
-                <FontAwesomeIcon icon={faCalculator} className="h-3 w-3" />
-                حاسبة معدل البكالوريا 2027
-              </span>
-              <h1 className="mt-2.5 max-w-3xl font-display text-[26px] font-extrabold leading-[1.25] sm:text-4xl">
-                احسب معدل البكالوريا حسب شعبتك
+              <span className="bz-guide-kicker">حاسبة BacZone 2027</span>
+              <h1 className="mt-2.5 font-display text-[26px] font-extrabold leading-[1.25] sm:text-4xl">
+                حساب معدل البكالوريا 2027 — جميع الشعب
               </h1>
               <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
-                اختر الشعبة، أدخل علاماتك، واحصل على نتيجة فورية توضّح معدّلك وتقديرك.
-                تعتمد الحاسبة على المعاملات المعروضة في صفحة كل شعبة.
+                احسب معدّلك بدقة وفق{" "}
+                <b className="text-white">
+                  المعاملات المعتمدة بعد تعديلات وزارة التربية
+                </b>
+                . اختر شعبتك، أدخل علاماتك، واحصل على النتيجة فوراً —{" "}
+                <b className="text-white">بلا تسجيل</b>.
               </p>
             </div>
           </header>
@@ -152,11 +151,10 @@ export default function CalculateHub() {
           <div className="mx-auto w-full max-w-4xl px-3 pb-14 sm:px-4">
             {/* رابط العودة — هدف لمس كامل */}
             <Link
-              href="/"
+              href="/home"
               className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[13px] font-extrabold text-[var(--bz-blue)] transition hover:bg-[var(--bz-blue-050)]"
             >
-              <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" />
-              العودة إلى BacZone
+              ← العودة إلى BacZone
             </Link>
 
             {/* اختيار الشعبة */}
@@ -182,7 +180,7 @@ export default function CalculateHub() {
                   <span className="min-w-0">
                     <span className="bz-branch-name">{b.short}</span>
                     <span className="bz-branch-meta">
-                      افتح الحاسبة وأدخل علاماتك
+                      {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)}
                     </span>
                   </span>
                 </Link>

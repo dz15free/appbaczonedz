@@ -714,7 +714,7 @@ export default function AdminPage() {
         {tab === "blog" && user && (
           /* ⚠️ لا علاقة لهذا بمحرّر الغرف (`room-notes.tsx`) — محرّر
              مستقلّ في `features/blog`، فتعديل المدوّنة لا يمسّ حصّة. */
-          <div className="space-y-4">
+          <div className="space-y-5">
             <BlogAdmin uid={user.uid} />
             <BlogSidebarAdmin />
           </div>

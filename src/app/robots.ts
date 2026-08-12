@@ -21,6 +21,7 @@ export default function robots(): MetadataRoute.Robots {
           "/courses", "/courses/", "/blog/", ...LEGAL_PATHS,
           /* الأدوات العامّة: صفحة الأدوات والموزون والمخطّط والمؤقّت
              محتوى حقيقي مفيد ويجب أن يُفهرَس. */
+          "/guides", "/guides/",
           "/tools", "/tools/weighted-average", "/tools/exam-simulator",
           "/tools/study-planner", "/tools/youtube-channels",
           "/tools/planner", "/tools/pomodoro",

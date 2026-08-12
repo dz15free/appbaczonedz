@@ -271,9 +271,7 @@ export const SPEC_INDEX: SpecLite[] = [
   {"slug": "gp", "ar": "هندسة الطرائق", "fr": "Génie des Procédés", "field": "هندسة وتكنولوجيا"},
   {"slug": "aeronautique", "ar": "هندسة الطيران", "fr": "Aéronautique", "field": "هندسة وتكنولوجيا"},
   {"slug": "gt", "ar": "هندسة النقل", "fr": "Génie du Transport", "field": "هندسة وتكنولوجيا"},
-  {"slug": "archi-civil", "ar": "هندسة معمارية + هندسة مدنية | ARCHITECTURAL ENGINEERING (ARCHI-CIVIL)", "fr": "", "field": "هندسة وتكنولوجيا"},
-  {"slug": "psychology", "ar": "علم النفس", "fr": "Psychologie", "field": "علوم إنسانية واجتماعية"},
-  {"slug": "data-science", "ar": "علم البيانات والذكاء الاصطناعي", "fr": "Data Science & Intelligence Artificielle", "field": "إعلام آلي ورقمنة"}
+  {"slug": "archi-civil", "ar": "هندسة معمارية + هندسة مدنية | ARCHITECTURAL ENGINEERING (ARCHI-CIVIL)", "fr": "", "field": "هندسة وتكنولوجيا"}
 ];
 
 export const SPEC_FIELDS: string[] = [...new Set(SPEC_INDEX.map((s) => s.field))].sort(
