@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { SiteFooter } from "@/components/ui/site-footer";
-import { BlogLayout } from "@/features/blog/public-sidebar";
 import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-server";
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
@@ -130,8 +129,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <BlogLayout placement="article">
-          <>
         <header className="border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
@@ -214,8 +211,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </section>
           )}
         </div>
-          </>
-        </BlogLayout>
       </main>
       <SiteFooter />
     </>

@@ -31,27 +31,26 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
-export type BlogSidebarBlockType = "native" | "text" | "image" | "link" | "cta";
-export type BlogSidebarPlacement = "blog-index" | "article" | "both";
-
+/**
+ * عناصر الشريط الجانبي للمدونة التي تديرها لوحة الإدارة.
+ * الحقول الاختيارية تسمح بالحفاظ على توافق الإعدادات القديمة مع أنواع
+ * العناصر التي قد تضيفها اللوحة مستقبلاً، بينما يبقى `id` ثابتاً للتعريف.
+ */
 export interface BlogSidebarBlock {
   id: string;
-  type: BlogSidebarBlockType;
+  type?: string;
   title?: string;
+  enabled?: boolean;
   content?: string;
   html?: string;
-  css?: string;
-  javascript?: string;
-  href?: string;
-  imageUrl?: string;
-  active?: boolean;
-  order: number;
-  placement: BlogSidebarPlacement;
+  [key: string]: unknown;
 }
 
+/** الإعداد الكامل للشريط الجانبي للمدونة. */
 export interface BlogSidebarSettings {
-  enabled: boolean;
+  enabled?: boolean;
   blocks: BlogSidebarBlock[];
+  [key: string]: unknown;
 }
 
 export interface SiteSettings {
@@ -68,8 +67,6 @@ export interface SiteSettings {
      ولا بدّ من تعريفها هنا وإلّا رفض `saveSetting` المفتاح (النوع
      `keyof SiteSettings`). */
   footerLinksCleared?: boolean;
-  /** Widgets اختيارية للمدونة؛ لا يُنشأ محتوى افتراضي للمستخدم. */
-  blogSidebar?: BlogSidebarSettings;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
@@ -121,6 +118,8 @@ export interface SiteSettings {
   /* ── جهات التواصل للإعلانات ── */
   adsEmail?: string;
   adsWhatsapp?: string;
+  /* ── إعدادات الشريط الجانبي للمدونة ── */
+  blogSidebar?: BlogSidebarSettings;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
 }
@@ -179,8 +178,6 @@ const DEFAULTS: SiteSettings = {
   footerLinks: [
     { label: "الموقع الرئيسي", href: "https://www.baczonedz.com" },
   ],
-  footerLinksCleared: false,
-  blogSidebar: { enabled: false, blocks: [] },
   maintenanceMode: false,
   allowRegistration: true,
 

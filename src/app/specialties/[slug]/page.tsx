@@ -32,11 +32,9 @@ export async function generateMetadata(
      في `sitemap.xml` بعنوان واحد = تكرار عناوين صريح، وهو من أقوى
      أسباب رفض الأرشفة. */
   if (!spec) {
-    const missingCanonical = `/specialties/${encodeURIComponent(decodeURIComponent(slug))}`;
     return {
-      title: "تخصّص جامعي غير موجود — دليل BacZone",
+      title: "التخصّصات الجامعية في الجزائر — دليل BacZone",
       robots: { index: false, follow: true },
-      alternates: { canonical: missingCanonical },
     };
   }
 
