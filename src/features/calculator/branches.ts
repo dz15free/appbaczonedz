@@ -54,12 +54,12 @@ export interface CalcResult {
 }
 
 export function mentionOf(avg: number): string {
-  // تصنيف واضح بلا تداخل: الحد الأدنى شامل والحد الأعلى ينتقل للتصنيف التالي.
-  if (avg >= 17) return "ممتاز";
-  if (avg >= 15) return "جيد جدًا";
-  if (avg >= 12) return "حسن";
+  if (avg >= 18) return "ممتاز";
+  if (avg >= 16) return "جيّد جدّاً";
+  if (avg >= 14) return "جيّد";
+  if (avg >= 12) return "قريب من الجيّد";
   if (avg >= 10) return "مقبول";
-  return "دون المعدل";
+  return "دون المعدّل";
 }
 
 /**

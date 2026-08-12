@@ -21,7 +21,9 @@ export default function robots(): MetadataRoute.Robots {
           "/courses", "/courses/", "/blog/", ...LEGAL_PATHS,
           /* الأدوات العامّة: صفحة الأدوات والموزون والمخطّط والمؤقّت
              محتوى حقيقي مفيد ويجب أن يُفهرَس. */
-          "/tools", "/tools/weighted-average", "/tools/planner", "/tools/pomodoro",
+          "/tools", "/tools/weighted-average", "/tools/exam-simulator",
+          "/tools/study-planner", "/tools/youtube-channels",
+          "/tools/planner", "/tools/pomodoro",
         ],
         /* صفحات الدورات الخاصّة ممنوعة صراحةً: البناء والتعديل والمشغّل
            خلف تسجيل الدخول، وزحفها يُهدر ميزانية الزحف. المنشور وحده
