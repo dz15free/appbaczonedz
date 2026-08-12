@@ -31,6 +31,43 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
+/* ════════════════════════════════════════════════════════════
+   الشريط الجانبي للمدوّنة
+
+   ⚠️ كان `blog-sidebar-admin.tsx` يستورد هذين النوعين من هنا ولم
+   يكونا معرَّفين — فيفشل البناء عند فحص الأنواع.
+
+   كل كتلة مستقلّة بذاتها: يمكن إخفاؤها بلا حذفها (`enabled`)،
+   وترتيبها برقم لا بموضعها في المصفوفة — فالسحب والإفلات لا يُعيد
+   بناء البيانات كلّها.
+
+   ⚠️ و`html` يُحقن كما هو، وهو مقبول **لأنّ الكاتب هو مالك الموقع
+   وحده** وقاعدة الكتابة تحصره بالأدمن. لا تُتِح هذا المسار لغيره.
+   ════════════════════════════════════════════════════════════ */
+
+export type BlogSidebarKind = "html" | "recent" | "labels" | "tools";
+
+export interface BlogSidebarBlock {
+  id: string;
+  /** نوع الكتلة — `html` كتلة حرّة، والبقيّة كتل جاهزة */
+  kind: BlogSidebarKind;
+  title?: string;
+  /** محتوى الكتلة الحرّة */
+  html?: string;
+  /** مخفيّة بلا حذف: التجربة بلا فقدان ما كتبته */
+  enabled?: boolean;
+  /** الأصغر أوّلاً */
+  order?: number;
+}
+
+export interface BlogSidebarSettings {
+  blocks?: BlogSidebarBlock[];
+  /** يُخفي الشريط كلّه دون مسّ كتلِه */
+  enabled?: boolean;
+  /** فُرِّغ عمداً — Firebase يحذف المصفوفة الفارغة فلا نُميّزها بلا راية */
+  cleared?: boolean;
+}
+
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -45,6 +82,8 @@ export interface SiteSettings {
      ولا بدّ من تعريفها هنا وإلّا رفض `saveSetting` المفتاح (النوع
      `keyof SiteSettings`). */
   footerLinksCleared?: boolean;
+  /** الشريط الجانبي للمدوّنة — يُحرَّر من لوحة الإدارة */
+  blogSidebar?: BlogSidebarSettings;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
