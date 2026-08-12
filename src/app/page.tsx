@@ -9,16 +9,13 @@ import {
   faChevronDown,
   faShieldHalved,
   faBolt,
-  faUsers, faCalculator, faBookOpen, faWrench, faCalendarDays,
-  faGraduationCap, faChartLine,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { SiteFooter } from "@/components/ui/site-footer";
-import { PublicHeader } from "@/components/public-shell";
-import { LandingBlogSection } from "@/features/blog/landing-blog-section";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -64,15 +61,11 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!loaded) return <LandingLoading />;
-
   return (
-    <>
-      <PublicHeader />
-      <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
+    <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
       {/* ═══════════════ HEADER ═══════════════ */}
       <header
-          className={`hidden fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           scrolled
             ? "border-b border-white/10 bg-[#0a0c14]/80 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)]"
             : "bg-transparent"
@@ -189,16 +182,6 @@ export default function LandingPage() {
             >
               {s.heroCtaSecondary}
             </Link>
-          </div>
-
-          <div className="mt-12 w-full max-w-3xl rounded-[1.75rem] border border-white/10 bg-white/[0.055] p-2 text-start shadow-[0_28px_80px_-36px_rgba(37,99,235,.65)] backdrop-blur-xl sm:mt-14 sm:p-3" aria-label="نظرة على منصة BacZone">
-            <div className="rounded-[1.25rem] border border-white/10 bg-[#0b1020]/90 p-3 sm:p-4">
-              <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3"><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /><span className="text-[11px] font-bold text-white/70">مساحة المراجعة</span></div><span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold text-white/45">BacZone</span></div>
-              <div className="grid gap-3 pt-3 sm:grid-cols-[1.1fr_.9fr]">
-                <Link href="/tools" className="rounded-2xl border border-blue-300/15 bg-gradient-to-br from-blue-500/20 to-indigo-500/5 p-4 transition hover:border-blue-300/40"><span className="text-[10px] font-extrabold uppercase tracking-[.16em] text-blue-200/70">أدواتك</span><strong className="mt-2 block text-[16px] font-extrabold text-white">خطط مراجعتك بوضوح</strong><span className="mt-1 block text-[11.5px] leading-relaxed text-white/50">حاسبة المعدل، المحاكي، ومخطط الدراسة في مكان واحد.</span><span className="mt-4 inline-flex text-[11px] font-extrabold text-blue-200">استكشف الأدوات ←</span></Link>
-                <div className="grid gap-3 sm:grid-rows-2"><Link href="/courses" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-emerald-300/30"><span className="text-[11px] font-extrabold text-emerald-200">غرف ودورات</span><span className="mt-1 block text-[12px] leading-relaxed text-white/55">تعلّم مع محتوى ومجموعات تناسب مسارك.</span></Link><Link href="/blog" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-sky-300/30"><span className="text-[11px] font-extrabold text-sky-200">المجلة التعليمية</span><span className="mt-1 block text-[12px] leading-relaxed text-white/55">اقرأ دليلاً عملياً ثم طبّقه في مراجعتك.</span></Link></div>
-              </div>
-            </div>
           </div>
 
           {(s.badges ?? []).length > 0 && (
@@ -364,24 +347,6 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ═══════════════ TOOLS ═══════════════ */}
-      <section className="px-5 py-16 sm:px-6 sm:py-24" aria-labelledby="landing-tools-title">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center"><span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary"><FontAwesomeIcon icon={faWrench} className="h-3 w-3" /> أدوات الدراسة</span><h2 id="landing-tools-title" className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">كل ما تحتاجه في مكان واحد</h2><p className="mt-3 text-[14px] leading-relaxed text-text-muted sm:text-[15px]">أدوات مجانية مبنية حول طريقة دراسة طالب البكالوريا الجزائري، من الحساب إلى التخطيط والتدريب.</p></div>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[{ href: "/calculate", icon: faCalculator, title: "حساب معدل البكالوريا", desc: "احسب معدلك بسهولة مع نتيجة واضحة وتقدير لمستواك." }, { href: "/tools/weighted-average", icon: faChartLine, title: "المعدل الموزون", desc: "افهم كيف يؤثر المعدل الموزون في اختياراتك الجامعية." }, { href: "/tools/exam-simulator", icon: faGraduationCap, title: "غرفة امتحان افتراضية", desc: "تدرّب على أجواء البكالوريا مع مؤقت ومواضيع سابقة." }, { href: "/tools/study-planner", icon: faCalendarDays, title: "مخطط المراجعة", desc: "حوّل أهدافك إلى جدول أسبوعي قابل للطباعة والمتابعة." }, { href: "/specialties", icon: faBookOpen, title: "دليل التخصصات", desc: "اكتشف التخصصات ومعدلات القبول والآفاق الدراسية." }, { href: "/tools", icon: faWrench, title: "مركز الأدوات", desc: "تصفح الأدوات التعليمية التي تساعدك قبل وأثناء المراجعة." }].map((tool) => <Link key={tool.href} href={tool.href} className="group rounded-2xl border border-border/60 bg-surface p-5 transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><FontAwesomeIcon icon={tool.icon} className="h-5 w-5" /></span><h3 className="mt-4 text-[15px] font-extrabold">{tool.title}</h3><p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{tool.desc}</p><span className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-primary">افتح الأداة <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>)}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════ PLATFORM ═══════════════ */}
-      <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24" aria-labelledby="landing-platform-title">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div><span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300"><FontAwesomeIcon icon={faUsers} className="h-3 w-3" /> المنصة والمجتمع</span><h2 id="landing-platform-title" className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">لا تراجع وحدك</h2><p className="mt-4 text-[14px] leading-[1.95] text-text-muted sm:text-[15px]">BacZoneDZ يجمع غرف المراجعة، دورات الأساتذة، المجتمع، والموارد العملية في تجربة واحدة تحترم وقتك وتبقيك قريباً من هدفك.</p><Link href="/register" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-primary/20 transition hover:brightness-110">انضم إلى المنصة <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link></div>
-          <div className="grid gap-3 sm:grid-cols-2">{[{ icon: faUsers, title: "غرف مراجعة", desc: "جلسات تركيز وتعلّم جماعي مع زملائك." }, { icon: faGraduationCap, title: "دورات ومحتوى", desc: "مسارات تعليمية منظمة من أساتذة ومساهمين." }, { icon: faBookOpen, title: "موارد جزائرية", desc: "ملخصات، مواضيع، ومعلومات مرتبطة بالمنهاج." }, { icon: faShieldHalved, title: "تجربة موثوقة", desc: "حسابك وبياناتك ضمن بنية Firebase الحالية الآمنة." }].map((item) => <article key={item.title} className="rounded-2xl border border-border/60 bg-[var(--bz-bg)] p-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /></span><h3 className="mt-3 text-[14px] font-extrabold">{item.title}</h3><p className="mt-1.5 text-[12.5px] leading-relaxed text-text-muted">{item.desc}</p></article>)}</div>
-        </div>
-      </section>
-
       {/* ═══════════════ TRANSPARENCY ═══════════════ */}
       {(s.pricingNote || (s.pricingRows ?? []).length > 0) && (
         <section className="px-5 py-16 sm:px-6 sm:py-24">
@@ -443,8 +408,6 @@ export default function LandingPage() {
         </section>
       )}
 
-      <LandingBlogSection />
-
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section className="relative overflow-hidden px-5 py-20 sm:px-6 sm:py-28">
         <div className="pointer-events-none absolute inset-0 bg-[#07080f]" />
@@ -477,7 +440,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-[13px] text-white/40">
-            {["تصفح بلا تسجيل", "أدوات عملية", "محتوى جزائري"].map((t) => (
+            {["لا رسوم", "لا إعلانات", "لا بطاقة ائتمان"].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <FontAwesomeIcon
                   icon={faCheckCircle}
@@ -495,29 +458,6 @@ export default function LandingPage() {
           الدخول والتسجيل بيده — فما يضيفه الأدمن من لوحته لا يظهر في
           أهمّ صفحة عامّة في الموقع. صار المكوّن الموحّد نفسه. */}
       <SiteFooter variant="full" />
-      </main>
-    </>
-  );
-}
-
-function LandingLoading() {
-  return (
-    <main className="min-h-screen bg-[#07080f] text-white" aria-busy="true" aria-label="جارٍ تحميل إعدادات BacZone">
-      <header className="h-16 border-b border-white/10 bg-[#07080f]/90">
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <span className="h-9 w-28 animate-pulse rounded-xl bg-white/10" />
-          <span className="h-9 w-24 animate-pulse rounded-xl bg-white/10" />
-        </div>
-      </header>
-      <section className="mx-auto flex min-h-[calc(100svh-4rem)] max-w-3xl flex-col items-center justify-center px-5 text-center">
-        <span className="h-5 w-52 animate-pulse rounded-full bg-white/10" />
-        <span className="mt-7 h-16 w-full max-w-2xl animate-pulse rounded-2xl bg-white/10" />
-        <span className="mt-4 h-5 w-full max-w-xl animate-pulse rounded-full bg-white/10" />
-        <div className="mt-9 flex w-full max-w-md gap-3">
-          <span className="h-14 flex-1 animate-pulse rounded-2xl bg-blue-500/20" />
-          <span className="h-14 flex-1 animate-pulse rounded-2xl bg-white/10" />
-        </div>
-      </section>
     </main>
   );
 }

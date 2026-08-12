@@ -35,15 +35,6 @@ import { LEGAL_LINKS } from "@/features/settings/legal-links";
    ليست زينة: بلاها يصل الموقع المفتوح إلى `window.opener`.
    ════════════════════════════════════════════════════════════ */
 
-const PUBLIC_FOOTER_LINKS = [
-  { href: "/tools", label: "الأدوات" },
-  { href: "/specialties", label: "التخصصات" },
-  { href: "/guides", label: "الأدلة" },
-  { href: "/blog", label: "المدونة" },
-  { href: "/about", label: "من نحن" },
-  { href: "/contact", label: "تواصل معنا" },
-];
-
 function FooterLink({ href, label }: { href: string; label: string }) {
   const internal = href.startsWith("/");
   const cls = "transition hover:text-primary hover:underline";
@@ -92,12 +83,6 @@ export function SiteFooter({
         )}
 
         <p className={variant === "full" ? "text-[13px]" : ""}>{text}</p>
-
-        {variant === "full" && (
-          <nav aria-label="روابط الموقع" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
-            {PUBLIC_FOOTER_LINKS.map((l) => <FooterLink key={l.href} href={l.href} label={l.label} />)}
-          </nav>
-        )}
 
         {/* صفّ الأدمن — ما يضبطه من لوحته، ويظهر الآن في كل مكان */}
         {custom.length > 0 && (

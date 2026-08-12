@@ -96,8 +96,6 @@ export interface SiteSettings {
   /* ── جهات التواصل للإعلانات ── */
   adsEmail?: string;
   adsWhatsapp?: string;
-  /* ── Widgets Sidebar للمدونة: لا تُعرض افتراضياً ولا تُنشئ محتوى وهمياً ── */
-  blogSidebar?: BlogSidebarSettings;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
 }
@@ -111,30 +109,6 @@ export interface AdSlotConfig {
 }
 
 export interface FooterLink { label: string; href: string }
-
-export type BlogSidebarBlockType = "text" | "image" | "link" | "cta" | "native";
-
-export interface BlogSidebarBlock {
-  id: string;
-  type: BlogSidebarBlockType;
-  title?: string;
-  html?: string;
-  css?: string;
-  javascript?: string;
-  content?: string;
-  imageUrl?: string;
-  href?: string;
-  active: boolean;
-  order: number;
-  placement: "blog-index" | "article" | "both";
-  /** JS is retained for future reviewed integrations but is not executed in the app. */
-  scriptEnabled?: boolean;
-}
-
-export interface BlogSidebarSettings {
-  enabled: boolean;
-  blocks: BlogSidebarBlock[];
-}
 
 /* 🐛 **هنا كان سرّ «الأيقونة القديمة على أندرويد والجديدة على iPhone».**
 
@@ -190,14 +164,14 @@ const DEFAULTS: SiteSettings = {
   heroCtaPrimary: "أنشئ حسابك وابدأ",
   heroCtaSecondary: "دخول",
   badges: [
-    { id: "b1", icon: "book", label: "واجهة عربية واضحة" },
-    { id: "b2", icon: "wrench", label: "أدوات عملية للمراجعة" },
-    { id: "b3", icon: "users", label: "مجتمع لطلاب البكالوريا" },
-    { id: "b4", icon: "flag", label: "موجّه للطالب الجزائري" },
+    { id: "b1", icon: "ban", label: "بدون إعلانات" },
+    { id: "b2", icon: "signal", label: "يعمل على 3G و4G" },
+    { id: "b3", icon: "users", label: "أساتذة وطلاب جزائريون" },
+    { id: "b4", icon: "flag", label: "صُنعت في الجزائر 🇩🇿" },
   ],
   stepsTitle: "ابدأ في 3 خطوات",
   steps: [
-    { id: "s1", n: "01", title: "أنشئ حسابك", desc: "سجّل بالبريد الإلكتروني، ثم اختر شعبتك واهتماماتك." },
+    { id: "s1", n: "01", title: "أنشئ حسابك", desc: "تسجيل في 30 ثانية بالبريد الإلكتروني، ثم اختر شعبتك." },
     { id: "s2", n: "02", title: "انضم أو أنشئ غرفة/مجموعة", desc: "ابحث عن مجموعة شعبتك أو أنشئ غرفة مع أصدقائك وابدأ المراجعة." },
     { id: "s3", n: "03", title: "تعلّم، شارك، وتقدّم", desc: "استخدم السبورة والصوت والخباشة، واكسب النقاط لترقى في الترتيب." },
   ],
@@ -238,10 +212,10 @@ const DEFAULTS: SiteSettings = {
     { id: "f6", icon: "trophy", title: "نظام إنجازات ومنافسة", desc: "نقاط على كل نشاط، مستويات متصاعدة، أوسمة، وترتيب يومي بين الطلاب." },
     { id: "f7", icon: "users", title: "مجتمع دراسي حقيقي", desc: "منشورات، تعليقات، صداقات، رسائل خاصّة، ومشاركة ملفات الدراسة." },
     { id: "f8", icon: "bell", title: "إشعارات فورية", desc: "يصلك إشعار على هاتفك فور وصول رسالة أو طلب صداقة حتى حين يكون التطبيق مغلقاً." },
-    { id: "f9", icon: "clock", title: "مؤقّت بومودورو", desc: "قسّم جلسة المراجعة إلى فترات تركيز واستراحة تساعدك على بناء عادة ثابتة." },
+    { id: "f9", icon: "clock", title: "مؤقّت بومودورو", desc: "ادرس بتركيز 25 دقيقة ثم استرح 5 دقائق. أثبتت الدراسات أنه يضاعف الإنتاجية." },
   ],
   ctaTitle: "جاهز للانطلاق نحو البكالوريا؟",
-  ctaSubtitle: "انضم إلى الطلاب والأساتذة الجزائريين، وابدأ بتنظيم مراجعتك والاستفادة من الأدوات والمحتوى.",
+  ctaSubtitle: "انضم إلى الطلاب والأساتذة الجزائريين — التسجيل لا يستغرق سوى 30 ثانية.",
   ctaButton: "سجّل الآن",
 
   /* ── محتوى مرحباً بعودتك ── */

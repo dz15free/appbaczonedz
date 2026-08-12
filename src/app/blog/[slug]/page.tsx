@@ -7,7 +7,6 @@ import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-s
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
-import { BlogLayout } from "@/features/blog/public-sidebar";
 
 /* ════════════════════════════════════════════════════════════
    صفحة المقال — مكوّن خادم
@@ -130,7 +129,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <BlogLayout placement="article">
         <header className="border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
@@ -213,7 +211,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             </section>
           )}
         </div>
-        </BlogLayout>
       </main>
       <SiteFooter />
     </>

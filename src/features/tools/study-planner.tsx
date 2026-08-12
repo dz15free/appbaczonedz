@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import html2canvas from "html2canvas";
 import {
   PLAN_BRANCHES, WEEK_DAYS, getBranch, cellOptions,
 } from "@/features/tools/planner-data";
@@ -34,7 +33,6 @@ export function StudyPlanner() {
   const [slots, setSlots] = useState<Slot[]>(DEFAULT_SLOTS);
   const [grid, setGrid] = useState<Record<string, string>>({});
   const gridRef = useRef<HTMLDivElement>(null);
-  const posterRef = useRef<HTMLDivElement>(null);
 
   const b = useMemo(() => getBranch(branch), [branch]);
   const options = useMemo(() => (branch ? cellOptions(branch) : []), [branch]);
@@ -58,23 +56,8 @@ export function StudyPlanner() {
     setTimeout(() => gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }
 
-  function prepareExport() {
-    if (!branch || !days.length || !slots.length) return;
-    setStep(4);
-    setTimeout(() => gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-  }
-
-  async function downloadPng() {
-    if (!posterRef.current) return;
-    const canvas = await html2canvas(posterRef.current, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
-    const link = document.createElement("a");
-    link.download = `جدول-مراجعة-بكالوريا-${branch.replace(/\\s+/g, "-")}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  }
-
   return (
-    <div ref={gridRef} className="bz-calc bz-study-planner">
+    <div ref={gridRef} className="bz-calc">
       {/* شريط الخطوات */}
       <div className="bz-plan-steps">
         {[1, 2, 3].map((n) => (
@@ -179,7 +162,7 @@ export function StudyPlanner() {
             </button>
           </div>
 
-          <div className="bz-plan-scroll bz-plan-print-area">
+          <div className="bz-plan-scroll">
             <table className="bz-plan-grid">
               <thead>
                 <tr>
@@ -218,10 +201,7 @@ export function StudyPlanner() {
           <div className="bz-calc-actions">
             <button onClick={() => setStep(2)} className="bz-calc-reset">رجوع</button>
             <button onClick={() => window.print()} className="bz-calc-go" style={{ background: color }}>
-              اطبع الجدول
-            </button>
-            <button onClick={prepareExport} className="bz-calc-go" style={{ background: "#16a34a" }}>
-              معاينة وتصدير PNG
+              اطبع جدولي
             </button>
           </div>
 
@@ -232,23 +212,6 @@ export function StudyPlanner() {
               اقرأ: كيف تبني برنامجاً يناسب شعبتك ووقتك فعلاً
             </Link>
           </div>
-        </>
-      )}
-
-      {step === 4 && (
-        <>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div><p className="text-base font-extrabold text-[var(--bz-ink)]">معاينة جدولك</p><p className="mt-1 text-[12px] text-[var(--bz-ink-3)]">يمكنك حفظ البطاقة كصورة PNG أو العودة لتعديل الخانات.</p></div>
-            <button onClick={() => setStep(3)} className="bz-calc-reset">تعديل</button>
-          </div>
-          <div className="bz-plan-export-wrap">
-            <div ref={posterRef} className="bz-plan-poster" dir="rtl">
-              <div className="bz-plan-poster-head"><div><p className="text-[20px] font-black">البرنامج الأسبوعي للمراجعة</p><p className="mt-1 text-[12px] font-bold opacity-75">شعبة: {b?.name ?? branch}</p></div><span className="bz-plan-poster-mark">BZ</span></div>
-              <table className="bz-plan-export-table"><thead><tr><th>الفترة</th>{days.map((day) => <th key={day}>{day}</th>)}</tr></thead><tbody>{slots.map((slot, si) => <tr key={`${slot.from}-${si}`}><th dir="ltr">{slot.from}<br />{slot.to}</th>{days.map((day) => { const value = grid[`${day}|${si}`] ?? ""; return <td key={`${day}|${si}`} className={value ? "is-filled" : ""}>{value || "—"}</td>; })}</tr>)}</tbody></table>
-              <p className="mt-4 text-center text-[11px] font-bold text-slate-500">الاستمرار الهادئ يصنع الفرق — BacZoneDZ</p>
-            </div>
-          </div>
-          <div className="bz-calc-actions"><button onClick={() => setStep(3)} className="bz-calc-reset">العودة للجدول</button><button onClick={downloadPng} className="bz-calc-go" style={{ background: "#16a34a" }}>تحميل PNG حقيقي</button></div>
         </>
       )}
     </div>

@@ -4,16 +4,17 @@ import { SPECIALTY_KEYS, specialty } from "@/features/rooms/exam-sim/exam-data";
 import { SoloSimulator } from "@/features/tools/solo-simulator";
 import { absUrl } from "@/features/guide/site-url";
 
-const TITLE = "غرفة امتحان البكالوريا الافتراضية (Virtual Bac Room)";
+const TITLE = "عش تجربة امتحان حقيقي — محاكاة البكالوريا";
 const DESC =
-  "غرفة امتحان البكالوريا الافتراضية لمحاكاة امتحان الباكالوريا بمواضيع حقيقية وتوقيت رسمي: اختر شعبتك ومادتك، " +
-  "حلّ بالمدة المعتمدة، ثم صحّح بالحل النموذجي — بلا تسجيل.";
+  "محاكاة امتحان البكالوريا بمواضيع حقيقية وتوقيت رسمي: اختر شعبتك ومادّتك، " +
+  "احلّ بالمدّة المعتمدة، ثمّ صحّح بالحلّ النموذجي — بلا تسجيل.";
 
 export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   keywords: [
-    "غرفة امتحان البكالوريا الافتراضية", "Virtual Bac Room", "محاكاة الباكالوريا", "محاكاة البكالوريا", "امتحان تجريبي بكالوريا", "مواضيع البكالوريا بالتوقيت", "بكالوريا 2027", "BacZone",
+    "محاكاة البكالوريا", "امتحان تجريبي بكالوريا", "مواضيع البكالوريا بالتوقيت",
+    "تجربة امتحان البكالوريا", "بكالوريا 2027", "BacZone",
   ],
   alternates: { canonical: "/tools/exam-simulator" },
   openGraph: {
@@ -92,10 +93,10 @@ export default function ExamSimulatorPage() {
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
-            غرفة امتحان البكالوريا الافتراضية <span className="text-[.72em] font-semibold text-white/75">(Virtual Bac Room)</span>
+            عش تجربة امتحان حقيقي
           </h1>
           <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
-            محاكاة امتحان الباكالوريا بمواضيع حقيقية · التوقيت الرسمي · جرس البداية والنهاية · بلا تسجيل
+            مواضيع حقيقية · التوقيت الرسمي · جرس البداية والنهاية · بلا تسجيل
           </p>
         </div>
       </header>

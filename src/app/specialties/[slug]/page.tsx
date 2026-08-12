@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SpecArticle, SpecNotFound, cleanEditorialText } from "@/features/guide/spec-article";
+import { SpecArticle, SpecNotFound } from "@/features/guide/spec-article";
 import { getGuideRows, findSpec } from "@/features/guide/guide-server";
 import { linkOf } from "@/features/guide/spec-link";
 import { absUrl } from "@/features/guide/site-url";
@@ -20,18 +20,6 @@ import { absUrl } from "@/features/guide/site-url";
 /* قيمة حرفيّة إلزاماً: Next لا يقبل تعبيراً هنا (١٨٠٠ = نصف ساعة) */
 export const revalidate = 1800;
 
-function specialtySeoTitle(spec: { ar: string; fr?: string; field?: string }) {
-  const name = spec.ar.trim();
-  const suffix = spec.field === "صحّة وطبّ"
-    ? "الدراسة والقبول والآفاق المهنية"
-    : spec.field === "إعلام آلي ورقمنة"
-      ? "برنامج الدراسة والمهارات وفرص العمل"
-      : spec.field === "أسلاك نظامية وعسكرية"
-        ? "شروط الالتحاق والتكوين والآفاق"
-        : "شروط القبول والدراسة وآفاق التخصص";
-  return `${name}${spec.fr ? ` (${spec.fr})` : ""}: ${suffix}`;
-}
-
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
@@ -51,9 +39,9 @@ export async function generateMetadata(
   }
 
   const canonical = `/specialties/${linkOf(spec)}`;
-  const title = specialtySeoTitle(spec);
+  const title = `تخصّص ${spec.ar}${spec.fr ? ` (${spec.fr})` : ""} — الدراسة والقبول وفرص العمل`;
   const description =
-    cleanEditorialText(spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "")).slice(0, 158) ||
+    (spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "")).slice(0, 158) ||
     `كل ما تحتاج معرفته عن تخصّص ${spec.ar} في الجزائر: ماذا تدرس، كيف تُقبل، وأين تعمل بعد التخرّج.`;
 
   return {

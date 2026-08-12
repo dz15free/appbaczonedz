@@ -18,7 +18,6 @@
 
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
-import { PASTED3_CONTENT } from "@/features/guide/pasted3-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -62,11 +61,7 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   return SPEC_INDEX.map((s) => {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
-    const c = {
-      ...(SEED_CONTENT[s.slug] ?? {}),
-      ...(PASTED3_CONTENT[s.slug] ?? {}),
-      ...(content?.[s.slug] ?? {}),
-    };
+    const c = { ...(SEED_CONTENT[s.slug] ?? {}), ...(content?.[s.slug] ?? {}) };
     return {
       ...s,
       ...c,

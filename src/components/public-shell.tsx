@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRightToBracket, faUserPlus, faGraduationCap, faCalculator,
-  faHouse, faBookOpen, faArrowLeft, faCheckCircle, faWrench, faNewspaper,
-  faCircleInfo, faEnvelope, faBook,
+  faHouse, faBookOpen, faArrowLeft, faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -29,15 +28,9 @@ import { Brand } from "@/components/ui/brand";
    ════════════════════════════════════════════════════════════ */
 
 const PUBLIC_NAV = [
-  { href: "/", label: "الرئيسية", icon: faHouse },
   { href: "/courses", label: "الدورات", icon: faGraduationCap },
   { href: "/specialties", label: "التخصّصات", icon: faBookOpen },
-  { href: "/tools", label: "الأدوات", icon: faWrench },
   { href: "/calculate", label: "حساب المعدّل", icon: faCalculator },
-  { href: "/blog", label: "المدونة", icon: faNewspaper },
-  { href: "/guides", label: "الأدلة", icon: faBook },
-  { href: "/about", label: "عن BacZone", icon: faCircleInfo },
-  { href: "/contact", label: "تواصل معنا", icon: faEnvelope },
 ];
 
 export function PublicHeader() {
@@ -49,7 +42,7 @@ export function PublicHeader() {
   return (
     <header className="bz-pubheader">
       <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
-        <Brand href={user ? "/home" : "/"} size="sm" beta={false} className="shrink" />
+        <Brand href="/" size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
         <nav className="mx-auto hidden items-center gap-1 md:flex">
@@ -57,8 +50,8 @@ export function PublicHeader() {
             <Link
               key={n.href}
               href={n.href}
-              aria-current={(n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href)) ? "page" : undefined}
-              className={`bz-pubnav ${(n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href)) ? "is-active" : ""}`}
+              aria-current={pathname?.startsWith(n.href) ? "page" : undefined}
+              className={`bz-pubnav ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
             >
               <FontAwesomeIcon icon={n.icon} className="h-[15px] w-[15px]" />
               {n.label}
@@ -104,7 +97,7 @@ export function PublicHeader() {
           <Link
             key={n.href}
             href={n.href}
-            className={`bz-pubchip ${(n.href === "/" ? pathname === "/" : pathname?.startsWith(n.href)) ? "is-active" : ""}`}
+            className={`bz-pubchip ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
           >
             <FontAwesomeIcon icon={n.icon} className="h-3 w-3" />
             {n.label}
