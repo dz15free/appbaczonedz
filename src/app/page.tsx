@@ -16,6 +16,7 @@ import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { SiteFooter } from "@/components/ui/site-footer";
+import { AuthAwareLink } from "@/components/ui/auth-aware-link";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -91,8 +92,8 @@ export default function LandingPage() {
               ولا يكفي `shrink-0` على الصورة وحدها لأنّ Tailwind يضع
               `img{max-width:100%}` في preflight — فحاوية بعرض ٢px تسحق
               صورةً «لا تتقلّص» إلى ٢px. القيد الحقيقي هو حجم الحاوية. */}
-          <Link
-            href="/"
+          <AuthAwareLink
+            ariaLabel={s.siteName || "BacZoneDZ"}
             className="group flex shrink-0 items-center gap-2.5 overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -104,7 +105,7 @@ export default function LandingPage() {
             <span className="hidden truncate font-display text-[15px] font-bold tracking-tight text-white min-[400px]:block sm:text-lg">
               {s.siteName || "BacZoneDZ"}
             </span>
-          </Link>
+          </AuthAwareLink>
 
           <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3">
             <ThemeToggle />

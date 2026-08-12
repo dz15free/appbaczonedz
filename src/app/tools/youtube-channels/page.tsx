@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthAwareLink } from "@/components/ui/auth-aware-link";
 import { CHANNELS, TOTAL_CHANNELS, searchUrl } from "@/features/tools/channels-data";
 import { absUrl } from "@/features/guide/site-url";
 
@@ -56,7 +57,7 @@ export default function ChannelsPage() {
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <Link href="/" className="hover:underline">BacZone</Link>
+            <AuthAwareLink className="hover:underline">BacZone</AuthAwareLink>
             <span>·</span>
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>

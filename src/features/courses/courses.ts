@@ -243,6 +243,21 @@ export async function deleteCourse(courseId: string, teacherId?: string) {
   await remove(ref(rtdb, `${C}/${courseId}`));
 }
 
+const TEACHER_DELETABLE_STATUSES: readonly CourseStatus[] = [
+  "draft",
+  "submitted",
+  "review",
+  "changes",
+  "rejected",
+  "approved",
+  "published",
+  "unpublished",
+];
+
+export function canTeacherDelete(status: CourseStatus): boolean {
+  return TEACHER_DELETABLE_STATUSES.includes(status);
+}
+
 export function canTeacherEdit(status: CourseStatus): boolean {
   return status === "draft" || status === "changes" || status === "rejected";
 }

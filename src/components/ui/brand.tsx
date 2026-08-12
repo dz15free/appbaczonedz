@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
+import { useAuth } from "@/features/auth/auth-provider";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { BetaBadge } from "@/components/ui/beta-badge";
 
@@ -42,12 +43,18 @@ export function Brand({
   className?: string;
 }) {
   const { settings } = useSiteSettings();
+  const { user, loading } = useAuth();
   const name = settings.siteName ?? "BacZone";
+  const resolvedHref = href === "/" && !loading && user ? "/home" : href;
 
   return (
     <Link
-      href={href}
+      href={resolvedHref}
       aria-label={name}
+      aria-busy={href === "/" && loading ? true : undefined}
+      onClick={(event) => {
+        if (href === "/" && loading) event.preventDefault();
+      }}
       className={`bz-lock ${size === "sm" ? "is-sm" : ""} ${className}`}
     >
       <span className="bz-lock-mark">

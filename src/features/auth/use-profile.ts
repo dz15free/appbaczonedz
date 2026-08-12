@@ -145,7 +145,7 @@ export function useProfileState(uid?: string) {
   /* الجاهزية = «حمّلتُ هذا المعرّف **وأعرف دوره**».
      بلا الشرط الثاني يستطيع حارسٌ أن يتّخذ قراراً نهائياً على ملفّ
      فارغ — وهو بالضبط ما كان يطرد الأستاذ. */
-  const ready = uid ? loadedUid === uid && Boolean(profile) : !loading;
+  const ready = uid ? loadedUid === uid && Boolean(profile?.role) : !loading;
 
   return { profile, loading: uid ? !ready : loading, ready };
 }

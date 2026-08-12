@@ -12,7 +12,12 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useRole, useProfile } from "@/features/auth/use-profile";
 import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
-import { listenTeacherCourses, deleteCourse, canTeacherEdit } from "@/features/courses/courses";
+import {
+  listenTeacherCourses,
+  deleteCourse,
+  canTeacherEdit,
+  canTeacherDelete,
+} from "@/features/courses/courses";
 import { CourseReviewThread } from "@/features/courses/review-thread";
 import { CourseCover, CourseStatusBadge, CoursePrice } from "@/features/courses/course-ui";
 import { useCourseReviews } from "@/features/courses/reviews";
@@ -29,8 +34,7 @@ import { COURSE_STATUS_LABEL, formatDuration, type Course, type CourseStatus } f
    ولا أزرار إدارية هنا: لا نشر ولا موافقة. ما لا يستطيعه لا يُعرض.
 ════════════════════════════════════════════════════════════ */
 
-/** الحالات التي تبقى الدورة فيها ملك الأستاذ — وقواعد Firebase تسمح بحذفها */
-const CAN_DELETE: string[] = ["draft", "changes", "rejected"];
+/** كل دورة في فهرس الأستاذ ملكه ويمكنه حذفها فعلياً؛ التعديل سياسة مستقلة. */
 
 const FILTERS: { id: "all" | CourseStatus; label: string }[] = [
   { id: "all", label: "الكلّ" },
@@ -241,10 +245,9 @@ function TeacherCourseCard({
           <FontAwesomeIcon icon={faComments} className="h-3 w-3" /> ملاحظات المراجعة
         </button>
 
-        {/* الحذف كان لـ«مسوّدة» وحدها، فكانت دورة مرفوضة أو مُعادة للتعديل
-            تبقى في القائمة إلى الأبد بلا زرّ حذف. صار متاحاً في كل حالة
-            تبقى فيها الدورة ملك الأستاذ وحده — والقاعدة تسمح بها. */}
-        {CAN_DELETE.includes(course.status) && (
+        {/* الحذف فعلي، ويظل مقيداً بملكية الدورة على مستوى Firebase Rules.
+            النشر العام لا يُمنح للأستاذ: حذف المنشورة يزيل نسختها العامة فقط. */}
+        {canTeacherDelete(course.status) && (
           <button
             onClick={() => { if (confirm(`حذف «${course.title}» نهائياً؟ لا يمكن التراجع.`)) void deleteCourse(course.id, course.teacherId); }}
             className="ms-auto flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-[12px] font-extrabold text-text-muted transition hover:border-danger hover:text-danger">

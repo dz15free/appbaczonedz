@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  onAuthStateChanged,
+  setPersistence,
+  signOut,
+  type User,
+} from "firebase/auth";
 import { clearProfileCache } from "@/features/auth/use-profile";
 import { ref, onValue } from "firebase/database";
 import { auth, rtdb } from "@/lib/firebase/config";
@@ -20,12 +26,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [banned, setBanned] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      // التسجيل مباشر دون تأكيد البريد
-      setUser(u ?? null);
-      setLoading(false);
-    });
-    return () => { if (typeof unsub === "function") unsub(); };
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+
+    /* نثبّت الجلسة محلياً قبل الاستماع إلى auth state. لا يعتمد الرابط
+       أو الشعار على التخمين أثناء هذه المهلة، ولا يتم مسح الجلسة عند
+       الانتقال بين صفحات عامة وصفحات المنصة. */
+    void setPersistence(auth, browserLocalPersistence)
+      .catch((error) => {
+        // الاستماع يجب أن يستمر حتى لو منع المتصفح persistence صراحةً.
+        console.warn("[Auth] Local persistence unavailable:", error);
+      })
+      .then(() => {
+        if (disposed) return;
+        unsubscribe = onAuthStateChanged(auth, (u) => {
+          if (disposed) return;
+          // التسجيل مباشر دون تأكيد البريد
+          setUser(u ?? null);
+          setLoading(false);
+        });
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
   }, []);
 
   // فرض إيقاف الحساب: إن كان platformBan=true نُخرجه فوراً

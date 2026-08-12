@@ -125,7 +125,14 @@ export async function saveArticle(
     }
   }
 
-  if (status === "published" && !publishedAt) publishedAt = now;
+  /* 🐛 كان تاريخ النشر يُضبط على «الآن» دائماً، فيتجاهل أي تاريخ قادم
+     مع المقال — ولهذا ظهرت المقالات المستوردة كلّها بتاريخ يوم واحد.
+     الآن نحترم التاريخ المُرسَل إن وُجد: الاستيراد يحفظ تواريخه
+     الحقيقية، والنشر العادي من اللوحة يبقى «الآن» كما كان. */
+  if (status === "published" && !publishedAt) {
+    const incoming = Number((input as { publishedAt?: number }).publishedAt) || 0;
+    publishedAt = incoming > 0 && incoming <= now ? incoming : now;
+  }
 
   const entry: Record<string, unknown> = {
     slug,
@@ -136,7 +143,12 @@ export async function saveArticle(
     labels: input.labels ?? [],
     status,
     publishedAt,
-    updatedAt: now,
+    /* تاريخ التحديث يحترم المُرسَل أيضاً — وإلّا بدت كل المقالات
+       «حُدّثت» في اللحظة نفسها، وهو ما يفضح الاستيراد الجماعي. */
+    updatedAt: (() => {
+      const u = Number((input as { updatedAt?: number }).updatedAt) || 0;
+      return u > 0 && u <= now ? Math.max(u, publishedAt) : now;
+    })(),
     authorName: input.authorName?.trim() || "فريق BacZone",
     readMinutes: estimateReadMinutes(input.html),
     oldSlugs,

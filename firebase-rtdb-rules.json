@@ -513,14 +513,14 @@
       ],
       "$courseId": {
         ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || data.child('teacherId').val() === auth.uid)",
-        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('teacherId').val() === auth.uid && newData.child('status').val() === 'draft') || (data.exists() && newData.exists() && data.child('teacherId').val() === auth.uid && newData.child('teacherId').val() === auth.uid && (data.child('status').val() === 'draft' || data.child('status').val() === 'changes' || data.child('status').val() === 'rejected') && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'submitted' || newData.child('status').val() === data.child('status').val())) || (data.exists() && !newData.exists() && data.child('teacherId').val() === auth.uid && (data.child('status').val() === 'draft' || data.child('status').val() === 'changes' || data.child('status').val() === 'rejected')))",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!data.exists() && newData.exists() && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('teacherId').val() === auth.uid && newData.child('status').val() === 'draft') || (data.exists() && newData.exists() && data.child('teacherId').val() === auth.uid && newData.child('teacherId').val() === auth.uid && (data.child('status').val() === 'draft' || data.child('status').val() === 'changes' || data.child('status').val() === 'rejected') && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'submitted' || newData.child('status').val() === data.child('status').val())) || (data.exists() && !newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'teacher' && data.child('teacherId').val() === auth.uid))",
         ".validate": "!newData.exists() || (newData.hasChildren(['title','teacherId','status','type','subject']) && newData.child('title').isString() && newData.child('title').val().length <= 160 && newData.child('type').val().matches(/^(free|paid)$/) && newData.child('status').val().matches(/^(draft|submitted|review|changes|rejected|approved|published|unpublished)$/) && (!newData.hasChild('price') || (newData.child('price').isNumber() && newData.child('price').val() >= 0)) && (!newData.hasChild('shortDesc') || newData.child('shortDesc').val().length <= 300) && (!newData.hasChild('fullDesc') || newData.child('fullDesc').val().length <= 4000))"
       }
     },
     "courseContent": {
       "$courseId": {
         ".read": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || root.child('courses').child($courseId).child('teacherId').val() === auth.uid || root.child('purchases').child(auth.uid).child('course').child($courseId).exists() || (root.child('coursesPublic').child($courseId).child('type').val() === 'free' && root.child('coursesPublic').child($courseId).child('status').val() === 'published' && root.child('courseEnrollments').child($courseId).child(auth.uid).exists()))",
-        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('courses').child($courseId).child('teacherId').val() === auth.uid && (root.child('courses').child($courseId).child('status').val() === 'draft' || root.child('courses').child($courseId).child('status').val() === 'changes' || root.child('courses').child($courseId).child('status').val() === 'rejected')))"
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('users').child(auth.uid).child('role').val() === 'teacher' && root.child('courses').child($courseId).child('teacherId').val() === auth.uid && (!newData.exists() || root.child('courses').child($courseId).child('status').val() === 'draft' || root.child('courses').child($courseId).child('status').val() === 'changes' || root.child('courses').child($courseId).child('status').val() === 'rejected')))"
       }
     },
     "coursesPublic": {
@@ -531,7 +531,7 @@
         "type"
       ],
       "$courseId": {
-        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (!newData.exists() && root.child('users').child(auth.uid).child('role').val() === 'teacher' && root.child('courses').child($courseId).child('teacherId').val() === auth.uid))",
         ".validate": "!newData.exists() || (newData.hasChildren(['title','teacherId','status']) && newData.child('status').val() === 'published')"
       }
     },
