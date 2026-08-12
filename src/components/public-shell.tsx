@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRightToBracket, faUserPlus, faGraduationCap, faCalculator,
   faHouse, faBookOpen, faArrowLeft, faCheckCircle, faWrench, faNewspaper,
-  faCircleInfo, faEnvelope,
+  faCircleInfo, faEnvelope, faBook,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -35,6 +35,7 @@ const PUBLIC_NAV = [
   { href: "/tools", label: "الأدوات", icon: faWrench },
   { href: "/calculate", label: "حساب المعدّل", icon: faCalculator },
   { href: "/blog", label: "المدونة", icon: faNewspaper },
+  { href: "/guides", label: "الأدلة", icon: faBook },
   { href: "/about", label: "عن BacZone", icon: faCircleInfo },
   { href: "/contact", label: "تواصل معنا", icon: faEnvelope },
 ];
@@ -48,7 +49,7 @@ export function PublicHeader() {
   return (
     <header className="bz-pubheader">
       <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
-        <Brand href="/" size="sm" beta={false} className="shrink" />
+        <Brand href={user ? "/home" : "/"} size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
         <nav className="mx-auto hidden items-center gap-1 md:flex">

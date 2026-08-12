@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
   SPECIALTY_KEYS, specialty, subjectsOf, examPool,
@@ -48,6 +48,7 @@ export function SoloSimulator() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [left, setLeft] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
+  const [zoom, setZoom] = useState(100);
   const rang = useRef(false);
 
   const spec = useMemo(() => specialty(specKey), [specKey]);
@@ -82,12 +83,21 @@ export function SoloSimulator() {
     return () => window.removeEventListener("beforeunload", onLeave);
   }, [phase]);
 
+  function chooseRandom() {
+    if (!subjects.length) return;
+    const nextSubject = Math.floor(Math.random() * subjects.length);
+    const nextPool = examPool(subjects[nextSubject]);
+    setSubjectIdx(nextSubject);
+    setExamIdx(nextPool.length ? Math.floor(Math.random() * nextPool.length) : 0);
+  }
+
   function start() {
     if (!exam) return;
     // تهيئة الصوت داخل نقرة المستخدم — وإلّا حجبه المتصفّح
     try { primeAudio(); bellStart(); } catch { /* غير حرج */ }
     rang.current = false;
     setShowSolution(false);
+    setZoom(100);
     setEndsAt(Date.now() + minutes * 60_000);
     setPhase("running");
   }
@@ -102,6 +112,7 @@ export function SoloSimulator() {
     setPhase("setup");
     setEndsAt(null);
     setShowSolution(false);
+    setZoom(100);
     rang.current = false;
   }
 
@@ -149,6 +160,9 @@ export function SoloSimulator() {
             </button>
           ))}
         </div>
+        <button onClick={chooseRandom} type="button" className="mb-4 inline-flex items-center gap-2 rounded-xl border border-[var(--bz-blue)]/30 bg-[var(--bz-blue-050)] px-3 py-2 text-[12px] font-extrabold text-[var(--bz-blue-700)] transition hover:-translate-y-0.5">
+          اختيار موضوع عشوائي
+        </button>
 
         {pool.length > 1 && (
           <>
@@ -180,8 +194,9 @@ export function SoloSimulator() {
           <p className="text-[12.5px] leading-relaxed text-[var(--bz-ink-2)]">
             <strong>{subject?.name}</strong> · المدّة الرسمية{" "}
             <strong>{Math.floor(minutes / 60)} ساعات {minutes % 60 ? `و${minutes % 60} دقيقة` : ""}</strong>
-            <br />
-            جهّز ورقك وقلمك، وأبعد هاتفك. المؤقّت يبدأ فور الضغط.
+            {exam?.source && <><br />المصدر: {exam.source === "main" ? "موضوع أساسي" : "موضوع إضافي"}</>}
+            {subject?.schedule && <><br />موعد المادة: {subject.schedule}</>}
+            <br />جهّز ورقك وقلمك، وأبعد هاتفك. المؤقّت يبدأ فور الضغط.
           </p>
         </div>
 
@@ -207,6 +222,11 @@ export function SoloSimulator() {
         </span>
       </div>
 
+      <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] px-2.5 py-2 text-[11.5px] font-bold text-[var(--bz-ink-2)]">
+        <span>{showSolution ? "ورقة الحلّ" : "ورقة الامتحان"} · PDF / Google Drive</span>
+        <span className="inline-flex items-center gap-1.5"><button type="button" onClick={() => setZoom((v) => Math.max(75, v - 10))} aria-label="تصغير الورقة" className="grid h-7 w-7 place-items-center rounded-lg border border-[var(--bz-line)]">−</button><span className="min-w-10 text-center" dir="ltr">{zoom}%</span><button type="button" onClick={() => setZoom((v) => Math.min(140, v + 10))} aria-label="تكبير الورقة" className="grid h-7 w-7 place-items-center rounded-lg border border-[var(--bz-line)]">+</button></span>
+      </div>
+
       {/* الورقة داخل إطار: لا نُحمّل PDF ثقيلاً قبل الضغط على «ابدأ» */}
       <div className="bz-sim-frame">
         <iframe
@@ -214,6 +234,7 @@ export function SoloSimulator() {
           title={showSolution ? "ورقة الحلّ" : "ورقة الامتحان"}
           loading="lazy"
           allow="autoplay"
+          style={{ zoom: zoom / 100 } as CSSProperties}
         />
       </div>
 

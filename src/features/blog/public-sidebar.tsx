@@ -48,10 +48,8 @@ function scopeCss(input: string) {
     });
 }
 
-function NativeWidget({ block }: { block: BlogSidebarBlock }) {
+function SafeNativeMarkup({ html, css }: { html: string; css: string }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const html = block.html || block.content || "";
-  const css = block.css || "";
 
   useEffect(() => {
     const root = rootRef.current;
@@ -79,15 +77,36 @@ function NativeWidget({ block }: { block: BlogSidebarBlock }) {
     return () => { root.innerHTML = ""; };
   }, [css, html]);
 
-  if (!html.trim() && !css.trim() && !block.javascript?.trim()) return null;
+  return <div ref={rootRef} className="bz-native-widget-content" />;
+}
+
+function widgetDocument(block: BlogSidebarBlock) {
+  const html = sanitizeHtml(block.html || block.content || "");
+  const css = (block.css || "").replaceAll("</style", "<\\/style");
+  const script = (block.javascript || "").replaceAll("</script", "<\\/script");
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;padding:0;background:transparent;font-family:system-ui,sans-serif;overflow-x:hidden}*{box-sizing:border-box}${css}</style></head><body>${html}<script>${script}<\/script></body></html>`;
+}
+
+function NativeWidget({ block }: { block: BlogSidebarBlock }) {
+  const html = block.html || block.content || "";
+  const css = block.css || "";
+  const hasScript = Boolean(block.javascript?.trim());
+  if (!html.trim() && !css.trim() && !hasScript) return null;
+
   return (
     <div className="bz-blog-widget bz-native-widget-shell">
       {block.title && <h3 className="bz-blog-widget-title"><FontAwesomeIcon icon={faCode} className="h-3.5 w-3.5" />{block.title}</h3>}
-      <div ref={rootRef} className="bz-native-widget-content" />
-      {block.javascript?.trim() && (
-        <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
-          تم حفظ JavaScript في لوحة الإدارة، لكن تشغيل الكود الخام معطّل لحماية الحساب والصفحة. استخدم HTML/CSS الآمن أو تكاملاً معتمداً.
-        </p>
+      {hasScript ? (
+        <iframe
+          title={block.title || "Widget مخصص"}
+          srcDoc={widgetDocument(block)}
+          sandbox="allow-scripts"
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          className="bz-native-widget-frame"
+        />
+      ) : (
+        <SafeNativeMarkup html={html} css={css} />
       )}
     </div>
   );

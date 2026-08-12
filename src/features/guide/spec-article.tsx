@@ -48,10 +48,22 @@ function Rich({ text }: { text: string }) {
   );
 }
 
+export function cleanEditorialText(text: string) {
+  return text
+    .replace(/حسب ملف \*\*[^*]+\*\* المرفق،?/g, "تُظهر بيانات القبول المتاحة")
+    .replace(/حسب الملف المرفق،?/g, "تُظهر البيانات المتاحة")
+    .replace(/أخذنا المعلومات من الملف،?/g, "تُظهر البيانات المتاحة")
+    .replace(/حسب البيانات التي قدمها المستخدم،?/g, "تُظهر البيانات المتاحة")
+    .replace(/المعدل من ملف [^،.]+[،.]?/g, "المعدل الظاهر")
+    .replace(/بناءً على الكود الأصلي،?/g, "")
+    .replace(/سيتم تطويره لاحقاً|سيتم تطويره لاحقًا/g, "سيُستكمل عند توفر بيانات موثوقة");
+}
+
 function Body({ text }: { text: string }) {
+  const cleanText = cleanEditorialText(text);
   return (
     <>
-      {text.split(/\n{2,}/).map((para, i) => {
+      {cleanText.split(/\n{2,}/).map((para, i) => {
         const t = para.trim();
         if (!t) return null;
         if (t.startsWith("•") || t.startsWith("-")) {
@@ -76,12 +88,12 @@ export function SpecNotFound({ spec }: { spec?: SpecFull | null }) {
       <PublicHeader />
       <main className="mx-auto max-w-2xl px-4 py-16 text-center">
         <h1 className="font-display text-[22px] font-extrabold leading-snug">
-          {spec ? `تخصّص ${spec.ar} — قيد الإعداد` : "لم نجد هذا التخصّص"}
+          {spec ? `دليل ${spec.ar}` : "لم نجد هذا التخصّص"}
         </h1>
         <p className="mx-auto mt-2.5 max-w-md text-[15px] leading-[1.9] text-[var(--bz-ink-2)]">
           {spec
-            ? "نكتب شرح هذا التخصّص حالياً. عد قريباً، أو تصفّح بقيّة التخصّصات."
-            : "ربما تغيّر الرابط. تصفّح الدليل للعثور على تخصّصك."}
+            ? "معلومات هذا التخصص قيد الاستكمال، وستُحدّث الصفحة عند توفر بيانات موثوقة ومفيدة للطالب. يمكنك تصفّح بقية الدليل لاكتشاف خيارات أخرى الآن."
+            : "ربما تغيّر الرابط أو لم يعد متاحاً. تصفّح الدليل للعثور على تخصصك."}
         </p>
         <Link href="/specialties"
           className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-[var(--bz-blue)] px-5 text-[14px] font-extrabold text-white">
@@ -121,7 +133,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
     headline: `تخصّص ${spec.ar}${spec.fr ? ` — ${spec.fr}` : ""}`,
     /* الوصف من `excerpt` أوّلاً: المقدّمة تحوي علامات ** فتظهر في
        نتيجة البحث حرفيّاً لو أخذناها كما هي. */
-    description: (spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "")).slice(0, 160),
+    description: cleanEditorialText(spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "")).slice(0, 160),
     inLanguage: "ar",
     about: { "@type": "Thing", name: spec.field },
     publisher: { "@type": "Organization", name: "BacZone" },
@@ -174,7 +186,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
           )}
           {spec.excerpt && (
             <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80">
-              {spec.excerpt}
+              {cleanEditorialText(spec.excerpt)}
             </p>
           )}
         </div>

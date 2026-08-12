@@ -3596,3 +3596,8 @@ body.bz-fullscreen-active .bz-voicebar {
   .bz-study-planner .bz-plan-grid select { appearance: none !important; border: 0 !important; background: transparent !important; color: #111827 !important; font-weight: 700 !important; }
   @page { size: A4 landscape; margin: 12mm; }
 }
+
+/* Isolated custom sidebar widgets: JS runs only inside a sandboxed iframe. */
+.bz-native-widget-frame { display: block; width: 100%; min-height: 92px; border: 0; border-radius: .75rem; background: transparent; }
+.bz-native-widget-shell:has(.bz-native-widget-frame) { overflow: hidden; }
+@media (max-width: 640px) { .bz-native-widget-frame { min-height: 76px; } }

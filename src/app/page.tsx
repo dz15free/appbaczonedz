@@ -17,6 +17,7 @@ import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { SiteFooter } from "@/components/ui/site-footer";
+import { PublicHeader } from "@/components/public-shell";
 import { LandingBlogSection } from "@/features/blog/landing-blog-section";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -66,10 +67,12 @@ export default function LandingPage() {
   if (!loaded) return <LandingLoading />;
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
+    <>
+      <PublicHeader />
+      <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
       {/* ═══════════════ HEADER ═══════════════ */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+          className={`hidden fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           scrolled
             ? "border-b border-white/10 bg-[#0a0c14]/80 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)]"
             : "bg-transparent"
@@ -186,6 +189,16 @@ export default function LandingPage() {
             >
               {s.heroCtaSecondary}
             </Link>
+          </div>
+
+          <div className="mt-12 w-full max-w-3xl rounded-[1.75rem] border border-white/10 bg-white/[0.055] p-2 text-start shadow-[0_28px_80px_-36px_rgba(37,99,235,.65)] backdrop-blur-xl sm:mt-14 sm:p-3" aria-label="نظرة على منصة BacZone">
+            <div className="rounded-[1.25rem] border border-white/10 bg-[#0b1020]/90 p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3"><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /><span className="text-[11px] font-bold text-white/70">مساحة المراجعة</span></div><span className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold text-white/45">BacZone</span></div>
+              <div className="grid gap-3 pt-3 sm:grid-cols-[1.1fr_.9fr]">
+                <Link href="/tools" className="rounded-2xl border border-blue-300/15 bg-gradient-to-br from-blue-500/20 to-indigo-500/5 p-4 transition hover:border-blue-300/40"><span className="text-[10px] font-extrabold uppercase tracking-[.16em] text-blue-200/70">أدواتك</span><strong className="mt-2 block text-[16px] font-extrabold text-white">خطط مراجعتك بوضوح</strong><span className="mt-1 block text-[11.5px] leading-relaxed text-white/50">حاسبة المعدل، المحاكي، ومخطط الدراسة في مكان واحد.</span><span className="mt-4 inline-flex text-[11px] font-extrabold text-blue-200">استكشف الأدوات ←</span></Link>
+                <div className="grid gap-3 sm:grid-rows-2"><Link href="/courses" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-emerald-300/30"><span className="text-[11px] font-extrabold text-emerald-200">غرف ودورات</span><span className="mt-1 block text-[12px] leading-relaxed text-white/55">تعلّم مع محتوى ومجموعات تناسب مسارك.</span></Link><Link href="/blog" className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-sky-300/30"><span className="text-[11px] font-extrabold text-sky-200">المجلة التعليمية</span><span className="mt-1 block text-[12px] leading-relaxed text-white/55">اقرأ دليلاً عملياً ثم طبّقه في مراجعتك.</span></Link></div>
+              </div>
+            </div>
           </div>
 
           {(s.badges ?? []).length > 0 && (
@@ -464,7 +477,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-[13px] text-white/40">
-            {["لا رسوم", "لا إعلانات", "لا بطاقة ائتمان"].map((t) => (
+            {["تصفح بلا تسجيل", "أدوات عملية", "محتوى جزائري"].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <FontAwesomeIcon
                   icon={faCheckCircle}
@@ -482,7 +495,8 @@ export default function LandingPage() {
           الدخول والتسجيل بيده — فما يضيفه الأدمن من لوحته لا يظهر في
           أهمّ صفحة عامّة في الموقع. صار المكوّن الموحّد نفسه. */}
       <SiteFooter variant="full" />
-    </main>
+      </main>
+    </>
   );
 }
 

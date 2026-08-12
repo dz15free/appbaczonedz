@@ -30,6 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/courses`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
+    { url: `${BASE}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     ...GUIDES.map((g) => ({
       url: `${BASE}/guides/${g.slug}`,
@@ -49,7 +52,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.85,
     })),
-    ...LEGAL_PATHS.filter((path) => path !== "/blog").map((path) => ({
+    ...LEGAL_PATHS.filter((path) => path === "/privacy" || path === "/terms").map((path) => ({
       url: `${BASE}${path}`,
       lastModified: now,
       changeFrequency: "yearly" as const,
