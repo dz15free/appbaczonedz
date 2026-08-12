@@ -7,6 +7,8 @@ import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-s
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
+import { BlogLayout } from "@/features/blog/public-sidebar";
+import { AdSlot } from "@/components/ui/ad-slot";
 
 /* ════════════════════════════════════════════════════════════
    صفحة المقال — مكوّن خادم
@@ -187,12 +189,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-xl object-cover px-4"
           />
         )}
+        <AdSlot placement="article-top" className="mx-auto max-w-5xl px-4 pt-5" />
 
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+        <BlogLayout>
+          <div className="w-full max-w-3xl">
           {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
           <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
+          <AdSlot placement="article-middle" className="mt-8" />
 
           <PublicCta />
+          <AdSlot placement="article-bottom" className="mt-4" />
 
           {related.length > 0 && (
             <section className="mt-10 border-t border-border pt-6">
@@ -210,7 +216,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               </ul>
             </section>
           )}
-        </div>
+          </div>
+        </BlogLayout>
       </main>
       <SiteFooter />
     </>

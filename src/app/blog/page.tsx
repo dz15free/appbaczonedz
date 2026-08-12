@@ -5,6 +5,8 @@ import { SiteFooter } from "@/components/ui/site-footer";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { BLOG_LABELS, labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
+import { BlogLayout } from "@/features/blog/public-sidebar";
+import { AdSlot } from "@/components/ui/ad-slot";
 
 const TITLE = "مقالات ونصائح البكالوريا";
 const DESC =
@@ -100,7 +102,8 @@ export default async function BlogIndex(
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
+        <AdSlot placement="article-top" className="mx-auto max-w-5xl px-4 pt-5" />
+        <BlogLayout>
           {posts.length === 0 ? (
             <p className="rounded-xl border border-border bg-surface p-6 text-center text-[13.5px] text-text-muted">
               {label ? "لا مقالات في هذا التصنيف بعد." : "المقالات في الطريق — عد قريباً."}
@@ -139,7 +142,9 @@ export default async function BlogIndex(
               ))}
             </ul>
           )}
-        </div>
+          <AdSlot placement="article-middle" className="mt-8" />
+          <AdSlot placement="article-bottom" className="mt-4" />
+        </BlogLayout>
       </main>
       <SiteFooter />
     </>

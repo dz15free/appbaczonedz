@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faRightToBracket, faUserPlus, faGraduationCap, faCalculator,
-  faHouse, faBookOpen, faArrowLeft, faCheckCircle,
+  faRightToBracket, faUserPlus, faGraduationCap,
+  faHouse, faArrowLeft, faCheckCircle, faNewspaper,
+  faCircleInfo, faEnvelope, faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { Brand } from "@/components/ui/brand";
 
@@ -28,16 +28,20 @@ import { Brand } from "@/components/ui/brand";
    ════════════════════════════════════════════════════════════ */
 
 const PUBLIC_NAV = [
-  { href: "/courses", label: "الدورات", icon: faGraduationCap },
-  { href: "/specialties", label: "التخصّصات", icon: faBookOpen },
-  { href: "/calculate", label: "حساب المعدّل", icon: faCalculator },
+  { href: "/", label: "الرئيسية", icon: faHouse },
+  { href: "/tools", label: "الأدوات", icon: faWrench },
+  { href: "/specialties", label: "التخصّصات", icon: faGraduationCap },
+  { href: "/blog", label: "المدونة", icon: faNewspaper },
+  { href: "/about", label: "عن BacZone", icon: faCircleInfo },
+  { href: "/contact", label: "تواصل معنا", icon: faEnvelope },
 ];
 
 export function PublicHeader() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
-  const { settings } = useSiteSettings();
+
+  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
     <header className="bz-pubheader">
@@ -45,13 +49,13 @@ export function PublicHeader() {
         <Brand href="/" size="sm" beta={false} className="shrink" />
 
         {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
-        <nav className="mx-auto hidden items-center gap-1 md:flex">
+        <nav className="bz-pubnav-list mx-auto hidden items-center gap-1 overflow-x-auto md:flex">
           {PUBLIC_NAV.map((n) => (
             <Link
               key={n.href}
               href={n.href}
-              aria-current={pathname?.startsWith(n.href) ? "page" : undefined}
-              className={`bz-pubnav ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
+              aria-current={isActive(n.href) ? "page" : undefined}
+              className={`bz-pubnav ${isActive(n.href) ? "is-active" : ""}`}
             >
               <FontAwesomeIcon icon={n.icon} className="h-[15px] w-[15px]" />
               {n.label}
@@ -97,7 +101,7 @@ export function PublicHeader() {
           <Link
             key={n.href}
             href={n.href}
-            className={`bz-pubchip ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
+            className={`bz-pubchip ${isActive(n.href) ? "is-active" : ""}`}
           >
             <FontAwesomeIcon icon={n.icon} className="h-3 w-3" />
             {n.label}

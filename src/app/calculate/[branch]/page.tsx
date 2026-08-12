@@ -106,7 +106,7 @@ export default async function BranchCalculatorPage(
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <Link href="/home" className="hover:underline">BacZone</Link>
+            <Link href="/" className="hover:underline">BacZone</Link>
             <span>·</span>
             <Link href="/calculate" className="font-bold text-white hover:underline">حساب المعدل</Link>
           </nav>
@@ -114,7 +114,7 @@ export default async function BranchCalculatorPage(
             حساب معدل البكالوريا — شعبة {b.short}
           </h1>
           <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
-            {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)} · نتيجة فورية بلا تسجيل
+            أدخل علاماتك في الحقول أدناه، ثم راجع معدّلك والتقدير الناتج عن المعاملات المعروضة في الصفحة.
           </p>
         </div>
       </header>

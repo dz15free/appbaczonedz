@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CHANNELS, TOTAL_CHANNELS, searchUrl } from "@/features/tools/channels-data";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader } from "@/components/public-shell";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 /* دليل لا أداة تفاعلية: كل المحتوى مُصيَّر على الخادم — صفر JavaScript
    للعرض، فتصل سريعة جداً وتُفهرَس كاملة. */
@@ -49,7 +51,9 @@ export default function ChannelsPage() {
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -131,6 +135,8 @@ export default function ChannelsPage() {
           </div>
         </aside>
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

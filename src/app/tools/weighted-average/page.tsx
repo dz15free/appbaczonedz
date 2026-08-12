@@ -3,6 +3,8 @@ import Link from "next/link";
 import { W_DOMAINS } from "@/features/tools/weighted";
 import { WeightedCalculator } from "@/features/tools/weighted-calculator";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader } from "@/components/public-shell";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 /* صفحة عامّة بلا تسجيل — المحتوى التعريفي مُصيَّر على الخادم فيُقرأ
    ويُفهرَس، والحاسبة وحدها تفاعلية. */
@@ -83,7 +85,9 @@ export default function WeightedAveragePage() {
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -185,6 +189,8 @@ export default function WeightedAveragePage() {
           </div>
         </aside>
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

@@ -31,6 +31,23 @@ export interface HomeCard {
 
 export interface FaqItem { id: string; q: string; a: string }
 
+export type BlogSidebarBlockType = "text" | "link" | "image" | "cta";
+export interface BlogSidebarBlock {
+  id: string;
+  type: BlogSidebarBlockType;
+  title?: string;
+  content?: string;
+  href?: string;
+  imageUrl?: string;
+  active?: boolean;
+  order?: number;
+}
+
+export interface BlogSidebarConfig {
+  enabled: boolean;
+  blocks: BlogSidebarBlock[];
+}
+
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -98,6 +115,8 @@ export interface SiteSettings {
   adsWhatsapp?: string;
   /* ── إعلانات قابلة للتحكّم (HTML/صورة) حسب الموضع ── */
   ads?: Record<string, AdSlotConfig>;
+  /* ── Sidebar المدونة: blocks آمنة بلا JavaScript عام ── */
+  blogSidebar?: BlogSidebarConfig;
 }
 
 export interface AdSlotConfig {
@@ -232,6 +251,7 @@ const DEFAULTS: SiteSettings = {
   weightedCalcUrl: "https://www.baczonedz.com/p/2026.html",
   adsEmail: "saidaouina22@gmail.com",
   adsWhatsapp: "+213657498876",
+  blogSidebar: { enabled: false, blocks: [] },
 };
 
 /* تصحيح الشعار القديم المحفوظ في قاعدة البيانات.

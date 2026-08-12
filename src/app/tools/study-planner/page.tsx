@@ -3,6 +3,8 @@ import Link from "next/link";
 import { PLAN_BRANCHES } from "@/features/tools/planner-data";
 import { StudyPlanner } from "@/features/tools/study-planner";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader } from "@/components/public-shell";
+import { SiteFooter } from "@/components/ui/site-footer";
 
 const TITLE = "إنشاء برنامج مراجعة البكالوريا — جدول أسبوعي حسب شعبتك";
 const DESC =
@@ -79,7 +81,9 @@ export default function StudyPlannerPage() {
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -161,6 +165,8 @@ export default function StudyPlannerPage() {
           </div>
         </aside>
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
