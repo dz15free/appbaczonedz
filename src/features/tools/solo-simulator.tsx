@@ -3,6 +3,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowRightFromBracket,
+  faCompress,
+  faExpand,
+  faMinus,
+  faPlus,
+  faUpRightFromSquare,
+} from "@fortawesome/free-solid-svg-icons";
 import {
   SPECIALTY_KEYS,
   SOURCE_LABEL,
@@ -75,11 +84,15 @@ export function SoloSimulator() {
   const [left, setLeft] = useState(0);
   const [showSolution, setShowSolution] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const [leftExam, setLeftExam] = useState(false);
   const [pledge, setPledge] = useState({ phone: false, focus: false });
   const [guardOptions, setGuardOptions] = useState<GuardOptions>({ fs: true, ac: true, sfx: true });
   const [fullScreen, setFullScreen] = useState(false);
   const [paperZoom, setPaperZoom] = useState(1);
+  const [randomizing, setRandomizing] = useState(false);
   const rang = useRef(false);
+  const randomTimerRef = useRef<number | undefined>(undefined);
   const stageRef = useRef<HTMLDivElement>(null);
 
   const spec = useMemo(() => specialty(specKey), [specKey]);
@@ -116,6 +129,21 @@ export function SoloSimulator() {
 
   useEffect(() => {
     if (phase !== "running") setFullScreen(false);
+    return () => {
+      if (randomTimerRef.current !== undefined) window.clearTimeout(randomTimerRef.current);
+    };
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "running") return;
+    const syncFullscreenState = () => setFullScreen(isFullscreen());
+    syncFullscreenState();
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    document.addEventListener("webkitfullscreenchange", syncFullscreenState);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreenState);
+    };
   }, [phase]);
 
   useEffect(() => {
@@ -129,6 +157,7 @@ export function SoloSimulator() {
   }
 
   function resetSelection(nextSpecKey: string) {
+    setRandomizing(false);
     setSpecKey(nextSpecKey);
     setSubjectIdx(0);
     setExamIdx(0);
@@ -139,6 +168,7 @@ export function SoloSimulator() {
   }
 
   function chooseSubject(index: number) {
+    setRandomizing(false);
     setSubjectIdx(index);
     setExamIdx(0);
     setChoiceMode("list");
@@ -150,17 +180,44 @@ export function SoloSimulator() {
   function openLobby() {
     if (!selectedExam) return;
     setConfirmFinish(false);
+    setConfirmLeave(false);
+    setLeftExam(false);
     setPledge({ phone: false, focus: false });
     setPhase("lobby");
   }
 
+  function beginExam(exam: SimExam | undefined) {
+    if (!exam) return;
+    try {
+      primeAudio();
+      if (guardOptions.sfx) bellStart();
+    } catch { /* بعض المتصفحات تمنع الصوت حتى تفاعل إضافي */ }
+    rang.current = false;
+    setShowSolution(false);
+    setLeftExam(false);
+    setPaperZoom(1);
+    const duration = exam.duration ?? subject?.duration ?? 120;
+    const finishAt = Date.now() + duration * 60_000;
+    setEndsAt(finishAt);
+    setLeft(duration * 60);
+    setPhase("running");
+  }
+
   function chooseRandom() {
-    if (!pool.length) return;
+    if (!pool.length || randomizing) return;
     const next = Math.floor(Math.random() * pool.length);
+    const nextExam = pool[next];
     setExamIdx(next);
     setCustomExam(null);
     setChoiceMode("random");
     setCustomError("");
+    setRandomizing(true);
+    randomTimerRef.current = window.setTimeout(() => {
+      randomTimerRef.current = undefined;
+      setRandomizing(false);
+      setPledge({ phone: true, focus: true });
+      beginExam(nextExam);
+    }, 460);
   }
 
   function useCustomLink() {
@@ -187,21 +244,13 @@ export function SoloSimulator() {
 
   function startExam() {
     if (!selectedExam || !pledge.phone || !pledge.focus) return;
-    try {
-      primeAudio();
-      if (guardOptions.sfx) bellStart();
-    } catch { /* بعض المتصفحات تمنع الصوت حتى تفاعل إضافي */ }
-    rang.current = false;
-    setShowSolution(false);
-    setPaperZoom(1);
-    const finishAt = Date.now() + examMinutes * 60_000;
-    setEndsAt(finishAt);
-    setLeft(examMinutes * 60);
-    setPhase("running");
+    beginExam(selectedExam);
   }
 
   function finishExam(timeUp = false) {
     setConfirmFinish(false);
+    setConfirmLeave(false);
+    setLeftExam(false);
     rang.current = true;
     if (timeUp) {
       try { bellEnd(); } catch { /* الصوت تحسين اختياري */ }
@@ -209,13 +258,27 @@ export function SoloSimulator() {
     setPhase("done");
   }
 
+  function leaveExam() {
+    setConfirmLeave(false);
+    setConfirmFinish(false);
+    setLeftExam(true);
+    setShowSolution(false);
+    rang.current = true;
+    setPhase("done");
+  }
+
   function reset() {
+    if (randomTimerRef.current !== undefined) window.clearTimeout(randomTimerRef.current);
+    randomTimerRef.current = undefined;
+    setRandomizing(false);
     setPhase("setup");
     setSetupStep(1);
     setEndsAt(null);
     setLeft(0);
     setShowSolution(false);
     setConfirmFinish(false);
+    setConfirmLeave(false);
+    setLeftExam(false);
     setPaperZoom(1);
     rang.current = false;
   }
@@ -259,10 +322,9 @@ export function SoloSimulator() {
 
     if (choiceMode === "random") {
       return (
-        <div className="bz-vbr-random-card">
-          <span className="bz-vbr-random-mark">R</span>
-          <div className="bz-vbr-random-copy"><span className="bz-vbr-eyebrow">اختيار عشوائي من المكتبة</span><b>{selectedExam?.label ?? "موضوع جاهز"}</b><p>{spec?.label} · {subject?.name} · {formatDuration(examMinutes)} · {sourceName(selectedExam?.source)}</p></div>
-          <button type="button" className="bz-exam-secondary" onClick={chooseRandom}>اختيار آخر</button>
+        <div className={`bz-vbr-random-card ${randomizing ? "is-loading" : "is-ready"}`} role="status" aria-live="polite">
+          <span className="bz-vbr-random-mark">{randomizing ? "…" : "✓"}</span>
+          <div className="bz-vbr-random-copy"><span className="bz-vbr-eyebrow">{randomizing ? "جارٍ تجهيز موضوعك..." : "تم اختيار الموضوع"}</span><b>{randomizing ? "نختار موضوعاً صالحاً من المكتبة" : selectedExam?.label ?? "موضوع جاهز"}</b><p>{spec?.label} · {subject?.name} · {formatDuration(examMinutes)} · {sourceName(selectedExam?.source)}</p></div>
         </div>
       );
     }
@@ -324,7 +386,7 @@ export function SoloSimulator() {
             <button type="button" className={choiceMode === "custom" && !customExam ? "is-active" : ""} onClick={() => { setChoiceMode("custom"); setCustomExam(null); setCustomError(""); }} role="tab" aria-selected={choiceMode === "custom" && !customExam}><b>03</b> رابط Google Drive</button>
           </div>
           <div className="bz-vbr-topic-stage">{renderTopicChoice()}</div>
-          <div className="bz-vbr-selection-summary"><span className="bz-vbr-selection-mark">✓</span><div><small>موضوعك الحالي</small><b>{selectedExam?.label ?? "اختر موضوعًا"}</b><p>{formatDuration(examMinutes)} · {selectedExam?.solutionUrl ? "الحل متوفر بعد النهاية" : "الحل اختياري"}</p></div><button type="button" className="bz-exam-primary" onClick={openLobby} disabled={!selectedExam}>جاهز؟ مراجعة التعليمات</button></div>
+          <div className="bz-vbr-selection-summary"><span className="bz-vbr-selection-mark">✓</span><div><small>موضوعك الحالي</small><b>{selectedExam?.label ?? "اختر موضوعًا"}</b><p>{formatDuration(examMinutes)} · {selectedExam?.solutionUrl ? "الحل متوفر بعد النهاية" : "الحل اختياري"}</p></div>{choiceMode === "random" ? <span className="bz-vbr-auto-status">{randomizing ? "جارٍ الانتقال إلى القاعة..." : "تم اختيار الموضوع"}</span> : <button type="button" className="bz-exam-primary" onClick={openLobby} disabled={!selectedExam}>جاهز؟ مراجعة التعليمات</button>}</div>
         </div>}
       </section>
     );
@@ -346,20 +408,43 @@ export function SoloSimulator() {
   const report = integrityReport(guard.violations, guardOptions.ac);
 
   if (phase === "done") {
-    const timedOut = left <= 0;
+    const timedOut = !leftExam && left <= 0;
+    const resultReport = leftExam
+      ? { tone: "bad" as const, text: "غادرت قاعة الامتحان قبل التسليم؛ لم نعرض الحل ولم نعد الجلسة الحالية." }
+      : report;
+    const canShowSolution = !leftExam;
     return <section className="bz-exam-result bz-vbr-result" aria-labelledby="exam-result-title">
-      <div className={`bz-vbr-result-mark ${timedOut ? "is-timeout" : ""}`}>{timedOut ? "!" : "✓"}</div><span className={`bz-vbr-result-state ${timedOut ? "is-timeout" : ""}`}>{timedOut ? "انتهى الوقت" : "تم التسليم"}</span><p className="bz-vbr-eyebrow">انتهت جلسة المحاكاة</p><h2 id="exam-result-title">{timedOut ? "انتهى وقت الامتحان" : "تم تسليم الامتحان"}</h2><p className="bz-exam-result-copy">{timedOut ? "أغلقنا الجلسة في وقتها. خذ نفسًا، ثم راجع الموضوع بهدوء." : "أنهيت الموضوع قبل نهاية الوقت. الآن تبدأ أهم مرحلة: تحليل أخطائك."}</p>
-      <div className={`bz-exam-integrity ${report.tone}`}><b>{report.tone === "ok" ? "حالة الجلسة" : "تنبيه الجلسة"}</b><span>{report.text}</span></div>
-      {showSolution && selectedExam?.solutionUrl && <div className="bz-exam-paper bz-exam-solution-paper"><iframe src={selectedExam.solutionUrl} title="ورقة الحل النموذجي" loading="lazy" /></div>}
-      {showSolution && !selectedExam?.solutionUrl && <div className="bz-exam-solution-unavailable" role="status">لم يتم إرفاق حل لهذا الموضوع.</div>}
-      <div className="bz-exam-result-actions"><button type="button" className="bz-exam-primary" onClick={() => setShowSolution((value) => !value)}>{showSolution ? "إخفاء الحل" : "إظهار الحل"}</button><button type="button" className="bz-exam-secondary" onClick={reset}>اختيار موضوع آخر</button><Link href="/tools" className="bz-exam-link">كل أدوات المراجعة</Link></div>
+      <div className={`bz-vbr-result-mark ${timedOut || leftExam ? "is-timeout" : ""}`}>{timedOut || leftExam ? "!" : "✓"}</div><span className={`bz-vbr-result-state ${timedOut || leftExam ? "is-timeout" : ""}`}>{leftExam ? "غادرت الجلسة" : timedOut ? "انتهى الوقت" : "تم التسليم"}</span><p className="bz-vbr-eyebrow">انتهت جلسة المحاكاة</p><h2 id="exam-result-title">{leftExam ? "غادرت الامتحان" : timedOut ? "انتهى وقت الامتحان" : "تم تسليم الامتحان"}</h2><p className="bz-exam-result-copy">{leftExam ? "تم إنهاء الحالة الحالية كما طلبت. يمكنك بدء محاكاة جديدة متى شئت." : timedOut ? "أغلقنا الجلسة في وقتها. خذ نفسًا، ثم راجع الموضوع بهدوء." : "أنهيت الموضوع قبل نهاية الوقت. الآن تبدأ أهم مرحلة: تحليل أخطائك."}</p>
+      <div className={`bz-exam-integrity ${resultReport.tone}`}><b>{resultReport.tone === "ok" ? "حالة الجلسة" : "تنبيه الجلسة"}</b><span>{resultReport.text}</span></div>
+      {canShowSolution && showSolution && selectedExam?.solutionUrl && <div className="bz-exam-paper bz-exam-solution-paper"><iframe src={selectedExam.solutionUrl} title="ورقة الحل النموذجي" loading="lazy" /></div>}
+      {canShowSolution && showSolution && !selectedExam?.solutionUrl && <div className="bz-exam-solution-unavailable" role="status">لم يتم إرفاق حل لهذا الموضوع.</div>}
+      <div className="bz-exam-result-actions">{canShowSolution && <button type="button" className="bz-exam-primary" onClick={() => setShowSolution((value) => !value)}>{showSolution ? "إخفاء الحل" : "إظهار الحل"}</button>}<button type="button" className="bz-exam-secondary" onClick={reset}>{leftExam ? "بدء محاكاة جديدة" : "اختيار موضوع آخر"}</button><Link href="/tools" className="bz-exam-link">كل أدوات المراجعة</Link></div>
     </section>;
   }
 
+  const zoomIn = () => setPaperZoom((value) => Math.min(1.35, Number((value + 0.1).toFixed(2))));
+  const zoomOut = () => setPaperZoom((value) => Math.max(0.75, Number((value - 0.1).toFixed(2))));
+  const fitPaper = () => setPaperZoom(1);
+
   return <section ref={stageRef} className={`bz-exam-running bz-vbr-running ${urgent ? "is-urgent" : ""}`} aria-labelledby="running-exam-title">
-    <header className="bz-vbr-running-header"><div className="bz-vbr-running-brand"><span className="bz-vbr-running-mark">BZ</span><div><b>BacZone</b><small>غرفة الامتحان الافتراضية</small></div></div><div className="bz-vbr-running-context"><small>{spec?.label} · {subject?.name}</small><h2 id="running-exam-title">{selectedExam?.label}</h2></div><div className={`bz-exam-running-status ${urgent ? "is-urgent-status" : ""}`} role="status"><span className="bz-exam-live-dot" /> {urgent ? "تبقى أقل من 5 دقائق" : "الامتحان جارٍ"}</div><div className="bz-exam-clock" aria-live="polite"><small>الوقت المتبقي</small><strong>{formatClock(left)}</strong></div></header>
-    <div className="bz-vbr-running-grid"><div className="bz-exam-paper"><div className="bz-vbr-paper-toolbar"><span>ورقة الموضوع</span><div><button type="button" onClick={() => setPaperZoom((value) => Math.min(1.35, Number((value + 0.1).toFixed(2))))} aria-label="تكبير العرض">+</button><output>{Math.round(paperZoom * 100)}%</output><button type="button" onClick={() => setPaperZoom((value) => Math.max(0.75, Number((value - 0.1).toFixed(2))))} aria-label="تصغير العرض">−</button><button type="button" onClick={() => setPaperZoom(1)}>ملاءمة العرض</button></div></div><div className="bz-vbr-paper-viewport"><div className="bz-vbr-paper-canvas" style={{ transform: `scale(${paperZoom})`, width: `${100 / paperZoom}%` }}><iframe src={selectedExam?.examUrl} title="ورقة الامتحان" loading="eager" allow="autoplay" /></div></div></div><aside className="bz-exam-control-panel"><div className="bz-vbr-side-heading"><span>حالة الامتحان</span><b>الامتحان جارٍ</b></div><div className="bz-exam-timer-bar"><span style={{ width: `${Math.max(0, Math.min(100, (left / (examMinutes * 60)) * 100))}%` }} /></div><div className="bz-exam-side-row"><span>الشعبة</span><b>{spec?.label}</b></div><div className="bz-exam-side-row"><span>المادة</span><b>{subject?.name}</b></div><div className="bz-exam-side-row"><span>الموضوع</span><b>{selectedExam?.label}</b></div><div className="bz-exam-guard-chip"><span>✓</span>{guardOptions.ac ? `${guard.violations ? `محاولات مغادرة: ${guard.violations}` : "المراقبة مفعّلة"}` : "التنبيه معطّل"}</div><div className="bz-exam-control-actions"><button type="button" className="bz-exam-secondary" onClick={() => void toggleStageFullscreen()}>{fullScreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}</button>{selectedExam?.examUrl && <a className="bz-exam-secondary" href={selectedExam.examUrl} target="_blank" rel="noreferrer" onClick={() => guard.grace()}>فتح الموضوع في نافذة جديدة</a>}<button type="button" className="bz-exam-danger" onClick={() => setConfirmFinish(true)}>تسليم الامتحان</button></div></aside></div>
-    {confirmFinish && <div className="bz-exam-confirm" role="dialog" aria-modal="true" aria-labelledby="finish-title"><div><span className="bz-vbr-dialog-kicker">آخر تأكيد</span><h3 id="finish-title">هل أنت متأكد من تسليم الامتحان؟</h3><p>بعد التسليم ستنتقل إلى حالة النتيجة، ويمكنك إظهار الحل إذا كان مرفقاً بالموضوع.</p><div><button type="button" className="bz-exam-secondary" onClick={() => setConfirmFinish(false)}>إلغاء</button><button type="button" className="bz-exam-danger" onClick={() => finishExam(false)}>تسليم الامتحان</button></div></div></div>}
+    <header className="bz-vbr-running-header">
+      <div className="bz-vbr-running-brand"><span className="bz-vbr-running-mark">BZ</span><div><b>BacZone</b><small>غرفة الامتحان الافتراضية</small></div></div>
+      <div className="bz-vbr-running-context"><small>{spec?.label} · {subject?.name}</small><h2 id="running-exam-title">{selectedExam?.label}</h2></div>
+      <div className={`bz-exam-running-status ${urgent ? "is-urgent-status" : ""}`} role="status"><span className="bz-exam-live-dot" /> {urgent ? "تبقى أقل من 5 دقائق" : "الامتحان جارٍ"}</div>
+      <div className="bz-exam-clock" aria-live="polite"><small>الوقت المتبقي</small><strong>{formatClock(left)}</strong></div>
+      <div className="bz-vbr-mobile-header-actions" aria-label="تحكم سريع بالامتحان"><button type="button" onClick={() => setConfirmLeave(true)} aria-label="مغادرة الامتحان" title="مغادرة الامتحان"><FontAwesomeIcon icon={faArrowRightFromBracket} /></button><button type="button" onClick={() => void toggleStageFullscreen()} aria-label={fullScreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"} title={fullScreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}><FontAwesomeIcon icon={fullScreen ? faCompress : faExpand} /></button></div>
+    </header>
+    <div className="bz-vbr-running-grid">
+      <div className="bz-exam-paper">
+        <div className="bz-vbr-paper-toolbar"><span>ورقة الموضوع</span><div><button type="button" onClick={zoomIn} aria-label="تكبير العرض" title="تكبير العرض"><FontAwesomeIcon icon={faPlus} /></button><output>{Math.round(paperZoom * 100)}%</output><button type="button" onClick={zoomOut} aria-label="تصغير العرض" title="تصغير العرض"><FontAwesomeIcon icon={faMinus} /></button><button type="button" onClick={fitPaper} aria-label="ملاءمة العرض" title="ملاءمة العرض">ملاءمة العرض</button></div></div>
+        <div className="bz-vbr-paper-viewport"><div className="bz-vbr-paper-canvas" style={{ transform: `scale(${paperZoom})`, width: `${100 / paperZoom}%` }}><iframe src={selectedExam?.examUrl} title="ورقة الامتحان" loading="eager" allow="autoplay" /></div></div>
+      </div>
+      <aside className="bz-exam-control-panel"><div className="bz-vbr-side-heading"><span>حالة الامتحان</span><b>الامتحان جارٍ</b></div><div className="bz-exam-timer-bar"><span style={{ width: `${Math.max(0, Math.min(100, (left / (examMinutes * 60)) * 100))}%` }} /></div><div className="bz-exam-side-row"><span>الشعبة</span><b>{spec?.label}</b></div><div className="bz-exam-side-row"><span>المادة</span><b>{subject?.name}</b></div><div className="bz-exam-side-row"><span>الموضوع</span><b>{selectedExam?.label}</b></div><div className="bz-exam-guard-chip"><span>✓</span>{guardOptions.ac ? `${guard.violations ? `محاولات مغادرة: ${guard.violations}` : "المراقبة مفعّلة"}` : "التنبيه معطّل"}</div>
+        <div className="bz-exam-action-bar" aria-label="إجراءات الامتحان"><button type="button" className="bz-exam-action bz-exam-action-leave" onClick={() => setConfirmLeave(true)}><FontAwesomeIcon icon={faArrowRightFromBracket} /> مغادرة</button><button type="button" className="bz-exam-action" onClick={zoomOut} aria-label="تصغير العرض"><FontAwesomeIcon icon={faMinus} /> تصغير</button><button type="button" className="bz-exam-action" onClick={zoomIn} aria-label="تكبير العرض"><FontAwesomeIcon icon={faPlus} /> تكبير</button><button type="button" className="bz-exam-action bz-exam-action-fullscreen" onClick={() => void toggleStageFullscreen()}><FontAwesomeIcon icon={fullScreen ? faCompress : faExpand} /> {fullScreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}</button><button type="button" className="bz-exam-action bz-exam-action-submit" onClick={() => setConfirmFinish(true)}>تسليم الامتحان</button>{selectedExam?.examUrl && <a className="bz-exam-action bz-exam-action-external" href={selectedExam.examUrl} target="_blank" rel="noreferrer" onClick={() => guard.grace()}><FontAwesomeIcon icon={faUpRightFromSquare} /> فتح الموضوع</a>}</div>
+      </aside>
+    </div>
+    {confirmFinish && <div className="bz-exam-confirm" role="dialog" aria-modal="true" aria-labelledby="finish-title"><div><span className="bz-vbr-dialog-kicker">آخر تأكيد</span><h3 id="finish-title">هل أنت متأكد من تسليم الامتحان؟</h3><p>بعد التسليم ستنتقل إلى حالة النتيجة، ويمكنك إظهار الحل إذا كان مرفقاً بالموضوع.</p><div><button type="button" className="bz-exam-secondary" onClick={() => setConfirmFinish(false)}>متابعة الامتحان</button><button type="button" className="bz-exam-danger" onClick={() => finishExam(false)}>تسليم الامتحان</button></div></div></div>}
+    {confirmLeave && <div className="bz-exam-confirm bz-exam-leave-dialog" role="dialog" aria-modal="true" aria-labelledby="leave-title"><div><span className="bz-vbr-dialog-kicker">خروج من القاعة</span><h3 id="leave-title">هل تريد مغادرة الامتحان؟</h3><p>مغادرة الامتحان تنهي الحالة الحالية، ولن تعود إلى هذا المؤقت أو الموضوع من هذه الجلسة.</p><div><button type="button" className="bz-exam-secondary" onClick={() => setConfirmLeave(false)}>متابعة الامتحان</button><button type="button" className="bz-exam-danger" onClick={leaveExam}>مغادرة الامتحان</button></div></div></div>}
     {guard.alarmOpen && <div className="bz-exam-alarm" role="alertdialog" aria-modal="true"><div><span>!</span><h3>عد إلى قاعة الامتحان</h3><p>تم رصد: {guard.lastReason}. أغلق النوافذ الأخرى وأكمل من ورقتك.</p><button type="button" className="bz-exam-primary" onClick={guard.resume}>العودة إلى الامتحان</button></div></div>}
   </section>;
 }

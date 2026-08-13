@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faClock, faHouse, faUser } from "@fortawesome/free-solid-svg-icons";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { SiteFooter } from "@/components/ui/site-footer";
 import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-server";
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
@@ -66,7 +67,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <header className="bz-article-editorial-hero">
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:py-12">
           <nav aria-label="مسار التنقّل" className="flex items-center gap-2 text-[11px] text-text-muted"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link><span>←</span><Link href="/blog" className="hover:text-primary hover:underline">المدونة</Link></nav>
-          <div className="bz-article-editorial-grid mt-8">
+          <PublicBackButton fallbackHref="/blog" fallbackLabel="المدونة" className="mt-4" />
+          <div className="bz-article-editorial-grid mt-6">
             <div className="max-w-3xl">
               {(post.labels?.length ?? 0) > 0 && <div className="flex flex-wrap gap-1.5">{post.labels!.map((label) => <Link key={label} href={`/blog?label=${encodeURIComponent(label)}`} className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-extrabold text-primary">{labelName(label)}</Link>)}</div>}
               <h1 className="mt-4 font-display text-[29px] font-extrabold leading-[1.3] text-text sm:text-[46px]">{post.title}</h1>

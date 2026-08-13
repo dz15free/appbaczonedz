@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
@@ -153,9 +154,7 @@ export default function PlannerPage() {
     <AppShell>
       {/* أدوات التحكّم — تختفي عند الطباعة */}
       <div className="no-print mx-auto max-w-5xl px-4 py-4">
-        <button onClick={() => history.back()} className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary">
-          <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" /> رجوع
-        </button>
+        <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" className="mb-3" />
 
         <div className="rounded-2xl border border-border bg-surface p-4">
           <h1 className="font-display text-xl font-extrabold">مخطّط البكالوريا للطباعة</h1>

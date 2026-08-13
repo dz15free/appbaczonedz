@@ -5,6 +5,7 @@ import { linkOf } from "@/features/guide/spec-link";
 import type { SpecFull } from "@/features/guide/guide-merge";
 import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pro" | "con" }[] = [
@@ -95,9 +96,10 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
         <div className="bz-spec-hero-orb bz-spec-hero-orb-one" />
         <div className="bz-spec-hero-orb bz-spec-hero-orb-two" />
         <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">
-          <nav className="bz-spec-breadcrumb mb-7 flex flex-wrap items-center gap-2 text-[11px] text-white/65" aria-label="مسار الصفحة">
+          <nav className="bz-spec-breadcrumb mb-4 flex flex-wrap items-center gap-2 text-[11px] text-white/65" aria-label="مسار الصفحة">
             <Link href="/specialties" className="font-bold text-white hover:underline">دليل التخصّصات</Link><span>←</span><Link href={`/specialties#${encodeURIComponent(spec.field)}`} className="hover:text-white hover:underline">{spec.field}</Link><span>←</span><span className="text-white/80">{spec.ar}</span>
           </nav>
+          <PublicBackButton fallbackHref="/specialties" fallbackLabel="التخصّصات" tone="dark" className="mb-6" />
           <div className="bz-spec-editorial-grid">
             <div className="bz-spec-editorial-copy">
               <div className="bz-spec-identity-line"><span className="bz-spec-hero-kicker"><Icon name="compass" size={12} /> دليل اختيار التخصّص</span><span className="bz-spec-field-pill">{spec.field}</span></div>

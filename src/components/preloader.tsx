@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
-const EXIT_MS = 160;
-const SAFETY_MS = 1200;
+const MIN_VISUAL_MS = 420;
+const EXIT_MS = 180;
+const SAFETY_MS = 4000;
 
 type PreloaderState = "visible" | "leaving" | "gone";
 
@@ -16,9 +17,11 @@ export function Preloader() {
     let frameOne: number | undefined;
     let frameTwo: number | undefined;
     let removeTimer: number | undefined;
+    let revealTimer: number | undefined;
     let safetyTimer: number | undefined;
+    const startedAt = performance.now();
 
-    const reveal = () => {
+    const startLeaving = () => {
       if (finished) return;
       finished = true;
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
@@ -28,6 +31,19 @@ export function Preloader() {
           removeTimer = window.setTimeout(() => setState("gone"), EXIT_MS);
         });
       });
+    };
+
+    const reveal = () => {
+      if (finished || revealTimer !== undefined) return;
+      const remaining = Math.max(0, MIN_VISUAL_MS - (performance.now() - startedAt));
+      if (remaining > 0) {
+        revealTimer = window.setTimeout(() => {
+          revealTimer = undefined;
+          startLeaving();
+        }, remaining);
+        return;
+      }
+      startLeaving();
     };
 
     const onReady = () => reveal();
@@ -47,6 +63,7 @@ export function Preloader() {
       if (frameOne !== undefined) window.cancelAnimationFrame(frameOne);
       if (frameTwo !== undefined) window.cancelAnimationFrame(frameTwo);
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
+      if (revealTimer !== undefined) window.clearTimeout(revealTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
   }, []);

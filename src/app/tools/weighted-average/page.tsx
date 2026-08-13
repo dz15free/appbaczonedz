@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faCalculator, faCircleCheck, faScaleBalanced } from "@fortawesome/free-solid-svg-icons";
 import { PublicHeader } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { W_DOMAINS } from "@/features/tools/weighted";
 import { WeightedCalculator } from "@/features/tools/weighted-calculator";
@@ -47,6 +48,7 @@ export default function WeightedAveragePage() {
         <div className="bz-weighted-product-hero-grid mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
           <div>
             <nav className="mb-4 flex flex-wrap items-center gap-2 text-[11px] text-white/65"><Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link><span>←</span><span>المعدل الموزون</span></nav>
+            <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" tone="dark" className="mb-6" />
             <span className="bz-weighted-product-kicker"><FontAwesomeIcon icon={faScaleBalanced} /> أداة التوجيه</span>
             <h1 className="mt-4 font-display text-[31px] font-extrabold leading-[1.2] tracking-tight sm:text-5xl">اعرف أيّ ميدان يرفع فرصك</h1>
             <p className="mt-5 max-w-2xl text-[15px] leading-[1.95] text-white/72 sm:text-lg">المعدل العام لا يحكي القصة كاملة. اختر الميدان، أدخل معدلك وعلامة التخصص، ثم شاهد أثر الترجيح بوضوح قبل ترتيب رغباتك.</p>

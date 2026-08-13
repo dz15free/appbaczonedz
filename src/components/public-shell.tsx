@@ -112,29 +112,43 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const toolsMenuRef = useRef<HTMLDivElement>(null);
+  const desktopToolsMenuRef = useRef<HTMLDivElement>(null);
+  const mobileToolsMenuRef = useRef<HTMLDivElement>(null);
   const menuId = "bz-public-menu";
 
   useEffect(() => {
     setMenuOpen(false);
-    setToolsOpen(false);
+    setDesktopToolsOpen(false);
+    setMobileToolsOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!toolsOpen) return;
+    if (!desktopToolsOpen && !mobileToolsOpen) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) setToolsOpen(false);
+      const target = event.target as Node;
+      const insideDesktop = desktopToolsMenuRef.current?.contains(target) ?? false;
+      const insideMobile = mobileToolsMenuRef.current?.contains(target) ?? false;
+      if (!insideDesktop && !insideMobile) {
+        setDesktopToolsOpen(false);
+        setMobileToolsOpen(false);
+      }
     };
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setToolsOpen(false); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDesktopToolsOpen(false);
+        setMobileToolsOpen(false);
+      }
+    };
     document.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKey);
     };
-  }, [toolsOpen]);
+  }, [desktopToolsOpen, mobileToolsOpen]);
 
   useEffect(() => {
     if (variant !== "landing") return;
@@ -155,15 +169,15 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
             const isHomeActive = item.href === "/" && (pathname === "/" || pathname === "/home");
             const active = item.href === "/" ? isHomeActive : isActivePath(pathname, item.href);
             if (item.href === "/tools") return (
-              <div key={item.href} ref={toolsMenuRef} className="bz-public-tools-menu">
-                <button type="button" className={`bz-pubnav bz-public-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-haspopup="menu" aria-controls="bz-public-tools-menu" onClick={() => setToolsOpen((open) => !open)}>
+              <div key={item.href} ref={desktopToolsMenuRef} className="bz-public-tools-menu">
+                <button type="button" className={`bz-pubnav bz-public-tools-trigger ${desktopToolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={desktopToolsOpen} aria-haspopup="menu" aria-controls="bz-public-tools-menu" onClick={() => setDesktopToolsOpen((open) => !open)}>
                   <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
                   {item.label}
-                  <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
+                  <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${desktopToolsOpen ? "rotate-180" : ""}`} />
                 </button>
-                {toolsOpen && <div id="bz-public-tools-menu" role="menu" className="bz-public-tools-dropdown">
-                  <Link href="/tools" role="menuitem" className="bz-public-tools-all" onClick={() => setToolsOpen(false)}><span className="bz-public-tools-all-icon"><FontAwesomeIcon icon={faCalculator} /></span><span><b>كل أدوات البكالوريا</b><small>اختر الأداة التي تناسب خطوتك الآن</small></span><FontAwesomeIcon icon={faArrowLeft} /></Link>
-                  {BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} role="menuitem" className="bz-public-tool-item" onClick={() => setToolsOpen(false)}><span className="bz-public-tool-icon"><FontAwesomeIcon icon={tool.icon} /></span><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}
+                {desktopToolsOpen && <div id="bz-public-tools-menu" role="menu" className="bz-public-tools-dropdown">
+                  <Link href="/tools" role="menuitem" className="bz-public-tools-all" onClick={() => setDesktopToolsOpen(false)}><span className="bz-public-tools-all-icon"><FontAwesomeIcon icon={faCalculator} /></span><span><b>كل أدوات البكالوريا</b><small>اختر الأداة التي تناسب خطوتك الآن</small></span><FontAwesomeIcon icon={faArrowLeft} /></Link>
+                  {BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} role="menuitem" className="bz-public-tool-item" onClick={() => setDesktopToolsOpen(false)}><span className="bz-public-tool-icon"><FontAwesomeIcon icon={tool.icon} /></span><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}
                 </div>}
               </div>
             );
@@ -200,9 +214,9 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
             const resolvedHref = item.href === "/" && !authLoading && user ? "/home" : item.href;
             const active = item.href === "/" ? pathname === "/" || pathname === "/home" : isActivePath(pathname, item.href);
             if (item.href === "/tools") return (
-              <div key={item.href} className="bz-public-mobile-tools">
-                <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${toolsOpen ? "rotate-180" : ""}`} /></button>
-                {toolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => setMenuOpen(false)}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
+              <div key={item.href} ref={mobileToolsMenuRef} className="bz-public-mobile-tools">
+                <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${mobileToolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={mobileToolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setMobileToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} /></button>
+                {mobileToolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => { setMobileToolsOpen(false); setMenuOpen(false); }}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => { setMobileToolsOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
               </div>
             );
             return (

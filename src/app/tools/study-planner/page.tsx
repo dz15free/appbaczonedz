@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { PLAN_BRANCHES } from "@/features/tools/planner-data";
 import { StudyPlanner } from "@/features/tools/study-planner";
@@ -91,6 +92,7 @@ export default function StudyPlannerPage() {
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
+          <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" tone="dark" className="mb-5" />
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
             نظّم مراجعتك من اليوم
           </h1>

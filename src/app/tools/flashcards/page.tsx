@@ -9,9 +9,10 @@ import { STREAMS } from "@/features/study/curriculum";
 import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import { AppShell } from "@/components/app-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowRight, faPlus, faTrash, faRotateLeft,
+  faPlus, faTrash, faRotateLeft,
   faCheck, faXmark, faTrophy, faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
@@ -192,10 +193,7 @@ export default function FlashcardsPage() {
       <section className="mx-auto max-w-2xl px-4 py-4">
         {/* الرأس */}
         <div className="mb-5 flex items-center gap-3">
-          <button onClick={() => { if (studying) { setStudying(false); } else { router.back(); } }}
-            className="text-text-muted hover:text-primary">
-            <FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" />
-          </button>
+          {studying ? <button type="button" onClick={() => setStudying(false)} className="bz-public-back" aria-label="الخروج من وضع الدراسة"><span>←</span><span>الخروج</span></button> : <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" />}
           <div>
             <h1 className="font-display text-xl font-extrabold">بطاقات المراجعة</h1>
             <p className="text-xs text-text-muted">{cards.length} بطاقة محفوظة</p>

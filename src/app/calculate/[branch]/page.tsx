@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { EditablePage } from "@/features/admin/editable-page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -110,6 +111,7 @@ export default async function BranchCalculatorPage(
             <span>←</span>
             <Link href="/calculate" className="font-bold text-white hover:underline">حاسبة البكالوريا</Link>
           </nav>
+          <PublicBackButton fallbackHref="/calculate" fallbackLabel="حاسبة البكالوريا" tone="dark" className="mb-6" />
           <div className="bz-calc-branch-hero-layout">
             <div>
               <span className="bz-calc-branch-kicker">حاسبة شعبة {b.short}</span>

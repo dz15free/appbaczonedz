@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faPause, faRotateLeft, faArrowRight, faBrain, faMugHot, faBed } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from "next/navigation";
+import { faPlay, faPause, faRotateLeft, faBrain, faMugHot, faBed } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 
 type Phase = "work" | "short" | "long";
 
@@ -33,7 +33,6 @@ function playBell() {
 }
 
 export default function PomodoroPage() {
-  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("work");
   const [seconds, setSeconds] = useState(DURATIONS.work);
   const [running, setRunning] = useState(false);
@@ -79,9 +78,7 @@ export default function PomodoroPage() {
   return (
     <AppShell>
       <section className={`flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center bg-gradient-to-b ${BG[phase]} px-4 py-8 transition-all duration-700`}>
-        <button onClick={() => router.back()} className="mb-6 flex items-center gap-2 self-start text-sm text-text-muted">
-          <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" /> رجوع
-        </button>
+        <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" className="mb-6 self-start" />
         <div className="mb-6 text-center">
           <h1 className="font-display text-2xl font-extrabold">مؤقّت التركيز</h1>
           <p className="mt-1 text-xs text-text-muted">جلسات قصيرة تساعدك على الدراسة بتركيز واستراحات محسوبة.</p>

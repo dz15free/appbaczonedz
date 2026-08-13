@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faCheck, faClock, faHouse } from "@fortawesome/free-solid-svg-icons";
 import { PublicHeader } from "@/components/public-shell";
+import { PublicBackButton } from "@/components/ui/public-back-button";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/features/guides/guides-data";
@@ -31,7 +32,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       <header className="bz-guide-detail-hero">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">
           <nav className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><Link href="/guides" className="hover:text-white hover:underline">الأدلّة</Link><span>←</span><span className="font-bold text-white">{guide.title}</span></nav>
-          <div className="bz-guide-detail-hero-grid mt-8"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> دليل عملي</span><h1 className="mt-4 max-w-3xl font-display text-[28px] font-extrabold leading-[1.25] text-white sm:text-[45px]">{guide.title}</h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/78 sm:text-[16px]">{guide.description}</p><div className="bz-guide-detail-hero-meta"><span><FontAwesomeIcon icon={faClock} className="h-3 w-3" /> {guide.readMinutes} دقائق قراءة</span><span>{guide.audience}</span><span>{guide.sections.length} أقسام</span></div></div><div className="bz-guide-detail-card"><span>هذا الدليل يساعدك على</span><b>{guide.audience}</b><p>اقرأ الأقسام بالترتيب، أو انتقل مباشرةً إلى السؤال الذي تبحث عن إجابته.</p></div></div>
+          <PublicBackButton fallbackHref="/guides" fallbackLabel="الأدلّة" tone="dark" className="mt-4" />
+          <div className="bz-guide-detail-hero-grid mt-6"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> دليل عملي</span><h1 className="mt-4 max-w-3xl font-display text-[28px] font-extrabold leading-[1.25] text-white sm:text-[45px]">{guide.title}</h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/78 sm:text-[16px]">{guide.description}</p><div className="bz-guide-detail-hero-meta"><span><FontAwesomeIcon icon={faClock} className="h-3 w-3" /> {guide.readMinutes} دقائق قراءة</span><span>{guide.audience}</span><span>{guide.sections.length} أقسام</span></div></div><div className="bz-guide-detail-card"><span>هذا الدليل يساعدك على</span><b>{guide.audience}</b><p>اقرأ الأقسام بالترتيب، أو انتقل مباشرةً إلى السؤال الذي تبحث عن إجابته.</p></div></div>
         </div>
       </header>
       <PublicSidebarLayout placement="guides">
