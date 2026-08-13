@@ -56,12 +56,24 @@ export interface SpecContent {
 
 export type SpecFull = SpecLite & SpecContent & { published: boolean };
 
+/* بعض مفاتيح المحتوى تحمل علامات فرنسية، بينما الروابط الثابتة في الفهرس
+   تستعمل صيغة ASCII. نطابق الصيغتين بعد إزالة العلامات فقط؛ لا نغيّر
+   الرابط العام ولا ننسخ المحتوى إلى مفاتيح مكررة. */
+function plainSlug(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+const SEED_BY_PLAIN_SLUG = new Map(
+  Object.entries(SEED_CONTENT).map(([slug, value]) => [plainSlug(slug), value]),
+);
+
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   return SPEC_INDEX.map((s) => {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
-    const c = { ...(SEED_CONTENT[s.slug] ?? {}), ...(content?.[s.slug] ?? {}) };
+    const seed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
+    const c = { ...(seed ?? {}), ...(content?.[s.slug] ?? {}) };
     return {
       ...s,
       ...c,

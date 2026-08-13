@@ -4126,3 +4126,139 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 
 .bz-exam-running-status.is-urgent-status { background: rgb(239 68 68 / .14); color: #fecaca; }
 .bz-exam-running.is-urgent .bz-exam-live-dot { background: #fb7185; box-shadow: 0 0 0 4px rgb(251 113 133 / .16); }
+
+/* STEP 12 — دليل التخصصات: واجهة اكتشاف واضحة ومريحة على الهاتف */
+.bz-specialty-browser { position: relative; }
+.bz-specialty-back { display: inline-flex; align-items: center; gap: 7px; margin: 16px 0 14px; color: var(--bz-blue); font-size: 12px; font-weight: 800; }
+.bz-specialty-back:hover { text-decoration: underline; }
+.bz-specialty-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 18px; }
+.bz-specialty-overview > div { display: flex; flex-direction: column; gap: 2px; padding: 13px 14px; border: 1px solid var(--bz-line); border-radius: 16px; background: linear-gradient(145deg, var(--bz-surface,#fff), var(--bz-canvas)); }
+.bz-specialty-overview strong { color: var(--bz-blue); font-family: var(--font-display, inherit); font-size: 22px; line-height: 1; }
+.bz-specialty-overview span { color: var(--bz-ink-3); font-size: 10.5px; font-weight: 700; line-height: 1.6; }
+.bz-specialty-controls { position: sticky; top: 10px; z-index: 4; margin: 0 -2px 26px; padding: 12px; border: 1px solid color-mix(in srgb, var(--bz-line) 80%, transparent); border-radius: 20px; background: color-mix(in srgb, var(--bz-surface,#fff) 92%, transparent); box-shadow: 0 16px 35px -28px rgba(16,32,70,.45); backdrop-filter: blur(14px); }
+.bz-specialty-search { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 13px; border: 1px solid var(--bz-line); border-radius: 14px; background: var(--bz-surface,#fff); }
+.bz-specialty-search:focus-within { border-color: var(--bz-blue); box-shadow: 0 0 0 4px var(--bz-blue-050); }
+.bz-specialty-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--bz-ink); font-size: 14px; }
+.bz-specialty-search input::placeholder { color: var(--bz-ink-3); }
+.bz-specialty-search button { display: inline-grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: var(--bz-ink-3); font-size: 20px; line-height: 1; }
+.bz-specialty-search button:hover { background: var(--bz-canvas); color: var(--bz-ink); }
+.bz-specialty-filter-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 30px; color: var(--bz-ink-3); font-size: 11px; font-weight: 700; }
+.bz-specialty-filter-meta button { color: var(--bz-blue); font-weight: 800; }
+.bz-specialty-filter-meta button:hover { text-decoration: underline; }
+.bz-specialty-chips { display: flex; gap: 7px; overflow-x: auto; }
+.bz-specialty-group { scroll-margin-top: 90px; }
+.bz-specialty-group + .bz-specialty-group { margin-top: 34px; }
+.bz-specialty-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.bz-specialty-group-heading > div { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.bz-specialty-group-mark { display: block; width: 5px; min-width: 5px; height: 34px; border-radius: 999px; background: linear-gradient(var(--bz-blue), var(--bz-green)); }
+.bz-specialty-group-heading h2 { font-family: var(--font-display, inherit); font-size: 17px; font-weight: 900; line-height: 1.35; }
+.bz-specialty-group-heading p { margin-top: 2px; color: var(--bz-ink-3); font-size: 10.5px; font-weight: 700; }
+.bz-specialty-group-heading > a { color: var(--bz-ink-3); font-family: ui-monospace, monospace; font-size: 11px; opacity: .7; }
+.bz-specialty-group-heading > a:hover { color: var(--bz-blue); opacity: 1; }
+.bz-specialty-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; }
+.bz-spec-card { position: relative; display: flex; min-height: 184px; flex-direction: column; overflow: hidden; padding: 15px; border: 1px solid var(--bz-line); border-radius: 18px; background: var(--bz-surface,#fff); box-shadow: 0 8px 22px -24px rgba(16,32,70,.75); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.bz-spec-card::before { position: absolute; inset-inline: 0; top: 0; height: 3px; background: linear-gradient(90deg, var(--bz-blue), var(--bz-green)); content: ""; opacity: .85; }
+.bz-spec-card:hover { border-color: color-mix(in srgb, var(--bz-blue) 45%, var(--bz-line)); box-shadow: 0 18px 32px -24px rgba(35,80,217,.72); transform: translateY(-3px); }
+.bz-spec-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 18px; }
+.bz-spec-index { color: var(--bz-ink-3); font-family: ui-monospace, monospace; font-size: 10px; font-weight: 800; }
+.bz-spec-status { display: inline-flex; align-items: center; gap: 4px; color: var(--bz-green); font-size: 10px; font-weight: 800; }
+.bz-spec-status.is-muted { color: var(--bz-ink-3); }
+.bz-spec-name { margin-top: 13px; font-size: 14px; font-weight: 900; line-height: 1.55; }
+.bz-spec-fr { margin-top: 3px; color: var(--bz-ink-3); font-size: 10.5px; font-weight: 700; }
+.bz-spec-ex { display: -webkit-box; overflow: hidden; margin-top: 9px; color: var(--bz-ink-2); font-size: 11px; line-height: 1.75; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.bz-spec-go { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 13px; color: var(--bz-blue); font-size: 10.5px; font-weight: 900; }
+.bz-spec-card.is-soon { min-height: 150px; opacity: .72; }
+.bz-spec-card.is-soon::before { background: var(--bz-line); }
+.bz-spec-soon { margin-top: auto; padding-top: 14px; color: var(--bz-ink-3); font-size: 10.5px; font-weight: 700; }
+.bz-specialty-empty { margin: 28px 0; padding: 42px 22px; border: 1px dashed var(--bz-line); border-radius: 22px; background: var(--bz-canvas); text-align: center; color: var(--bz-ink-3); }
+.bz-specialty-empty svg { color: var(--bz-blue); opacity: .7; }
+.bz-specialty-empty h2 { margin-top: 10px; color: var(--bz-ink); font-size: 16px; font-weight: 900; }
+.bz-specialty-empty p { margin: 5px auto 14px; max-width: 360px; font-size: 12px; line-height: 1.8; }
+.bz-specialty-empty button { min-height: 38px; padding: 0 16px; border-radius: 10px; background: var(--bz-blue); color: #fff; font-size: 11px; font-weight: 900; }
+.bz-specialty-disclaimer { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--bz-line); border-radius: 14px; background: var(--bz-canvas); color: var(--bz-ink-3); font-size: 11px; line-height: 1.85; }
+.bz-specialty-disclaimer b { color: var(--bz-ink-2); }
+@media (max-width: 900px) { .bz-specialty-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .bz-specialty-overview { gap: 7px; } .bz-specialty-overview > div { padding: 11px 9px; } .bz-specialty-overview strong { font-size: 18px; } .bz-specialty-overview span { font-size: 9.5px; } .bz-specialty-controls { top: 6px; margin-inline: -5px; border-radius: 16px; } .bz-specialty-grid { grid-template-columns: 1fr; gap: 9px; } .bz-spec-card { min-height: 164px; } .bz-specialty-group-heading h2 { font-size: 15px; } .bz-specialty-group-heading > a { display: none; } }
+
+/* STEP 12 — ملخص صفحة التخصص المفرد */
+.bz-spec-hero-meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 18px; }
+.bz-spec-hero-meta span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.09); color: rgba(255,255,255,.82); font-size: 10.5px; font-weight: 800; }
+.bz-spec-hero-meta svg { opacity: .85; }
+.bz-spec-toc { box-shadow: 0 14px 30px -28px rgba(16,32,70,.8); }
+.bz-spec-sec { box-shadow: 0 10px 28px -30px rgba(16,32,70,.7); }
+@media (max-width: 620px) { .bz-spec-hero-meta { gap: 5px; } .bz-spec-hero-meta span { font-size: 9.5px; padding: 6px 8px; } }
+
+/* STEP 12 — حاسبة معدل البكالوريا */
+.bz-calc-hero-stats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 18px; }
+.bz-calc-hero-stats span { display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.17); border-radius: 999px; background: rgba(255,255,255,.09); color: rgba(255,255,255,.78); font-size: 10.5px; font-weight: 800; }
+.bz-calc-hero-stats b { color: #fff; font-size: 12px; }
+.bz-calc-hub-title { letter-spacing: -.015em; }
+.bz-branch-grid .bz-branch-card { min-height: 88px; }
+.bz-branch-grid .bz-branch-card::after { content: "ابدأ الحساب ←"; position: absolute; inset-inline-end: 14px; bottom: 12px; color: var(--bz-ink-3); font-size: 10px; font-weight: 800; opacity: .85; }
+@media (max-width: 620px) { .bz-calc-hero-stats { gap: 5px; } .bz-calc-hero-stats span { font-size: 9.5px; padding: 6px 8px; } .bz-calc-hero-stats b { font-size: 10.5px; } }
+
+/* STEP 12 — المعدل الموزون */
+.bz-weighted-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.bz-weighted-steps span { display: flex; align-items: center; gap: 7px; padding: 10px; border: 1px solid var(--bz-line); border-radius: 13px; background: var(--bz-surface,#fff); color: var(--bz-ink-2); font-size: 10.5px; font-weight: 800; }
+.bz-weighted-steps b { display: inline-grid; width: 23px; height: 23px; flex: 0 0 23px; place-items: center; border-radius: 50%; background: var(--bz-blue-050); color: var(--bz-blue); font-size: 11px; }
+.bz-weighted-shell .bz-calc { box-shadow: 0 18px 36px -32px rgba(16,32,70,.9); }
+@media (max-width: 520px) { .bz-weighted-steps { gap: 5px; } .bz-weighted-steps span { flex-direction: column; gap: 4px; padding: 8px 4px; text-align: center; font-size: 9px; } }
+
+/* STEP 12 — صفحة الأدوات */
+.bz-tools-hero-stats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 19px; }
+.bz-tools-hero-stats span { padding: 7px 11px; border: 1px solid rgba(255,255,255,.17); border-radius: 999px; background: rgba(255,255,255,.09); color: rgba(255,255,255,.8); font-size: 10.5px; font-weight: 800; }
+.bz-tools-hero-stats b { margin-inline-end: 4px; color: #fff; }
+.bz-tools-shell { padding-top: 24px; }
+.bz-tools-section + .bz-tools-section { margin-top: 42px; }
+.bz-tools-section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 13px; }
+.bz-tools-eyebrow { display: block; color: var(--bz-blue); font-size: 10px; font-weight: 900; letter-spacing: .09em; }
+.bz-tools-section-head h2 { margin-top: 3px; font-family: var(--font-display, inherit); font-size: 22px; font-weight: 900; letter-spacing: -.02em; }
+.bz-tools-section-head p { max-width: 600px; margin-top: 4px; color: var(--bz-ink-3); font-size: 12px; line-height: 1.8; }
+.bz-tools-count { flex-shrink: 0; padding: 6px 9px; border-radius: 999px; background: var(--bz-canvas); color: var(--bz-ink-3); font-size: 10px; font-weight: 800; }
+.bz-tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bz-modern-tool-card { position: relative; display: flex; min-height: 190px; flex-direction: column; overflow: hidden; padding: 19px; border: 1px solid var(--bz-line); border-radius: 20px; background: var(--bz-surface,#fff); box-shadow: 0 12px 28px -28px rgba(16,32,70,.9); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.bz-modern-tool-card:hover { border-color: color-mix(in srgb, var(--tool-color) 45%, var(--bz-line)); box-shadow: 0 22px 36px -28px color-mix(in srgb, var(--tool-color) 50%, transparent); transform: translateY(-3px); }
+.bz-modern-tool-line { position: absolute; inset-inline: 0; top: 0; height: 4px; background: var(--tool-color); }
+.bz-modern-tool-top { display: inline-flex; align-items: center; gap: 6px; color: var(--bz-ink-3); font-size: 10px; font-weight: 800; }
+.bz-modern-tool-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tool-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tool-color) 12%, transparent); }
+.bz-modern-tool-name { margin-top: 14px; font-family: var(--font-display, inherit); font-size: 18px; font-weight: 900; line-height: 1.45; }
+.bz-modern-tool-desc { margin-top: 7px; color: var(--bz-ink-2); font-size: 12.5px; line-height: 1.85; }
+.bz-modern-tool-bottom { display: flex; flex: 1; align-items: end; justify-content: space-between; gap: 10px; padding-top: 19px; }
+.bz-modern-tool-bottom span { max-width: 60%; color: var(--bz-ink-3); font-size: 10.5px; line-height: 1.65; }
+.bz-modern-tool-bottom b { color: var(--tool-color); font-size: 11px; white-space: nowrap; }
+.bz-tools-section.is-saved .bz-modern-tool-card { background: linear-gradient(145deg, var(--bz-surface,#fff), color-mix(in srgb, var(--bz-canvas) 72%, var(--bz-surface,#fff))); }
+.bz-tools-guidance { margin-top: 42px; padding: 22px; border: 1px solid color-mix(in srgb, var(--bz-blue) 28%, var(--bz-line)); border-radius: 22px; background: linear-gradient(135deg, color-mix(in srgb, var(--bz-blue) 8%, var(--bz-surface,#fff)), color-mix(in srgb, var(--bz-green) 7%, var(--bz-surface,#fff))); }
+.bz-tools-guidance-mark { color: var(--bz-blue); font-size: 10px; font-weight: 900; }
+.bz-tools-guidance h2 { margin-top: 5px; font-family: var(--font-display, inherit); font-size: 19px; font-weight: 900; }
+.bz-tools-guidance p { max-width: 650px; margin-top: 6px; color: var(--bz-ink-2); font-size: 12.5px; line-height: 1.9; }
+.bz-tools-guidance > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+.bz-tools-guidance a { display: inline-flex; min-height: 38px; align-items: center; padding: 0 13px; border-radius: 10px; background: var(--bz-blue); color: #fff; font-size: 11px; font-weight: 900; }
+.bz-tools-guidance a + a { border: 1px solid var(--bz-line); background: var(--bz-surface,#fff); color: var(--bz-blue); }
+@media (max-width: 620px) { .bz-tools-shell { padding-top: 16px; } .bz-tools-section-head { align-items: start; } .bz-tools-section-head h2 { font-size: 19px; } .bz-tools-section-head p { font-size: 11px; } .bz-tools-grid { grid-template-columns: 1fr; gap: 9px; } .bz-modern-tool-card { min-height: 170px; padding: 16px; } .bz-modern-tool-name { font-size: 17px; } .bz-modern-tool-bottom span { max-width: 56%; font-size: 10px; } }
+
+/* STEP 12 — المقالات */
+.bz-article-hero { background: radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--bz-blue) 8%, transparent), transparent 34%), var(--bz-surface,#fff); }
+.bz-article-hero h1 { letter-spacing: -.025em; }
+.bz-article-meta { padding-top: 12px; border-top: 1px solid var(--bz-line); }
+.bz-article-cover { max-height: 560px; border: 1px solid var(--bz-line); }
+.bz-article-shell { position: relative; }
+.bz-article { color: var(--bz-ink-2); font-size: 16px; line-height: 2.05; }
+.bz-article > :first-child { margin-top: 0; }
+.bz-article h2 { margin-top: 2.3em; color: var(--bz-ink); font-family: var(--font-display, inherit); font-size: 23px; font-weight: 900; line-height: 1.45; }
+.bz-article h3 { margin-top: 1.9em; color: var(--bz-ink); font-size: 18px; font-weight: 900; line-height: 1.5; }
+.bz-article p { margin-top: 1.15em; }
+.bz-article ul, .bz-article ol { margin-top: 1.1em; padding-inline-start: 1.5em; }
+.bz-article li { margin-top: .42em; padding-inline-start: .35em; }
+.bz-article blockquote { margin: 1.5em 0; padding: 13px 17px; border-inline-start: 4px solid var(--bz-blue); border-radius: 0 14px 14px 0; background: var(--bz-blue-050); color: var(--bz-ink); font-weight: 700; }
+.bz-article a { color: var(--bz-blue); font-weight: 800; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--bz-blue) 28%, transparent); text-underline-offset: 3px; }
+.bz-article img { height: auto; max-width: 100%; border-radius: 16px; }
+@media (max-width: 620px) { .bz-article { font-size: 15px; line-height: 2; } .bz-article h2 { font-size: 20px; } .bz-article h3 { font-size: 17px; } .bz-article-cover { border-radius: 15px; padding-inline: 12px; } }
+
+/* STEP 12 — فهرس المدونة */
+.bz-blog-index-hero { background: radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--bz-blue) 10%, transparent), transparent 34%), var(--bz-surface,#fff); }
+.bz-blog-index-shell { min-height: 360px; }
+.bz-blog-card { box-shadow: 0 13px 28px -28px rgba(16,32,70,.9); }
+.bz-blog-card > img { transition: transform .5s ease, filter .5s ease; }
+.bz-blog-card:hover > img { filter: saturate(1.08); }
+.bz-blog-card .line-clamp-3 { min-height: 4.5em; }
+@media (max-width: 620px) { .bz-blog-index-shell { padding-top: 28px; } .bz-blog-grid { gap: 12px; } }

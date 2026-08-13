@@ -176,11 +176,16 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
               {spec.excerpt}
             </p>
           )}
+          <div className="bz-spec-hero-meta" aria-label="ملخص التخصص">
+            <span><Icon name="layers" size={13} /> {spec.field}</span>
+            <span><Icon name="file" size={13} /> {written.length} أقسام مفصلة</span>
+            <span><Icon name="check" size={13} /> دليل مفتوح للطالب</span>
+          </div>
         </div>
       </header>
 
       <PublicSidebarLayout placement="guides">
-        <article className="mx-auto w-full max-w-3xl px-4 pb-14 pt-6">
+        <article className="mx-auto w-full max-w-4xl px-4 pb-14 pt-6">
           {/* فهرس الموضوع — سبعة عشر قسماً بلا فهرس تعني تمريراً أعمى
             على الهاتف، ومن يريد «القبول والمعدّلات» وحدها مضطرّ للمرور
             بكل شيء. لا يُحذف قسم: تُضاف طريقة الوصول إليه. */}

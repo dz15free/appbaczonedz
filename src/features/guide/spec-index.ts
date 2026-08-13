@@ -271,7 +271,10 @@ export const SPEC_INDEX: SpecLite[] = [
   {"slug": "gp", "ar": "هندسة الطرائق", "fr": "Génie des Procédés", "field": "هندسة وتكنولوجيا"},
   {"slug": "aeronautique", "ar": "هندسة الطيران", "fr": "Aéronautique", "field": "هندسة وتكنولوجيا"},
   {"slug": "gt", "ar": "هندسة النقل", "fr": "Génie du Transport", "field": "هندسة وتكنولوجيا"},
-  {"slug": "archi-civil", "ar": "هندسة معمارية + هندسة مدنية | ARCHITECTURAL ENGINEERING (ARCHI-CIVIL)", "fr": "", "field": "هندسة وتكنولوجيا"}
+  {"slug": "archi-civil", "ar": "هندسة معمارية + هندسة مدنية | ARCHITECTURAL ENGINEERING (ARCHI-CIVIL)", "fr": "", "field": "هندسة وتكنولوجيا"},
+  {"slug": "gendarmerie", "ar": "المدرسة العليا للدرك الوطني — زرالدة", "fr": "École Supérieure de la Gendarmerie Nationale", "field": "أسلاك نظامية وعسكرية"},
+  {"slug": "military-health", "ar": "المدرسة الوطنية للصحة العسكرية — عين النعجة", "fr": "École Nationale de Santé Militaire", "field": "أسلاك نظامية وعسكرية"},
+  {"slug": "republican-guard", "ar": "المدرسة العليا للحرس الجمهوري — برج الكيفان", "fr": "École Supérieure de la Garde Républicaine", "field": "أسلاك نظامية وعسكرية"}
 ];
 
 export const SPEC_FIELDS: string[] = [...new Set(SPEC_INDEX.map((s) => s.field))].sort(

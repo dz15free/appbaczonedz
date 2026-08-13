@@ -5,123 +5,66 @@ import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { TOOLS, type Tool } from "@/features/tools/tools-data";
 
-/* ════════════════════════════════════════════════════════════
-   أدوات البكالوريا — الصفحة الأمّ
-
-   **لا تُعرض أداة غير موجودة، ولا رابط يقود إلى 404.** وكل أداة
-   مصنّفة بصدق: العامّة تعمل بلا تسجيل، والتي تحفظ تقدّمك تحتاج حساباً
-   — وقول ذلك مقدّماً أفضل من جدار تسجيل يفاجئ الزائر بعد الضغط.
-
-   الصفحة كلّها مُصيَّرة على الخادم: لا Firebase ولا حالة، فتصل سريعة
-   وتُفهرَس كاملة.
-════════════════════════════════════════════════════════════ */
-
-const TITLE = "أدوات البكالوريا — حاسبات ومخطّطات ومحاكاة مجّانية";
-const DESC =
-  "أدوات مجّانية لطلبة البكالوريا في الجزائر: حساب المعدّل، المعدّل الموزون، " +
-  "مخطّط المراجعة للطباعة، مؤقّت التركيز، وبطاقات المراجعة — أغلبها بلا تسجيل.";
+const TITLE = "أدوات البكالوريا — حاسبات ومخططات ومحاكاة مجانية";
+const DESC = "أدوات مجانية لطلبة البكالوريا في الجزائر: حساب المعدل، المعدل الموزون، مخطط المراجعة، مؤقت التركيز، ودليل التخصصات — أغلبها بلا تسجيل.";
 
 export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
-  keywords: [
-    "أدوات البكالوريا", "حاسبة معدل البكالوريا", "المعدل الموزون",
-    "مخطط المراجعة", "أدوات الدراسة", "بكالوريا 2027", "BacZone",
-  ],
+  keywords: ["أدوات البكالوريا", "حاسبة معدل البكالوريا", "المعدل الموزون", "مخطط المراجعة", "أدوات الدراسة", "BacZone"],
   alternates: { canonical: "/tools" },
-  openGraph: {
-    type: "website", locale: "ar_DZ", url: absUrl("/tools"),
-    title: TITLE, description: DESC, siteName: "BacZone",
-  },
+  openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/tools"), title: TITLE, description: DESC, siteName: "BacZone" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
 
 export default function ToolsPage() {
-  const free = TOOLS.filter((t) => !t.needsAccount);
-  const account = TOOLS.filter((t) => t.needsAccount);
-
+  const instant = TOOLS.filter((tool) => !tool.needsAccount);
+  const saved = TOOLS.filter((tool) => tool.needsAccount);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "CollectionPage",
-        name: TITLE,
-        description: DESC,
-        url: absUrl("/tools"),
-        inLanguage: "ar",
-      },
-      {
-        "@type": "ItemList",
-        itemListElement: TOOLS.map((t, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name: t.name,
-          url: absUrl(t.href),
-        })),
-      },
+      { "@type": "CollectionPage", name: TITLE, description: DESC, url: absUrl("/tools"), inLanguage: "ar" },
+      { "@type": "ItemList", itemListElement: TOOLS.map((tool, index) => ({ "@type": "ListItem", position: index + 1, name: tool.name, url: absUrl(tool.href) })) },
     ],
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <main className="bz-guide bz-tools-page min-h-screen">
       <PublicHeader />
-      <script type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <header className="bz-guide-hero">
-        <div className="mx-auto w-full max-w-5xl px-4 py-9 sm:py-12">
-          <span className="bz-guide-kicker">أدوات BacZone</span>
-          <h1 className="mt-2.5 font-display text-[26px] font-extrabold leading-[1.25] sm:text-4xl">
-            أدوات البكالوريا
-          </h1>
-          <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
-            أدوات بنيناها لأنّ الطالب يحتاجها فعلاً — لا لتزيين الموقع.
-            <b className="text-white"> أغلبها يعمل بلا تسجيل.</b>
-          </p>
+        <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:py-14">
+          <span className="bz-guide-kicker">BacZone · أدوات عملية</span>
+          <h1 className="mt-2.5 font-display text-[28px] font-extrabold leading-[1.22] sm:text-5xl">كل ما تحتاجه لتعرف أين تقف</h1>
+          <p className="mt-3 max-w-2xl text-[14px] leading-[1.95] text-white/80 sm:text-base">حاسبات سريعة، تخطيط قابل للطباعة، ومحاكاة تساعدك على تحويل المراجعة من نية إلى خطوات واضحة.</p>
+          <div className="bz-tools-hero-stats"><span><b>{TOOLS.length}</b> أدوات للطالب</span><span><b>{instant.length}</b> تعمل مباشرة</span><span><b>مجانية</b> بلا تعقيد</span></div>
         </div>
       </header>
 
       <PublicSidebarLayout placement="tools">
-        <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
-          <section className="mt-6">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-4 w-1 rounded-full bg-[var(--bz-blue)]" />
-            <h2 className="font-display text-[15px] font-extrabold sm:text-lg">أدوات بلا تسجيل</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {free.map((t) => <ToolCard key={t.href} t={t} />)}
-          </div>
-        </section>
-
-        <section className="mt-9">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="h-4 w-1 rounded-full bg-[var(--bz-ink-3)]" />
-            <h2 className="font-display text-[15px] font-extrabold sm:text-lg">أدوات تحفظ تقدّمك</h2>
-          </div>
-          <p className="mb-3 text-[11.5px] leading-relaxed text-[var(--bz-ink-3)]">
-            هذه تحتاج حساباً مجّانياً — لأنّها تحفظ ما أنجزته لتجده في المرّة القادمة.
-          </p>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {account.map((t) => <ToolCard key={t.href} t={t} />)}
-          </div>
+        <div className="bz-tools-shell mx-auto w-full max-w-5xl px-3 pb-16 sm:px-4">
+          <section className="bz-tools-section">
+            <div className="bz-tools-section-head"><div><span className="bz-tools-eyebrow">ابدأ من هنا</span><h2>أدوات تعمل فورًا</h2><p>لا تحتاج إلى حساب. أدخل ما تعرفه الآن، وخذ نتيجة تساعدك على اتخاذ الخطوة التالية.</p></div><span className="bz-tools-count">{instant.length} أدوات</span></div>
+            <div className="bz-tools-grid">{instant.map((tool) => <ToolCard key={tool.href} tool={tool} />)}</div>
           </section>
+
+          {saved.length > 0 && <section className="bz-tools-section is-saved"><div className="bz-tools-section-head"><div><span className="bz-tools-eyebrow">مع تقدّمك</span><h2>أدوات تحفظ ما أنجزته</h2><p>تحتاج حسابًا مجانيًا حتى تجد مهامك وبطاقاتك وتقدّمك كما تركتها في المرة السابقة.</p></div><span className="bz-tools-count">{saved.length} أدوات</span></div><div className="bz-tools-grid">{saved.map((tool) => <ToolCard key={tool.href} tool={tool} />)}</div></section>}
+
+          <section className="bz-tools-guidance"><span className="bz-tools-guidance-mark">اقتراح سريع</span><h2>لا تستعمل كل شيء في يوم واحد</h2><p>احسب معدلك أولًا، ثم أنشئ برنامجًا أسبوعيًا، وبعدها استعمل المؤقت أو المحاكاة في الحصة التي ستنجزها اليوم. الأداة المفيدة هي التي تعود إليها.</p><div><Link href="/calculate">ابدأ بحساب معدلك</Link><Link href="/specialties">تعرّف على تخصصاتك</Link></div></section>
         </div>
       </PublicSidebarLayout>
     </main>
   );
 }
 
-function ToolCard({ t }: { t: Tool }) {
+function ToolCard({ tool }: { tool: Tool }) {
   return (
-    <Link href={t.href} className="bz-tool-card">
-      <span className="bz-tool-bar" style={{ background: t.color }} />
-      <span className="bz-tool-head">
-        <span className="bz-tool-name">{t.name}</span>
-        {t.needsAccount && <span className="bz-tool-tag">بحساب</span>}
-      </span>
-      <span className="bz-tool-desc">{t.desc}</span>
-      <span className="bz-tool-benefit">{t.benefit}</span>
-      <span className="bz-tool-cta" style={{ color: t.color }}>{t.cta} ←</span>
+    <Link href={tool.href} className="bz-modern-tool-card" style={{ "--tool-color": tool.color } as React.CSSProperties}>
+      <span className="bz-modern-tool-line" />
+      <span className="bz-modern-tool-top"><span className="bz-modern-tool-dot" /><span>{tool.needsAccount ? "بحساب مجاني" : "بلا تسجيل"}</span></span>
+      <span className="bz-modern-tool-name">{tool.name}</span>
+      <span className="bz-modern-tool-desc">{tool.desc}</span>
+      <span className="bz-modern-tool-bottom"><span>{tool.benefit}</span><b>{tool.cta} ←</b></span>
     </Link>
   );
 }

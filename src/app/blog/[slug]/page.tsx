@@ -126,11 +126,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <PublicHeader />
-      <main className="min-h-screen bg-background">
+      <main className="bz-blog-article-page min-h-screen bg-background">
         <script type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-        <header className="border-b border-border bg-surface">
+        <header className="bz-article-hero border-b border-border bg-surface">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-11">
             <nav aria-label="مسار التنقّل" className="text-[12px] text-text-muted">
               <Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link>
@@ -161,7 +161,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               </p>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-text-muted">
+            <div className="bz-article-meta mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-text-muted">
               <span>{post.authorName}</span>
               {post.publishedAt ? (
                 <>
@@ -187,12 +187,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             height={630}
             loading="eager"
             decoding="async"
-            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-5xl rounded-2xl object-cover px-4 shadow-xl shadow-black/5"
+            className="bz-article-cover mx-auto mt-6 aspect-[1200/630] w-full max-w-5xl rounded-2xl object-cover px-4 shadow-xl shadow-black/5"
           />
         )}
 
         <PublicSidebarLayout placement="blog">
-          <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+          <div className="bz-article-shell mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
             {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
             <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
 

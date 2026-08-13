@@ -82,6 +82,10 @@ export default function PomodoroPage() {
         <button onClick={() => router.back()} className="mb-6 flex items-center gap-2 self-start text-sm text-text-muted">
           <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" /> رجوع
         </button>
+        <div className="mb-6 text-center">
+          <h1 className="font-display text-2xl font-extrabold">مؤقّت التركيز</h1>
+          <p className="mt-1 text-xs text-text-muted">جلسات قصيرة تساعدك على الدراسة بتركيز واستراحات محسوبة.</p>
+        </div>
 
         {/* أزرار المرحلة */}
         <div className="mb-8 flex gap-2 rounded-full border border-border bg-surface p-1">

@@ -139,16 +139,21 @@ export default function CalculateHub() {
               </h1>
               <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
                 احسب معدّلك بدقة وفق{" "}
-                <b className="text-white">
-                  المعاملات المعتمدة بعد تعديلات وزارة التربية
-                </b>
-                . اختر شعبتك، أدخل علاماتك، واحصل على النتيجة فوراً —{" "}
-                <b className="text-white">بلا تسجيل</b>.
-              </p>
+                  <b className="text-white">
+                    المعاملات المعتمدة بعد تعديلات وزارة التربية
+                  </b>
+                  . اختر شعبتك، أدخل علاماتك، واحصل على النتيجة فوراً —{" "}
+                  <b className="text-white">بلا تسجيل</b>.
+                </p>
+                <div className="bz-calc-hero-stats" aria-label="خصائص الحاسبة">
+                  <span><b>7</b> شعب متاحة</span>
+                  <span><b>0–20</b> إدخال واضح</span>
+                  <span><b>فورًا</b> نتيجة قابلة للفهم</span>
+                </div>
             </div>
           </header>
 
-          <div className="mx-auto w-full max-w-4xl px-3 pb-14 sm:px-4">
+          <div className="bz-calc-hub mx-auto w-full max-w-4xl px-3 pb-14 sm:px-4">
             {/* رابط العودة — هدف لمس كامل */}
             <Link
               href="/home"
@@ -158,7 +163,7 @@ export default function CalculateHub() {
             </Link>
 
             {/* اختيار الشعبة */}
-            <h2 className="mb-2 mt-6 font-display text-[20px] font-extrabold">
+            <h2 className="bz-calc-hub-title mb-2 mt-6 font-display text-[20px] font-extrabold">
               اختر شعبتك لحساب المعدل
             </h2>
             <p className="mb-4 text-[13px] leading-[1.8] text-[var(--bz-ink-3)]">
@@ -166,7 +171,7 @@ export default function CalculateHub() {
               للبدء مباشرة:
             </p>
 
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="bz-branch-grid grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {BRANCHES.map((b) => (
                 <Link
                   key={b.slug}

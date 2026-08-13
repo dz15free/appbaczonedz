@@ -85,7 +85,7 @@ export default function WeightedAveragePage() {
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <main className="bz-guide bz-weighted-page min-h-screen">
       <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -101,11 +101,13 @@ export default function WeightedAveragePage() {
           <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
             {W_DOMAINS.length} ميادين · بالصيغ المعتمدة · نتيجة فورية بلا تسجيل
           </p>
+          <div className="bz-calc-hero-stats"><span><b>{W_DOMAINS.length}</b> ميادين</span><span><b>3</b> خطوات بسيطة</span><span><b>بلا تسجيل</b> وبدون حفظ</span></div>
         </div>
       </header>
 
       <PublicSidebarLayout placement="tools">
-        <div className="mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
+        <div className="bz-weighted-shell mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
+          <div className="bz-weighted-steps" aria-label="طريقة استعمال الحاسبة"><span><b>1</b> اختر الميدان</span><span><b>2</b> أدخل العلامات</span><span><b>3</b> افهم الفرق</span></div>
           <WeightedCalculator />
 
         <article className="mt-8">
