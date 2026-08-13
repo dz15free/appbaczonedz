@@ -215,9 +215,24 @@ const MARK_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fecaca", "#e9d5ff"];
 interface Html2PdfWorker {
   set: (options: Record<string, unknown>) => Html2PdfWorker;
   from: (source: HTMLElement) => Html2PdfWorker;
+  toCanvas: () => { get: (name: "canvas") => Promise<HTMLCanvasElement> };
+  toPdf: () => Html2PdfWorker;
   outputPdf: (type: "datauristring") => Promise<string>;
 }
 type Html2PdfFactory = () => Html2PdfWorker;
+
+function canvasHasInk(canvas: HTMLCanvasElement): boolean {
+  if (canvas.width < 2 || canvas.height < 2) return false;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const stride = Math.max(1, Math.floor(pixels.length / 160_000 / 4));
+  for (let i = 0; i < pixels.length; i += stride * 4) {
+    const alpha = pixels[i + 3];
+    if (alpha > 0 && (pixels[i] < 238 || pixels[i + 1] < 238 || pixels[i + 2] < 238)) return true;
+  }
+  return false;
+}
 let html2pdfPromise: Promise<Html2PdfFactory | null> | null = null;
 
 function escapeHtmlText(value: string): string {
@@ -717,10 +732,12 @@ export function RoomNotes({
     source.lang = "ar";
     source.innerHTML = `<header><strong>ملاحظات الدرس</strong><span>BacZone</span></header><p class="bz-pdf-meta">${escapeHtmlText(roomName)} · ${escapeHtmlText(new Date().toLocaleDateString("ar-DZ", { dateStyle: "long" }))}</p><div class="bz-pdf-body">${body}</div><footer>تمّ إنشاؤه عبر منصّة BacZone</footer>`;
     /* html2canvas يحتاج العنصر داخل التدفق الطبيعي؛ absolute/fixed أعادا
-       canvas بارتفاع صفر. ننقله بصرياً فقط عبر transform ثم نحذفه فوراً. */
+       canvas بارتفاع صفر، وtransform التقط محتوى ناقصاً. نُبعده بصرياً
+       عبر هامش أفقي فقط ثم نحذفه فوراً بعد التصدير. */
     source.style.position = "static";
     source.style.display = "block";
-    source.style.transform = "translateX(-100vw)";
+    source.style.transform = "";
+    source.style.marginLeft = "100vw";
     source.style.width = "794px";
     source.style.height = "auto";
     source.style.minHeight = "1123px";
@@ -736,14 +753,37 @@ export function RoomNotes({
       /* ننتظر الخطوط ودورتين للرسم حتى تُحسب أبعاد النص قبل الالتقاط. */
       if (document.fonts?.ready) await document.fonts.ready;
       await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-      const dataUri = await factory().set({
+      const worker = factory().set({
         margin: [12, 14, 16, 14],
         filename: `baczone-notes-${Date.now()}.pdf`,
         image: { type: "jpeg", quality: 0.96 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          onclone: (clonedDocument: Document) => {
+            const cloned = clonedDocument.querySelector<HTMLElement>(".bz-notes-pdf-source");
+            if (cloned) {
+              cloned.style.transform = "none";
+              cloned.style.position = "static";
+              cloned.style.display = "block";
+              cloned.style.visibility = "visible";
+              cloned.style.opacity = "1";
+            }
+          },
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait", putOnlyUsedFonts: true },
         pagebreak: { mode: ["css", "legacy"] },
-      }).from(source).outputPdf("datauristring");
+      }).from(source);
+      const canvas = await worker.toCanvas().get("canvas");
+      if (!canvasHasInk(canvas)) throw new Error("pdf-empty-canvas");
+      const dataUri = await worker.toPdf().outputPdf("datauristring");
+      if (!dataUri.startsWith("data:application/pdf") || dataUri.length < 4000) {
+        throw new Error("pdf-empty-output");
+      }
       if (!isDriveConfigured()) throw new Error("drive-not-configured");
       if (!hasDriveToken()) {
         await initDrive();
