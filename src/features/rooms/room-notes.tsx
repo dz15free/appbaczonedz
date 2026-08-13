@@ -261,6 +261,7 @@ export function RoomNotes({
   const [pdfError, setPdfError] = useState("");
   const [publishedPdf, setPublishedPdf] = useState<RoomFile | null>(null);
   const [publishedPdfData, setPublishedPdfData] = useState<string | null>(null);
+  const [pdfNotice, setPdfNotice] = useState<RoomFile | null>(null);
   const [preview, setPreview] = useState(!editable);
   const [eqnOpen, setEqnOpen] = useState<null | { tex: string; block: boolean; el?: HTMLElement }>(null);
   const [docxBusy, setDocxBusy] = useState(false);
@@ -276,6 +277,8 @@ export function RoomNotes({
   const publishedRef = useRef<string | null>(null);
   const draftRef = useRef<string | null>(null);
   const publishedLoaded = useRef(false);
+  const seenPdfId = useRef<string | null>(null);
+  const pdfNoticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedRange = useRef<Range | null>(null);
   const katexReady = useKatex();
 
@@ -343,6 +346,14 @@ export function RoomNotes({
     const unsub = listenRoomFiles(roomId, (files) => {
       const latest = files.find((file) => file.kind === "notes-pdf") ?? null;
       if (!alive) return;
+      const nextId = latest?.id ?? null;
+      const previousId = seenPdfId.current;
+      if (!editable && latest && previousId && nextId !== previousId) {
+        setPdfNotice(latest);
+        if (pdfNoticeTimer.current) clearTimeout(pdfNoticeTimer.current);
+        pdfNoticeTimer.current = setTimeout(() => setPdfNotice(null), 8000);
+      }
+      seenPdfId.current = nextId;
       setPublishedPdf(latest);
       if (latest?.driveId) {
         setPublishedPdfData(drivePreviewUrl(latest.driveId));
@@ -356,12 +367,18 @@ export function RoomNotes({
         if (alive) setPublishedPdfData(data);
       });
     });
-    return () => { alive = false; if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+    return () => {
+      alive = false;
+      if (pdfNoticeTimer.current) clearTimeout(pdfNoticeTimer.current);
+      if (typeof unsub === "function") unsub();
+    };
+  }, [roomId, editable]);
 
-  useEffect(() => {
-    if (edRef.current && !edRef.current.innerHTML) edRef.current.innerHTML = html || "<p><br></p>";
-  }, [html]);
+  useLayoutEffect(() => {
+    if (!editable || preview || !edRef.current || edRef.current.innerHTML) return;
+    edRef.current.innerHTML = html || "<p><br></p>";
+    renderEqns(edRef.current);
+  }, [editable, preview, roomId, html]);
 
   /* الرسم يُستدعى دائماً لا عند جهوز KaTeX فقط: الدالّة نفسها تتولّى
      حالة عدم توفّره (تعرض الصيغة الخام)، ولو انتظرناها بقيت المعادلة
@@ -786,21 +803,37 @@ export function RoomNotes({
         <span className="ms-auto flex items-center gap-1">
           <HBtn icon={faCircleInfo} label="كيف أستعمل المحرّر" onClick={() => setHelpOpen(true)} />
           {editable && (
-            /* «معاينة» = معاينة + نشر. والتسمية تقول ذلك صراحةً حتى لا
-               يفاجَأ الأستاذ بأنّ ما عاينه قد وصل الطلبة. */
-            <button
-              onClick={async () => { if (preview) setPreview(false); else if (await publish()) setPreview(true); }}
-              disabled={publishing}
-              title={preview ? "الرجوع إلى التحرير" : "عرض الشكل النهائي ونشره للطلبة"}
-              className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold transition disabled:opacity-60 ${
-                preview ? "text-primary hover:bg-primary/10"
-                        : unpublished ? "bg-gradient-primary px-3 text-white shadow-sm hover:brightness-105"
-                                      : "text-primary hover:bg-primary/10"}`}
-            >
-              <FontAwesomeIcon icon={publishing ? faSpinner : preview ? faPen : faEye}
-                className={`h-3.5 w-3.5 ${publishing ? "animate-spin" : ""}`} />
-              {preview ? "تحرير" : unpublished ? "معاينة ونشر" : "معاينة"}
-            </button>
+            <>
+              <button
+                onClick={() => { sync(); setPreview(true); }}
+                disabled={publishing}
+                title="معاينة عملك قبل نشره"
+                className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold transition disabled:opacity-60 ${
+                  preview ? "text-primary/60" : "text-primary hover:bg-primary/10"}`}
+              >
+                <FontAwesomeIcon icon={faEye} className="h-3.5 w-3.5" />
+                معاينة
+              </button>
+              <button
+                onClick={async () => { if (await publish()) setPreview(true); }}
+                disabled={publishing || empty}
+                title="نشر الملاحظة للمنضمين إلى الغرفة"
+                className="flex min-h-9 items-center gap-1.5 rounded-lg bg-gradient-primary px-3 text-[12px] font-extrabold text-white shadow-sm transition hover:brightness-105 disabled:opacity-60"
+              >
+                <FontAwesomeIcon icon={publishing ? faSpinner : faCheck} className={`h-3.5 w-3.5 ${publishing ? "animate-spin" : ""}`} />
+                {publishing ? "جارٍ النشر…" : "نشر للمنضمين"}
+              </button>
+              {preview && (
+                <button
+                  onClick={() => setPreview(false)}
+                  title="العودة إلى تحرير المحتوى"
+                  className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-primary transition hover:bg-primary/10"
+                >
+                  <FontAwesomeIcon icon={faPen} className="h-3.5 w-3.5" />
+                  تحرير
+                </button>
+              )}
+            </>
           )}
           {editable && !empty && (
             <button onClick={() => { void exportPDF(); }} disabled={pdfBusy}
@@ -813,6 +846,13 @@ export function RoomNotes({
       </div>
       {notesError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{notesError}</p>}
       {pdfError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{pdfError}</p>}
+      {!editable && pdfNotice && (
+        <div className="bz-room-file-notice" role="status" aria-live="polite">
+          <span className="bz-room-file-notice-icon"><FontAwesomeIcon icon={faFilePdf} /></span>
+          <span className="bz-room-file-notice-copy"><b>أضاف صاحب الغرفة ملفاً جديداً</b><small>{pdfNotice.name} — تجده الآن في تبويب «الملفات».</small></span>
+          <button type="button" onClick={() => setPdfNotice(null)} aria-label="إغلاق إشعار الملف" title="إغلاق"><FontAwesomeIcon icon={faXmark} /></button>
+        </div>
+      )}
 
       {/* ── شريط الأدوات ──
           رفّ أفقي منزلق على الهاتف بدل أن ينكسر إلى أربعة صفوف */}
@@ -910,7 +950,7 @@ export function RoomNotes({
               </p>
               {!editable && (
                 <p className="mt-1.5 text-[11.5px] font-bold text-text-muted/70">
-                  تظهر هنا حين يضغط «معاينة ونشر»
+                  تظهر هنا بعد أن ينشرها صاحب الغرفة
                 </p>
               )}
             </div>

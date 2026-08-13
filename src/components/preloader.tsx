@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEFAULT_LOGO } from "@/lib/brand-assets";
+import { DEFAULT_FAVICON } from "@/lib/brand-assets";
 
-const MIN_VISIBLE_MS = 620;
-const EXIT_MS = 260;
-const SAFETY_MS = 5000;
+const MIN_VISIBLE_MS = 1620;
+const EXIT_MS = 280;
+const SAFETY_MS = 6000;
 
 type PreloaderState = "visible" | "leaving" | "gone";
 
@@ -32,21 +32,17 @@ export function Preloader() {
 
     const leaveWhenReady = () => {
       if (settled) return;
-      const wait = Math.max(0, MIN_VISIBLE_MS - (performance.now() - startedAt));
       settled = true;
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
-      if (wait > 0) {
-        leaveTimer = window.setTimeout(remove, wait);
-      } else {
-        remove();
-      }
+      const wait = Math.max(0, MIN_VISIBLE_MS - (performance.now() - startedAt));
+      leaveTimer = window.setTimeout(remove, wait);
     };
 
     const appReady = async () => {
       try {
         if ("fonts" in document) await document.fonts.ready;
       } catch {
-        // الخطوط ليست شرطاً لحجب التطبيق.
+        // جاهزية الخطوط تحسين بصري وليست شرطاً لفتح المنصة.
       }
       await nextPaint();
       leaveWhenReady();
@@ -74,31 +70,27 @@ export function Preloader() {
 
   return (
     <div
-      className={`bz-preloader-v2 ${state === "leaving" ? "is-leaving" : ""}`}
+      className={`bz-preloader-v3 ${state === "leaving" ? "is-leaving" : ""}`}
       role="status"
       aria-live="polite"
       aria-label="جارٍ فتح BacZone"
       data-state={state}
     >
-      <div className="bz-preloader-v2-grid" aria-hidden="true" />
-      <div className="bz-preloader-v2-orbit orbit-a" aria-hidden="true" />
-      <div className="bz-preloader-v2-orbit orbit-b" aria-hidden="true" />
-      <div className="bz-preloader-v2-shell">
-        <div className="bz-preloader-v2-emblem" aria-hidden="true">
-          <span className="bz-preloader-v2-sun" />
-          <span className="bz-preloader-v2-line line-a" />
-          <span className="bz-preloader-v2-line line-b" />
-          <span className="bz-preloader-v2-logo-plate">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={DEFAULT_LOGO} alt="" width={58} height={58} />
-          </span>
+      <div className="bz-preloader-v3-aura bz-preloader-v3-aura-a" aria-hidden="true" />
+      <div className="bz-preloader-v3-aura bz-preloader-v3-aura-b" aria-hidden="true" />
+      <section className="bz-preloader-v3-card">
+        <div className="bz-preloader-v3-logo-wrap">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={DEFAULT_FAVICON} alt="" className="bz-preloader-v3-logo" width={96} height={96} />
         </div>
-        <div className="bz-preloader-v2-wordmark">Bac<span>Zone</span></div>
-        <p className="bz-preloader-v2-copy">نفتح لك مساحة دراسة أهدأ</p>
-        <div className="bz-preloader-v2-track" aria-hidden="true"><span /></div>
-        <div className="bz-preloader-v2-status"><i /> <span>نجهّز الواجهة</span><b>استعد</b></div>
-      </div>
-      <div className="bz-preloader-v2-footer" aria-hidden="true"><span>BACZONE</span><span>مساحة الطالب</span></div>
+        <div className="bz-preloader-v3-brand">Bac<span>Zone</span></div>
+        <p className="bz-preloader-v3-tag">منصّة البكالوريا والدراسة الذكية في الجزائر</p>
+        <div className="bz-preloader-v3-rule" aria-hidden="true" />
+        <h1>نجهّز لك مساحة الدراسة</h1>
+        <p className="bz-preloader-v3-copy">لحظات قليلة ونفتح لك أدواتك وملاحظاتك وغرفتك.</p>
+        <div className="bz-preloader-v3-progress" aria-hidden="true"><span /></div>
+        <div className="bz-preloader-v3-status"><b>جارٍ التجهيز</b><span>استعد</span></div>
+      </section>
     </div>
   );
 }
