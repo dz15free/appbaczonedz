@@ -3,62 +3,73 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
-const FADE_OUT_MS = 180;
-const SAFETY_TIMEOUT_MS = 900;
+const EXIT_MS = 160;
+const SAFETY_MS = 1200;
+
+type PreloaderState = "visible" | "leaving" | "gone";
 
 export function Preloader() {
-  const [leaving, setLeaving] = useState(false);
-  const [gone, setGone] = useState(false);
+  const [state, setState] = useState<PreloaderState>("visible");
 
   useEffect(() => {
+    let finished = false;
+    let frameOne: number | undefined;
+    let frameTwo: number | undefined;
     let removeTimer: number | undefined;
     let safetyTimer: number | undefined;
-    let frame: number | undefined;
-    let finished = false;
 
-    const finish = () => {
+    const reveal = () => {
       if (finished) return;
       finished = true;
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
-      frame = window.requestAnimationFrame(() => {
-        setLeaving(true);
-        removeTimer = window.setTimeout(() => setGone(true), FADE_OUT_MS);
+      frameOne = window.requestAnimationFrame(() => {
+        frameTwo = window.requestAnimationFrame(() => {
+          setState("leaving");
+          removeTimer = window.setTimeout(() => setState("gone"), EXIT_MS);
+        });
       });
     };
 
-    if (document.readyState !== "loading") {
-      finish();
+    const onReady = () => reveal();
+    const scheduleReady = () => reveal();
+
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      scheduleReady();
     } else {
-      document.addEventListener("DOMContentLoaded", finish, { once: true });
-      window.addEventListener("load", finish, { once: true });
-      safetyTimer = window.setTimeout(finish, SAFETY_TIMEOUT_MS);
+      document.addEventListener("DOMContentLoaded", onReady, { once: true });
+      window.addEventListener("load", onReady, { once: true });
+      safetyTimer = window.setTimeout(reveal, SAFETY_MS);
     }
 
     return () => {
-      document.removeEventListener("DOMContentLoaded", finish);
-      window.removeEventListener("load", finish);
-      if (frame !== undefined) window.cancelAnimationFrame(frame);
+      document.removeEventListener("DOMContentLoaded", onReady);
+      window.removeEventListener("load", onReady);
+      if (frameOne !== undefined) window.cancelAnimationFrame(frameOne);
+      if (frameTwo !== undefined) window.cancelAnimationFrame(frameTwo);
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
   }, []);
 
-  if (gone) return null;
+  if (state === "gone") return null;
 
   return (
-    <div className={`bz-preloader ${leaving ? "is-leaving" : ""}`} role="status" aria-live="polite" aria-label="جارٍ فتح BacZone">
-      <div className="bz-preloader-panel">
-        <div className="bz-preloader-brand">
-          <span className="bz-preloader-orbit orbit-a" aria-hidden="true" />
-          <span className="bz-preloader-orbit orbit-b" aria-hidden="true" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={DEFAULT_LOGO} alt="BacZone" width={58} height={58} className="bz-preloader-logo" />
+    <div className={`bz-preloader-shell ${state === "leaving" ? "is-leaving" : ""}`} role="status" aria-live="polite" aria-label="جارٍ فتح BacZone">
+      <div className="bz-preloader-aura aura-one" aria-hidden="true" />
+      <div className="bz-preloader-aura aura-two" aria-hidden="true" />
+      <div className="bz-preloader-stage">
+        <div className="bz-preloader-logo-wrap">
+          <span className="bz-preloader-ring ring-one" aria-hidden="true" />
+          <span className="bz-preloader-ring ring-two" aria-hidden="true" />
+          <span className="bz-preloader-logo-plate">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={DEFAULT_LOGO} alt="BacZone" width={54} height={54} className="bz-preloader-logo-new" />
+          </span>
+          <span className="bz-preloader-spark" aria-hidden="true" />
         </div>
-        <div className="bz-preloader-copy">
-          <strong>BacZone</strong>
-          <span>نفتح لك مساحة دراسة هادئة</span>
-        </div>
-        <div className="bz-preloader-track" aria-hidden="true"><span /></div>
+        <div className="bz-preloader-wordmark">Bac<span>Zone</span></div>
+        <p className="bz-preloader-message">نفتح لك مساحة دراسة هادئة</p>
+        <div className="bz-preloader-meter" aria-hidden="true"><span /></div>
       </div>
     </div>
   );

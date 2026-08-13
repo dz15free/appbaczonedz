@@ -24,6 +24,7 @@ import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { TOOLS, type Tool } from "@/features/tools/tools-data";
+import { AuthAwareCtaLink } from "@/components/ui/auth-aware-cta-link";
 
 const TITLE = "أدوات البكالوريا — حاسبات ومخططات ومحاكاة مجانية";
 const DESC = "أدوات مجانية لطلبة البكالوريا في الجزائر: حساب المعدل، المعدل الموزون، مخطط المراجعة، مؤقت التركيز، ودليل التخصصات — أغلبها بلا تسجيل.";
@@ -149,7 +150,7 @@ export default function ToolsPage() {
           <section className="bz-tools-product-account">
             <div className="bz-tools-product-account-icon"><FontAwesomeIcon icon={faCircleUser} /></div>
             <div><span className="bz-tools-product-eyebrow">عندما تريد أن تحفظ ما أنجزته</span><h2>بعض الأدوات تصبح أقوى مع حساب مجاني</h2><p>التقدّم والبطاقات والمهام تنتظرك حيث تركتها، بينما تبقى الحاسبات والأدوات الفورية مفتوحة للجميع.</p></div>
-            <Link href="/register">أنشئ حسابك <FontAwesomeIcon icon={faArrowLeft} /></Link>
+            <AuthAwareCtaLink guestHref="/register" guestLabel="أنشئ حسابك" authHref="/home" authLabel="العودة إلى المنصة" icon={<FontAwesomeIcon icon={faArrowLeft} />} />
           </section>
 
           <section className="bz-tools-guidance bz-tools-product-guidance"><span className="bz-tools-guidance-mark">اختيار بسيط</span><h2>لا تستعمل كل شيء في يوم واحد</h2><p>احسب معدلك أولاً، ثم أنشئ برنامجاً أسبوعياً، وبعدها استعمل المؤقت أو المحاكاة في الحصة التي ستنجزها اليوم. الأداة المفيدة هي التي تعود إليها.</p><div><Link href="/calculate">ابدأ بحساب معدلك</Link><Link href="/specialties">تعرّف على تخصصاتك</Link></div></section>

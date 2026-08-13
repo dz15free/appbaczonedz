@@ -108,7 +108,9 @@ async function SidebarArticles() {
 export async function PublicSidebarLayout({
   placement,
   children,
-  includeArticles = true,
+  /* يحتفظ النظام بالمقالات وإعداداتها، لكن لا نعرض البلوك المكرر افتراضياً.
+     يمكن لأي صفحة أن تطلبه صراحةً عند الحاجة عبر includeArticles={true}. */
+  includeArticles = false,
 }: {
   placement: SidebarPlacement;
   children: React.ReactNode;

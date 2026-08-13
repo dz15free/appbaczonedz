@@ -110,6 +110,7 @@ function PublicAuthActions({ mobile = false }: { mobile?: boolean }) {
 
 export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
   const pathname = usePathname();
+  const { user, loading: authLoading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -149,24 +150,30 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
         <Brand href="/" size="sm" beta={false} className="bz-public-brand" />
 
         <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 md:flex">
-          {PUBLIC_NAV.map((item) => item.href === "/tools" ? (
-            <div key={item.href} ref={toolsMenuRef} className="bz-public-tools-menu">
-              <button type="button" className={`bz-pubnav bz-public-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-haspopup="menu" aria-controls="bz-public-tools-menu" onClick={() => setToolsOpen((open) => !open)}>
+          {PUBLIC_NAV.map((item) => {
+            const resolvedHref = item.href === "/" && !authLoading && user ? "/home" : item.href;
+            const isHomeActive = item.href === "/" && (pathname === "/" || pathname === "/home");
+            const active = item.href === "/" ? isHomeActive : isActivePath(pathname, item.href);
+            if (item.href === "/tools") return (
+              <div key={item.href} ref={toolsMenuRef} className="bz-public-tools-menu">
+                <button type="button" className={`bz-pubnav bz-public-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-haspopup="menu" aria-controls="bz-public-tools-menu" onClick={() => setToolsOpen((open) => !open)}>
+                  <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
+                  {item.label}
+                  <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
+                </button>
+                {toolsOpen && <div id="bz-public-tools-menu" role="menu" className="bz-public-tools-dropdown">
+                  <Link href="/tools" role="menuitem" className="bz-public-tools-all" onClick={() => setToolsOpen(false)}><span className="bz-public-tools-all-icon"><FontAwesomeIcon icon={faCalculator} /></span><span><b>كل أدوات البكالوريا</b><small>اختر الأداة التي تناسب خطوتك الآن</small></span><FontAwesomeIcon icon={faArrowLeft} /></Link>
+                  {BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} role="menuitem" className="bz-public-tool-item" onClick={() => setToolsOpen(false)}><span className="bz-public-tool-icon"><FontAwesomeIcon icon={tool.icon} /></span><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}
+                </div>}
+              </div>
+            );
+            return (
+              <Link key={item.href} href={authLoading && item.href === "/" ? "#" : resolvedHref} aria-current={active ? "page" : undefined} onClick={(event) => { if (authLoading && item.href === "/") event.preventDefault(); }} className={`bz-pubnav ${active ? "is-active" : ""}`}>
                 <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
                 {item.label}
-                <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
-              </button>
-              {toolsOpen && <div id="bz-public-tools-menu" role="menu" className="bz-public-tools-dropdown">
-                <Link href="/tools" role="menuitem" className="bz-public-tools-all" onClick={() => setToolsOpen(false)}><span className="bz-public-tools-all-icon"><FontAwesomeIcon icon={faCalculator} /></span><span><b>كل أدوات البكالوريا</b><small>اختر الأداة التي تناسب خطوتك الآن</small></span><FontAwesomeIcon icon={faArrowLeft} /></Link>
-                {BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} role="menuitem" className="bz-public-tool-item" onClick={() => setToolsOpen(false)}><span className="bz-public-tool-icon"><FontAwesomeIcon icon={tool.icon} /></span><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}
-              </div>}
-            </div>
-          ) : (
-            <Link key={item.href} href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined} className={`bz-pubnav ${isActivePath(pathname, item.href) ? "is-active" : ""}`}>
-              <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
-              {item.label}
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="bz-pub-actions ms-auto flex min-w-0 shrink-0 items-center gap-1.5">
@@ -189,17 +196,22 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
 
       <div id={menuId} className={`bz-pubmenu md:hidden ${menuOpen ? "is-open" : ""}`} hidden={!menuOpen}>
         <nav aria-label="قائمة الموقع العامة" className="grid gap-1 p-3">
-          {PUBLIC_NAV.map((item) => item.href === "/tools" ? (
-            <div key={item.href} className="bz-public-mobile-tools">
-              <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${toolsOpen ? "rotate-180" : ""}`} /></button>
-              {toolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => setMenuOpen(false)}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
-            </div>
-          ) : (
-            <Link key={item.href} href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined} onClick={() => setMenuOpen(false)} className={`bz-pubmenu-link ${isActivePath(pathname, item.href) ? "is-active" : ""}`}>
-              <FontAwesomeIcon icon={item.icon} className="h-4 w-4" />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {PUBLIC_NAV.map((item) => {
+            const resolvedHref = item.href === "/" && !authLoading && user ? "/home" : item.href;
+            const active = item.href === "/" ? pathname === "/" || pathname === "/home" : isActivePath(pathname, item.href);
+            if (item.href === "/tools") return (
+              <div key={item.href} className="bz-public-mobile-tools">
+                <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${toolsOpen ? "rotate-180" : ""}`} /></button>
+                {toolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => setMenuOpen(false)}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
+              </div>
+            );
+            return (
+              <Link key={item.href} href={authLoading && item.href === "/" ? "#" : resolvedHref} aria-current={active ? "page" : undefined} onClick={(event) => { if (authLoading && item.href === "/") event.preventDefault(); setMenuOpen(false); }} className={`bz-pubmenu-link ${active ? "is-active" : ""}`}>
+                <FontAwesomeIcon icon={item.icon} className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
           <div className="mt-2 border-t border-border/70 pt-3">
             <PublicAuthActions mobile />
           </div>

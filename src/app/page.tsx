@@ -17,6 +17,7 @@ import { GUIDES } from "@/features/guides/guides-data";
 import { TOOLS } from "@/features/tools/tools-data";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
+import { PublicRootGate } from "@/components/ui/public-root-gate";
 
 export const revalidate = 600;
 
@@ -59,7 +60,8 @@ export default async function LandingPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
+    <PublicRootGate>
+      <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
       <FaviconSync href={s.faviconUrl} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <PublicHeader variant="landing" />
@@ -131,7 +133,8 @@ export default async function LandingPage() {
       </PublicSidebarLayout>
 
       <section className="relative overflow-hidden bg-[#07080f] px-5 py-20 text-white sm:px-6 sm:py-28"><div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/20 blur-[100px]" /><div className="relative mx-auto max-w-xl text-center"><img src={s.logoUrl || DEFAULT_LOGO} alt="" width={72} height={72} className="mx-auto mb-6 h-16 w-16 rounded-2xl object-contain shadow-[0_0_48px_-8px_rgba(59,130,246,0.6)]" /><h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">{s.ctaTitle}</h2><p className="mx-auto mt-4 max-w-md text-[15px] text-white/55">{s.ctaSubtitle}</p><Link href="/register" className="mt-9 inline-flex items-center gap-2.5 rounded-2xl bg-white px-8 py-4 text-[15px] font-bold text-slate-900 shadow-2xl transition hover:bg-white/95 active:scale-[0.98]"><span>{s.ctaButton}</span><FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link></div></section>
-      <SiteFooter variant="full" />
-    </main>
+        <SiteFooter variant="full" />
+      </main>
+    </PublicRootGate>
   );
 }

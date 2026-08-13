@@ -36,7 +36,7 @@ function baseUrl(mode: "live" | "test") {
     : "https://pay.chargily.net/test/api/v2";
 }
 
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://app.baczonedz.com").replace(/\/+$/, "");
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://baczone.app").replace(/\/+$/, "");
 
 type ItemType = "library" | "room" | "course";
 
