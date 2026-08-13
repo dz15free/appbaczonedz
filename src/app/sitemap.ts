@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SPEC_INDEX } from "@/features/guide/spec-index";
+import { getGuideRows } from "@/features/guide/guide-server";
 import { BRANCHES } from "@/features/calculator/branches";
 import { GUIDES } from "@/features/guides/guides-data";
 import { SITE_URL } from "@/lib/site-url";
@@ -23,40 +23,17 @@ import { getPublishedEntries } from "@/features/blog/blog-server";
    متناقضة مع `canonical` الذي يقول baczone.app. */
 const BASE = SITE_URL;
 
-/* ════════════════════════════════════════════════════════════
-   محتوى الأدمن — يُقرأ من Firebase وقت توليد الخريطة
-
-   🐛 كانت الخريطة تُرسل **المعرّف الثابت** (`SPEC_INDEX`) بينما
-   تُصدر الصفحة `canonical` بالرابط المخصّص المحفوظ في قاعدة
-   البيانات. فيتلقّى Google إشارتين متناقضتين لكل تخصّص غيّرتَ
-   رابطه — وهو سبب مباشر لعدم أرشفة الصفحة.
-
-   وكانت تُدرج **كل** الـ٢٦٠ تخصّصاً حتى غير المكتوب منها. إرسال
-   صفحة «قيد الإعداد» إلى Google يُهدر ميزانية الزحف ويُضعف تقييم
-   جودة الموقع كلّه.
-
-   الآن تُقرأ العقدة الحقيقية: الرابط المخصّص، وتاريخ آخر تعديل،
-   والمنشور وحده. فما تكتبه في لوحة الإدارة يصل إلى Google بلا
-   إعادة نشر للموقع. */
+/* التخصصات من نفس loader الذي تصيّر به الصفحة العامة. بهذا لا ينفصل
+   شرط النشر في Sitemap عن شرط النشر في الصفحة، ولا يعود fallback
+   الشبكة إلى إدراج فهرس ثابت قد يحتوي صفحات «قيد الإعداد». */
 async function guidePages(): Promise<{ slug: string; at?: number }[]> {
-  const db = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
-  if (!db) return [];
-  try {
-    const res = await fetch(`${db}/guide/specialities.json`, { next: { revalidate: 1800 } });
-    if (!res.ok) return [];
-    const val = (await res.json()) as Record<string, {
-      permalink?: string; intro?: string; draft?: boolean; updatedAt?: number;
-    }> | null;
-    return Object.entries(val ?? {})
-      // منشور = له مقدّمة وليس مسودّة — نفس شرط `mergeGuide` حرفياً
-      .filter(([, c]) => Boolean(c?.intro?.trim()) && c?.draft !== true)
-      .map(([id, c]) => ({
-        slug: (c.permalink?.trim() || id).replace(/^\/+|\/+$/g, ""),
-        at: c.updatedAt,
-      }));
-  } catch {
-    return [];
-  }
+  const rows = await getGuideRows();
+  return rows
+    .filter((row) => row.published)
+    .map((row) => ({
+      slug: (row.permalink?.trim() || row.slug).replace(/^\/+|\/+$/g, ""),
+      at: row.updatedAt,
+    }));
 }
 
 /* الدورات المنشورة — تُقرأ من `coursesPublic`، وهي العقدة الوحيدة
@@ -135,22 +112,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  /* الروابط الحقيقية من قاعدة البيانات. وإن تعذّرت القراءة (شبكة أو
-     قاعدة معطّلة) نسقط إلى الفهرس الثابت بدل خريطة ناقصة. */
-  const live = await guidePages();
-  const specs: MetadataRoute.Sitemap = live.length
-    ? live.map((g) => ({
-        url: `${BASE}/specialties/${g.slug}`,
-        lastModified: g.at ? new Date(g.at) : now,
-        changeFrequency: "monthly" as const,
-        priority: 0.8,
-      }))
-    : SPEC_INDEX.map((s) => ({
-        url: `${BASE}/specialties/${s.slug}`,
-        lastModified: now,
-        changeFrequency: "monthly" as const,
-        priority: 0.8,
-      }));
+  const specs: MetadataRoute.Sitemap = (await guidePages()).map((g) => ({
+    url: `${BASE}/specialties/${g.slug}`,
+    lastModified: g.at ? new Date(g.at) : now,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
 
   const courses: MetadataRoute.Sitemap = (await publishedCourses()).map((c) => ({
     url: `${BASE}/courses/${c.id}`,

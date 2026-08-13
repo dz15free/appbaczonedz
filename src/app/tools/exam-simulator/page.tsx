@@ -89,12 +89,12 @@ export default function ExamSimulatorPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="bz-guide-hero">
-        <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
-          <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
-            غرفة امتحان البكالوريا الافتراضية
+          <h1 className="max-w-4xl font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
+            {TITLE}
           </h1>
           <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
             محاكاة امتحان البكالوريا · موضوع حقيقي · توقيت رسمي · تصحيح بعد النهاية
@@ -103,7 +103,7 @@ export default function ExamSimulatorPage() {
       </header>
 
       <PublicSidebarLayout placement="tools">
-        <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
+        <div className="mx-auto w-full max-w-6xl px-3 pb-14 pt-5 sm:px-4">
           <SoloSimulator />
 
         <article className="mt-8">
