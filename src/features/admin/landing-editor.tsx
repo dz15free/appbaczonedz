@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/features/auth/auth-provider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk, faCheck } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -30,6 +31,7 @@ function Field({ label, value, onChange, textarea, placeholder }: {
 
 export function LandingEditor() {
   const { settings, loaded } = useSiteSettings();
+  const { user } = useAuth();
   const [draft, setDraft] = useState<SiteSettings>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,6 +69,13 @@ export function LandingEditor() {
       ctaSubtitle: draft.ctaSubtitle,
       ctaButton: draft.ctaButton,
     });
+    if (user?.uid) {
+      await fetch("/api/public/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

@@ -136,6 +136,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               <Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link>
               <span className="mx-1.5">/</span>
               <Link href="/blog" className="hover:text-primary hover:underline">المقالات</Link>
+              <span aria-hidden>/</span>
+              <span className="max-w-[18rem] truncate font-bold text-text" title={post.title}>{post.title}</span>
             </nav>
 
             {(post.labels?.length ?? 0) > 0 && (
@@ -185,33 +187,35 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             height={630}
             loading="eager"
             decoding="async"
-            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-3xl rounded-xl object-cover px-4"
+            className="mx-auto mt-6 aspect-[1200/630] w-full max-w-5xl rounded-2xl object-cover px-4 shadow-xl shadow-black/5"
           />
         )}
 
         <PublicSidebarLayout placement="blog">
           <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
             {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
-          <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
+            <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
 
-          <PublicCta />
-
-          {related.length > 0 && (
-            <section className="mt-10 border-t border-border pt-6">
-              <h2 className="font-display text-[17px] font-extrabold text-text">اقرأ أيضاً</h2>
-              <ul className="mt-3 grid gap-2.5 sm:grid-cols-3">
-                {related.map((r) => (
-                  <li key={r.id}>
-                    <Link href={`/blog/${r.slug}`}
-                      className="block h-full rounded-xl border border-border bg-surface p-3 transition hover:border-primary/40">
-                      <span className="block text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span>
-                      <span className="mt-1 block text-[11.5px] text-text-muted">{r.readMinutes} دقائق</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {related.length > 0 && (
+              <section className="mt-12 border-t border-border pt-8">
+                <div className="flex items-end justify-between gap-3">
+                  <div><p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary">من نفس الموضوع</p><h2 className="mt-1 font-display text-xl font-extrabold text-text">اقرأ أيضاً</h2></div>
+                  <Link href="/blog" className="text-xs font-extrabold text-primary hover:underline">كل المقالات</Link>
+                </div>
+                <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {related.map((r) => (
+                    <li key={r.id}>
+                      <Link href={`/blog/${r.slug}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:border-primary/40">
+                        {r.cover ? <img src={r.cover} alt={r.coverAlt || r.title} width={320} height={168} loading="lazy" decoding="async" className="aspect-[320/168] w-full object-cover" /> : <div className="flex aspect-[320/168] items-center justify-center bg-primary/5"><span className="text-xs font-extrabold text-primary/60">BacZone</span></div>}
+                        <span className="flex flex-1 flex-col p-3"><span className="text-[13px] font-extrabold leading-[1.6] text-text">{r.title}</span><span className="mt-auto pt-2 text-[11.5px] text-text-muted">{r.readMinutes} دقائق قراءة</span></span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
+
+            <PublicCta />
           </div>
         </PublicSidebarLayout>
       </main>

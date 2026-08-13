@@ -1,6 +1,8 @@
 "use client";
 
 import { DEFAULT_LOGO, DEFAULT_FAVICON } from "@/lib/brand-assets";
+import { DEFAULTS } from "@/features/settings/site-settings-defaults";
+export { DEFAULTS };
 export { DEFAULT_LOGO, DEFAULT_FAVICON };
 import { useEffect, useState } from "react";
 import { ref, onValue, set, update } from "firebase/database";
@@ -198,101 +200,6 @@ export interface FooterLink { label: string; href: string }
    توحيد يُنقَض عند أوّل تعديل. */
 const LOGO_URL = DEFAULT_LOGO;
 const FAVICON_URL = DEFAULT_FAVICON;
-
-const DEFAULTS: SiteSettings = {
-  siteName: "BacZone",
-  logoUrl: LOGO_URL,
-  faviconUrl: FAVICON_URL,
-  heroTitle: "ادرس بذكاء. ونجح في البكالوريا.",
-  heroSubtitle: "غرف دراسة مباشرة، مساعدة ذكية، بطاقات مراجعة، ومجتمع طلابي نشط — كل ما تحتاجه في مكان واحد.",
-  footerText: `© ${new Date().getFullYear()} BacZoneDZ. جميع الحقوق محفوظة.`,
-  /* «اتصل بنا» كان يخرج إلى المدوّنة (`baczonedz.com/p/contact.html`)
-     مع أنّ للمنصّة صفحةً خاصّة بها الآن. والروابط القانونية لا تُكتب
-     هنا: هي ثابتة في `legal-links.ts` ويرسمها الفوتر في صفٍّ لا يُحذف
-     — فامتثال AdSense لا يجوز أن يتعلّق بألّا يحذف أحدٌ صفّاً سهواً. */
-  footerLinks: [
-    { label: "الموقع الرئيسي", href: "https://www.baczonedz.com" },
-  ],
-  maintenanceMode: false,
-  allowRegistration: true,
-  sidebar: { enabled: false, widgets: [] },
-
-  /* ── محتوى الصفحة الرئيسية ── */
-  landingBadge: "صُنعت في الجزائر خصيصاً لطلاب البكالوريا",
-  heroTitleLine1: "ادرس أذكى، راجع أسرع،",
-  heroTitleLine2: "وانجح في البكالوريا",
-  heroCtaPrimary: "أنشئ حسابك وابدأ",
-  heroCtaSecondary: "دخول",
-  badges: [
-    { id: "b1", icon: "ban", label: "بدون إعلانات" },
-    { id: "b2", icon: "signal", label: "يعمل على 3G و4G" },
-    { id: "b3", icon: "users", label: "أساتذة وطلاب جزائريون" },
-    { id: "b4", icon: "flag", label: "صُنعت في الجزائر 🇩🇿" },
-  ],
-  stepsTitle: "ابدأ في 3 خطوات",
-  steps: [
-    { id: "s1", n: "01", title: "أنشئ حسابك", desc: "تسجيل في 30 ثانية بالبريد الإلكتروني، ثم اختر شعبتك." },
-    { id: "s2", n: "02", title: "انضم أو أنشئ غرفة/مجموعة", desc: "ابحث عن مجموعة شعبتك أو أنشئ غرفة مع أصدقائك وابدأ المراجعة." },
-    { id: "s3", n: "03", title: "تعلّم، شارك، وتقدّم", desc: "استخدم السبورة والصوت والخباشة، واكسب النقاط لترقى في الترتيب." },
-  ],
-  audienceTitle: "لمن هذه المنصّة؟",
-  audienceSubtitle: "تجربة مختلفة لكل دور",
-  audience: [
-    {
-      id: "a1", icon: "users", title: "للطالب",
-      desc: "احضر حصصاً مباشرة على سبورة تفاعلية، حلّ تحدّيات الأستاذ في مساحتك الخاصة، احفظ أي فكرة كبطاقة مراجعة بضغطة، واسأل دون أن يظهر اسمك. تابع تقدّمك وراجع بالبطاقات ومؤقّت التركيز.",
-    },
-    {
-      id: "a2", icon: "chalkboard", title: "للأستاذ",
-      desc: "أنشئ غرفة في ثوانٍ، اشرح على السبورة مع الصوت والملفات، اطرح تحدّياً وشاهد حلول كل الطلاب في لوحة واحدة، وأنهِ الحصة بملخّص تلقائي. انشر ملخّصاتك واحصل على تقييم طلابك.",
-    },
-  ],
-  pricingTitle: "كم تكلّف؟",
-  pricingNote: "إنشاء الحساب والمجتمع وأدوات المراجعة متاحة لكل الطلاب. أما الغرف والملخّصات التي يضعها الأساتذة فبعضها مدفوع بسعر يحدّده صاحبها، ويُفتح بكود وصول بعد الدفع.",
-  pricingRows: [
-    { id: "p1", title: "الحساب والمجتمع", desc: "التسجيل، المنشورات، الرسائل، الأصدقاء، والإشعارات." },
-    { id: "p2", title: "أدوات المراجعة", desc: "بطاقات المراجعة، المهام، متتبّع الدراسة، ومؤقّت التركيز." },
-    { id: "p3", title: "الغرف والملخّصات", desc: "منها المفتوح للجميع ومنها المدفوع بسعر يحدّده الأستاذ." },
-  ],
-  faqTitle: "أسئلة شائعة",
-  faq: [
-    { id: "q1", q: "هل أحتاج حاسوباً؟", a: "لا. المنصّة مصمّمة للهاتف أولاً، وتعمل على شبكات 3G و4G." },
-    { id: "q2", q: "كيف أدفع مقابل غرفة أو ملخّص مدفوع؟", a: "تتواصل مع الإدارة داخل المنصّة عبر دردشة الدفع، ثم تحصل على كود وصول تُدخله ليُفتح المحتوى." },
-    { id: "q3", q: "هل يمكنني أن أدرّس على المنصّة؟", a: "نعم. تواصل مع الإدارة لتفعيل حساب أستاذ، فتستطيع إنشاء الغرف ونشر الملخّصات." },
-    { id: "q4", q: "ماذا يحدث لملاحظاتي بعد الحصة؟", a: "ما تحفظه أثناء الحصة يصبح بطاقات مراجعة في حسابك، ويصلك ملخّص الحصة إن نشره الأستاذ." },
-  ],
-  featuresTitle: "كل ما تحتاجه للنجاح",
-  featuresSubtitle: "أدوات احترافية في مكان واحد",
-  features: [
-    { id: "f1", icon: "chalkboard", title: "غرف دراسة تفاعلية", desc: "سبورة ذكية بأدوات الأستاذ، فيديو YouTube متزامن، دردشة جماعية، ورفع الملفات." },
-    { id: "f2", icon: "microphone", title: "صوت جماعي احترافي", desc: "صوت جماعي شبيه بـ Discord يعمل على 3G/4G. الأستاذ يتحكّم في ميكروفونات الطلاب." },
-    { id: "f3", icon: "layers", title: "مجموعات المواد", desc: "مجموعة لكل مادة أو شعبة فيها نقاش مستمر، قائمة أعضاء، وملفات مشتركة." },
-    { id: "f4", icon: "folder", title: "مشاركة الملفات بـ Google Drive", desc: "ارفع ملفاتك PDF/Word/Excel/PPT واعرضها داخل المنصّة مباشرةً بلا تحميل." },
-    { id: "f5", icon: "robot", title: "الخباشة — مساعدتك الآلية", desc: "يطرح أسئلة توضيحية، يضع خطط مراجعة مخصّصة حسب شعبتك، ويطمئنك ويشجّعك." },
-    { id: "f6", icon: "trophy", title: "نظام إنجازات ومنافسة", desc: "نقاط على كل نشاط، مستويات متصاعدة، أوسمة، وترتيب يومي بين الطلاب." },
-    { id: "f7", icon: "users", title: "مجتمع دراسي حقيقي", desc: "منشورات، تعليقات، صداقات، رسائل خاصّة، ومشاركة ملفات الدراسة." },
-    { id: "f8", icon: "bell", title: "إشعارات فورية", desc: "يصلك إشعار على هاتفك فور وصول رسالة أو طلب صداقة حتى حين يكون التطبيق مغلقاً." },
-    { id: "f9", icon: "clock", title: "مؤقّت بومودورو", desc: "ادرس بتركيز 25 دقيقة ثم استرح 5 دقائق. أثبتت الدراسات أنه يضاعف الإنتاجية." },
-  ],
-  ctaTitle: "جاهز للانطلاق نحو البكالوريا؟",
-  ctaSubtitle: "انضم إلى الطلاب والأساتذة الجزائريين — التسجيل لا يستغرق سوى 30 ثانية.",
-  ctaButton: "سجّل الآن",
-
-  /* ── محتوى مرحباً بعودتك ── */
-  homeWelcomeTitle: "مرحباً بعودتك",
-  homeWelcomeSubtitle: "ماذا تريد أن تفعل اليوم؟",
-
-  /* ── روابط افتراضية ── */
-  telegramUrl: "https://t.me/baczonedz",
-  instagramUrl: "https://www.instagram.com/baczonedz",
-  facebookUrl: "https://www.facebook.com/baczonedz",
-  paymentUrl: "https://m.me/baczonedz1",
-  averageCalcUrl: "https://www.baczonedz.com/p/blog-page_14.html",
-  pastExamsUrl: "https://www.baczonedz.com/p/blog-page_9.html",
-  weightedCalcUrl: "https://www.baczonedz.com/p/2026.html",
-  adsEmail: "saidaouina22@gmail.com",
-  adsWhatsapp: "+213657498876",
-};
 
 /* تصحيح الشعار القديم المحفوظ في قاعدة البيانات.
 

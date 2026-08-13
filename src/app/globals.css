@@ -3663,3 +3663,86 @@ body.bz-fullscreen-active .bz-voicebar {
   .bz-public-content-layout { grid-template-columns: minmax(0, 1fr); width: min(100% - 24px, 680px); gap: 20px; }
   .bz-public-sidebar { position: static; }
 }
+
+/* Public Header responsive hardening — STEP 5/6 */
+.bz-pubheader {
+  color: var(--bz-text);
+  box-shadow: 0 8px 24px -22px rgb(15 23 42 / .55);
+}
+.bz-pubheader-inner { min-width: 0; }
+.bz-public-brand {
+  min-width: 0;
+  max-width: 48px;
+  flex: 0 1 48px;
+}
+.bz-public-brand .bz-lock-name { display: none; }
+.bz-pub-actions { max-width: calc(100% - 58px); }
+.bz-pubmenu-auth-primary,
+.bz-pubmenu-auth-secondary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 900;
+  transition: background-color .16s, border-color .16s, color .16s, transform .16s;
+}
+.bz-pubmenu-auth-primary {
+  background: linear-gradient(135deg, rgb(var(--bz-primary)), #0ea5e9);
+  color: #fff;
+  box-shadow: 0 8px 18px -12px rgb(var(--bz-primary) / .8);
+}
+.bz-pubmenu-auth-secondary {
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  color: var(--bz-text);
+}
+.bz-pubmenu-auth-primary:hover,
+.bz-pubmenu-auth-secondary:hover { filter: brightness(1.04); }
+.bz-pubmenu-auth-primary:active,
+.bz-pubmenu-auth-secondary:active { transform: scale(.98); }
+.bz-pubheader.is-landing .bz-pubmenu-auth-secondary {
+  border-color: rgb(255 255 255 / .24);
+  background: rgb(255 255 255 / .08);
+  color: #fff;
+}
+@media (min-width: 768px) {
+  .bz-public-brand {
+    max-width: 190px;
+    flex: 0 1 auto;
+  }
+  .bz-public-brand .bz-lock-name { display: block; }
+  .bz-pub-actions { max-width: none; }
+}
+
+
+/* STEP 6 article reading refinements */
+.bz-article {
+  direction: rtl;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+.bz-article p { max-width: 72ch; }
+.bz-article h2, .bz-article h3, .bz-article h4 { scroll-margin-top: 88px; }
+.bz-article table { max-width: 100%; -webkit-overflow-scrolling: touch; }
+.bz-article iframe { max-width: 100%; }
+.bz-sidebar-widget-html { direction: rtl; }
+@media (max-width: 767px) {
+  .bz-article { font-size: 15.5px; line-height: 2; }
+  .bz-article table { font-size: 12.5px; }
+  .bz-public-sidebar { order: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-article *, .bz-pubheader *, .bz-pubmenu * { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+
+/* Local font fallback variables: لا تعتمد على شبكة خارجية أثناء Build أو التشغيل الأول. */
+.bz-font-fallbacks {
+  --font-tajawal: "Noto Sans Arabic";
+  --font-cairo: "Noto Sans Arabic";
+  --font-display: "Noto Sans Arabic";
+}

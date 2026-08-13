@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/features/auth/auth-provider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
@@ -55,6 +56,7 @@ const codeClass = "min-h-28 w-full resize-y rounded-lg border border-border bg-b
 
 export function SidebarEditor() {
   const { settings, loaded } = useSiteSettings();
+  const { user } = useAuth();
   const [enabled, setEnabled] = useState(false);
   const [widgets, setWidgets] = useState<SidebarWidget[]>([]);
   const [saving, setSaving] = useState(false);
@@ -104,6 +106,13 @@ export function SidebarEditor() {
         placement: widget.placement ?? "global",
       }));
       await saveSiteSettings({ sidebar: { enabled, widgets: clean } });
+      if (user?.uid) {
+        await fetch("/api/public/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid: user.uid }),
+        });
+      }
     } finally {
       setSaving(false);
     }

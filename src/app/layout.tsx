@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Tajawal, Cairo } from "next/font/google";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
@@ -12,29 +11,7 @@ import { SITE_URL } from "@/lib/site-url";
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
 
-/* 🐛 **سبب أنّ النصّ العربي كان يبدو باهتاً وغير عريض**: الخطّ يُحمَّل
-   بأوزان ٤٠٠ و٥٠٠ و٧٠٠ فقط، بينما المشروع يستعمل `font-extrabold`
-   (وزن ٨٠٠) في **مئات** المواضع. الوزن غير المحمَّل لا يُرسَم عريضاً
-   حقيقياً — المتصفّح إمّا يُرجعه إلى ٧٠٠ أو يزيّفه بتغليظ اصطناعي
-   يُشوّه حروف العربية. تحميل ٨٠٠ يجعل كل ما كُتب `extrabold` عريضاً
-   فعلاً، وهو أوضح فارق بصريّ في المنصّة كلّها. */
-const tajawal = Tajawal({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "700", "800"],
-  variable: "--font-tajawal",
-  display: "swap",
-  adjustFontFallback: true,
-});
-
-/* خطّ العناوين: أُضيف ٩٠٠ للعناوين الكبرى — العنوان العربي يحتاج
-   وزناً أثقل من اللاتيني ليقرأ «عنواناً» على شاشة الهاتف. */
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["600", "700", "800", "900"],
-  variable: "--font-cairo",
-  display: "swap",
-  adjustFontFallback: true,
-});
+/* الخطوط تُدار محلياً عبر CSS system fallbacks حتى لا يعتمد Build أو أول paint على Google Fonts. */
 
 /* العنوان من المصدر الوحيد — كان مكرّراً في ثمانية ملفّات */
 const SITE_NAME = "BacZoneDZ";
@@ -124,7 +101,7 @@ else{document.documentElement.classList.remove('dark');}}catch(e){}})();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${tajawal.variable} ${cairo.variable}`}>
+    <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>

@@ -36,10 +36,62 @@ function isActivePath(pathname: string | null, href: string) {
   return pathname === href || pathname?.startsWith(`${href}/`) || false;
 }
 
-export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
-  const pathname = usePathname();
+function PublicAuthActions({ mobile = false }: { mobile?: boolean }) {
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
+
+  if (loading) {
+    return <span className={mobile ? "h-11 w-full animate-pulse rounded-xl bg-border/60" : "h-10 w-24 animate-pulse rounded-xl bg-border/60"} aria-label="جارٍ التحقق من الجلسة" />;
+  }
+
+  if (user) {
+    return mobile ? (
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Link href="/home" className="bz-pubmenu-auth-primary">
+          <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" /> منصّتي
+        </Link>
+        <Link href="/profile" className="bz-pubmenu-auth-secondary">
+          <LiveAvatar uid={user.uid} name={profile?.name || user.displayName || "ط"} size="sm" className="h-7 w-7" /> حسابي
+        </Link>
+      </div>
+    ) : (
+      <>
+        <Link href="/home" className="bz-hcta-ghost inline-flex">
+          <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" />
+          <span>منصّتي</span>
+        </Link>
+        <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/45">
+          <LiveAvatar uid={user.uid} name={profile?.name || user.displayName || "ط"} size="sm" className="h-9 w-9" />
+        </Link>
+      </>
+    );
+  }
+
+  return mobile ? (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <Link href="/login" className="bz-pubmenu-auth-secondary">
+        <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" /> تسجيل الدخول
+      </Link>
+      <Link href="/register" className="bz-pubmenu-auth-primary">
+        <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" /> إنشاء حساب
+      </Link>
+    </div>
+  ) : (
+    <>
+      <Link href="/login" className="bz-hcta-ghost inline-flex">
+        <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" />
+        <span>دخول</span>
+      </Link>
+      <Link href="/register" className="bz-hcta inline-flex">
+        <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" />
+        <span>إنشاء حساب</span>
+      </Link>
+    </>
+  );
+}
+
+export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = "bz-public-menu";
 
@@ -49,8 +101,8 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
 
   return (
     <header className={`bz-pubheader ${variant === "landing" ? "is-landing" : ""}`} data-variant={variant}>
-      <div className="mx-auto flex min-h-[58px] max-w-6xl items-center gap-2 px-3 sm:min-h-16 sm:px-4">
-        <Brand href="/" size="sm" beta={false} className="shrink" />
+      <div className="bz-pubheader-inner mx-auto flex min-h-[58px] max-w-6xl items-center gap-2 px-3 sm:min-h-16 sm:px-4">
+        <Brand href="/" size="sm" beta={false} className="bz-public-brand" />
 
         <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 md:flex">
           {PUBLIC_NAV.map((item) => (
@@ -66,33 +118,11 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
           ))}
         </nav>
 
-        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+        <div className="bz-pub-actions ms-auto flex min-w-0 shrink-0 items-center gap-1.5">
           <ThemeToggle compact />
-          {loading ? (
-            <span className="h-10 w-24 animate-pulse rounded-xl bg-border/60" aria-hidden />
-          ) : user ? (
-            <>
-              <Link href="/home" className="bz-hcta-ghost inline-flex">
-                <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">منصّتي</span>
-              </Link>
-              <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/45">
-                <LiveAvatar uid={user.uid} name={profile?.name || user.displayName || "ط"} size="sm" className="h-9 w-9" />
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="bz-hcta-ghost inline-flex">
-                <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" />
-                <span>دخول</span>
-              </Link>
-              <Link href="/register" className="bz-hcta inline-flex">
-                <FontAwesomeIcon icon={faUserPlus} className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">إنشاء حساب</span>
-                <span className="sm:hidden">حساب</span>
-              </Link>
-            </>
-          )}
+          <div className="bz-pub-auth-desktop hidden items-center gap-1.5 md:flex">
+            <PublicAuthActions />
+          </div>
           <button
             type="button"
             className="bz-pubmenu-toggle md:hidden"
@@ -120,6 +150,9 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
               <span>{item.label}</span>
             </Link>
           ))}
+          <div className="mt-2 border-t border-border/70 pt-3">
+            <PublicAuthActions mobile />
+          </div>
         </nav>
       </div>
     </header>
