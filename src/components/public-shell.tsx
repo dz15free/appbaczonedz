@@ -1,67 +1,73 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faRightToBracket, faUserPlus, faGraduationCap, faCalculator,
-  faHouse, faBookOpen, faArrowLeft, faCheckCircle,
+  faBookOpen,
+  faCalculator,
+  faGraduationCap,
+  faHouse,
+  faMessage,
+  faArrowLeft,
+  faBars,
+  faXmark,
+  faRightToBracket,
+  faUserPlus,
+  faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { Brand } from "@/components/ui/brand";
-
-/* ════════════════════════════════════════════════════════════
-   غلاف الصفحات العامّة
-
-   صفحات التخصّصات وحساب المعدّل تصل إليها من Google مباشرةً، وكانت
-   **بلا هيدر إطلاقاً**: لا شعار، ولا طريق إلى بقيّة المنصّة، ولا
-   بابٌ للتسجيل. من يقرأ مقالاً عن تخصّصه لا يعرف أنّ خلفه منصّة.
-
-   وفي الوقت نفسه كانت `/courses` تعرض للزائر **هيدر مستخدم مسجّل**:
-   جرس إشعارات وصورة حساب فارغة — يوهمه أنّه داخل حسابه.
-
-   هنا هيدر واحد لكل ما هو عامّ: يعرف من أنت. زائرٌ يرى «دخول» و«إنشاء
-   حساب»، ومسجَّلٌ يرى صورته وطريق العودة إلى منصّته.
-   ════════════════════════════════════════════════════════════ */
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const PUBLIC_NAV = [
-  { href: "/courses", label: "الدورات", icon: faGraduationCap },
-  { href: "/specialties", label: "التخصّصات", icon: faBookOpen },
-  { href: "/calculate", label: "حساب المعدّل", icon: faCalculator },
-];
+  { href: "/", label: "الرئيسية", icon: faHouse },
+  { href: "/tools", label: "الأدوات", icon: faCalculator },
+  { href: "/guides", label: "الأدلّة", icon: faBookOpen },
+  { href: "/specialties", label: "التخصّصات", icon: faGraduationCap },
+  { href: "/blog", label: "المدونة", icon: faMessage },
+] as const;
 
-export function PublicHeader() {
+function isActivePath(pathname: string | null, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname?.startsWith(`${href}/`) || false;
+}
+
+export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
-  const { settings } = useSiteSettings();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = "bz-public-menu";
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   return (
-    <header className="bz-pubheader">
-      <div className="mx-auto flex h-[58px] max-w-6xl items-center gap-2 px-3 sm:px-4 lg:h-16">
+    <header className={`bz-pubheader ${variant === "landing" ? "is-landing" : ""}`} data-variant={variant}>
+      <div className="mx-auto flex min-h-[58px] max-w-6xl items-center gap-2 px-3 sm:min-h-16 sm:px-4">
         <Brand href="/" size="sm" beta={false} className="shrink" />
 
-        {/* تنقّل عامّ — يظهر من `md` فصاعداً */}
-        <nav className="mx-auto hidden items-center gap-1 md:flex">
-          {PUBLIC_NAV.map((n) => (
+        <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 md:flex">
+          {PUBLIC_NAV.map((item) => (
             <Link
-              key={n.href}
-              href={n.href}
-              aria-current={pathname?.startsWith(n.href) ? "page" : undefined}
-              className={`bz-pubnav ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
+              key={item.href}
+              href={item.href}
+              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
+              className={`bz-pubnav ${isActivePath(pathname, item.href) ? "is-active" : ""}`}
             >
-              <FontAwesomeIcon icon={n.icon} className="h-[15px] w-[15px]" />
-              {n.label}
+              <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
+              {item.label}
             </Link>
           ))}
         </nav>
 
         <div className="ms-auto flex shrink-0 items-center gap-1.5">
-          {/* أثناء تحديد الجلسة لا نعرض شيئاً: عرض «دخول» ثمّ استبداله
-              بالصورة بعد لحظة وميضٌ مزعج ومربك. */}
+          <ThemeToggle compact />
           {loading ? (
             <span className="h-10 w-24 animate-pulse rounded-xl bg-border/60" aria-hidden />
           ) : user ? (
@@ -70,8 +76,7 @@ export function PublicHeader() {
                 <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">منصّتي</span>
               </Link>
-              <Link href="/profile" aria-label="حسابي"
-                className="shrink-0 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/45">
+              <Link href="/profile" aria-label="حسابي" className="shrink-0 rounded-full ring-2 ring-primary/20 transition hover:ring-primary/45">
                 <LiveAvatar uid={user.uid} name={profile?.name || user.displayName || "ط"} size="sm" className="h-9 w-9" />
               </Link>
             </>
@@ -88,30 +93,39 @@ export function PublicHeader() {
               </Link>
             </>
           )}
+          <button
+            type="button"
+            className="bz-pubmenu-toggle md:hidden"
+            aria-expanded={menuOpen}
+            aria-controls={menuId}
+            aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <FontAwesomeIcon icon={menuOpen ? faXmark : faBars} className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      {/* تنقّل الهاتف: رفّ أفقي أسفل الشعار بدل إخفائه كلّياً */}
-      <nav className="bz-pubrail md:hidden">
-        {PUBLIC_NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`bz-pubchip ${pathname?.startsWith(n.href) ? "is-active" : ""}`}
-          >
-            <FontAwesomeIcon icon={n.icon} className="h-3 w-3" />
-            {n.label}
-          </Link>
-        ))}
-      </nav>
+      <div id={menuId} className={`bz-pubmenu md:hidden ${menuOpen ? "is-open" : ""}`} hidden={!menuOpen}>
+        <nav aria-label="قائمة الموقع العامة" className="grid gap-1 p-3">
+          {PUBLIC_NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
+              onClick={() => setMenuOpen(false)}
+              className={`bz-pubmenu-link ${isActivePath(pathname, item.href) ? "is-active" : ""}`}
+            >
+              <FontAwesomeIcon icon={item.icon} className="h-4 w-4" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }
 
-/* ── شريط الدعوة ──
-   يظهر للزائر وحده أسفل المحتوى: من قرأ مقالاً كاملاً عن تخصّصه هو
-   بالضبط من يستحقّ أن يُدعى. ولا يظهر لمن سجّل أصلاً — الدعوة
-   المتكرّرة لمن استجاب إزعاج لا تسويق. */
 export function PublicCta({
   title = "أنت الآن على بعد خطوة من منصّة كاملة",
   hint = "غرف مراجعة مباشرة، دورات من أساتذة، ملخّصات ومواضيع، وحاسبة معدّل — مجّاناً.",

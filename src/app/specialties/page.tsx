@@ -5,6 +5,7 @@ import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 import { GuideBrowser } from "@/features/guide/guide-browser";
 import { absUrl } from "@/features/guide/site-url";
 import { getGuideRows } from "@/features/guide/guide-server";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 /* ════════════════════════════════════════════════════════════
    دليل التخصّصات — صفحة عامّة
@@ -80,9 +81,11 @@ export default async function SpecialtiesPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
-        <GuideBrowser rows={rows} />
-      </div>
+      <PublicSidebarLayout placement="guides">
+        <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
+          <GuideBrowser rows={rows} />
+        </div>
+      </PublicSidebarLayout>
     </main>
       <PublicCta title={"اخترت تخصّصك؟ الخطوة التالية هي معدّلك"} hint={"انضمّ إلى BacZone: غرف مراجعة مباشرة، دورات من أساتذة، ملخّصات ومواضيع — مجّاناً."} />
     </>

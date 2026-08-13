@@ -4,6 +4,7 @@ import { linkOf } from "@/features/guide/spec-link";
 import type { SpecFull } from "@/features/guide/guide-merge";
 import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 /* ════════════════════════════════════════════════════════════
    عرض موضوع التخصّص
@@ -156,8 +157,6 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <Link href="/home" className="hover:underline">BacZone</Link>
-            <span>·</span>
             <Link href="/specialties" className="font-bold text-white hover:underline">
               دليل التخصّصات
             </Link>
@@ -180,8 +179,9 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
         </div>
       </header>
 
-      <article className="mx-auto w-full max-w-3xl px-4 pb-14 pt-6">
-        {/* فهرس الموضوع — سبعة عشر قسماً بلا فهرس تعني تمريراً أعمى
+      <PublicSidebarLayout placement="guides">
+        <article className="mx-auto w-full max-w-3xl px-4 pb-14 pt-6">
+          {/* فهرس الموضوع — سبعة عشر قسماً بلا فهرس تعني تمريراً أعمى
             على الهاتف، ومن يريد «القبول والمعدّلات» وحدها مضطرّ للمرور
             بكل شيء. لا يُحذف قسم: تُضاف طريقة الوصول إليه. */}
         {written.length > 3 && (
@@ -232,7 +232,8 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
             </div>
           </aside>
         )}
-      </article>
+        </article>
+      </PublicSidebarLayout>
 
       <PublicCta
         title={`تدرس ${spec.ar}؟ جهّز معدّلك أوّلاً`}

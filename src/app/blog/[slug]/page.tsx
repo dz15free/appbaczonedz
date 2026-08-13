@@ -7,6 +7,7 @@ import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-s
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 /* ════════════════════════════════════════════════════════════
    صفحة المقال — مكوّن خادم
@@ -188,8 +189,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           />
         )}
 
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-          {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
+        <PublicSidebarLayout placement="blog">
+          <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+            {/* HTML مُنقّى على الخادم — انظر `sanitize.ts` */}
           <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
 
           <PublicCta />
@@ -209,8 +211,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                 ))}
               </ul>
             </section>
-          )}
-        </div>
+            )}
+          </div>
+        </PublicSidebarLayout>
       </main>
       <SiteFooter />
     </>

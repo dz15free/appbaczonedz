@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthAwareLink } from "@/components/ui/auth-aware-link";
+import { PublicHeader } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { PLAN_BRANCHES } from "@/features/tools/planner-data";
 import { StudyPlanner } from "@/features/tools/study-planner";
 import { absUrl } from "@/features/guide/site-url";
@@ -81,14 +82,13 @@ export default function StudyPlannerPage() {
 
   return (
     <main className="bz-guide min-h-screen">
+      <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="bz-guide-hero bz-no-print">
         <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <AuthAwareLink className="hover:underline">BacZone</AuthAwareLink>
-            <span>·</span>
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
@@ -100,8 +100,9 @@ export default function StudyPlannerPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
-        <StudyPlanner />
+      <PublicSidebarLayout placement="tools">
+        <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
+          <StudyPlanner />
 
         <article className="mt-8 bz-no-print">
           <section className="bz-spec-sec">
@@ -160,8 +161,9 @@ export default function StudyPlannerPage() {
             <Link href="/tools/planner" className="bz-spec-rel"><span>مخطّط البكالوريا للطباعة</span></Link>
             <Link href="/tools/pomodoro" className="bz-spec-rel"><span>مؤقّت التركيز</span></Link>
           </div>
-        </aside>
-      </div>
+          </aside>
+        </div>
+      </PublicSidebarLayout>
     </main>
   );
 }

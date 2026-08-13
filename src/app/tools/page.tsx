@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 /* ════════════════════════════════════════════════════════════
    أدوات البكالوريا — الصفحة الأمّ
@@ -168,6 +170,7 @@ export default function ToolsPage() {
 
   return (
     <main className="bz-guide min-h-screen">
+      <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -184,8 +187,9 @@ export default function ToolsPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
-        <section className="mt-6">
+      <PublicSidebarLayout placement="tools">
+        <div className="mx-auto w-full max-w-5xl px-3 pb-14 sm:px-4">
+          <section className="mt-6">
           <div className="mb-3 flex items-center gap-2">
             <span className="h-4 w-1 rounded-full bg-[var(--bz-blue)]" />
             <h2 className="font-display text-[15px] font-extrabold sm:text-lg">أدوات بلا تسجيل</h2>
@@ -206,8 +210,9 @@ export default function ToolsPage() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {account.map((t) => <ToolCard key={t.href} t={t} />)}
           </div>
-        </section>
-      </div>
+          </section>
+        </div>
+      </PublicSidebarLayout>
     </main>
   );
 }

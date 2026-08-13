@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/ui/site-footer";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { BLOG_LABELS, labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 const TITLE = "مقالات ونصائح البكالوريا";
 const DESC =
@@ -100,8 +101,9 @@ export default async function BlogIndex(
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
-          {posts.length === 0 ? (
+        <PublicSidebarLayout placement="blog">
+          <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
+            {posts.length === 0 ? (
             <p className="rounded-xl border border-border bg-surface p-6 text-center text-[13.5px] text-text-muted">
               {label ? "لا مقالات في هذا التصنيف بعد." : "المقالات في الطريق — عد قريباً."}
             </p>
@@ -138,8 +140,9 @@ export default async function BlogIndex(
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+            )}
+          </div>
+        </PublicSidebarLayout>
       </main>
       <SiteFooter />
     </>

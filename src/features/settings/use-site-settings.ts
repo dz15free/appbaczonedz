@@ -68,6 +68,24 @@ export interface BlogSidebarSettings {
   cleared?: boolean;
 }
 
+export type SidebarPlacement = "global" | "blog" | "tools" | "guides";
+
+export interface SidebarWidget {
+  id: string;
+  title?: string;
+  html: string;
+  css?: string;
+  js?: string;
+  enabled?: boolean;
+  order?: number;
+  placement?: SidebarPlacement;
+}
+
+export interface SidebarSettings {
+  enabled?: boolean;
+  widgets?: SidebarWidget[];
+}
+
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -84,6 +102,8 @@ export interface SiteSettings {
   footerLinksCleared?: boolean;
   /** الشريط الجانبي للمدوّنة — يُحرَّر من لوحة الإدارة */
   blogSidebar?: BlogSidebarSettings;
+  /** Widgets عامة قابلة للإدارة من لوحة الأدمن */
+  sidebar?: SidebarSettings;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
@@ -195,6 +215,7 @@ const DEFAULTS: SiteSettings = {
   ],
   maintenanceMode: false,
   allowRegistration: true,
+  sidebar: { enabled: false, widgets: [] },
 
   /* ── محتوى الصفحة الرئيسية ── */
   landingBadge: "صُنعت في الجزائر خصيصاً لطلاب البكالوريا",
@@ -311,6 +332,17 @@ export function useSiteSettings() {
          براية صريحة، ونطبّقها على كل قائمة قابلة للتفريغ. */
       const merged = normalizeBranding({ ...DEFAULTS, ...(val ?? {}) }) as SiteSettings & {
         footerLinksCleared?: boolean;
+      };
+      const rawSidebar = (val as { sidebar?: SiteSettings["sidebar"] } | null)?.sidebar;
+      const rawWidgets = rawSidebar?.widgets;
+      const widgetList = Array.isArray(rawWidgets)
+        ? rawWidgets
+        : rawWidgets && typeof rawWidgets === "object"
+          ? Object.values(rawWidgets)
+          : [];
+      merged.sidebar = {
+        enabled: rawSidebar?.enabled === true,
+        widgets: widgetList.filter((w): w is NonNullable<typeof w> => Boolean(w && typeof w === "object")) as SidebarWidget[],
       };
       if ((val as { footerLinksCleared?: boolean } | null)?.footerLinksCleared) {
         merged.footerLinks = [];

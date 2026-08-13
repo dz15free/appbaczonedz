@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { GUIDES } from "@/features/guides/guides-data";
 import { absUrl } from "@/features/guide/site-url";
+import { PublicHeader } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 const TITLE = "أدلّة البكالوريا والتوجيه الجامعي";
 const DESC =
@@ -31,6 +33,7 @@ export default function GuidesIndex() {
 
   return (
     <main className="bz-guide min-h-screen">
+      <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
@@ -47,8 +50,9 @@ export default function GuidesIndex() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-6 sm:px-4">
-        <div className="grid grid-cols-1 gap-3">
+      <PublicSidebarLayout placement="guides">
+        <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-6 sm:px-4">
+          <div className="grid grid-cols-1 gap-3">
           {GUIDES.map((g) => (
             <Link key={g.slug} href={`/guides/${g.slug}`} className="bz-tool-card">
               <span className="bz-tool-bar" style={{ background: g.color }} />
@@ -61,12 +65,13 @@ export default function GuidesIndex() {
               <span className="bz-tool-cta" style={{ color: g.color }}>اقرأ الدليل ←</span>
             </Link>
           ))}
-        </div>
+          </div>
 
         <p className="mt-8 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-canvas)] p-4 text-[11.5px] leading-[1.9] text-[var(--bz-ink-3)]">
           نُضيف الأدلّة تدريجياً وبعناية: دليل واحد مفيد أنفع من عشرة سطحية.
         </p>
-      </div>
+        </div>
+      </PublicSidebarLayout>
     </main>
   );
 }

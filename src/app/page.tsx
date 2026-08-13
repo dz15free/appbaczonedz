@@ -11,19 +11,17 @@ import {
   faBolt,
   faUsers,
 } from "@fortawesome/free-solid-svg-icons";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
+import { PublicHeader } from "@/components/public-shell";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { SiteFooter } from "@/components/ui/site-footer";
-import { AuthAwareLink } from "@/components/ui/auth-aware-link";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function LandingPage() {
   const { settings: s, loaded } = useSiteSettings();
   const year = new Date().getFullYear();
-  const [scrolled, setScrolled] = useState(false);
 
   /* 🐛 هذا المقطع كان نصف سبب «الأيقونة القديمة على أندرويد».
 
@@ -55,75 +53,10 @@ export default function LandingPage() {
     put("apple-touch-icon", "apple");
   }, [s.faviconUrl]);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
-      {/* ═══════════════ HEADER ═══════════════ */}
-      <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          scrolled
-            ? "border-b border-white/10 bg-[#0a0c14]/80 backdrop-blur-2xl shadow-[0_8px_32px_-12px_rgba(0,0,0,0.5)]"
-            : "bg-transparent"
-        }`}
-      >
-        {/* 🐛 **الشعار كان يتداخل مع أزرار الهيدر على الهاتف.**
-
-            الحساب يشرح نفسه على شاشة ٣٦٠px: الحشوة ٣٢ + مجموعة الأزرار
-            ٢٤٥ (زرّ «أنشئ حسابك وابدأ» ونصّه يُحرّره الأدمن فيطول) +
-            الفراغ ١٦ ⇒ يبقى للشعار ٦٧px، وهو يحتاج ١٠١. وبما أنّ
-            مجموعة الأزرار كانت `shrink-0` فهي لا تتنازل عن بكسل، فكان
-            الشعار وحده يُسحق: تحوّل اسم الموقع إلى «…cZoneDZ» ولاصق زرّ
-            الثيم بلا فراغ — وهو ما يُرى تداخلاً.
-
-            والإصلاح ثلاثة أسطر لا حيلة فيها:
-            ١) الاسم النصّي يظهر من ٤٠٠px فصاعداً فقط. الشعار المرسوم
-               يكفي على الشاشات الأضيق، والاسم المقطوع ليس هويّة.
-            ٢) مجموعة الأزرار تقبل التقلّص (`min-w-0` بلا `shrink-0`)،
-               ونصّ الزرّ يُقطع بأدب إن أطاله الأدمن.
-            ٣) فراغ أضيق على الهاتف وأوسع على الحاسوب. */}
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:h-[4.25rem] sm:gap-4 sm:px-6">
-          {/* `shrink-0` على الشعار مقصود: هو الهويّة، فهو آخر ما يتنازل.
-              ولا يكفي `shrink-0` على الصورة وحدها لأنّ Tailwind يضع
-              `img{max-width:100%}` في preflight — فحاوية بعرض ٢px تسحق
-              صورةً «لا تتقلّص» إلى ٢px. القيد الحقيقي هو حجم الحاوية. */}
-          <AuthAwareLink
-            ariaLabel={s.siteName || "BacZoneDZ"}
-            className="group flex shrink-0 items-center gap-2.5 overflow-hidden"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={s.logoUrl || DEFAULT_LOGO}
-              alt={s.siteName || "BacZoneDZ"}
-              className="h-9 w-9 shrink-0 rounded-xl object-contain ring-1 ring-white/10 transition group-hover:ring-white/25 sm:h-10 sm:w-10"
-            />
-            <span className="hidden truncate font-display text-[15px] font-bold tracking-tight text-white min-[400px]:block sm:text-lg">
-              {s.siteName || "BacZoneDZ"}
-            </span>
-          </AuthAwareLink>
-
-          <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-3">
-            <ThemeToggle />
-            <Link
-              href="/login"
-              className="hidden rounded-xl px-3.5 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white sm:inline-flex"
-            >
-              دخول
-            </Link>
-            <Link
-              href="/register"
-              className="min-w-0 shrink truncate whitespace-nowrap rounded-xl bg-white px-3.5 py-2.5 text-[13px] font-bold text-slate-900 shadow-lg shadow-white/10 transition hover:bg-white/95 active:scale-[0.97] sm:px-5 sm:text-sm"
-            >
-              {loaded ? s.heroCtaPrimary || "أنشئ حسابك" : "أنشئ حسابك"}
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* الهيدر العام المشترك — لا يغيّر محتوى Landing أو وظائفها */}
+      <PublicHeader variant="landing" />
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section className="relative min-h-[100svh] overflow-hidden bg-[#07080f]">

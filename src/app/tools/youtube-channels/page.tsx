@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthAwareLink } from "@/components/ui/auth-aware-link";
+import { PublicHeader } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { CHANNELS, TOTAL_CHANNELS, searchUrl } from "@/features/tools/channels-data";
 import { absUrl } from "@/features/guide/site-url";
 
@@ -51,14 +52,13 @@ export default function ChannelsPage() {
 
   return (
     <main className="bz-guide min-h-screen">
+      <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <AuthAwareLink className="hover:underline">BacZone</AuthAwareLink>
-            <span>·</span>
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
@@ -70,8 +70,9 @@ export default function ChannelsPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
-        <section className="bz-spec-sec">
+      <PublicSidebarLayout placement="tools">
+        <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
+          <section className="bz-spec-sec">
           <h2>كيف تستعمل يوتيوب في المراجعة بلا أن يبتلع وقتك؟</h2>
           <p className="bz-spec-p">
             يوتيوب سلاح ذو حدّين: فيه شرح ممتاز لدروس تعثّرت فيها، وفيه أيضاً
@@ -130,8 +131,9 @@ export default function ChannelsPage() {
             <Link href="/tools/study-planner" className="bz-spec-rel"><span>أنشئ برنامج مراجعتك</span></Link>
             <Link href="/tools/pomodoro" className="bz-spec-rel"><span>مؤقّت التركيز</span></Link>
           </div>
-        </aside>
-      </div>
+          </aside>
+        </div>
+      </PublicSidebarLayout>
     </main>
   );
 }

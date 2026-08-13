@@ -38,6 +38,7 @@ import { AdminCourses } from "@/features/courses/admin-courses";
 import { AdminStudyFeed } from "@/features/feed/admin-feed";
 import { AdminMissions } from "@/features/daily/admin-missions";
 import { BlogAdmin } from "@/features/blog/blog-admin";
+import { SidebarEditor } from "@/features/admin/sidebar-editor";
 
 interface Report {
   firebaseKey: string;
@@ -168,6 +169,7 @@ const TABS = [
   { id: "footer",    label: "الفوتر",     icon: faLink },
   { id: "control",   label: "التحكّم",    icon: faWrench },
   { id: "ads",       label: "الإعلانات",  icon: faBullhorn },
+  { id: "sidebar",   label: "Sidebar",     icon: faWrench },
   { id: "users",     label: "المستخدمون", icon: faUsers },
   { id: "rooms",     label: "الغرف",      icon: faDoorOpen },
   { id: "library",   label: "المكتبة",    icon: faBookOpen },
@@ -979,6 +981,8 @@ export default function AdminPage() {
             })}
           </div>
         )}
+
+        {tab === "sidebar" && <SidebarEditor />}
 
         {/* ════ المستخدمون ════ */}
         {tab === "users" && (

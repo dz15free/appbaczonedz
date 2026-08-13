@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AuthAwareLink } from "@/components/ui/auth-aware-link";
+import { PublicHeader } from "@/components/public-shell";
+import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/features/guides/guides-data";
 import { absUrl } from "@/features/guide/site-url";
@@ -70,15 +71,15 @@ export default async function GuidePage(
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <>
+      <PublicHeader />
+      <main className="bz-guide min-h-screen">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <header className="bz-guide-hero">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <AuthAwareLink className="hover:underline">BacZone</AuthAwareLink>
-            <span>·</span>
             <Link href="/guides" className="font-bold text-white hover:underline">الأدلّة</Link>
           </nav>
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
@@ -90,8 +91,9 @@ export default async function GuidePage(
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
-        {/* فهرس قافز: الدليل يُرجَع إليه، فيجب أن يُقفز داخله */}
+      <PublicSidebarLayout placement="guides">
+        <div className="mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
+          {/* فهرس قافز: الدليل يُرجَع إليه، فيجب أن يُقفز داخله */}
         <nav className="bz-guide-toc" aria-label="محتويات الدليل">
           <p className="mb-2 text-[11.5px] font-extrabold text-[var(--bz-ink-3)]">محتويات الدليل</p>
           <ol>
@@ -135,7 +137,9 @@ export default async function GuidePage(
             <Link href="/tools" className="bz-spec-rel"><span>كل أدوات البكالوريا</span></Link>
           </div>
         </aside>
-      </div>
+        </div>
+      </PublicSidebarLayout>
     </main>
+    </>
   );
 }
