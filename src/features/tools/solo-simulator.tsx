@@ -443,7 +443,7 @@ export function SoloSimulator() {
     </header>
     <div className="bz-vbr-running-grid">
       <div className="bz-exam-paper">
-        <div className="bz-vbr-paper-toolbar"><span>ورقة الموضوع</span><div><button type="button" onClick={zoomIn} aria-label="تكبير العرض" title="تكبير العرض"><FontAwesomeIcon icon={faPlus} /></button><output>{Math.round(paperZoom * 100)}%</output><button type="button" onClick={zoomOut} aria-label="تصغير العرض" title="تصغير العرض"><FontAwesomeIcon icon={faMinus} /></button><button type="button" onClick={fitPaper} aria-label="ملاءمة العرض" title="ملاءمة العرض">ملاءمة العرض</button></div></div>
+        <div className="bz-vbr-paper-toolbar"><span>ورقة الموضوع</span><small>التحكم في العرض من الشريط العلوي</small></div>
         <div className="bz-vbr-paper-viewport"><div className="bz-vbr-paper-canvas" style={{ transform: `scale(${paperZoom})`, width: `${100 / paperZoom}%` }}><iframe src={selectedExam?.examUrl} title="ورقة الامتحان" loading="eager" allow="autoplay" /></div></div>
       </div>
       <aside className="bz-exam-control-panel"><div className="bz-vbr-side-heading"><span>حالة الامتحان</span><b>الامتحان جارٍ</b></div><div className="bz-exam-timer-bar"><span style={{ width: `${Math.max(0, Math.min(100, (left / (examMinutes * 60)) * 100))}%` }} /></div><div className="bz-exam-side-row"><span>الشعبة</span><b>{spec?.label}</b></div><div className="bz-exam-side-row"><span>المادة</span><b>{subject?.name}</b></div><div className="bz-exam-side-row"><span>الموضوع</span><b>{selectedExam?.label}</b></div><div className="bz-exam-guard-chip"><span>✓</span>{guardOptions.ac ? `${guard.violations ? `محاولات مغادرة: ${guard.violations}` : "المراقبة مفعّلة"}` : "التنبيه معطّل"}</div>

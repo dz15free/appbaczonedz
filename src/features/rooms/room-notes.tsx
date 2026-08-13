@@ -835,23 +835,29 @@ export function RoomNotes({
               )}
             </>
           )}
-          {editable && !empty && (
-            <button onClick={() => { void exportPDF(); }} disabled={pdfBusy}
-              title="إنشاء PDF ونشره للمنضمين"
-              className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-red-500 transition hover:bg-red-500/10 disabled:opacity-60">
-              <FontAwesomeIcon icon={pdfBusy ? faSpinner : faFilePdf} className={`h-3.5 w-3.5 ${pdfBusy ? "animate-spin" : ""}`} /> {pdfBusy ? "جارٍ إنشاء PDF…" : "PDF"}
-            </button>
-          )}
+      {editable && !empty && (
+        <button onClick={() => { void exportPDF(); }} disabled={pdfBusy}
+          title="إنشاء PDF ونشره للمنضمين"
+          className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-red-500 transition hover:bg-red-500/10 disabled:opacity-60">
+          <FontAwesomeIcon icon={pdfBusy ? faSpinner : faFilePdf} className={`h-3.5 w-3.5 ${pdfBusy ? "animate-spin" : ""}`} /> {pdfBusy ? "جارٍ إنشاء PDF…" : "PDF"}
+        </button>
+      )}
         </span>
       </div>
       {notesError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{notesError}</p>}
       {pdfError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{pdfError}</p>}
-      {!editable && pdfNotice && (
+      {!editable && pdfNotice && typeof document !== "undefined" && createPortal(
         <div className="bz-room-file-notice" role="status" aria-live="polite">
           <span className="bz-room-file-notice-icon"><FontAwesomeIcon icon={faFilePdf} /></span>
-          <span className="bz-room-file-notice-copy"><b>أضاف صاحب الغرفة ملفاً جديداً</b><small>{pdfNotice.name} — تجده الآن في تبويب «الملفات».</small></span>
+          <span className="bz-room-file-notice-copy">
+            <span className="bz-room-file-notice-kicker">ملف جديد في الغرفة</span>
+            <b>أضاف صاحب الغرفة ملاحظات جديدة</b>
+            <p>تم نشر «{pdfNotice.name}». ستجده الآن في تبويب «الملفات».</p>
+            <span className="bz-room-file-notice-progress" aria-hidden="true" />
+          </span>
           <button type="button" onClick={() => setPdfNotice(null)} aria-label="إغلاق إشعار الملف" title="إغلاق"><FontAwesomeIcon icon={faXmark} /></button>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* ── شريط الأدوات ──

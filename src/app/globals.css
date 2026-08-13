@@ -5783,3 +5783,67 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 @media (max-width: 640px) {
   .bz-vbr-running .bz-vbr-paper-canvas iframe { min-height: 0 !important; }
 }
+
+
+/* STEP 21 — موضوع كامل على الهاتف وإشعار PDF علوي */
+.bz-vbr-paper-toolbar { min-height: 34px; padding-block: 5px; }
+.bz-vbr-paper-toolbar > small { color: #8fa7ca; font-size: 9px; font-weight: 700; }
+
+.bz-room-file-notice {
+  position: fixed !important;
+  z-index: 2147482000 !important;
+  top: max(16px, env(safe-area-inset-top)) !important;
+  inset-inline-end: max(16px, env(safe-area-inset-right)) !important;
+  inset-inline-start: auto !important;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(410px, calc(100vw - 32px));
+  padding: 14px 15px 12px;
+  border: 1px solid rgb(37 99 235 / .2);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bz-surface, #fff) 96%, #2563eb 4%);
+  box-shadow: 0 24px 60px -28px rgb(15 23 42 / .5), 0 1px 0 rgb(255 255 255 / .8) inset;
+  color: var(--bz-text, #172033);
+  pointer-events: auto;
+  animation: bz-room-file-notice-in .26s cubic-bezier(.23,1,.32,1);
+}
+.bz-room-file-notice-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(145deg, #fee2e2, #fff1f2); color: #dc2626; font-size: 16px; box-shadow: 0 8px 18px -13px #dc2626; }
+.bz-room-file-notice-copy { display: block; min-width: 0; flex: 1; }
+.bz-room-file-notice-kicker { display: block; color: #2563eb; font-size: 9px; font-weight: 950; letter-spacing: .04em; }
+.bz-room-file-notice-copy b { display: block; margin-top: 3px; color: var(--bz-text, #172033); font-size: 13px; font-weight: 950; line-height: 1.4; }
+.bz-room-file-notice-copy p { margin: 4px 0 0; overflow: hidden; color: var(--bz-text-muted, #64748b); font-size: 11px; font-weight: 700; line-height: 1.7; text-overflow: ellipsis; white-space: nowrap; }
+.bz-room-file-notice-progress { display: block; height: 3px; overflow: hidden; margin-top: 10px; border-radius: 999px; background: #dbeafe; transform-origin: right center; animation: bz-room-file-notice-progress 8s linear forwards; }
+.bz-room-file-notice-progress::after { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #14b8a6); content: ""; transform-origin: right center; animation: bz-room-file-notice-progress 8s linear reverse forwards; }
+.bz-room-file-notice > button { width: 28px; height: 28px; margin: -3px -3px 0 0; }
+@keyframes bz-room-file-notice-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+@media (max-width: 900px) {
+  .bz-vbr-running-grid { grid-template-rows: minmax(0, 1fr) auto !important; overflow: hidden !important; }
+  .bz-vbr-running .bz-vbr-paper-viewport { min-height: 0 !important; height: auto !important; overflow: auto; }
+  .bz-vbr-running .bz-vbr-paper-canvas { min-height: 100% !important; height: 100% !important; }
+  .bz-vbr-running .bz-vbr-paper-canvas iframe { height: 100% !important; min-height: 0 !important; }
+  .bz-vbr-running .bz-exam-control-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 6px 12px; max-height: none !important; overflow: visible !important; padding: 10px 12px max(12px, env(safe-area-inset-bottom)); }
+  .bz-vbr-running .bz-exam-control-panel .bz-vbr-side-heading,
+  .bz-vbr-running .bz-exam-control-panel .bz-exam-timer-bar,
+  .bz-vbr-running .bz-exam-control-panel .bz-exam-guard-chip { grid-column: 1 / -1; }
+  .bz-vbr-running .bz-vbr-side-heading { padding-bottom: 6px; }
+  .bz-vbr-running .bz-exam-side-row { min-height: 30px; padding: 5px 0; }
+  .bz-vbr-running .bz-exam-side-row b { max-width: 100%; }
+}
+@media (max-width: 640px) {
+  .bz-vbr-paper-toolbar { align-items: center !important; flex-direction: row !important; min-height: 32px; }
+  .bz-vbr-paper-toolbar > small { display: block; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bz-vbr-running-grid { grid-template-rows: minmax(280px, 1fr) auto !important; }
+  .bz-vbr-running .bz-exam-control-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 10px; }
+  .bz-room-file-notice { top: max(10px, env(safe-area-inset-top)) !important; inset-inline: 10px !important; width: auto; padding: 12px; border-radius: 16px; }
+  .bz-room-file-notice-copy p { white-space: normal; }
+}
+
+
+/* إخفاء شريط Google Drive الداخلي أسفل iframe: التحكم الرسمي موجود في رأس القاعة */
+.bz-vbr-running .bz-vbr-paper-viewport { overflow: hidden !important; }
+.bz-vbr-running .bz-vbr-paper-canvas iframe { height: calc(100% + 56px) !important; }
+@media (max-width: 640px) {
+  .bz-vbr-running .bz-vbr-paper-canvas iframe { height: calc(100% + 48px) !important; }
+}
