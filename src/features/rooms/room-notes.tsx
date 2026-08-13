@@ -13,11 +13,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {
   saveRoomNotes, listenRoomNotes, saveRoomNotesDraft, listenRoomNotesDraft,
-  addRoomFile, setActiveFile, listenRoomFiles, getAttachment, type RoomFile,
+  addRoomFile, setActiveFile, listenRoomFiles, type RoomFile,
 } from "@/features/rooms/rooms";
 import { useKatex } from "@/features/rooms/use-katex";
 import { useAuth } from "@/features/auth/auth-provider";
-import { connectDrive, drivePreviewUrl, initDrive, isDriveConfigured, hasDriveToken, uploadToDrive } from "@/lib/gdrive";
+import { connectDrive, initDrive, isDriveConfigured, hasDriveToken, uploadToDrive } from "@/lib/gdrive";
 
 /* ════════════════════════════════════════════════════════════
    الملاحظات المشتركة — محرّر بأسلوب Word
@@ -259,8 +259,7 @@ export function RoomNotes({
   const [notesError, setNotesError] = useState("");
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
-  const [publishedPdf, setPublishedPdf] = useState<RoomFile | null>(null);
-  const [publishedPdfData, setPublishedPdfData] = useState<string | null>(null);
+
   const [pdfNotice, setPdfNotice] = useState<RoomFile | null>(null);
   const [preview, setPreview] = useState(!editable);
   const [eqnOpen, setEqnOpen] = useState<null | { tex: string; block: boolean; el?: HTMLElement }>(null);
@@ -348,31 +347,20 @@ export function RoomNotes({
       if (!alive) return;
       const nextId = latest?.id ?? null;
       const previousId = seenPdfId.current;
-      if (!editable && latest && previousId && nextId !== previousId) {
+      if (!isOwner && latest && previousId && nextId !== previousId) {
         setPdfNotice(latest);
         if (pdfNoticeTimer.current) clearTimeout(pdfNoticeTimer.current);
-        pdfNoticeTimer.current = setTimeout(() => setPdfNotice(null), 8000);
+        pdfNoticeTimer.current = setTimeout(() => setPdfNotice(null), 5000);
       }
       seenPdfId.current = nextId;
-      setPublishedPdf(latest);
-      if (latest?.driveId) {
-        setPublishedPdfData(drivePreviewUrl(latest.driveId));
-        return;
-      }
-      if (!latest?.attachmentId) {
-        setPublishedPdfData(null);
-        return;
-      }
-      void getAttachment(roomId, latest.attachmentId).then((data) => {
-        if (alive) setPublishedPdfData(data);
-      });
+
     });
     return () => {
       alive = false;
       if (pdfNoticeTimer.current) clearTimeout(pdfNoticeTimer.current);
       if (typeof unsub === "function") unsub();
     };
-  }, [roomId, editable]);
+  }, [roomId, editable, isOwner]);
 
   useLayoutEffect(() => {
     if (!editable || preview || !edRef.current || edRef.current.innerHTML) return;
@@ -718,7 +706,8 @@ export function RoomNotes({
   /* ── تصدير PDF ونشره في ملفات الغرفة ── */
   async function exportPDF() {
     if (!editable || !user || pdfBusy) return;
-    const body = (edRef.current ? serialize(edRef.current) : htmlRef.current || html).slice(0, MAX_CHARS);
+    const liveEditorHtml = edRef.current?.innerHTML?.trim();
+    const body = (liveEditorHtml ? serialize(edRef.current as HTMLDivElement) : htmlRef.current || html || publishedRef.current || "").slice(0, MAX_CHARS);
     if (blank(body)) return;
     setPdfBusy(true);
     setPdfError("");
@@ -727,16 +716,26 @@ export function RoomNotes({
     source.dir = "rtl";
     source.lang = "ar";
     source.innerHTML = `<header><strong>ملاحظات الدرس</strong><span>BacZone</span></header><p class="bz-pdf-meta">${escapeHtmlText(roomName)} · ${escapeHtmlText(new Date().toLocaleDateString("ar-DZ", { dateStyle: "long" }))}</p><div class="bz-pdf-body">${body}</div><footer>تمّ إنشاؤه عبر منصّة BacZone</footer>`;
-    source.style.position = "fixed";
-    source.style.insetInlineStart = "-100000px";
-    source.style.top = "0";
+    /* html2canvas يحتاج العنصر داخل التدفق الطبيعي؛ absolute/fixed أعادا
+       canvas بارتفاع صفر. ننقله بصرياً فقط عبر transform ثم نحذفه فوراً. */
+    source.style.position = "static";
+    source.style.display = "block";
+    source.style.transform = "translateX(-100vw)";
     source.style.width = "794px";
+    source.style.height = "auto";
+    source.style.minHeight = "1123px";
+    source.style.opacity = "1";
+    source.style.pointerEvents = "none";
+    source.setAttribute("aria-hidden", "true");
     document.body.appendChild(source);
 
     try {
       const factory = await loadHtml2Pdf();
       if (!factory) throw new Error("pdf-engine");
       renderEqns(source);
+      /* ننتظر الخطوط ودورتين للرسم حتى تُحسب أبعاد النص قبل الالتقاط. */
+      if (document.fonts?.ready) await document.fonts.ready;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       const dataUri = await factory().set({
         margin: [12, 14, 16, 14],
         filename: `baczone-notes-${Date.now()}.pdf`,
@@ -762,8 +761,7 @@ export function RoomNotes({
         driveId: uploaded.id,
       });
       await setActiveFile(roomId, file.id);
-      setPublishedPdf(file);
-      setPublishedPdfData(drivePreviewUrl(uploaded.id));
+
     } catch {
       setPdfError("تعذّر إنشاء أو نشر PDF. لم نغيّر محتوى الملاحظة المنشور.");
     } finally {
@@ -846,7 +844,7 @@ export function RoomNotes({
       </div>
       {notesError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{notesError}</p>}
       {pdfError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{pdfError}</p>}
-      {!editable && pdfNotice && typeof document !== "undefined" && createPortal(
+      {!isOwner && pdfNotice && typeof document !== "undefined" && createPortal(
         <div className="bz-room-file-notice" role="status" aria-live="polite">
           <span className="bz-room-file-notice-icon"><FontAwesomeIcon icon={faFilePdf} /></span>
           <span className="bz-room-file-notice-copy">
@@ -965,12 +963,7 @@ export function RoomNotes({
           <div ref={viewRef} className="bz-doc bz-sheet is-read" dir="auto"
             dangerouslySetInnerHTML={{ __html: html }} />
         )}
-        {publishedPdf && publishedPdfData && (
-          <article className="bz-notes-pdf-card" aria-label="ملف PDF المنشور للملاحظة">
-            <div><FontAwesomeIcon icon={faFilePdf} className="h-4 w-4 text-danger" /><div><b>آخر PDF منشور للغرفة</b><small>{publishedPdf.name}</small></div></div>
-            <a href={publishedPdfData} download={publishedPdf.name} target="_blank" rel="noreferrer" className="bz-notes-pdf-open">فتح / تحميل</a>
-          </article>
-        )}
+
       </div>
 
       {/* ── نافذة المعادلة ── */}

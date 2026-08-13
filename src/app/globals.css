@@ -5813,8 +5813,8 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-room-file-notice-kicker { display: block; color: #2563eb; font-size: 9px; font-weight: 950; letter-spacing: .04em; }
 .bz-room-file-notice-copy b { display: block; margin-top: 3px; color: var(--bz-text, #172033); font-size: 13px; font-weight: 950; line-height: 1.4; }
 .bz-room-file-notice-copy p { margin: 4px 0 0; overflow: hidden; color: var(--bz-text-muted, #64748b); font-size: 11px; font-weight: 700; line-height: 1.7; text-overflow: ellipsis; white-space: nowrap; }
-.bz-room-file-notice-progress { display: block; height: 3px; overflow: hidden; margin-top: 10px; border-radius: 999px; background: #dbeafe; transform-origin: right center; animation: bz-room-file-notice-progress 8s linear forwards; }
-.bz-room-file-notice-progress::after { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #14b8a6); content: ""; transform-origin: right center; animation: bz-room-file-notice-progress 8s linear reverse forwards; }
+.bz-room-file-notice-progress { display: block; height: 3px; overflow: hidden; margin-top: 10px; border-radius: 999px; background: #dbeafe; transform-origin: right center; animation: bz-room-file-notice-progress 5s linear forwards; }
+.bz-room-file-notice-progress::after { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2563eb, #14b8a6); content: ""; transform-origin: right center; animation: bz-room-file-notice-progress 5s linear reverse forwards; }
 .bz-room-file-notice > button { width: 28px; height: 28px; margin: -3px -3px 0 0; }
 @keyframes bz-room-file-notice-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
