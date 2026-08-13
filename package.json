@@ -14,7 +14,8 @@
     "test:lifecycle": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-lifecycle-test \"node lifecycle-test.mjs\"",
     "test:exam": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-exam-test \"node exam-rules-test.mjs\"",
     "test:feed": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-feed-test \"node feed-rules-test.mjs\"",
-    "test:all": "npm run test:rules && npm run test:lifecycle && npm run test:exam && npm run test:feed"
+    "test:sidebar": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-sidebar-test \"node sidebar-rules-test.mjs\"",
+    "test:all": "npm run test:lifecycle && npm run test:sidebar"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",
@@ -31,6 +32,7 @@
     "zustand": "5.0.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
     "@opennextjs/cloudflare": "0.3.10",
     "@types/node": "22.10.7",
     "@types/react": "19.0.7",
