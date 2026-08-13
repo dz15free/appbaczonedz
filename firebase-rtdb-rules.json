@@ -150,10 +150,24 @@
         "name"
       ],
       "$roomId": {
-        ".write": "auth != null",
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.child('ownerId').val() === auth.uid",
         "messages": {
           ".write": "auth != null"
+        },
+        "attachments": {
+          ".write": "auth != null"
+        },
+        "files": {
+          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (newData.exists() && newData.child('uploaderId').val() === auth.uid) || (data.exists() && data.child('uploaderId').val() === auth.uid))"
         }
+      }
+    },
+    "notesDraft": {
+      "$roomId": {
+        ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200000)"
       }
     },
     "scheduledSessions": {
@@ -244,7 +258,7 @@
           ".read": "auth != null"
         },
         "notes": {
-          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())",
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
           ".read": "auth != null",
           ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200000)"
         },

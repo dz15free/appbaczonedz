@@ -3,67 +3,69 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
-const MIN_VISUAL_MS = 420;
-const EXIT_MS = 180;
-const SAFETY_MS = 4000;
+const MIN_VISIBLE_MS = 620;
+const EXIT_MS = 260;
+const SAFETY_MS = 5000;
 
 type PreloaderState = "visible" | "leaving" | "gone";
+
+function nextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
 
 export function Preloader() {
   const [state, setState] = useState<PreloaderState>("visible");
 
   useEffect(() => {
-    let finished = false;
-    let frameOne: number | undefined;
-    let frameTwo: number | undefined;
-    let removeTimer: number | undefined;
-    let revealTimer: number | undefined;
-    let safetyTimer: number | undefined;
     const startedAt = performance.now();
+    let settled = false;
+    let leaveTimer: number | undefined;
+    let removeTimer: number | undefined;
+    let safetyTimer: number | undefined;
 
-    const startLeaving = () => {
-      if (finished) return;
-      finished = true;
+    const remove = () => {
+      setState("leaving");
+      removeTimer = window.setTimeout(() => setState("gone"), EXIT_MS);
+    };
+
+    const leaveWhenReady = () => {
+      if (settled) return;
+      const wait = Math.max(0, MIN_VISIBLE_MS - (performance.now() - startedAt));
+      settled = true;
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
-      frameOne = window.requestAnimationFrame(() => {
-        frameTwo = window.requestAnimationFrame(() => {
-          setState("leaving");
-          removeTimer = window.setTimeout(() => setState("gone"), EXIT_MS);
-        });
-      });
-    };
-
-    const reveal = () => {
-      if (finished || revealTimer !== undefined) return;
-      const remaining = Math.max(0, MIN_VISUAL_MS - (performance.now() - startedAt));
-      if (remaining > 0) {
-        revealTimer = window.setTimeout(() => {
-          revealTimer = undefined;
-          startLeaving();
-        }, remaining);
-        return;
+      if (wait > 0) {
+        leaveTimer = window.setTimeout(remove, wait);
+      } else {
+        remove();
       }
-      startLeaving();
     };
 
-    const onReady = () => reveal();
-    const scheduleReady = () => reveal();
+    const appReady = async () => {
+      try {
+        if ("fonts" in document) await document.fonts.ready;
+      } catch {
+        // الخطوط ليست شرطاً لحجب التطبيق.
+      }
+      await nextPaint();
+      leaveWhenReady();
+    };
 
-    if (document.readyState === "complete" || document.readyState === "interactive") {
-      scheduleReady();
+    const onDomReady = () => { void appReady(); };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", onDomReady, { once: true });
+      window.addEventListener("load", onDomReady, { once: true });
     } else {
-      document.addEventListener("DOMContentLoaded", onReady, { once: true });
-      window.addEventListener("load", onReady, { once: true });
-      safetyTimer = window.setTimeout(reveal, SAFETY_MS);
+      void appReady();
     }
+    safetyTimer = window.setTimeout(leaveWhenReady, SAFETY_MS);
 
     return () => {
-      document.removeEventListener("DOMContentLoaded", onReady);
-      window.removeEventListener("load", onReady);
-      if (frameOne !== undefined) window.cancelAnimationFrame(frameOne);
-      if (frameTwo !== undefined) window.cancelAnimationFrame(frameTwo);
+      document.removeEventListener("DOMContentLoaded", onDomReady);
+      window.removeEventListener("load", onDomReady);
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
-      if (revealTimer !== undefined) window.clearTimeout(revealTimer);
+      if (leaveTimer !== undefined) window.clearTimeout(leaveTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
   }, []);
@@ -71,23 +73,32 @@ export function Preloader() {
   if (state === "gone") return null;
 
   return (
-    <div className={`bz-preloader-shell ${state === "leaving" ? "is-leaving" : ""}`} role="status" aria-live="polite" aria-label="جارٍ فتح BacZone">
-      <div className="bz-preloader-aura aura-one" aria-hidden="true" />
-      <div className="bz-preloader-aura aura-two" aria-hidden="true" />
-      <div className="bz-preloader-stage">
-        <div className="bz-preloader-logo-wrap">
-          <span className="bz-preloader-ring ring-one" aria-hidden="true" />
-          <span className="bz-preloader-ring ring-two" aria-hidden="true" />
-          <span className="bz-preloader-logo-plate">
+    <div
+      className={`bz-preloader-v2 ${state === "leaving" ? "is-leaving" : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-label="جارٍ فتح BacZone"
+      data-state={state}
+    >
+      <div className="bz-preloader-v2-grid" aria-hidden="true" />
+      <div className="bz-preloader-v2-orbit orbit-a" aria-hidden="true" />
+      <div className="bz-preloader-v2-orbit orbit-b" aria-hidden="true" />
+      <div className="bz-preloader-v2-shell">
+        <div className="bz-preloader-v2-emblem" aria-hidden="true">
+          <span className="bz-preloader-v2-sun" />
+          <span className="bz-preloader-v2-line line-a" />
+          <span className="bz-preloader-v2-line line-b" />
+          <span className="bz-preloader-v2-logo-plate">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={DEFAULT_LOGO} alt="BacZone" width={54} height={54} className="bz-preloader-logo-new" />
+            <img src={DEFAULT_LOGO} alt="" width={58} height={58} />
           </span>
-          <span className="bz-preloader-spark" aria-hidden="true" />
         </div>
-        <div className="bz-preloader-wordmark">Bac<span>Zone</span></div>
-        <p className="bz-preloader-message">نفتح لك مساحة دراسة هادئة</p>
-        <div className="bz-preloader-meter" aria-hidden="true"><span /></div>
+        <div className="bz-preloader-v2-wordmark">Bac<span>Zone</span></div>
+        <p className="bz-preloader-v2-copy">نفتح لك مساحة دراسة أهدأ</p>
+        <div className="bz-preloader-v2-track" aria-hidden="true"><span /></div>
+        <div className="bz-preloader-v2-status"><i /> <span>نجهّز الواجهة</span><b>استعد</b></div>
       </div>
+      <div className="bz-preloader-v2-footer" aria-hidden="true"><span>BACZONE</span><span>مساحة الطالب</span></div>
     </div>
   );
 }

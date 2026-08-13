@@ -189,27 +189,44 @@ export interface RoomFile {
   uploaderId?: string;
   attachmentId?: string; // قديم: base64
   driveId?: string; // جديد: Google Drive
+  kind?: "notes-pdf" | "upload";
   createdAt: number;
 }
 
 export async function addRoomFile(
   roomId: string,
-  data: { uploaderId: string; uploaderName: string; name: string; driveId?: string; dataUrl?: string }
-) {
+  data: { uploaderId: string; uploaderName: string; name: string; driveId?: string; dataUrl?: string; kind?: RoomFile["kind"] }
+): Promise<RoomFile> {
+  const createdAt = Date.now();
   const meta: Record<string, unknown> = {
     name: data.name,
     uploaderId: data.uploaderId,
     uploaderName: data.uploaderName,
-    createdAt: Date.now(),
+    createdAt,
   };
+  if (data.kind) meta.kind = data.kind;
+  let attachmentId: string | undefined;
   if (data.driveId) {
     meta.driveId = data.driveId;
   } else if (data.dataUrl) {
     const aRef = push(ref(rtdb, `rooms/${roomId}/attachments`));
     await set(aRef, data.dataUrl);
-    meta.attachmentId = aRef.key;
+    attachmentId = aRef.key ?? undefined;
+    if (attachmentId) meta.attachmentId = attachmentId;
   }
-  await push(ref(rtdb, `rooms/${roomId}/files`), meta);
+  const fileRef = push(ref(rtdb, `rooms/${roomId}/files`));
+  await set(fileRef, meta);
+  if (!fileRef.key) throw new Error("تعذّر إنشاء معرّف الملف.");
+  return {
+    id: fileRef.key,
+    name: data.name,
+    uploaderId: data.uploaderId,
+    uploaderName: data.uploaderName,
+    createdAt,
+    ...(data.driveId ? { driveId: data.driveId } : {}),
+    ...(data.kind ? { kind: data.kind } : {}),
+    ...(attachmentId ? { attachmentId } : {}),
+  };
 }
 
 export async function deleteRoomFile(roomId: string, file: RoomFile) {

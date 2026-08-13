@@ -13,8 +13,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {
   saveRoomNotes, listenRoomNotes, saveRoomNotesDraft, listenRoomNotesDraft,
+  addRoomFile, setActiveFile, listenRoomFiles, getAttachment, type RoomFile,
 } from "@/features/rooms/rooms";
 import { useKatex } from "@/features/rooms/use-katex";
+import { useAuth } from "@/features/auth/auth-provider";
+import { connectDrive, drivePreviewUrl, initDrive, isDriveConfigured, hasDriveToken, uploadToDrive } from "@/lib/gdrive";
 
 /* ════════════════════════════════════════════════════════════
    الملاحظات المشتركة — محرّر بأسلوب Word
@@ -209,6 +212,34 @@ const SYMS: { l: string; t: string }[] = [
 const TEXT_COLORS = ["#131722", "#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed"];
 const MARK_COLORS = ["#fef08a", "#bbf7d0", "#bfdbfe", "#fecaca", "#e9d5ff"];
 
+interface Html2PdfWorker {
+  set: (options: Record<string, unknown>) => Html2PdfWorker;
+  from: (source: HTMLElement) => Html2PdfWorker;
+  outputPdf: (type: "datauristring") => Promise<string>;
+}
+type Html2PdfFactory = () => Html2PdfWorker;
+let html2pdfPromise: Promise<Html2PdfFactory | null> | null = null;
+
+function escapeHtmlText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
+}
+
+function loadHtml2Pdf(): Promise<Html2PdfFactory | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  const w = window as unknown as { html2pdf?: Html2PdfFactory };
+  if (w.html2pdf) return Promise.resolve(w.html2pdf);
+  if (html2pdfPromise) return html2pdfPromise;
+  html2pdfPromise = new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.async = true;
+    script.onload = () => resolve((window as unknown as { html2pdf?: Html2PdfFactory }).html2pdf ?? null);
+    script.onerror = () => { html2pdfPromise = null; resolve(null); };
+    document.head.appendChild(script);
+  });
+  return html2pdfPromise;
+}
+
 export function RoomNotes({
   roomId, isOwner, roomName, canEdit,
 }: {
@@ -218,12 +249,18 @@ export function RoomNotes({
   /** الأستاذ أو مشرف الغرفة — مَن يملك حقّ الكتابة */
   canEdit?: boolean;
 }) {
-  const editable = canEdit ?? isOwner;
+  const { user } = useAuth();
+  const editable = isOwner && (canEdit ?? true);
   const [html, setHtml] = useState("");
   /** آخر نسخة **منشورة** — بها نعرف إن كانت المسودّة تحمل جديداً */
   const [published, setPublished] = useState<string | null>(null);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
   const [publishing, setPublishing] = useState(false);
+  const [notesError, setNotesError] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+  const [publishedPdf, setPublishedPdf] = useState<RoomFile | null>(null);
+  const [publishedPdfData, setPublishedPdfData] = useState<string | null>(null);
   const [preview, setPreview] = useState(!editable);
   const [eqnOpen, setEqnOpen] = useState<null | { tex: string; block: boolean; el?: HTMLElement }>(null);
   const [docxBusy, setDocxBusy] = useState(false);
@@ -235,8 +272,20 @@ export function RoomNotes({
   const fileRef = useRef<HTMLInputElement>(null);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typing = useRef(false);
+  const htmlRef = useRef("");
+  const publishedRef = useRef<string | null>(null);
+  const draftRef = useRef<string | null>(null);
+  const publishedLoaded = useRef(false);
   const savedRange = useRef<Range | null>(null);
   const katexReady = useKatex();
+
+  const setEditorValue = useCallback((next: string) => {
+    htmlRef.current = next;
+    setHtml(next);
+    if (edRef.current && edRef.current.innerHTML !== next) {
+      edRef.current.innerHTML = next || "<p><br></p>";
+    }
+  }, []);
 
   /* ── المزامنة ──
      🐛 كان الطالب يرى الكتابة **حرفاً بحرف**: الأخطاء المطبعية، والجملة
@@ -249,35 +298,67 @@ export function RoomNotes({
   const norm = (raw: string) => (!raw ? "" : /^\s*</.test(raw) ? raw : legacyToHtml(raw));
 
   useEffect(() => {
+    publishedLoaded.current = false;
+    publishedRef.current = null;
+    draftRef.current = null;
+    typing.current = false;
+    setEditorValue("");
+    setPublished(null);
+
     const unsub = listenRoomNotes(roomId, (raw) => {
       const next = norm(raw);
+      publishedLoaded.current = true;
+      publishedRef.current = next;
       setPublished(next);
-      if (editable) return;                 // المحرّر يعمل على المسودّة
-      if (typing.current) return;
-      setHtml(next);
-      if (edRef.current && edRef.current.innerHTML !== next) edRef.current.innerHTML = next || "<p><br></p>";
+      if (!editable && !typing.current) {
+        setEditorValue(next);
+      } else if (editable && !typing.current && draftRef.current === null) {
+        /* لا مسودّة: يفتح الأستاذ آخر نسخة منشورة، لا محرّراً فارغاً. */
+        setEditorValue(next);
+      }
     });
     return () => { if (typeof unsub === "function") unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, editable]);
+  }, [roomId, editable, setEditorValue]);
 
   useEffect(() => {
     if (!editable) return;
-    let seeded = false;
+    draftRef.current = null;
     const unsub = listenRoomNotesDraft(roomId, (raw) => {
       if (typing.current) return;
-      /* لا مسودّة بعد؟ نبدأ من المنشور — فلا يفتح الأستاذ محرّراً فارغاً
-         وملاحظاته منشورة أمام الطلبة. */
-      const next = raw === null ? (seeded ? html : (published ?? "")) : norm(raw);
-      seeded = true;
-      setHtml(next);
-      if (edRef.current && edRef.current.innerHTML !== next) edRef.current.innerHTML = next || "<p><br></p>";
+      const next = raw === null ? null : norm(raw);
+      draftRef.current = next;
+      if (next !== null) {
+        setEditorValue(next);
+      } else if (publishedLoaded.current) {
+        setEditorValue(publishedRef.current ?? "");
+      }
     });
     return () => { if (typeof unsub === "function") unsub(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, editable, published === null]);
+  }, [roomId, editable, setEditorValue]);
 
-  /* أوّل تركيب: نضع المحتوى في سطح التحرير مرّة واحدة */
+  useEffect(() => {
+    let alive = true;
+    if (isDriveConfigured()) void initDrive();
+    const unsub = listenRoomFiles(roomId, (files) => {
+      const latest = files.find((file) => file.kind === "notes-pdf") ?? null;
+      if (!alive) return;
+      setPublishedPdf(latest);
+      if (latest?.driveId) {
+        setPublishedPdfData(drivePreviewUrl(latest.driveId));
+        return;
+      }
+      if (!latest?.attachmentId) {
+        setPublishedPdfData(null);
+        return;
+      }
+      void getAttachment(roomId, latest.attachmentId).then((data) => {
+        if (alive) setPublishedPdfData(data);
+      });
+    });
+    return () => { alive = false; if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
+
   useEffect(() => {
     if (edRef.current && !edRef.current.innerHTML) edRef.current.innerHTML = html || "<p><br></p>";
   }, [html]);
@@ -289,17 +370,25 @@ export function RoomNotes({
   useEffect(() => { if (preview) renderEqns(viewRef.current); }, [katexReady, preview, html]);
 
   const push = useCallback((next: string) => {
-    setHtml(next);
+    const body = next.slice(0, MAX_CHARS);
+    htmlRef.current = body;
+    setHtml(body);
     setTooBig(next.length > MAX_CHARS);
+    setNotesError("");
     typing.current = true;
     setSaving("saving");
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      /* الحفظ التلقائي يذهب إلى **المسودّة** لا إلى المنشور: هكذا لا
-         يضيع عمل الأستاذ إن أغلق الصفحة، ولا يراه الطالب قبل النشر. */
-      await saveRoomNotesDraft(roomId, next.slice(0, MAX_CHARS));
-      setSaving("saved");
-      typing.current = false;
+      try {
+        await saveRoomNotesDraft(roomId, body);
+        draftRef.current = body;
+        setSaving("saved");
+      } catch {
+        setSaving("idle");
+        setNotesError("تعذّر حفظ المسودّة. سيبقى المحتوى في هذا المحرّر حتى تعود الشبكة.");
+      } finally {
+        typing.current = false;
+      }
     }, 800);
   }, [roomId]);
 
@@ -307,23 +396,30 @@ export function RoomNotes({
      زرّ «معاينة» نفسه ينشر — كما طلبت: الأستاذ يعاين فيرى الشكل النهائي،
      وفي اللحظة نفسها تصل النسخة إلى الطلبة كاملةً لا نصف جملة. */
   const publish = useCallback(async () => {
-    const next = edRef.current ? serialize(edRef.current) : html;
+    const next = edRef.current ? serialize(edRef.current) : htmlRef.current || html;
+    const body = next.slice(0, MAX_CHARS);
     setPublishing(true);
+    setNotesError("");
     if (debounce.current) clearTimeout(debounce.current);
+    typing.current = true;
     try {
-      const body = next.slice(0, MAX_CHARS);
-      await saveRoomNotesDraft(roomId, body);
+      /* النشر والـdraft يستعملان نفس body، لكن فشل draft لا يمنع النشر؛
+         المسودة خدمة استمرارية، أما المنشور فهو العقدة التي يقرأها الطلاب. */
+      try { await saveRoomNotesDraft(roomId, body); } catch { /* يُسجّل الخطأ بعد فشل النشر فقط */ }
       await saveRoomNotes(roomId, body);
-      typing.current = false;
-      /* 🐛 كانت الشارة تبقى «مسودّة» بعد نشر ناجح.
-         السبب: `unpublished` تقارن `html` بـ`published`، والنشر يكتب
-         ما في المحرّر (`next`) بينما حالة `html` قد تكون متأخّرة عن
-         آخر ضغطة (الحفظ مؤجَّل بـdebounce). فيختلفان رغم أنّ المكتوب
-         في قاعدة البيانات هو الأحدث.
-         نُزامن الحالة مع ما نُشر فعلاً — فتُطابق المقارنةُ الواقع. */
+      htmlRef.current = body;
+      publishedRef.current = body;
+      draftRef.current = body;
       setHtml(body);
+      setPublished(body);
       setSaving("saved");
+      return true;
+    } catch {
+      setSaving("idle");
+      setNotesError("تعذّر نشر الملاحظة. لم نغيّر النسخة التي يراها المنضمون.");
+      return false;
     } finally {
+      typing.current = false;
       setPublishing(false);
     }
   }, [roomId, html]);
@@ -602,50 +698,61 @@ export function RoomNotes({
     }
   }
 
-  /* ── تصدير PDF ── */
-  function exportPDF() {
-    const win = window.open("", "_blank");
-    if (!win) return;
-    const body = html;
-    const dateStr = new Date().toLocaleDateString("ar-DZ", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
-<title>ملاحظات — ${roomName}</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"><\/script>
-<style>
-*{box-sizing:border-box}
-body{font-family:'Tajawal','Segoe UI',Arial,sans-serif;direction:rtl;padding:46px 54px;max-width:850px;margin:0 auto;color:#131722;line-height:1.9}
-.head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #2563eb;padding-bottom:14px}
-.head h1{color:#2563eb;font-size:1.5rem;margin:0}
-.brand{font-weight:800;color:#2563eb;font-size:1.05rem}
-.meta{color:#64748b;font-size:.82rem;margin:8px 0 26px}
-h1,h2,h3,h4{color:#1e3a8a;margin:1.15em 0 .45em;line-height:1.4}
-h1{font-size:1.45rem;border-bottom:2px solid #dbeafe;padding-bottom:6px}
-h2{font-size:1.22rem}h3{font-size:1.06rem}h4{font-size:1rem}
-p{margin:.5em 0}ul,ol{margin:.5em 1.6em}li{margin:.28em 0}
-blockquote{border-inline-start:4px solid #2563eb;background:#f0f7ff;margin:.8em 0;padding:.6em 1em;border-radius:8px}
-mark{background:#fef08a;padding:0 3px;border-radius:3px}
-hr{border:none;border-top:2px dashed #cbd5e1;margin:1.4em 0}
-u{text-decoration-color:#2563eb;text-decoration-thickness:2px}
-table{border-collapse:collapse;width:100%;margin:.9em 0}
-th,td{border:1px solid #cbd5e1;padding:7px 10px;text-align:right}
-th{background:#f1f5f9;font-weight:800}
-img{max-width:100%;height:auto;border-radius:8px}
-.bz-eqn.is-block{display:block;text-align:center;margin:.8em 0}
-.foot{margin-top:36px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;color:#94a3b8;font-size:.72rem}
-@media print{body{padding:22px}}
-</style></head><body>
-<div class="head"><h1>ملاحظات الدرس</h1><span class="brand">BacZone</span></div>
-<div class="meta">${roomName} · ${dateStr}</div>
-<div class="bz-doc">${body}</div>
-<div class="foot">تمّ إنشاؤه عبر منصّة BacZone</div>
-<script>window.onload=function(){
-document.querySelectorAll('.bz-eqn').forEach(function(el){
-  try{ katex.render(el.getAttribute('data-tex')||'', el, {throwOnError:false, displayMode: el.classList.contains('is-block')}); }catch(e){ el.textContent=el.getAttribute('data-tex')||''; }
-});
-setTimeout(function(){window.print();},450);};<\/script>
-</body></html>`);
-    win.document.close();
+  /* ── تصدير PDF ونشره في ملفات الغرفة ── */
+  async function exportPDF() {
+    if (!editable || !user || pdfBusy) return;
+    const body = (edRef.current ? serialize(edRef.current) : htmlRef.current || html).slice(0, MAX_CHARS);
+    if (blank(body)) return;
+    setPdfBusy(true);
+    setPdfError("");
+    const source = document.createElement("article");
+    source.className = "bz-notes-pdf-source bz-doc";
+    source.dir = "rtl";
+    source.lang = "ar";
+    source.innerHTML = `<header><strong>ملاحظات الدرس</strong><span>BacZone</span></header><p class="bz-pdf-meta">${escapeHtmlText(roomName)} · ${escapeHtmlText(new Date().toLocaleDateString("ar-DZ", { dateStyle: "long" }))}</p><div class="bz-pdf-body">${body}</div><footer>تمّ إنشاؤه عبر منصّة BacZone</footer>`;
+    source.style.position = "fixed";
+    source.style.insetInlineStart = "-100000px";
+    source.style.top = "0";
+    source.style.width = "794px";
+    document.body.appendChild(source);
+
+    try {
+      const factory = await loadHtml2Pdf();
+      if (!factory) throw new Error("pdf-engine");
+      renderEqns(source);
+      const dataUri = await factory().set({
+        margin: [12, 14, 16, 14],
+        filename: `baczone-notes-${Date.now()}.pdf`,
+        image: { type: "jpeg", quality: 0.96 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", putOnlyUsedFonts: true },
+        pagebreak: { mode: ["css", "legacy"] },
+      }).from(source).outputPdf("datauristring");
+      if (!isDriveConfigured()) throw new Error("drive-not-configured");
+      if (!hasDriveToken()) {
+        await initDrive();
+        if (!hasDriveToken()) await connectDrive();
+      }
+      const pdfBlob = await (await fetch(dataUri)).blob();
+      const safeRoom = roomName.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 48) || "الغرفة";
+      const fileName = `ملاحظات-${safeRoom}-${Date.now()}.pdf`;
+      const uploaded = await uploadToDrive(new File([pdfBlob], fileName, { type: "application/pdf" }));
+      const file = await addRoomFile(roomId, {
+        uploaderId: user.uid,
+        uploaderName: user.displayName || "الأستاذ",
+        name: uploaded.name || fileName,
+        kind: "notes-pdf",
+        driveId: uploaded.id,
+      });
+      await setActiveFile(roomId, file.id);
+      setPublishedPdf(file);
+      setPublishedPdfData(drivePreviewUrl(uploaded.id));
+    } catch {
+      setPdfError("تعذّر إنشاء أو نشر PDF. لم نغيّر محتوى الملاحظة المنشور.");
+    } finally {
+      source.remove();
+      setPdfBusy(false);
+    }
   }
 
   const empty = !html || html === "<p><br></p>";
@@ -682,7 +789,7 @@ setTimeout(function(){window.print();},450);};<\/script>
             /* «معاينة» = معاينة + نشر. والتسمية تقول ذلك صراحةً حتى لا
                يفاجَأ الأستاذ بأنّ ما عاينه قد وصل الطلبة. */
             <button
-              onClick={() => { if (!preview) { publish(); setPreview(true); } else setPreview(false); }}
+              onClick={async () => { if (preview) setPreview(false); else if (await publish()) setPreview(true); }}
               disabled={publishing}
               title={preview ? "الرجوع إلى التحرير" : "عرض الشكل النهائي ونشره للطلبة"}
               className={`flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold transition disabled:opacity-60 ${
@@ -695,14 +802,17 @@ setTimeout(function(){window.print();},450);};<\/script>
               {preview ? "تحرير" : unpublished ? "معاينة ونشر" : "معاينة"}
             </button>
           )}
-          {!empty && (
-            <button onClick={exportPDF}
-              className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-red-500 transition hover:bg-red-500/10">
-              <FontAwesomeIcon icon={faFilePdf} className="h-3.5 w-3.5" /> PDF
+          {editable && !empty && (
+            <button onClick={() => { void exportPDF(); }} disabled={pdfBusy}
+              title="إنشاء PDF ونشره للمنضمين"
+              className="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-extrabold text-red-500 transition hover:bg-red-500/10 disabled:opacity-60">
+              <FontAwesomeIcon icon={pdfBusy ? faSpinner : faFilePdf} className={`h-3.5 w-3.5 ${pdfBusy ? "animate-spin" : ""}`} /> {pdfBusy ? "جارٍ إنشاء PDF…" : "PDF"}
             </button>
           )}
         </span>
       </div>
+      {notesError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{notesError}</p>}
+      {pdfError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{pdfError}</p>}
 
       {/* ── شريط الأدوات ──
           رفّ أفقي منزلق على الهاتف بدل أن ينكسر إلى أربعة صفوف */}
@@ -798,8 +908,6 @@ setTimeout(function(){window.print();},450);};<\/script>
               <p className="mt-3 text-[13.5px] font-bold text-text-muted">
                 {editable ? "ابدأ الكتابة، أو ارفع ملفّ Word." : "لم ينشر الأستاذ ملاحظات بعد…"}
               </p>
-              {/* الطالب يجب أن يعرف أنّ الفراغ ليس خللاً بل انتظاراً:
-                  الأستاذ قد يكون يكتب الآن وما نشر. */}
               {!editable && (
                 <p className="mt-1.5 text-[11.5px] font-bold text-text-muted/70">
                   تظهر هنا حين يضغط «معاينة ونشر»
@@ -810,6 +918,12 @@ setTimeout(function(){window.print();},450);};<\/script>
         ) : (
           <div ref={viewRef} className="bz-doc bz-sheet is-read" dir="auto"
             dangerouslySetInnerHTML={{ __html: html }} />
+        )}
+        {publishedPdf && publishedPdfData && (
+          <article className="bz-notes-pdf-card" aria-label="ملف PDF المنشور للملاحظة">
+            <div><FontAwesomeIcon icon={faFilePdf} className="h-4 w-4 text-danger" /><div><b>آخر PDF منشور للغرفة</b><small>{publishedPdf.name}</small></div></div>
+            <a href={publishedPdfData} download={publishedPdf.name} target="_blank" rel="noreferrer" className="bz-notes-pdf-open">فتح / تحميل</a>
+          </article>
         )}
       </div>
 

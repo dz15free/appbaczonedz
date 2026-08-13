@@ -63,7 +63,7 @@ export function ExamStage({
   const timeUp = left <= 0 || session.status === "ended";
 
   return (
-    <div ref={stageRef} className="flex h-full min-h-0 flex-col bg-background">
+    <div ref={stageRef} className="bz-room-exam-stage flex h-full min-h-0 flex-col bg-background">
       {isOwner ? (
         <TeacherExamView
           roomId={roomId} roomName={roomName} session={session}
