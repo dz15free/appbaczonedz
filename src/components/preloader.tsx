@@ -1,64 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-/* 🐛 **شاشة التحميل كانت تعرض الشعار القديم** — وهي أوّل ما يراه كل
-   زائر، على كل جهاز. كان الرابط مكتوباً بيده هنا نسخةً ثالثة من شعار
-   على خادم Blogger، فلم يمسّه أيّ تغيير في بقيّة الموقع.
-
-   ويُقرأ من الملفّ المحلّي لا من الإعدادات عن قصد: هذه الشاشة تظهر
-   **قبل** أن تتّصل قاعدة البيانات، فربطها بالإعدادات يعني شعاراً
-   فارغاً في أوّل ثانية — وهي الثانية الوحيدة التي تُرى فيها. */
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
 const LOGO_URL = DEFAULT_LOGO;
+const FADE_OUT_MS = 220;
+const SAFETY_TIMEOUT_MS = 900;
 
 export function Preloader() {
-  const [hide, setHide] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    const minTime = setTimeout(() => setHide(true), 1000);
-    const onLoad = () => setTimeout(() => setHide(true), 500);
-    if (document.readyState === "complete") onLoad();
-    else window.addEventListener("load", onLoad);
+    let safetyTimer: number | undefined;
+    let removeTimer: number | undefined;
+    let frame: number | undefined;
+
+    const finish = () => {
+      setLeaving(true);
+      removeTimer = window.setTimeout(() => setGone(true), FADE_OUT_MS);
+    };
+
+    const onLoad = () => {
+      if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
+      frame = window.requestAnimationFrame(finish);
+    };
+
+    if (document.readyState === "complete") {
+      frame = window.requestAnimationFrame(finish);
+    } else {
+      window.addEventListener("load", onLoad, { once: true });
+      safetyTimer = window.setTimeout(onLoad, SAFETY_TIMEOUT_MS);
+    }
+
     return () => {
-      clearTimeout(minTime);
       window.removeEventListener("load", onLoad);
+      if (frame !== undefined) window.cancelAnimationFrame(frame);
+      if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
+      if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
   }, []);
-
-  useEffect(() => {
-    if (!hide) return;
-    const t = setTimeout(() => setGone(true), 450);
-    return () => clearTimeout(t);
-  }, [hide]);
 
   if (gone) return null;
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${
-        hide ? "pointer-events-none opacity-0" : "opacity-100"
-      }`}
+      className={`bz-preloader ${leaving ? "is-leaving" : ""}`}
+      role="status"
+      aria-live="polite"
+      aria-label="جارٍ فتح BacZone"
     >
-      {/* الشعار مع توهّج ناعم */}
-      <div className="relative">
-        <div className="absolute inset-0 animate-pulse rounded-full bg-primary/20 blur-2xl" />
+      <div className="bz-preloader-mark">
+        <span className="bz-preloader-halo" aria-hidden="true" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={LOGO_URL}
-          alt="BacZoneDZ"
-          className="relative h-20 w-20 animate-bz-logo-in rounded-2xl object-contain"
-        />
+        <img src={LOGO_URL} alt="BacZone" className="bz-preloader-logo" />
       </div>
-
-      {/* مؤشّر تحميل بسيط: ثلاث نقاط */}
-      <div className="mt-8 flex gap-1.5">
-        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "0ms" }} />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "150ms" }} />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-primary" style={{ animationDelay: "300ms" }} />
-      </div>
+      <div className="bz-preloader-progress" aria-hidden="true"><span /></div>
+      <span className="bz-preloader-label">نجهّز مساحتك للدراسة</span>
     </div>
   );
 }

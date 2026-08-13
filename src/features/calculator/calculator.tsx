@@ -19,7 +19,11 @@ import {
   type CalcResult,
 } from "@/features/calculator/branches";
 
-type CountdownState = "idle" | "ready" | "counting";
+type CountdownState = "idle" | "ready" | "counting" | "calculating";
+
+const READY_HOLD_MS = 850;
+const COUNTDOWN_MS = 5000;
+const RESULT_REVEAL_MS = 420;
 
 export function Calculator({ branch }: { branch: Branch }) {
   const [grades, setGrades] = useState<Record<string, string>>({});
@@ -31,6 +35,7 @@ export function Calculator({ branch }: { branch: Branch }) {
   const [showErr, setShowErr] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const countdownDeadlineRef = useRef<number | null>(null);
 
   const required = branch.subjects.filter((s) => !s.optional);
   const filled = required.filter((s) => (grades[s.name] ?? "").trim() !== "").length;
@@ -43,25 +48,48 @@ export function Calculator({ branch }: { branch: Branch }) {
   }, [grades, branch]);
 
   useEffect(() => {
+    let timer: number | undefined;
+    let interval: number | undefined;
+
     if (countdown === "ready") {
-      const timer = window.setTimeout(() => setCountdown("counting"), 620);
-      return () => window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        countdownDeadlineRef.current = Date.now() + COUNTDOWN_MS;
+        setCount(5);
+        setCountdown("counting");
+      }, READY_HOLD_MS);
+      return () => { if (timer !== undefined) window.clearTimeout(timer); };
     }
-    if (countdown !== "counting") return;
-    const timer = window.setInterval(() => {
-      setCount((current) => {
-        if (current <= 1) {
-          window.clearInterval(timer);
-          setCountdown("idle");
-          setResult(pendingResult);
-          setPendingResult(null);
-          window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
-          return 0;
+
+    if (countdown === "counting") {
+      const deadline = countdownDeadlineRef.current ?? (Date.now() + COUNTDOWN_MS);
+      countdownDeadlineRef.current = deadline;
+
+      const syncCount = () => {
+        const remaining = deadline - Date.now();
+        const next = Math.max(0, Math.ceil(remaining / 1000));
+        setCount((current) => (current === next ? current : next));
+        if (remaining <= 0) {
+          if (interval !== undefined) window.clearInterval(interval);
+          setCountdown("calculating");
         }
-        return current - 1;
-      });
-    }, 390);
-    return () => window.clearInterval(timer);
+      };
+
+      syncCount();
+      interval = window.setInterval(syncCount, 60);
+      return () => { if (interval !== undefined) window.clearInterval(interval); };
+    }
+
+    if (countdown === "calculating") {
+      timer = window.setTimeout(() => {
+        setCountdown("idle");
+        setResult(pendingResult);
+        setPendingResult(null);
+        window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+      }, RESULT_REVEAL_MS);
+      return () => { if (timer !== undefined) window.clearTimeout(timer); };
+    }
+
+    return undefined;
   }, [countdown, pendingResult]);
 
   function set(name: string, value: string) {
@@ -69,6 +97,7 @@ export function Calculator({ branch }: { branch: Branch }) {
     setGrades((current) => ({ ...current, [name]: clean }));
     setResult(null);
     setPendingResult(null);
+    countdownDeadlineRef.current = null;
     setCountdown("idle");
   }
 
@@ -82,6 +111,7 @@ export function Calculator({ branch }: { branch: Branch }) {
     }
     setResult(null);
     setPendingResult(nextResult);
+    countdownDeadlineRef.current = null;
     setCount(5);
     setCountdown("ready");
   }
@@ -91,12 +121,18 @@ export function Calculator({ branch }: { branch: Branch }) {
     setTouched({});
     setResult(null);
     setPendingResult(null);
+    countdownDeadlineRef.current = null;
     setCountdown("idle");
     setCount(5);
     setShowErr(false);
   }
 
   const isBusy = countdown !== "idle";
+  const countdownCopy = countdown === "ready"
+    ? "هل أنت مستعد؟"
+    : countdown === "calculating"
+      ? "نراجع الحساب ونجهّز نتيجتك…"
+      : "نرتّب العلامات ونحسبها…";
 
   return (
     <section className="bz-calc-pro-shell" aria-label={`حاسبة معدل ${branch.short}`}>
@@ -159,8 +195,8 @@ export function Calculator({ branch }: { branch: Branch }) {
       </div>
 
       <div className="bz-calc-pro-actions">
-        <button type="button" onClick={run} disabled={isBusy} className="bz-calc-pro-primary" style={{ background: branch.color }}>
-          <FontAwesomeIcon icon={faCalculator} /> {isBusy ? "نرتّب نتيجتك…" : "احسب معدّلي"}
+        <button type="button" onClick={run} disabled={isBusy} aria-busy={isBusy} className="bz-calc-pro-primary" style={{ background: branch.color }}>
+          <FontAwesomeIcon icon={faCalculator} /> {isBusy ? "نجهّز نتيجتك…" : "احسب معدّلي"}
         </button>
         <button type="button" onClick={reset} className="bz-calc-pro-secondary"><FontAwesomeIcon icon={faRotateLeft} /> ابدأ من جديد</button>
       </div>
@@ -170,17 +206,17 @@ export function Calculator({ branch }: { branch: Branch }) {
       )}
 
       {isBusy && (
-        <div className="bz-calc-countdown" role="status" aria-live="polite">
+        <div className={`bz-calc-countdown is-${countdown}`} role="status" aria-live="polite">
           <div className="bz-calc-countdown-orbit" style={{ borderColor: `${branch.color}55` }}>
-            {countdown === "ready" ? <FontAwesomeIcon icon={faBookOpen} /> : count}
+            {countdown === "ready" ? <FontAwesomeIcon icon={faBookOpen} /> : countdown === "calculating" ? <FontAwesomeIcon icon={faCalculator} className="bz-calc-countdown-spin" /> : count}
           </div>
-          <p>{countdown === "ready" ? "هل أنت مستعد؟" : "نرتّب العلامات ونحسبها…"}</p>
-          <span>لحظة قصيرة، ثم تظهر النتيجة</span>
+          <p>{countdownCopy}</p>
+          <span>{countdown === "ready" ? "خذ نفسًا قصيرًا، نتيجتك على الطريق" : countdown === "calculating" ? "نحوّل علاماتك إلى صورة واضحة" : "ثانية كاملة لكل رقم"}</span>
         </div>
       )}
 
       {result && (
-        <div ref={resultRef} className={`bz-calc-pro-result ${result.passed ? "is-passed" : "is-below"}`} style={{ borderColor: `${branch.color}55` }}>
+        <div ref={resultRef} className={`bz-calc-pro-result is-revealed ${result.passed ? "is-passed" : "is-below"}`} style={{ borderColor: `${branch.color}55` }}>
           <div className="bz-calc-pro-result-head">
             <span className="bz-calc-pro-result-check" style={{ background: `${branch.color}18`, color: branch.color }}><FontAwesomeIcon icon={result.passed ? faCircleCheck : faTriangleExclamation} /></span>
             <span><small>نتيجتك في</small><b>{branch.short}</b></span>

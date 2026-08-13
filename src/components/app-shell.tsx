@@ -90,6 +90,21 @@ const TEACH_DROPDOWN = [
   { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
 ];
 
+/* أدوات البكالوريا في قسم واحد — تُستخدم في هيدر المنصة للطالب والأستاذ،
+   وتستعمل المسارات الداخلية الفعلية بدل روابط خارجية متفرقة. */
+const BAC_TOOLS_DROPDOWN = [
+  { href: "/calculate", label: "حساب معدل البكالوريا", icon: faCalculator, external: false, desc: "اعرف معدلك حسب شعبتك" },
+  { href: "/tools/weighted-average", label: "حساب المعدل الموزون", icon: faScaleBalanced, external: false, desc: "قارن فرصك في الميادين" },
+  { href: "/tools/exam-simulator", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: false, desc: "تدرّب في توقيت الامتحان" },
+  { href: "/tools/study-planner", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: false, desc: "حوّل أسبوعك إلى خطة" },
+  { href: "/tools/planner", label: "مخطط البكالوريا", icon: faCalendarDays, external: false, desc: "خطط قابلة للطباعة" },
+  { href: "/tools/youtube-channels", label: "قنوات يوتيوب للمراجعة", icon: faBookOpen, external: false, desc: "مصادر مرتبة حسب المادة" },
+  { href: "/tools/pomodoro", label: "مؤقت التركيز", icon: faCalendarCheck, external: false, desc: "جلسات قصيرة بتركيز" },
+  { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false, desc: "قائمة يومية بسيطة" },
+  { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faClone, external: false, desc: "راجع بالاسترجاع النشط" },
+  { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false, desc: "تابع ما أنجزته" },
+];
+
 // قائمة "المزيد" المنسدلة (حاسوب) — مصادر خارجية (الروابط الثابتة؛ تُدمج مع روابط قابلة للتعديل من الأدمن داخل المكوّن)
 /* أيقونات القائمة: الأدمن يختار اسماً، ونحوّله إلى أيقونة FontAwesome
    المستعملة في الشريط. اسم غير معروف يرجع إلى أيقونة رابط عامّة بدل
@@ -103,12 +118,9 @@ const NAV_FA: Record<string, typeof faLink> = {
 };
 
 const MORE_DROPDOWN_BASE = [
-  /* التخصّصات أوّلاً: قرار يخصّ مستقبل الطالب لا أداة مراجعة، ورابط
-     داخلي وسط روابط خارجية. */
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
-  { href: "/calculate", label: "حساب معدل البكالوريا", icon: faCalculator, external: false },
-  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
-  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
+  { href: "/blog", label: "مقالات BacZone", icon: faFileLines, external: false },
+  { href: "/guides", label: "أدلة المراجعة", icon: faBookOpen, external: false },
 ];
 
 // شريط الهاتف السفلي — مع زر إضافة مركزي بارز
@@ -148,8 +160,8 @@ const MENU_ITEMS_TEACHER = [
 ];
 // روابط خارجية ثابتة تُضاف بعد الروابط القابلة للتعديل من الأدمن
 const MENU_ITEMS_EXTERNAL = [
-  { href: "https://www.baczonedz.com/p/blog-page_81.html", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: true },
-  { href: "https://www.baczonedz.com/p/blog-page_5.html", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: true },
+  { href: "/tools/exam-simulator", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: false },
+  { href: "/tools/study-planner", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: false },
 ];
 
 interface ShellLink {
@@ -215,7 +227,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
      على الهاتف. **مصدر واحد** الآن، يقرؤه السطحان — فيستحيل اختلافهما.
      والأدمن يتحكّم به من لوحته. */
   const navLinks = useNavLinks();
-  const dynamicLinks = navLinks.map((l) => ({
+  const bacToolHrefs = new Set(BAC_TOOLS_DROPDOWN.map((item) => item.href));
+  const dynamicLinks = navLinks.filter((l) => !bacToolHrefs.has(l.href)).map((l) => ({
     href: l.href,
     label: l.label,
     icon: NAV_FA[l.icon ?? ""] ?? faLink,
@@ -232,11 +245,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const menuItems = dedupe([
     ...courseLinks,
     ...(isTeacher ? MENU_ITEMS_TEACHER : MENU_ITEMS_BASE),
+    ...BAC_TOOLS_DROPDOWN,
     ...dynamicLinks,
     ...MENU_ITEMS_EXTERNAL,
   ]);
-  const toolsMenu = dedupe([...courseLinks.slice(1), ...(isTeacher ? TEACH_DROPDOWN : TOOLS_DROPDOWN)]);
-  const toolsLabel = isTeacher ? "أدوات التدريس" : "أدوات الدراسة";
+  const toolsMenu = dedupe(isTeacher ? [...TEACH_DROPDOWN, ...BAC_TOOLS_DROPDOWN] : [...courseLinks.slice(1), ...BAC_TOOLS_DROPDOWN, ...TOOLS_DROPDOWN]);
+  const toolsLabel = isTeacher ? "أدوات التدريس" : "أدوات البكالوريا";
   const toolsIcon = isTeacher ? faChalkboardUser : faLayerGroup;
   const isGuest = !user;
 

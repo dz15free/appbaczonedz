@@ -17,7 +17,7 @@ import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
-import { SocialLinks, AdvertiseCard, NotificationToggle } from "@/components/ui/home-feature-sections";
+import { SocialLinks, AdvertiseCard, YoutubeSourceCard, NotificationToggle } from "@/components/ui/home-feature-sections";
 import { QuickAccess } from "@/components/ui/quick-access";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { HomeCourses } from "@/components/ui/home-courses";
@@ -264,7 +264,7 @@ export default function HomePage() {
         <aside className="space-y-6">
           <MiniLeaderboard />
           <SocialLinks />
-          <AdvertiseCard />
+          {settings.advertiseEnabled !== false && <AdvertiseCard />}
           {/* أدوات الباكلوريا — للطالب: مراجعته لا تدريس الأستاذ */}
           {!isTeacher && (
           <div>
@@ -314,7 +314,9 @@ export default function HomePage() {
                 </span>
               </Link>
 
-<Link href="/specialties" className="bz-res-card is-blue">
+              <YoutubeSourceCard />
+
+              <Link href="/specialties" className="bz-res-card is-blue">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5" /></span>
@@ -410,6 +412,8 @@ export default function HomePage() {
               </span>
             </Link>
 
+            <YoutubeSourceCard />
+
             <Link href="/specialties" className="bz-res-card is-blue">
               <span className="bz-res-bg" aria-hidden />
               <span className="bz-res-in">
@@ -435,8 +439,8 @@ export default function HomePage() {
         {/* تابعنا */}
         <div id="bz-social" className="bz-anchor"><SocialLinks /></div>
 
-        {/* أعلن معنا */}
-        <div id="bz-ads" className="bz-anchor"><AdvertiseCard /></div>
+        {/* أعلن معنا — لا تُرسم المرساة ولا المساحة عند التعطيل */}
+        {settings.advertiseEnabled !== false && <div id="bz-ads" className="bz-anchor"><AdvertiseCard /></div>}
       </section>
     </AppShell>
   );

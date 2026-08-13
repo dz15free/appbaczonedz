@@ -280,6 +280,11 @@ export default function AdminPage() {
   const [weightedCalcUrl, setWeightedCalcUrl] = useState("");
   const [adsEmail, setAdsEmail] = useState("");
   const [adsWhatsapp, setAdsWhatsapp] = useState("");
+  const [advertiseEnabled, setAdvertiseEnabled] = useState(true);
+  const [sidebarArticlesEnabled, setSidebarArticlesEnabled] = useState(true);
+  const [sidebarArticlesMode, setSidebarArticlesMode] = useState<"latest" | "label">("latest");
+  const [sidebarArticlesLabel, setSidebarArticlesLabel] = useState("");
+  const [sidebarArticlesLimit, setSidebarArticlesLimit] = useState("4");
   const [adsDraft, setAdsDraft] = useState<Record<string, AdSlotConfig>>({});
   const [commissionPct, setCommissionPct] = useState("10");
   const [allowReg, setAllowReg] = useState(true);
@@ -324,6 +329,11 @@ export default function AdminPage() {
     setWeightedCalcUrl(settings.weightedCalcUrl ?? "");
     setAdsEmail(settings.adsEmail ?? "");
     setAdsWhatsapp(settings.adsWhatsapp ?? "");
+    setAdvertiseEnabled(settings.advertiseEnabled !== false);
+    setSidebarArticlesEnabled(settings.sidebarArticles?.enabled !== false);
+    setSidebarArticlesMode(settings.sidebarArticles?.mode === "label" ? "label" : "latest");
+    setSidebarArticlesLabel(settings.sidebarArticles?.label ?? "");
+    setSidebarArticlesLimit(String(settings.sidebarArticles?.limit ?? 4));
     setAdsDraft(settings.ads ?? {});
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
@@ -834,6 +844,28 @@ export default function AdminPage() {
               <input value={adsWhatsapp} onChange={(e) => setAdsWhatsapp(e.target.value)} placeholder="+213..."
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" dir="ltr" />
               <SaveBtn onClick={() => save("ads", () => saveSiteSettings({ adsEmail, adsWhatsapp }))} loading={!!saving.ads} />
+            </Card>
+            <Card icon={faBullhorn} title="ظهور «أعلن معنا»" hint="عند التعطيل تختفي البطاقة وزر الهاتف معها بلا مساحة فارغة">
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+                <span><b className="block text-sm">إظهار البطاقة للزوار</b><span className="mt-1 block text-xs text-text-muted">يمكنك إيقافها مؤقتاً دون حذف بيانات التواصل.</span></span>
+                <input type="checkbox" checked={advertiseEnabled} onChange={(e) => setAdvertiseEnabled(e.target.checked)} className="h-5 w-5 accent-primary" />
+              </label>
+              <SaveBtn onClick={() => save("adsVisibility", () => saveSetting("advertiseEnabled", advertiseEnabled))} loading={!!saving.adsVisibility} />
+            </Card>
+            <Card icon={faBookOpen} title="مقالات الشريط الجانبي" hint="مقالات منشورة فقط تظهر بعد المصادر الإضافية في الأدلة والأدوات والمدونة">
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+                <span><b className="block text-sm">إظهار المقالات</b><span className="mt-1 block text-xs text-text-muted">المسودات لا تظهر للزوار مهما كان الاختيار.</span></span>
+                <input type="checkbox" checked={sidebarArticlesEnabled} onChange={(e) => setSidebarArticlesEnabled(e.target.checked)} className="h-5 w-5 accent-primary" />
+              </label>
+              <label className="text-xs font-semibold text-text-muted">طريقة الاختيار</label>
+              <select value={sidebarArticlesMode} onChange={(e) => setSidebarArticlesMode(e.target.value as "latest" | "label")} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary">
+                <option value="latest">أحدث المقالات المنشورة</option>
+                <option value="label">مقالات حسب الوسم</option>
+              </select>
+              {sidebarArticlesMode === "label" && <><label className="text-xs font-semibold text-text-muted">الوسم كما يظهر في المقال</label><input value={sidebarArticlesLabel} onChange={(e) => setSidebarArticlesLabel(e.target.value)} placeholder="مثال: مراجعة" className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" /></>}
+              <label className="text-xs font-semibold text-text-muted">عدد المقالات</label>
+              <input type="number" min="2" max="8" value={sidebarArticlesLimit} onChange={(e) => setSidebarArticlesLimit(e.target.value)} className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
+              <SaveBtn onClick={() => save("sidebarArticles", () => saveSiteSettings({ sidebarArticles: { enabled: sidebarArticlesEnabled, mode: sidebarArticlesMode, label: sidebarArticlesLabel, limit: Math.min(8, Math.max(2, Number(sidebarArticlesLimit) || 4)) } }))} loading={!!saving.sidebarArticles} />
             </Card>
             <Card icon={faChartBar} title="عمولة الموقع" hint="نسبة الموقع من مبيعات الملخّصات والغرف المدفوعة">
               <div className="flex items-center gap-2">

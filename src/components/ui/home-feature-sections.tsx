@@ -1,7 +1,7 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn, faBookOpen, faBell, faBellSlash, faGraduationCap, faCheck, faClipboardCheck } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faFileLines, faArrowLeft, faChartLine, faScaleBalanced, faCalendarDays, faBullhorn, faBookOpen, faBell, faBellSlash, faGraduationCap, faCheck, faClipboardCheck, faPlay } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
@@ -151,6 +151,7 @@ export function SocialLinks() {
 /* بطاقة "أعلن معنا" */
 export function AdvertiseCard() {
   const { settings } = useSiteSettings();
+  if (settings.advertiseEnabled === false) return null;
   const email = settings.adsEmail || "saidaouina22@gmail.com";
   const wa = (settings.adsWhatsapp || "+213657498876").replace(/[^\d]/g, "");
 
@@ -164,7 +165,7 @@ export function AdvertiseCard() {
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-base font-extrabold">أعلن معنا 📢</h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">وصّل علامتك التجارية لآلاف طلاب البكالوريا</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">وصّل رسالتك إلى طلاب البكالوريا المهتمين بالتعلّم</p>
           </div>
         </div>
         <div className="mt-3 flex gap-2">
@@ -179,6 +180,23 @@ export function AdvertiseCard() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* بطاقة مصدر يوتيوب — جزء من «مصادر إضافية» وليست إعلاناً */
+export function YoutubeSourceCard() {
+  return (
+    <Link href="/tools/youtube-channels" className="bz-res-card bz-youtube-source-card">
+      <span className="bz-res-bg" aria-hidden />
+      <span className="bz-res-in">
+        <span className="bz-res-icon"><FontAwesomeIcon icon={faPlay} className="h-5 w-5" /></span>
+        <span className="bz-res-txt">
+          <span className="bz-res-t">أفضل قنوات يوتيوب للدراسة للبكالوريا</span>
+          <span className="bz-res-d">قنوات وأساتذة مصنّفون حسب المادة، مع طريقة مشاهدة توفر وقتك.</span>
+        </span>
+        <span className="bz-res-cta">تصفّح<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+      </span>
+    </Link>
   );
 }
 

@@ -97,8 +97,8 @@ function DestCard({ d }: { d: Dest }) {
 }
 
 /* ── أزرار القفز ── */
-function JumpRow({ isTeacher }: { isTeacher: boolean }) {
-  const items = JUMPS.filter((j) => !j.studentOnly || !isTeacher);
+function JumpRow({ isTeacher, showAdvertise }: { isTeacher: boolean; showAdvertise: boolean }) {
+  const items = JUMPS.filter((j) => (!j.studentOnly || !isTeacher) && (j.id !== "bz-ads" || showAdvertise));
   return (
     <div className="bz-jumps lg:hidden" aria-label="انتقال سريع لأقسام الصفحة">
       {items.map((j) => (
@@ -176,7 +176,7 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
       <div className="bz-qa-grid">
         {dests.map((d) => <DestCard key={d.key} d={d} />)}
       </div>
-      <JumpRow isTeacher={isTeacher} />
+      <JumpRow isTeacher={isTeacher} showAdvertise={settings.advertiseEnabled !== false} />
     </div>
   );
 }

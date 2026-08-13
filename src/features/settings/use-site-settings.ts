@@ -88,6 +88,15 @@ export interface SidebarSettings {
   widgets?: SidebarWidget[];
 }
 
+export type SidebarArticleMode = "latest" | "label";
+
+export interface SidebarArticlesSettings {
+  enabled?: boolean;
+  mode?: SidebarArticleMode;
+  label?: string;
+  limit?: number;
+}
+
 export interface SiteSettings {
   logoUrl?: string;           // رابط شعار مخصص (يُستبدل SVG الافتراضي)
   faviconUrl?: string;        // رابط favicon مخصص (أيقونة تبويب المتصفح)
@@ -106,6 +115,10 @@ export interface SiteSettings {
   blogSidebar?: BlogSidebarSettings;
   /** Widgets عامة قابلة للإدارة من لوحة الأدمن */
   sidebar?: SidebarSettings;
+  /** مقالات منشورة مختارة تظهر بعد المصادر الإضافية في الشريط الجانبي */
+  sidebarArticles?: SidebarArticlesSettings;
+  /** إظهار بطاقة التواصل للإعلانات في الصفحة الرئيسية */
+  advertiseEnabled?: boolean;
   maintenanceMode?: boolean;  // وضع الصيانة
   maintenanceMsg?: string;    // رسالة الصيانة
   bacExamDate?: string;       // تاريخ البكالوريا
@@ -254,6 +267,15 @@ export function useSiteSettings() {
       if ((val as { footerLinksCleared?: boolean } | null)?.footerLinksCleared) {
         merged.footerLinks = [];
       }
+      const rawArticles = (val as { sidebarArticles?: SiteSettings["sidebarArticles"] } | null)?.sidebarArticles;
+      const rawLimit = Number(rawArticles?.limit ?? DEFAULTS.sidebarArticles?.limit ?? 4);
+      merged.advertiseEnabled = (val as { advertiseEnabled?: boolean } | null)?.advertiseEnabled !== false;
+      merged.sidebarArticles = {
+        enabled: rawArticles?.enabled !== false,
+        mode: rawArticles?.mode === "label" ? "label" : "latest",
+        label: typeof rawArticles?.label === "string" ? rawArticles.label : "",
+        limit: Number.isFinite(rawLimit) ? Math.min(8, Math.max(2, Math.round(rawLimit))) : 4,
+      };
       setSettings(merged);
       setLoaded(true);
     });

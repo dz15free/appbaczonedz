@@ -18,6 +18,8 @@ export const DEFAULTS: SiteSettings = {
   maintenanceMode: false,
   allowRegistration: true,
   sidebar: { enabled: false, widgets: [] },
+  sidebarArticles: { enabled: true, mode: "latest", label: "", limit: 4 },
+  advertiseEnabled: true,
 
   landingBadge: "صُنعت في الجزائر خصيصاً لطلاب البكالوريا",
   heroTitleLine1: "ادرس أذكى، راجع أسرع،",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,6 +16,14 @@ import {
   faRightToBracket,
   faUserPlus,
   faCheckCircle,
+  faChevronDown,
+  faCalendarCheck,
+  faCalendarDays,
+  faFileLines,
+  faListCheck,
+  faPlay,
+  faScaleBalanced,
+  faVideo,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -25,10 +33,20 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const PUBLIC_NAV = [
   { href: "/", label: "الرئيسية", icon: faHouse },
-  { href: "/tools", label: "الأدوات", icon: faCalculator },
+  { href: "/tools", label: "أدوات البكالوريا", icon: faCalculator },
   { href: "/guides", label: "الأدلّة", icon: faBookOpen },
   { href: "/specialties", label: "التخصّصات", icon: faGraduationCap },
   { href: "/blog", label: "المدونة", icon: faMessage },
+] as const;
+
+const BAC_TOOLS = [
+  { href: "/calculate", label: "حساب معدل البكالوريا", desc: "اعرف معدلك حسب شعبتك", icon: faCalculator },
+  { href: "/tools/weighted-average", label: "حساب المعدل الموزون", desc: "قارن فرصك في الميادين", icon: faScaleBalanced },
+  { href: "/tools/exam-simulator", label: "محاكاة البكالوريا", desc: "تدرّب في توقيت الامتحان", icon: faVideo },
+  { href: "/tools/study-planner", label: "إنشاء برنامج مراجعة", desc: "حوّل أسبوعك إلى خطة", icon: faCalendarCheck },
+  { href: "/tools/planner", label: "مخطط البكالوريا", desc: "خطط قابلة للطباعة", icon: faCalendarDays },
+  { href: "/tools/youtube-channels", label: "قنوات يوتيوب للمراجعة", desc: "مصادر مرتبة حسب المادة", icon: faPlay },
+  { href: "/tools/pomodoro", label: "مؤقت التركيز", desc: "جلسات قصيرة بتركيز", icon: faListCheck },
 ] as const;
 
 function isActivePath(pathname: string | null, href: string) {
@@ -93,12 +111,29 @@ function PublicAuthActions({ mobile = false }: { mobile?: boolean }) {
 export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
   const menuId = "bz-public-menu";
 
   useEffect(() => {
     setMenuOpen(false);
+    setToolsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) setToolsOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setToolsOpen(false); };
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [toolsOpen]);
 
   useEffect(() => {
     if (variant !== "landing") return;
@@ -114,13 +149,20 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
         <Brand href="/" size="sm" beta={false} className="bz-public-brand" />
 
         <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 md:flex">
-          {PUBLIC_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
-              className={`bz-pubnav ${isActivePath(pathname, item.href) ? "is-active" : ""}`}
-            >
+          {PUBLIC_NAV.map((item) => item.href === "/tools" ? (
+            <div key={item.href} ref={toolsMenuRef} className="bz-public-tools-menu">
+              <button type="button" className={`bz-pubnav bz-public-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-haspopup="menu" aria-controls="bz-public-tools-menu" onClick={() => setToolsOpen((open) => !open)}>
+                <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
+                {item.label}
+                <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
+              </button>
+              {toolsOpen && <div id="bz-public-tools-menu" role="menu" className="bz-public-tools-dropdown">
+                <Link href="/tools" role="menuitem" className="bz-public-tools-all" onClick={() => setToolsOpen(false)}><span className="bz-public-tools-all-icon"><FontAwesomeIcon icon={faCalculator} /></span><span><b>كل أدوات البكالوريا</b><small>اختر الأداة التي تناسب خطوتك الآن</small></span><FontAwesomeIcon icon={faArrowLeft} /></Link>
+                {BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} role="menuitem" className="bz-public-tool-item" onClick={() => setToolsOpen(false)}><span className="bz-public-tool-icon"><FontAwesomeIcon icon={tool.icon} /></span><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}
+              </div>}
+            </div>
+          ) : (
+            <Link key={item.href} href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined} className={`bz-pubnav ${isActivePath(pathname, item.href) ? "is-active" : ""}`}>
               <FontAwesomeIcon icon={item.icon} className="h-[14px] w-[14px]" />
               {item.label}
             </Link>
@@ -147,14 +189,13 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
 
       <div id={menuId} className={`bz-pubmenu md:hidden ${menuOpen ? "is-open" : ""}`} hidden={!menuOpen}>
         <nav aria-label="قائمة الموقع العامة" className="grid gap-1 p-3">
-          {PUBLIC_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
-              onClick={() => setMenuOpen(false)}
-              className={`bz-pubmenu-link ${isActivePath(pathname, item.href) ? "is-active" : ""}`}
-            >
+          {PUBLIC_NAV.map((item) => item.href === "/tools" ? (
+            <div key={item.href} className="bz-public-mobile-tools">
+              <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${toolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={toolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${toolsOpen ? "rotate-180" : ""}`} /></button>
+              {toolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => setMenuOpen(false)}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
+            </div>
+          ) : (
+            <Link key={item.href} href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined} onClick={() => setMenuOpen(false)} className={`bz-pubmenu-link ${isActivePath(pathname, item.href) ? "is-active" : ""}`}>
               <FontAwesomeIcon icon={item.icon} className="h-4 w-4" />
               <span>{item.label}</span>
             </Link>
