@@ -4,6 +4,7 @@ import { BRANCHES } from "@/features/calculator/branches";
 import { GUIDES } from "@/features/guides/guides-data";
 import { SITE_URL } from "@/lib/site-url";
 import { LEGAL_PATHS } from "@/features/settings/legal-links";
+import { getPublishedEntries } from "@/features/blog/blog-server";
 
 /* ════════════════════════════════════════════════════════════
    خريطة الموقع
@@ -78,6 +79,21 @@ async function publishedCourses(): Promise<{ id: string; at: number }[]> {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  const posts = await getPublishedEntries();
+  const blogPages: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE}/blog`,
+      lastModified: posts[0]?.updatedAt ? new Date(posts[0].updatedAt) : now,
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    ...posts.filter((post) => !post.noindex).map((post) => ({
+      url: `${BASE}/blog/${encodeURIComponent(post.slug)}`,
+      lastModified: new Date(post.updatedAt || post.publishedAt || now),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+  ];
 
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
@@ -91,11 +107,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.85,
     })),
+    ...blogPages,
     { url: `${BASE}/tools`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/tools/study-planner`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/tools/youtube-channels`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/exam-simulator`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/tools/weighted-average`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE}/tools/planner`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/tools/pomodoro`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
     ...BRANCHES.map((b) => ({

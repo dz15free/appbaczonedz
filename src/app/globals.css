@@ -4080,3 +4080,49 @@ body.bz-fullscreen-active .bz-voicebar {
 .bz-fullscreen .bz-exam-paper,
 .bz-fullscreen .bz-exam-paper iframe { min-height: 0; height: 100%; }
 .bz-fullscreen .bz-exam-running-grid { min-height: calc(100dvh - 76px); }
+
+
+/* STEP 7 follow-up — staged setup, isolated room, and explicit states */
+.bz-exam-step-panel { animation: bz-exam-step-in .24s cubic-bezier(.23,1,.32,1); }
+.bz-exam-step-context { display: flex; align-items: center; gap: 8px; margin: -2px 0 18px; padding: 10px 12px; border: 1px solid rgb(35 80 217 / .14); border-radius: 12px; background: rgb(239 246 255 / .72); color: var(--bz-ink-2); font-size: 11px; }
+.bz-exam-step-context span { color: var(--bz-ink-3); }
+.bz-exam-step-context b { color: var(--bz-blue, #2350d9); }
+.bz-exam-link-button { margin-inline-start: auto; border: 0; background: transparent; color: var(--bz-blue, #2350d9); font-size: 11px; font-weight: 900; }
+.bz-exam-specialty { min-height: 88px; }
+.bz-exam-specialty small { white-space: nowrap; }
+.bz-exam-custom-selected { display: grid; gap: 7px; padding: 16px; border: 1px solid rgb(16 185 129 / .3); border-radius: 14px; background: var(--bz-green-050, #ecfdf5); color: var(--bz-ink-2); }
+.bz-exam-custom-selected b { color: #047857; font-size: 13px; }
+.bz-exam-custom-selected span { color: var(--bz-ink-3); font-size: 11px; }
+.bz-exam-custom-selected .bz-exam-secondary { justify-self: start; min-height: 34px; }
+.bz-exam-solution-unavailable { max-width: 620px; margin: 18px auto 0; border: 1px solid #fde68a; border-radius: 13px; padding: 13px 15px; background: #fffbeb; color: #92400e; font-size: 12px; font-weight: 900; text-align: start; }
+@keyframes bz-exam-step-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+/* The active exam is a distraction-free surface, not a regular public tool page. */
+html.bz-exam-mode,
+html.bz-exam-mode body { background: #0d1422 !important; }
+html.bz-exam-mode .bz-pubheader,
+html.bz-exam-mode .bz-guide-hero,
+html.bz-exam-mode .bz-public-sidebar,
+html.bz-exam-mode .bz-exam-tool ~ article,
+html.bz-exam-mode .bz-exam-tool ~ aside,
+html.bz-exam-mode footer { display: none !important; }
+html.bz-exam-mode .bz-public-content-layout { display: block !important; width: 100% !important; max-width: none !important; margin: 0 !important; }
+html.bz-exam-mode .bz-public-content-main { width: 100% !important; max-width: none !important; padding: 0 !important; }
+html.bz-exam-mode .bz-public-content-main > div { width: 100% !important; max-width: none !important; padding: 0 !important; }
+html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+
+/* Chrome print: keep the designed colors and contrast of the sheet. */
+@media print {
+  html.bz-printing-study-plan #bz-study-print-sheet,
+  html.bz-printing-study-plan #bz-study-print-sheet * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html.bz-printing-study-plan #bz-study-print-sheet .bz-study-export-table thead th { background: #2350d9 !important; color: #fff !important; }
+  html.bz-printing-study-plan #bz-study-print-sheet .bz-study-export-table tbody th { background: #eff6ff !important; color: #1d4ed8 !important; }
+  html.bz-printing-study-plan #bz-study-print-sheet .bz-study-export-table td { background: #fff; color: #64748b; }
+  html.bz-printing-study-plan #bz-study-print-sheet .bz-study-print-foot { color: #64748b !important; }
+}
+
+.bz-exam-running-status.is-urgent-status { background: rgb(239 68 68 / .14); color: #fecaca; }
+.bz-exam-running.is-urgent .bz-exam-live-dot { background: #fb7185; box-shadow: 0 0 0 4px rgb(251 113 133 / .16); }

@@ -110,19 +110,7 @@ export default async function LandingPage() {
               </div>
             )}
           </div>
-          <div className="relative mx-auto hidden w-full max-w-md lg:block" aria-label="أمثلة من أدوات BacZone">
-            <div className="absolute -inset-10 rounded-[3rem] bg-blue-500/10 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-blue-950/40 backdrop-blur-xl">
-              <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
-                <div><span className="text-xs font-bold text-blue-200/80">مساحتك للمراجعة</span><p className="mt-1 text-sm font-extrabold text-white">كل خطوة واضحة قبل أن تبدأ</p></div>
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-blue-200"><FontAwesomeIcon icon={faBookOpen} className="h-4 w-4" /></span>
-              </div>
-              <div className="mt-5 space-y-2.5">
-                {publicTools.slice(0, 3).map((tool) => <Link key={tool.href} href={tool.href} className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3 transition hover:bg-white/[0.1]"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/20 text-blue-200"><FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4" /></span><span className="min-w-0 flex-1"><b className="block truncate text-sm text-white">{tool.name}</b><small className="mt-0.5 block truncate text-[11px] text-white/50">{tool.desc}</small></span><FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3 text-white/40 transition group-hover:-translate-x-1" /></Link>)}
-              </div>
-              <Link href="/tools" className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-blue-300/20 bg-blue-500/10 py-3 text-xs font-extrabold text-blue-100 transition hover:bg-blue-500/20">تصفّح أدوات البكالوريا <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></Link>
-            </div>
-          </div>
+
         </div>
         <div className="absolute inset-x-0 bottom-0 h-14 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-20" />
       </section>

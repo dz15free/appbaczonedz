@@ -23,6 +23,7 @@ import {
 } from "@/features/rooms/exam-sim/exam-guard";
 
 type Phase = "setup" | "lobby" | "running" | "done";
+type SetupStep = 1 | 2 | 3;
 type ChoiceMode = "list" | "random" | "custom";
 
 type GuardOptions = { fs: boolean; ac: boolean; sfx: boolean };
@@ -56,6 +57,7 @@ function getInitialSubject(key: string): SimSubject | undefined {
 
 export function SoloSimulator() {
   const [phase, setPhase] = useState<Phase>("setup");
+  const [setupStep, setSetupStep] = useState<SetupStep>(1);
   const [choiceMode, setChoiceMode] = useState<ChoiceMode>("list");
   const [specKey, setSpecKey] = useState(SPECIALTY_KEYS[0] ?? "");
   const [subjectIdx, setSubjectIdx] = useState(0);
@@ -119,6 +121,16 @@ export function SoloSimulator() {
     if (phase !== "running") setFullScreen(false);
   }, [phase]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("bz-exam-mode", phase === "running");
+    return () => document.documentElement.classList.remove("bz-exam-mode");
+  }, [phase]);
+
+  function moveSetupStep(next: SetupStep) {
+    setSetupStep(next);
+    window.setTimeout(() => document.getElementById("bz-exam-setup")?.scrollIntoView({ behavior: "smooth", block: "start" }), 40);
+  }
+
   function resetSelection(nextSpecKey: string) {
     setSpecKey(nextSpecKey);
     setSubjectIdx(0);
@@ -126,6 +138,7 @@ export function SoloSimulator() {
     setChoiceMode("list");
     setCustomExam(null);
     setCustomError("");
+    moveSetupStep(2);
   }
 
   function chooseSubject(index: number) {
@@ -134,6 +147,7 @@ export function SoloSimulator() {
     setChoiceMode("list");
     setCustomExam(null);
     setCustomError("");
+    moveSetupStep(3);
   }
 
   function openLobby() {
@@ -149,7 +163,7 @@ export function SoloSimulator() {
     setExamIdx(next);
     setCustomExam(null);
     setChoiceMode("random");
-    setPhase("lobby");
+    setCustomError("");
   }
 
   function useCustomLink() {
@@ -168,7 +182,7 @@ export function SoloSimulator() {
       };
       setCustomExam(nextExam);
       setChoiceMode("custom");
-      setPhase("lobby");
+      setCustomError("");
     } catch {
       setCustomError("أدخل رابطًا صحيحًا يبدأ بـ https:// أو http://.");
     }
@@ -199,6 +213,7 @@ export function SoloSimulator() {
 
   function reset() {
     setPhase("setup");
+    setSetupStep(1);
     setEndsAt(null);
     setLeft(0);
     setShowSolution(false);
@@ -211,70 +226,73 @@ export function SoloSimulator() {
     setFullScreen(isFullscreen());
   }
 
-  if (phase === "setup") {
+  function renderStagedSetup() {
     return (
-      <section className="bz-exam-tool" aria-labelledby="simulator-setup-title">
+      <section id="bz-exam-setup" className="bz-exam-tool" aria-labelledby="simulator-setup-title">
         <div className="bz-exam-setup-head">
           <div>
             <p className="bz-exam-kicker">قاعة هادئة، وقت حقيقي، تصحيح بعد النهاية</p>
             <h2 id="simulator-setup-title">حضّر محاكاتك قبل دخول القاعة</h2>
-            <p>اختر شعبتك ومادتك، ثمّ انتقِ موضوعًا من المكتبة أو أدخل رابط PDF خاصًا بك.</p>
+            <p>ثلاث خطوات قصيرة تفصلك عن تجربة امتحان حقيقية، دون إعادة تحميل الصفحة.</p>
           </div>
           <span className="bz-exam-free-badge">لا يحتاج إلى تسجيل</span>
         </div>
 
         <div className="bz-exam-progress" aria-label="خطوات الإعداد">
-          {["الشعبة", "المادة", "الموضوع", "الانطلاق"].map((label, index) => (
-            <span key={label} className={index <= 2 ? "is-current" : ""}><b>{index + 1}</b>{label}</span>
+          {["الشعبة", "المادة", "الموضوع", "الاستعداد"].map((label, index) => (
+            <span key={label} className={index < setupStep ? "is-current" : ""}><b>{index + 1}</b>{label}</span>
           ))}
         </div>
 
-        <div className="bz-exam-section">
-          <div className="bz-exam-section-title"><span>01</span><div><h3>اختر شعبتك</h3><p>تظهر لك المواد والمراجع المناسبة لها.</p></div></div>
+        {setupStep === 1 && <div className="bz-exam-section bz-exam-step-panel">
+          <div className="bz-exam-section-title"><span>01</span><div><h3>اختر شعبتك</h3><p>سنجهّز لك المواد والمواضيع المناسبة لمسارك.</p></div></div>
           <div className="bz-exam-specialties">
             {SPECIALTY_KEYS.map((key) => {
               const item = specialty(key);
               if (!item) return null;
-              const active = key === specKey;
               return (
-                <button key={key} type="button" className={`bz-exam-specialty ${active ? "is-selected" : ""}`} onClick={() => resetSelection(key)} style={active ? { borderColor: item.color, background: `${item.color}12` } : undefined}>
+                <button key={key} type="button" className="bz-exam-specialty" onClick={() => resetSelection(key)} style={{ borderColor: `${item.color}44` }}>
                   <span className="bz-exam-specialty-icon" style={{ background: `${item.color}18`, color: item.color }}>{item.label.slice(0, 1)}</span>
                   <span>{item.label}</span>
-                  <small>{item.subjects.length} مواد</small>
+                  <small>{item.subjects.length} مواد · اضغط للمتابعة</small>
                 </button>
               );
             })}
           </div>
-        </div>
+        </div>}
 
-        <div className="bz-exam-section">
-          <div className="bz-exam-section-title"><span>02</span><div><h3>اختر المادة</h3><p>المدة الظاهرة هي المدة المعتمدة للمادة.</p></div></div>
+        {setupStep === 2 && <div className="bz-exam-section bz-exam-step-panel">
+          <div className="bz-exam-step-context"><span>الشعبة المختارة</span><b>{spec?.label}</b><button type="button" className="bz-exam-link-button" onClick={() => moveSetupStep(1)}>تغيير الشعبة</button></div>
+          <div className="bz-exam-section-title"><span>02</span><div><h3>اختر المادة</h3><p>اختر المادة التي تريد قياس مستواك فيها بالمدة الرسمية.</p></div></div>
           <div className="bz-exam-subjects">
             {subjects.map((item, index) => (
-              <button key={`${item.name}-${index}`} type="button" className={`bz-exam-subject ${index === subjectIdx && !customExam ? "is-selected" : ""}`} onClick={() => chooseSubject(index)}>
+              <button key={`${item.name}-${index}`} type="button" className="bz-exam-subject" onClick={() => chooseSubject(index)}>
                 <span className="bz-exam-subject-mark">{index + 1}</span>
-                <span className="min-w-0"><b>{item.name}</b><small>{formatDuration(item.duration)}</small></span>
-                {index === subjectIdx && !customExam && <span className="bz-exam-check" aria-label="مختارة">✓</span>}
+                <span className="min-w-0"><b>{item.name}</b><small>{formatDuration(item.duration)} · اضغط للمتابعة</small></span>
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
-        <div className="bz-exam-section">
-          <div className="bz-exam-section-title"><span>03</span><div><h3>اختر موضوع الامتحان</h3><p>يمكنك الاختيار اليدوي، التحدّي العشوائي، أو استعمال رابط Google Drive/PDF.</p></div></div>
+        {setupStep === 3 && <div className="bz-exam-section bz-exam-step-panel">
+          <div className="bz-exam-step-context"><span>{spec?.label}</span><b>{subject?.name}</b><button type="button" className="bz-exam-link-button" onClick={() => moveSetupStep(2)}>تغيير المادة</button></div>
+          <div className="bz-exam-section-title"><span>03</span><div><h3>اختر موضوع الامتحان</h3><p>من مكتبة المواضيع، أو اختر موضوعًا عشوائيًا، أو أضف رابط Google Drive/PDF.</p></div></div>
           <div className="bz-exam-mode-tabs" role="tablist" aria-label="مصدر الموضوع">
             <button type="button" className={choiceMode === "list" ? "is-active" : ""} onClick={() => { setChoiceMode("list"); setCustomExam(null); }} role="tab" aria-selected={choiceMode === "list"}>من المكتبة</button>
-            <button type="button" className={choiceMode === "random" ? "is-active" : ""} onClick={chooseRandom} role="tab" aria-selected={choiceMode === "random"}>موضوع عشوائي</button>
-            <button type="button" className={choiceMode === "custom" && !customExam ? "is-active" : ""} onClick={() => { setChoiceMode("custom"); setCustomExam(null); setCustomError(""); }} role="tab" aria-selected={choiceMode === "custom" && !customExam}>رابط خاص</button>
+            <button type="button" className={choiceMode === "random" ? "is-active" : ""} onClick={chooseRandom} role="tab" aria-selected={choiceMode === "random"}>اختر موضوعًا عشوائيًا</button>
+            <button type="button" className={choiceMode === "custom" && !customExam ? "is-active" : ""} onClick={() => { setChoiceMode("custom"); setCustomExam(null); setCustomError(""); }} role="tab" aria-selected={choiceMode === "custom" && !customExam}>رابط Google Drive/PDF</button>
           </div>
-
-          {choiceMode === "custom" && !customExam ? (
-            <div className="bz-exam-custom-form">
-              <label>رابط الموضوع <input value={customUrl} onChange={(event) => setCustomUrl(event.target.value)} type="url" dir="ltr" placeholder="https://drive.google.com/..." /></label>
-              <label>رابط التصحيح <input value={customSolutionUrl} onChange={(event) => setCustomSolutionUrl(event.target.value)} type="url" dir="ltr" placeholder="اختياري" /></label>
-              {customError && <p className="bz-exam-error" role="alert">{customError}</p>}
-              <button type="button" className="bz-exam-primary" onClick={useCustomLink}>اعتماد الرابط والمتابعة</button>
-            </div>
+          {choiceMode === "custom" ? (
+            customExam ? (
+              <div className="bz-exam-custom-selected"><b>تم اعتماد رابط الموضوع</b><span>المدة: {formatDuration(examMinutes)} · {customExam.solutionUrl ? "الحل النموذجي مرفق" : "الحل النموذجي اختياري"}</span><button type="button" className="bz-exam-secondary" onClick={() => { setCustomExam(null); setCustomUrl(""); setCustomSolutionUrl(""); }}>تعديل الرابط</button></div>
+            ) : (
+              <div className="bz-exam-custom-form">
+                <label>رابط الموضوع <input value={customUrl} onChange={(event) => setCustomUrl(event.target.value)} type="url" dir="ltr" placeholder="https://drive.google.com/..." /></label>
+                <label>رابط الحل النموذجي <input value={customSolutionUrl} onChange={(event) => setCustomSolutionUrl(event.target.value)} type="url" dir="ltr" placeholder="اختياري" /></label>
+                {customError && <p className="bz-exam-error" role="alert">{customError}</p>}
+                <button type="button" className="bz-exam-primary" onClick={useCustomLink}>اعتماد الرابط والمتابعة</button>
+              </div>
+            )
           ) : (
             <div className="bz-exam-topic-list">
               {pool.length ? pool.map((item, index) => (
@@ -286,16 +304,17 @@ export function SoloSimulator() {
               )) : <p className="bz-exam-empty">لا يوجد موضوع متاح لهذه المادة حاليًا.</p>}
             </div>
           )}
-        </div>
-
-        <div className="bz-exam-selection-summary">
-          <span className="bz-exam-summary-icon">✓</span>
-          <div><b>{subject?.name ?? "المادة"}</b><p>{selectedExam?.label ?? "اختر موضوعًا"} · {formatDuration(examMinutes)}</p></div>
-          <button type="button" className="bz-exam-primary" onClick={openLobby} disabled={!selectedExam}>مراجعة التعليمات</button>
-        </div>
+          <div className="bz-exam-selection-summary">
+            <span className="bz-exam-summary-icon">✓</span>
+            <div><b>{selectedExam?.label ?? "اختر موضوعًا"}</b><p>{formatDuration(examMinutes)} · {selectedExam?.solutionUrl ? "الحل متوفر بعد النهاية" : "الحل اختياري"}</p></div>
+            <button type="button" className="bz-exam-primary" onClick={openLobby} disabled={!selectedExam}>مراجعة التعليمات</button>
+          </div>
+        </div>}
       </section>
     );
   }
+
+  if (phase === "setup") return renderStagedSetup();
 
   if (phase === "lobby") {
     return (
@@ -345,8 +364,9 @@ export function SoloSimulator() {
         {showSolution && selectedExam?.solutionUrl && (
           <div className="bz-exam-paper bz-exam-solution-paper"><iframe src={selectedExam.solutionUrl} title="ورقة الحل النموذجي" loading="lazy" /></div>
         )}
+        {showSolution && !selectedExam?.solutionUrl && <div className="bz-exam-solution-unavailable" role="status">الحل النموذجي غير متوفر لهذا الموضوع حاليًا.</div>}
         <div className="bz-exam-result-actions">
-          {selectedExam?.solutionUrl && <button type="button" className="bz-exam-primary" onClick={() => setShowSolution((value) => !value)}>{showSolution ? "إخفاء الحل" : "عرض الحل النموذجي"}</button>}
+          <button type="button" className="bz-exam-primary" onClick={() => setShowSolution((value) => !value)}>{showSolution ? "إخفاء الحل" : "إظهار الحل"}</button>
           <button type="button" className="bz-exam-secondary" onClick={reset}>اختيار موضوع آخر</button>
           <Link href="/tools" className="bz-exam-link">كل أدوات المراجعة</Link>
         </div>
@@ -357,8 +377,8 @@ export function SoloSimulator() {
   return (
     <section ref={stageRef} className={`bz-exam-running ${urgent ? "is-urgent" : ""}`} aria-labelledby="running-exam-title">
       <header className="bz-exam-running-header">
-        <div className="min-w-0"><p>غرفة الامتحان</p><h2 id="running-exam-title">{subject?.name} · {selectedExam?.label}</h2></div>
-        <div className="bz-exam-running-status"><span className="bz-exam-live-dot" /> الامتحان جارٍ</div>
+        <div className="min-w-0"><p>غرفة الامتحان · {spec?.label}</p><h2 id="running-exam-title">{subject?.name} · {selectedExam?.label}</h2></div>
+        <div className={`bz-exam-running-status ${urgent ? "is-urgent-status" : ""}`} role="status"><span className="bz-exam-live-dot" /> {urgent ? "تبقى أقل من 5 دقائق" : "الامتحان جارٍ"}</div>
         <div className="bz-exam-clock" aria-live="polite"><small>الوقت المتبقي</small><strong>{formatClock(left)}</strong></div>
       </header>
       <div className="bz-exam-running-grid">

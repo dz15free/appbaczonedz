@@ -30,7 +30,7 @@ export default function PrivacyPage() {
       <div className="box">
         <p>
           <strong>الخلاصة في أربعة أسطر:</strong> نطلب بريدك واسمك وشعبتك لا
-          أكثر. بياناتك تُخزَّن في خدمات Google (Firebase). لا نبيع بياناتك ولا
+          أكثر. بياناتك تُخزَّن في خدمات Google المخصّصة لتشغيل الحساب والمنصّة. لا نبيع بياناتك ولا
           نتاجر بها. ويمكنك حذف حسابك ومحتواه من داخل المنصّة في أيّ وقت.
         </p>
       </div>
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li>
-          <strong>Google — Firebase Authentication وRealtime Database:</strong>
+          <strong>Google — خدمات الحساب وقاعدة البيانات:</strong>
           {" "}تُخزَّن فيها حساباتُكم ومحتوى المنصّة. وتُحفظ صورُكم وملفّاتكم
           مضغوطةً <strong>داخل قاعدة البيانات نفسها</strong> — لا نستعمل خدمة
           تخزين ملفّات ثالثة.
