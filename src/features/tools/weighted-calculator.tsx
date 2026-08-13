@@ -1,184 +1,126 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  W_DOMAINS, computeWeighted, gradeError, type WDomain, type WResult,
-} from "@/features/tools/weighted";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faCalculator, faCircleCheck, faRotateLeft, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { W_DOMAINS, computeWeighted, gradeError, type WDomain, type WResult } from "@/features/tools/weighted";
 
-/* ════════════════════════════════════════════════════════════
-   حاسبة المعدّل الموزون
-
-   **المعادلات كما هي في أداتك** — لم يُغيَّر رقم واحد (3500/3500 مطابقة
-   بالتنفيذ). المُحسَّن هو الإدخال والعرض وحدهما.
-
-   90% من الزوّار على الهاتف: لوحة أرقام عشرية، حقول 44px، خطّ 16px
-   يمنع تكبير iOS التلقائي عند التركيز.
-════════════════════════════════════════════════════════════ */
+type WeightedPhase = "idle" | "ready" | "counting";
 
 export function WeightedCalculator() {
   const [domain, setDomain] = useState<WDomain>(W_DOMAINS[0]);
   const [bac, setBac] = useState("");
   const [vals, setVals] = useState<Record<string, string>>({});
   const [result, setResult] = useState<WResult | null>(null);
+  const [pendingResult, setPendingResult] = useState<WResult | null>(null);
+  const [phase, setPhase] = useState<WeightedPhase>("idle");
+  const [count, setCount] = useState(5);
   const [showErr, setShowErr] = useState(false);
-  const resRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const errors = useMemo(() => {
     const e: Record<string, string | null> = { bac: gradeError(bac) };
-    for (const f of domain.fields) e[f.id] = gradeError(vals[f.id] ?? "");
+    for (const field of domain.fields) e[field.id] = gradeError(vals[field.id] ?? "");
     return e;
   }, [bac, vals, domain]);
 
-  function pick(d: WDomain) {
-    setDomain(d);
+  useEffect(() => {
+    if (phase === "ready") {
+      const timer = window.setTimeout(() => setPhase("counting"), 600);
+      return () => window.clearTimeout(timer);
+    }
+    if (phase !== "counting") return;
+    const timer = window.setInterval(() => {
+      setCount((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          setPhase("idle");
+          setResult(pendingResult);
+          setPendingResult(null);
+          window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 390);
+    return () => window.clearInterval(timer);
+  }, [phase, pendingResult]);
+
+  function pick(nextDomain: WDomain) {
+    setDomain(nextDomain);
     setVals({});
     setResult(null);
+    setPendingResult(null);
+    setPhase("idle");
     setShowErr(false);
   }
 
-  function set(id: string, v: string) {
-    const clean = v.replace(/[^\d.,]/g, "").slice(0, 5);
-    setVals((s) => ({ ...s, [id]: clean }));
-    setResult(null);
-  }
+  function clean(value: string) { return value.replace(/[^\d.,]/g, "").slice(0, 5); }
 
   function run() {
     setShowErr(true);
-    const r = computeWeighted(domain, bac, vals);
-    setResult(r);
-    if (r) setTimeout(() => resRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+    const nextResult = computeWeighted(domain, bac, vals);
+    if (!nextResult) return;
+    setResult(null);
+    setPendingResult(nextResult);
+    setCount(5);
+    setPhase("ready");
   }
 
+  function reset() {
+    setBac("");
+    setVals({});
+    setResult(null);
+    setPendingResult(null);
+    setPhase("idle");
+    setCount(5);
+    setShowErr(false);
+  }
+
+  const busy = phase !== "idle";
+  const fieldsCount = domain.fields.length + 1;
+
   return (
-    <div className="bz-calc">
-      <p className="mb-2 text-[11.5px] font-bold text-[var(--bz-ink-3)]">اختر ميدان التخصّص</p>
-      <div className="bz-hide-scrollbar -mx-1 mb-4 flex gap-1.5 overflow-x-auto px-1 sm:flex-wrap">
-        {W_DOMAINS.map((d) => (
-          <button
-            key={d.id}
-            onClick={() => pick(d)}
-            className={`shrink-0 rounded-xl border px-3 py-2 text-[12px] font-bold transition ${
-              domain.id === d.id ? "text-white" : "border-[var(--bz-line)] text-[var(--bz-ink-2)]"
-            }`}
-            style={domain.id === d.id ? { background: d.color, borderColor: d.color } : undefined}
-          >
-            {d.title}
-          </button>
-        ))}
+    <section className="bz-weighted-pro" aria-label="حاسبة المعدل الموزون">
+      <div className="bz-weighted-pro-steps">
+        <span className="is-active"><b>1</b> اختر الميدان</span><i /><span className="is-active"><b>2</b> أدخل العلامات</span><i /><span><b>3</b> افهم الفرق</span>
       </div>
-
-      <p className="mb-3 rounded-xl bg-[var(--bz-canvas)] p-3 text-[12.5px] leading-[1.9] text-[var(--bz-ink-2)]">
-        {domain.desc}
-        <br />
-        <span className="mt-1 inline-block font-bold" style={{ color: domain.color }}>
-          {domain.formulaText}
-        </span>
-      </p>
-
-      <div className="bz-calc-grid">
-        <label className={`bz-calc-row ${showErr && errors.bac ? "is-bad" : ""} ${bac && !errors.bac ? "is-ok" : ""}`}>
-          <span className="bz-calc-name">
-            معدّل البكالوريا
-            <span className="bz-calc-opt" style={{ color: domain.color }}>يُحسب مرّتين في المعادلة</span>
-          </span>
-          <span className="bz-calc-coef" style={{ color: domain.color }}>×2</span>
-          <input
-            value={bac}
-            onChange={(e) => { setBac(e.target.value.replace(/[^\d.,]/g, "").slice(0, 5)); setResult(null); }}
-            inputMode="decimal"
-            placeholder="0–20"
-            aria-label="معدل البكالوريا"
-            className="bz-calc-input"
-          />
-          {showErr && errors.bac && <span className="bz-calc-err">{errors.bac}</span>}
+      <div className="bz-weighted-pro-domain-head">
+        <div className="bz-weighted-pro-icon" style={{ background: `${domain.color}17`, color: domain.color }}><FontAwesomeIcon icon={faCalculator} /></div>
+        <div><p>المرحلة الأولى · أين تريد أن تترشح؟</p><h2>اختر ميدان التخصّص</h2></div>
+        <span>{W_DOMAINS.length} ميادين</span>
+      </div>
+      <div className="bz-weighted-pro-domains">
+        {W_DOMAINS.map((item) => <button type="button" key={item.id} onClick={() => pick(item)} className={domain.id === item.id ? "is-selected" : ""} style={domain.id === item.id ? { borderColor: item.color, background: `${item.color}12`, color: item.color } : undefined}>{item.title}</button>)}
+      </div>
+      <div className="bz-weighted-pro-formula" style={{ borderColor: `${domain.color}33` }}>
+        <strong>{domain.title}</strong><span>{domain.desc}</span><b style={{ color: domain.color }}>{domain.formulaText}</b>
+      </div>
+      <div className="bz-weighted-pro-fields">
+        <label className={`bz-weighted-pro-field ${showErr && errors.bac ? "is-invalid" : ""}`}>
+          <span className="bz-weighted-pro-field-index">01</span><span><b>معدّل البكالوريا</b><small>يُحسب مرتين في المعادلة · ×2</small></span>
+          <input value={bac} onChange={(event) => { setBac(clean(event.target.value)); setResult(null); }} inputMode="decimal" placeholder="0–20" aria-label="معدل البكالوريا" />
+          {showErr && errors.bac && <em><FontAwesomeIcon icon={faTriangleExclamation} /> {errors.bac}</em>}
         </label>
-
-        {domain.fields.map((f) => {
-          const bad = showErr && errors[f.id];
-          const ok = (vals[f.id] ?? "") && !errors[f.id];
-          return (
-            <label key={f.id} className={`bz-calc-row ${bad ? "is-bad" : ""} ${ok ? "is-ok" : ""}`}>
-              <span className="bz-calc-name">{f.label}</span>
-              <span className="bz-calc-coef" style={{ color: domain.color }}>×1</span>
-              <input
-                value={vals[f.id] ?? ""}
-                onChange={(e) => set(f.id, e.target.value)}
-                inputMode="decimal"
-                placeholder="0–20"
-                aria-label={f.label}
-                className="bz-calc-input"
-              />
-              {bad && <span className="bz-calc-err">{errors[f.id]}</span>}
-            </label>
-          );
-        })}
+        {domain.fields.map((field, index) => <label key={field.id} className={`bz-weighted-pro-field ${showErr && errors[field.id] ? "is-invalid" : ""}`}>
+          <span className="bz-weighted-pro-field-index">{String(index + 2).padStart(2, "0")}</span><span><b>{field.label}</b><small>مادّة الترجيح · ×1</small></span>
+          <input value={vals[field.id] ?? ""} onChange={(event) => { setVals((current) => ({ ...current, [field.id]: clean(event.target.value) })); setResult(null); }} inputMode="decimal" placeholder="0–20" aria-label={field.label} />
+          {showErr && errors[field.id] && <em><FontAwesomeIcon icon={faTriangleExclamation} /> {errors[field.id]}</em>}
+        </label>)}
       </div>
-
-      {domain.fields.length === 0 && (
-        <p className="mt-3 rounded-xl bg-[var(--bz-blue-050)] p-3 text-[12px] leading-relaxed text-[var(--bz-blue-700)]">
-          هذا الميدان لا يعتمد الترجيح: معدّلك الموزون هو معدّل بكالوريتك نفسه.
-        </p>
-      )}
-
-      <div className="bz-calc-actions">
-        <button onClick={run} className="bz-calc-go" style={{ background: domain.color }}>
-          احسب المعدّل الموزون
-        </button>
-        <button
-          onClick={() => { setBac(""); setVals({}); setResult(null); setShowErr(false); }}
-          className="bz-calc-reset"
-        >
-          تفريغ
-        </button>
-      </div>
-
-      {showErr && !result && (
-        <p className="bz-calc-hint">أكمل الحقول بقيم بين 0 و20.</p>
-      )}
-
-      {result && (
-        <div ref={resRef} className="bz-calc-result" style={{ borderColor: `${domain.color}44` }}>
-          <span className="bz-calc-res-label">معدّلك الموزون</span>
-          <span className="bz-calc-res-num" style={{ color: domain.color }}>
-            {result.weighted.toFixed(2)}
-          </span>
-
-          <div className="bz-calc-detail">
-            <div><span>معدّل البكالوريا</span><b>{result.bac.toFixed(2)}</b></div>
-            <div>
-              <span>الفرق</span>
-              <b style={{ color: result.delta >= 0 ? "var(--bz-green)" : "var(--bz-amber)" }}>
-                {result.delta >= 0 ? "+" : ""}{result.delta.toFixed(2)}
-              </b>
-            </div>
-          </div>
-
-          {/* الفرق يُفسَّر لا يُعرض رقماً وحسب */}
-          <p className="bz-calc-formula">
-            {result.delta > 0.05
-              ? "الترجيح في صالحك: علامتك في مادّة التخصّص أعلى من معدّلك العامّ."
-              : result.delta < -0.05
-                ? "الترجيح ليس في صالحك هنا: علامة التخصّص أقلّ من معدّلك العامّ."
-                : "الترجيح لم يُغيّر شيئاً يُذكر في هذا الميدان."}
-          </p>
-
-          <div className="bz-calc-next">
-            <p className="bz-calc-next-t">وماذا بعد؟</p>
-            <Link href="/specialties" className="bz-calc-next-a">
-              تعرّف على التخصّصات الجامعية ومعدّلات قبولها
-            </Link>
-            <Link href="/calculate" className="bz-calc-next-a">
-              احسب معدّل بكالوريتك أوّلاً إن لم تكن تعرفه
-            </Link>
-          </div>
-
-          <p className="bz-calc-note">
-            المعدّل الموزون يُستعمل في ترتيب الرغبات لبعض الميادين. النتيجة الرسمية
-            تصدر عن الجهات المعنيّة، وهذه أداة تقدير وفق الصيغ المعتمدة.
-          </p>
-        </div>
-      )}
-    </div>
+      {domain.fields.length === 0 && <div className="bz-weighted-pro-no-weight">هذا الميدان يعتمد معدل البكالوريا العام مباشرةً، بلا ترجيح إضافي.</div>}
+      <div className="bz-weighted-pro-actions"><button type="button" onClick={run} disabled={busy} style={{ background: domain.color }}><FontAwesomeIcon icon={faCalculator} /> {busy ? "نجهّز النتيجة…" : "احسب المعدّل الموزون"}</button><button type="button" onClick={reset}><FontAwesomeIcon icon={faRotateLeft} /> تفريغ</button></div>
+      <p className="bz-weighted-pro-count">{fieldsCount} {fieldsCount === 1 ? "حقل" : "حقول"} · علامات بين 0 و20 · بلا تسجيل</p>
+      {showErr && !result && !busy && <p className="bz-weighted-pro-hint">أكمل كل الحقول بقيم بين 0 و20، ثم جرّب الحساب من جديد.</p>}
+      {busy && <div className="bz-weighted-pro-countdown" role="status" aria-live="polite"><div style={{ borderColor: `${domain.color}55` }}>{phase === "ready" ? <FontAwesomeIcon icon={faCalculator} /> : count}</div><b>{phase === "ready" ? "هل أنت مستعد؟" : "نقرأ أثر الترجيح…"}</b><span>لحظة قصيرة، ثم تظهر المقارنة</span></div>}
+      {result && <div ref={resultRef} className="bz-weighted-pro-result" style={{ borderColor: `${domain.color}55` }}>
+        <div className="bz-weighted-pro-result-top"><span style={{ color: domain.color, background: `${domain.color}17` }}><FontAwesomeIcon icon={faCircleCheck} /></span><p><small>نتيجتك في {domain.title}</small><b>المعدل الموزون</b></p><button type="button" onClick={reset} aria-label="إعادة الحساب"><FontAwesomeIcon icon={faRotateLeft} /></button></div>
+        <strong className="bz-weighted-pro-number" style={{ color: domain.color }}>{result.weighted.toFixed(2)}<small>/20</small></strong>
+        <div className="bz-weighted-pro-compare"><div><small>معدّل البكالوريا</small><b>{result.bac.toFixed(2)}</b></div><div><small>أثر الترجيح</small><b style={{ color: result.delta >= 0 ? "var(--bz-green)" : "var(--bz-amber)" }}>{result.delta >= 0 ? "+" : ""}{result.delta.toFixed(2)}</b></div></div>
+        <p className="bz-weighted-pro-explain">{result.delta > 0.05 ? "الترجيح في صالحك: علامة مادة التخصّص أعلى من معدّلك العام." : result.delta < -0.05 ? "الترجيح ليس في صالحك هنا: علامة التخصّص أقل من معدّلك العام." : "الترجيح لم يغيّر معدّلك تغييراً يُذكر في هذا الميدان."}</p>
+        <div className="bz-weighted-pro-next"><span>وماذا بعد؟</span><Link href="/specialties">اكتشف التخصصات الجامعية <FontAwesomeIcon icon={faArrowLeft} /></Link><Link href="/calculate">احسب معدل البكالوريا <FontAwesomeIcon icon={faArrowLeft} /></Link></div>
+      </div>}
+    </section>
   );
 }

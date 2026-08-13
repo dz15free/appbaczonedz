@@ -18,6 +18,7 @@
 
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
+import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -72,8 +73,13 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   return SPEC_INDEX.map((s) => {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
-    const seed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
-    const c = { ...(seed ?? {}), ...(content?.[s.slug] ?? {}) };
+    const baseSeed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
+    /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم يفوز عليه ما حُرّر من الإدارة حقلاً حقلاً. */
+    const c = {
+      ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
+      ...(baseSeed ?? {}),
+      ...(content?.[s.slug] ?? {}),
+    };
     return {
       ...s,
       ...c,

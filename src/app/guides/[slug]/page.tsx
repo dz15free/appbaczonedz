@@ -1,145 +1,48 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowLeft, faBookOpen, faCheck, faClock, faHouse } from "@fortawesome/free-solid-svg-icons";
 import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/features/guides/guides-data";
 import { absUrl } from "@/features/guide/site-url";
 
-/* صفحات ساكنة: المحتوى مرجعي لا يتغيّر يومياً، فتُبنى وقت النشر وتصل
-   على 3G بلا استعلام. */
-
 export const dynamicParams = false;
+export function generateStaticParams() { return GUIDES.map((guide) => ({ slug: guide.slug })); }
 
-export function generateStaticParams() {
-  return GUIDES.map((g) => ({ slug: g.slug }));
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const guide = getGuide(slug);
+  if (!guide) return { title: "دليل غير موجود" };
+  const url = `/guides/${guide.slug}`;
+  return { title: guide.seoTitle, description: guide.description, keywords: [...guide.keywords, "BacZone"], alternates: { canonical: url }, openGraph: { type: "article", locale: "ar_DZ", url: absUrl(url), title: guide.seoTitle, description: guide.description, siteName: "BacZone" }, twitter: { card: "summary_large_image", title: guide.seoTitle, description: guide.description } };
 }
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> },
-): Promise<Metadata> {
+export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const g = getGuide(slug);
-  if (!g) return { title: "دليل غير موجود" };
-  const url = `/guides/${g.slug}`;
-  return {
-    title: g.seoTitle,
-    description: g.description,
-    keywords: [...g.keywords, "BacZone"],
-    alternates: { canonical: url },
-    openGraph: {
-      type: "article", locale: "ar_DZ", url: absUrl(url),
-      title: g.seoTitle, description: g.description, siteName: "BacZone",
-    },
-    twitter: { card: "summary_large_image", title: g.seoTitle, description: g.description },
-  };
-}
-
-export default async function GuidePage(
-  { params }: { params: Promise<{ slug: string }> },
-) {
-  const { slug } = await params;
-  const g = getGuide(slug);
-  if (!g) { notFound(); return null; }
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Article",
-        headline: g.seoTitle,
-        description: g.description,
-        inLanguage: "ar",
-        publisher: { "@type": "Organization", name: "BacZone" },
-        mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/guides/${g.slug}`) },
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: g.faq.map((f) => ({
-          "@type": "Question", name: f.q,
-          acceptedAnswer: { "@type": "Answer", text: f.a },
-        })),
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "الأدلّة", item: absUrl("/guides") },
-          { "@type": "ListItem", position: 2, name: g.title, item: absUrl(`/guides/${g.slug}`) },
-        ],
-      },
-    ],
-  };
-
-  return (
-    <>
-      <PublicHeader />
-      <main className="bz-guide min-h-screen">
-      <script type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
-      <header className="bz-guide-hero">
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-          <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <Link href="/guides" className="font-bold text-white hover:underline">الأدلّة</Link>
-          </nav>
-          <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
-            {g.title}
-          </h1>
-          <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
-            {g.audience} · قراءة {g.readMinutes} دقائق
-          </p>
+  const guide = getGuide(slug);
+  if (!guide) { notFound(); return null; }
+  const jsonLd = { "@context": "https://schema.org", "@graph": [{ "@type": "Article", headline: guide.seoTitle, description: guide.description, inLanguage: "ar", publisher: { "@type": "Organization", name: "BacZone" }, mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/guides/${guide.slug}`) } }, { "@type": "FAQPage", mainEntity: guide.faq.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "الأدلّة", item: absUrl("/guides") }, { "@type": "ListItem", position: 2, name: guide.title, item: absUrl(`/guides/${guide.slug}`) }] }] };
+  return <>
+    <PublicHeader />
+    <main className="bz-guide-detail-editorial min-h-screen bg-[var(--bz-bg)]" style={{ "--guide-color": guide.color } as React.CSSProperties}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <header className="bz-guide-detail-hero">
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">
+          <nav className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><Link href="/guides" className="hover:text-white hover:underline">الأدلّة</Link><span>←</span><span className="font-bold text-white">{guide.title}</span></nav>
+          <div className="bz-guide-detail-hero-grid mt-8"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> دليل عملي</span><h1 className="mt-4 max-w-3xl font-display text-[28px] font-extrabold leading-[1.25] text-white sm:text-[45px]">{guide.title}</h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/78 sm:text-[16px]">{guide.description}</p><div className="bz-guide-detail-hero-meta"><span><FontAwesomeIcon icon={faClock} className="h-3 w-3" /> {guide.readMinutes} دقائق قراءة</span><span>{guide.audience}</span><span>{guide.sections.length} أقسام</span></div></div><div className="bz-guide-detail-card"><span>هذا الدليل يساعدك على</span><b>{guide.audience}</b><p>اقرأ الأقسام بالترتيب، أو انتقل مباشرةً إلى السؤال الذي تبحث عن إجابته.</p></div></div>
         </div>
       </header>
-
       <PublicSidebarLayout placement="guides">
-        <div className="mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
-          {/* فهرس قافز: الدليل يُرجَع إليه، فيجب أن يُقفز داخله */}
-        <nav className="bz-guide-toc" aria-label="محتويات الدليل">
-          <p className="mb-2 text-[11.5px] font-extrabold text-[var(--bz-ink-3)]">محتويات الدليل</p>
-          <ol>
-            {g.sections.map((s, i) => (
-              <li key={s.id}>
-                <a href={`#${s.id}`}>
-                  <span className="bz-toc-n">{i + 1}</span>
-                  {s.title}
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
-        <article className="mt-6">
-          {g.sections.map((s) => (
-            <section key={s.id} id={s.id} className="bz-spec-sec scroll-mt-4">
-              <h2>{s.title}</h2>
-              <div className="bz-article" dangerouslySetInnerHTML={{ __html: s.html }} />
-            </section>
-          ))}
-
-          <section className="bz-spec-sec">
-            <h2>أسئلة شائعة</h2>
-            {g.faq.map((f, i) => (
-              <div key={i} className="mb-3">
-                <p className="text-[13.5px] font-extrabold text-[var(--bz-ink)]">{f.q}</p>
-                <p className="bz-spec-p">{f.a}</p>
-              </div>
-            ))}
-          </section>
-        </article>
-
-        {/* الأدوات المذكورة في الدليل — في نهايته حيث يحتاجها القارئ */}
-        <aside className="mt-8 border-t border-[var(--bz-line)] pt-5">
-          <h2 className="mb-3 font-display text-base font-extrabold">طبّق ما قرأته</h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Link href="/calculate" className="bz-spec-rel"><span>احسب معدّل بكالوريتك</span></Link>
-            <Link href="/tools/weighted-average" className="bz-spec-rel"><span>احسب معدّلك الموزون</span></Link>
-            <Link href="/specialties" className="bz-spec-rel"><span>دليل التخصّصات الجامعية</span></Link>
-            <Link href="/tools" className="bz-spec-rel"><span>كل أدوات البكالوريا</span></Link>
+        <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-7 sm:pt-10">
+          <div className="bz-guide-detail-layout">
+            <aside className="bz-guide-detail-toc" aria-label="محتويات الدليل"><p><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> محتويات الدليل <b>{guide.sections.length}</b></p><div>{guide.sections.map((section, index) => <a key={section.id} href={`#${section.id}`}><span>{String(index + 1).padStart(2, "0")}</span>{section.title}</a>)}<a href="#faq"><span>+</span> أسئلة شائعة</a></div></aside>
+            <article className="bz-guide-detail-content">{guide.sections.map((section, index) => <section key={section.id} id={section.id} className="bz-guide-detail-section"><div className="bz-guide-detail-heading"><span>{String(index + 1).padStart(2, "0")}</span><h2>{section.title}</h2></div><div className="bz-article" dangerouslySetInnerHTML={{ __html: section.html }} /></section>)}<section id="faq" className="bz-guide-detail-section bz-guide-faq"><div className="bz-guide-detail-heading"><span>?</span><h2>أسئلة شائعة</h2></div>{guide.faq.map((item, index) => <details key={index}><summary>{item.q}<b>+</b></summary><p>{item.a}</p></details>)}</section></article>
           </div>
-        </aside>
+          <aside className="bz-guide-actions"><div><span>حان وقت التطبيق</span><h2>حوّل ما قرأته إلى خطوة</h2></div><div className="bz-guide-action-links"><Link href="/calculate"><FontAwesomeIcon icon={faCheck} className="h-3 w-3" /> احسب معدّل بكالوريتك <FontAwesomeIcon icon={faArrowLeft} className="ms-auto h-3 w-3" /></Link><Link href="/tools/weighted-average"><FontAwesomeIcon icon={faCheck} className="h-3 w-3" /> احسب معدّلك الموزون <FontAwesomeIcon icon={faArrowLeft} className="ms-auto h-3 w-3" /></Link><Link href="/specialties"><FontAwesomeIcon icon={faCheck} className="h-3 w-3" /> دليل التخصّصات الجامعية <FontAwesomeIcon icon={faArrowLeft} className="ms-auto h-3 w-3" /></Link><Link href="/tools"><FontAwesomeIcon icon={faCheck} className="h-3 w-3" /> كل أدوات البكالوريا <FontAwesomeIcon icon={faArrowLeft} className="ms-auto h-3 w-3" /></Link></div></aside>
         </div>
       </PublicSidebarLayout>
     </main>
-    </>
-  );
+  </>;
 }

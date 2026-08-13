@@ -103,23 +103,40 @@ export default async function BranchCalculatorPage(
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="bz-guide-hero">
-        <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
-          <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
-            <Link href="/home" className="hover:underline">BacZone</Link>
-            <span>·</span>
-            <Link href="/calculate" className="font-bold text-white hover:underline">حساب المعدل</Link>
+      <header className="bz-calc-branch-hero">
+        <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-11">
+          <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
+            <Link href="/" className="hover:text-white hover:underline">BacZone</Link>
+            <span>←</span>
+            <Link href="/calculate" className="font-bold text-white hover:underline">حاسبة البكالوريا</Link>
           </nav>
-          <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
-            حساب معدل البكالوريا — شعبة {b.short}
-          </h1>
-          <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
-            {b.subjects.length} مواد · مجموع المعاملات {totalCoef(b)} · نتيجة فورية بلا تسجيل
-          </p>
+          <div className="bz-calc-branch-hero-layout">
+            <div>
+              <span className="bz-calc-branch-kicker">حاسبة شعبة {b.short}</span>
+              <h1 className="mt-2 font-display text-[26px] font-extrabold leading-[1.25] sm:text-[38px]">
+                احسب معدّل بكالوريتك بوضوح
+              </h1>
+              <p className="mt-3 max-w-2xl text-[13.5px] leading-[1.9] text-white/80 sm:text-[15px]">
+                أدخل علاماتك مادةً مادة، وراجع أثر المعاملات، ثم احصل على نتيجة مفهومة بلا تسجيل أو إدخال بيانات شخصية.
+              </p>
+            </div>
+            <div className="bz-calc-branch-hero-stat">
+              <b>{b.subjects.length}</b><span>مواد</span>
+              <i />
+              <b>{totalCoef(b)}</b><span>معامل</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-3xl px-3 pb-14 pt-5 sm:px-4">
+      <div className="mx-auto w-full max-w-4xl px-3 pb-14 pt-5 sm:px-4">
+        <div className="bz-calc-step-rail" aria-label="مراحل حساب المعدل">
+          <span className="is-current"><b>1</b><em>اخترت شعبتك</em></span>
+          <i />
+          <span className="is-current"><b>2</b><em>أدخل العلامات</em></span>
+          <i />
+          <span><b>3</b><em>افهم نتيجتك</em></span>
+        </div>
         <Calculator branch={b} />
 
         {c && (

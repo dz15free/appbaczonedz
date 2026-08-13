@@ -1,25 +1,33 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  calculate, gradeError, totalCoef, type Branch, type CalcResult,
+  faArrowLeft,
+  faBookOpen,
+  faCalculator,
+  faCircleCheck,
+  faRotateLeft,
+  faTriangleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+  calculate,
+  gradeError,
+  totalCoef,
+  type Branch,
+  type CalcResult,
 } from "@/features/calculator/branches";
 
-/* ════════════════════════════════════════════════════════════
-   الحاسبة
-
-   **منطق الحساب لم يُمسّ** — مُختبَر ضدّ الأصل: 2800/2800 تطابق.
-   المُحسَّن هو الإدخال وحده: لوحة أرقام عشرية على الهاتف، تحقّق فوري،
-   انتقال تلقائي، ونتيجة تُفسَّر لا تُعرض رقماً وحسب.
-
-   90% من الزوّار على الهاتف — فالتصميم يبدأ من الهاتف لا يُقلَّص إليه.
-════════════════════════════════════════════════════════════ */
+type CountdownState = "idle" | "ready" | "counting";
 
 export function Calculator({ branch }: { branch: Branch }) {
   const [grades, setGrades] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [result, setResult] = useState<CalcResult | null>(null);
+  const [pendingResult, setPendingResult] = useState<CalcResult | null>(null);
+  const [countdown, setCountdown] = useState<CountdownState>("idle");
+  const [count, setCount] = useState(5);
   const [showErr, setShowErr] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
@@ -30,137 +38,171 @@ export function Calculator({ branch }: { branch: Branch }) {
 
   const errors = useMemo(() => {
     const e: Record<string, string | null> = {};
-    for (const s of branch.subjects) {
-      e[s.name] = gradeError(grades[s.name] ?? "", s.optional);
-    }
+    for (const s of branch.subjects) e[s.name] = gradeError(grades[s.name] ?? "", s.optional);
     return e;
   }, [grades, branch]);
 
-  function set(name: string, v: string) {
-    // نقبل الفاصلة العربية والإنجليزية، ونمنع ما ليس رقماً
-    const clean = v.replace(/[^\d.,]/g, "").slice(0, 5);
-    setGrades((g) => ({ ...g, [name]: clean }));
+  useEffect(() => {
+    if (countdown === "ready") {
+      const timer = window.setTimeout(() => setCountdown("counting"), 620);
+      return () => window.clearTimeout(timer);
+    }
+    if (countdown !== "counting") return;
+    const timer = window.setInterval(() => {
+      setCount((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer);
+          setCountdown("idle");
+          setResult(pendingResult);
+          setPendingResult(null);
+          window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+          return 0;
+        }
+        return current - 1;
+      });
+    }, 390);
+    return () => window.clearInterval(timer);
+  }, [countdown, pendingResult]);
+
+  function set(name: string, value: string) {
+    const clean = value.replace(/[^\d.,]/g, "").slice(0, 5);
+    setGrades((current) => ({ ...current, [name]: clean }));
     setResult(null);
+    setPendingResult(null);
+    setCountdown("idle");
   }
 
   function run() {
     setShowErr(true);
-    const r = calculate(branch, grades);
-    setResult(r);
-    if (r) {
-      // ننتقل إلى النتيجة: على الهاتف تكون أسفل الشاشة
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
-    } else {
+    const nextResult = calculate(branch, grades);
+    if (!nextResult) {
       const first = branch.subjects.findIndex((s) => errors[s.name]);
       if (first >= 0) refs.current[first]?.focus();
+      return;
     }
+    setResult(null);
+    setPendingResult(nextResult);
+    setCount(5);
+    setCountdown("ready");
   }
 
   function reset() {
     setGrades({});
     setTouched({});
     setResult(null);
+    setPendingResult(null);
+    setCountdown("idle");
+    setCount(5);
     setShowErr(false);
   }
 
-  return (
-    <div className="bz-calc">
-      {/* شريط التقدّم — الطالب يرى كم بقي */}
-      <div className="bz-calc-progress" aria-hidden>
-        <span style={{ width: `${progress}%`, background: branch.color }} />
-      </div>
-      <p className="bz-calc-count">
-        {filled} من {required.length} مادّة
-      </p>
+  const isBusy = countdown !== "idle";
 
-      <div className="bz-calc-grid">
-        {branch.subjects.map((s, i) => {
-          const v = grades[s.name] ?? "";
-          const err = errors[s.name];
-          const bad = Boolean(err) && (showErr || touched[s.name]) && !(s.optional && v === "");
+  return (
+    <section className="bz-calc-pro-shell" aria-label={`حاسبة معدل ${branch.short}`}>
+      <div className="bz-calc-pro-topline">
+        <div className="bz-calc-pro-progress">
+          <span style={{ width: `${progress}%`, background: branch.color }} />
+        </div>
+        <div className="bz-calc-pro-progress-copy">
+          <span><b>{filled}</b> من {required.length} مواد إجبارية</span>
+          <span>{progress}% مكتمل</span>
+        </div>
+      </div>
+
+      <div className="bz-calc-pro-intro">
+        <div className="bz-calc-pro-icon" style={{ background: `${branch.color}16`, color: branch.color }}>
+          <FontAwesomeIcon icon={faCalculator} />
+        </div>
+        <div>
+          <p className="bz-calc-pro-eyebrow">المرحلة الثانية · أدخل علاماتك</p>
+          <h2>لنحسبها مادةً مادة</h2>
+          <p>اكتب علامة كل مادة بين 0 و20. المادّة الاختيارية تبقى بونصًا ويمكن تركها فارغة.</p>
+        </div>
+        <div className="bz-calc-pro-total" style={{ borderColor: `${branch.color}44` }}>
+          <span>المعاملات</span><b style={{ color: branch.color }}>{totalCoef(branch)}</b>
+        </div>
+      </div>
+
+      <div className="bz-calc-pro-subjects">
+        {branch.subjects.map((subject, index) => {
+          const value = grades[subject.name] ?? "";
+          const error = errors[subject.name];
+          const invalid = Boolean(error) && (showErr || touched[subject.name]) && !(subject.optional && value === "");
+          const valid = Boolean(value) && !error;
           return (
-            <label key={s.name} className={`bz-calc-row ${bad ? "is-bad" : ""} ${v && !err ? "is-ok" : ""}`}>
-              <span className="bz-calc-name">
-                {s.name}
-                {s.optional && <span className="bz-calc-opt">اختيارية — بونص</span>}
+            <label key={subject.name} className={`bz-calc-pro-subject ${invalid ? "is-invalid" : ""} ${valid ? "is-valid" : ""}`}>
+              <span className="bz-calc-pro-subject-mark" style={{ background: valid ? `${branch.color}18` : "var(--bz-canvas)", color: valid ? branch.color : "var(--bz-ink-3)" }}>
+                {valid ? <FontAwesomeIcon icon={faCircleCheck} /> : String(index + 1).padStart(2, "0")}
               </span>
-              <span className="bz-calc-coef" style={{ color: branch.color }}>×{s.coef}</span>
+              <span className="bz-calc-pro-subject-body">
+                <span className="bz-calc-pro-subject-name">{subject.name}</span>
+                <span className="bz-calc-pro-subject-meta">معامل ×{subject.coef}{subject.optional ? " · اختيارية وبونص" : " · إجبارية"}</span>
+                {invalid && <span className="bz-calc-pro-error"><FontAwesomeIcon icon={faTriangleExclamation} /> {error}</span>}
+              </span>
               <input
-                ref={(el) => { refs.current[i] = el; }}
-                value={v}
-                onChange={(e) => set(s.name, e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, [s.name]: true }))}
-                onKeyDown={(e) => { if (e.key === "Enter") refs.current[i + 1]?.focus(); }}
-                /* لوحة الأرقام العشرية على الهاتف: كتابة العلامة بلوحة
-                   الحروف الكاملة أبطأ بكثير وأكثر خطأً. */
+                ref={(element) => { refs.current[index] = element; }}
+                value={value}
+                onChange={(event) => set(subject.name, event.target.value)}
+                onBlur={() => setTouched((current) => ({ ...current, [subject.name]: true }))}
+                onKeyDown={(event) => { if (event.key === "Enter") refs.current[index + 1]?.focus(); }}
                 inputMode="decimal"
-                enterKeyHint={i === branch.subjects.length - 1 ? "done" : "next"}
+                enterKeyHint={index === branch.subjects.length - 1 ? "done" : "next"}
                 placeholder="0–20"
-                aria-label={`علامة ${s.name}`}
-                aria-invalid={bad || undefined}
-                className="bz-calc-input"
+                aria-label={`علامة ${subject.name}`}
+                aria-invalid={invalid || undefined}
+                className="bz-calc-pro-input"
               />
-              {bad && <span className="bz-calc-err">{err}</span>}
             </label>
           );
         })}
       </div>
 
-      <div className="bz-calc-actions">
-        <button onClick={run} className="bz-calc-go" style={{ background: branch.color }}>
-          احسب معدّلي
+      <div className="bz-calc-pro-actions">
+        <button type="button" onClick={run} disabled={isBusy} className="bz-calc-pro-primary" style={{ background: branch.color }}>
+          <FontAwesomeIcon icon={faCalculator} /> {isBusy ? "نرتّب نتيجتك…" : "احسب معدّلي"}
         </button>
-        <button onClick={reset} className="bz-calc-reset">تفريغ</button>
+        <button type="button" onClick={reset} className="bz-calc-pro-secondary"><FontAwesomeIcon icon={faRotateLeft} /> ابدأ من جديد</button>
       </div>
 
-      {showErr && !result && (
-        <p className="bz-calc-hint">
-          أكمل علامات المواد الإجبارية بقيم بين 0 و20. المادّة الاختيارية يمكن تركها فارغة.
-        </p>
+      {showErr && !result && !isBusy && (
+        <p className="bz-calc-pro-hint">أكمل علامات المواد الإجبارية بقيم بين 0 و20. المادّة الاختيارية يمكن تركها فارغة.</p>
       )}
 
-      {result && (
-        <div ref={resultRef} className="bz-calc-result" style={{ borderColor: `${branch.color}44` }}>
-          <span className="bz-calc-res-label">معدّلك في {branch.short}</span>
-          <span className="bz-calc-res-num" style={{ color: branch.color }}>
-            {result.average.toFixed(2)}
-          </span>
-          <span className={`bz-calc-res-tag ${result.passed ? "is-pass" : "is-fail"}`}>
-            {result.passed ? `ناجح — ${result.mention}` : "دون المعدّل"}
-          </span>
-
-          <div className="bz-calc-detail">
-            <div><span>مجموع النقاط</span><b>{result.totalPoints.toFixed(2)}</b></div>
-            <div><span>مجموع المعاملات</span><b>{result.totalCoef}</b></div>
-            {result.bonus > 0 && (
-              <div><span>نقاط البونص</span><b style={{ color: branch.color }}>+{result.bonus.toFixed(2)}</b></div>
-            )}
+      {isBusy && (
+        <div className="bz-calc-countdown" role="status" aria-live="polite">
+          <div className="bz-calc-countdown-orbit" style={{ borderColor: `${branch.color}55` }}>
+            {countdown === "ready" ? <FontAwesomeIcon icon={faBookOpen} /> : count}
           </div>
-
-          <p className="bz-calc-formula">
-            {result.totalPoints.toFixed(2)} ÷ {result.totalCoef} = <b>{result.average.toFixed(2)}</b>
-          </p>
-
-          {/* الخطوة التالية: من عرف معدّله يسأل «وماذا الآن؟» */}
-          <div className="bz-calc-next">
-            <p className="bz-calc-next-t">وماذا بعد؟</p>
-            <a href="https://www.baczonedz.com/p/2026.html" target="_blank" rel="noreferrer" className="bz-calc-next-a">
-              احسب معدّلك الموزون للتوجيه الجامعي
-            </a>
-            <Link href="/specialties" className="bz-calc-next-a">
-              تعرّف على التخصّصات الجامعية ومعدّلات قبولها
-            </Link>
-          </div>
-
-          <p className="bz-calc-note">
-            هذه الحاسبة أداة تقدير وفق المعاملات المعتمدة. النتيجة الرسمية تصدر عن الديوان الوطني للامتحانات والمسابقات.
-          </p>
+          <p>{countdown === "ready" ? "هل أنت مستعد؟" : "نرتّب العلامات ونحسبها…"}</p>
+          <span>لحظة قصيرة، ثم تظهر النتيجة</span>
         </div>
       )}
 
-      <p className="bz-calc-total">
-        مجموع معاملات {branch.short}: <b>{totalCoef(branch)}</b>
-      </p>
-    </div>
+      {result && (
+        <div ref={resultRef} className={`bz-calc-pro-result ${result.passed ? "is-passed" : "is-below"}`} style={{ borderColor: `${branch.color}55` }}>
+          <div className="bz-calc-pro-result-head">
+            <span className="bz-calc-pro-result-check" style={{ background: `${branch.color}18`, color: branch.color }}><FontAwesomeIcon icon={result.passed ? faCircleCheck : faTriangleExclamation} /></span>
+            <span><small>نتيجتك في</small><b>{branch.short}</b></span>
+            <button type="button" onClick={reset} aria-label="إعادة الحساب"><FontAwesomeIcon icon={faRotateLeft} /></button>
+          </div>
+          <div className="bz-calc-pro-result-number" style={{ color: branch.color }}>{result.average.toFixed(2)}<small>/20</small></div>
+          <div className="bz-calc-pro-result-status">{result.passed ? `ناجح · ${result.mention}` : "دون المعدّل"}</div>
+          <p className="bz-calc-pro-result-message">{result.passed ? "هذه نقطة بداية جيدة. استخدمها لتعرف المواد التي تستحق وقتك الأكبر في برنامج المراجعة." : "لا تجعل الرقم يحكم على موسمك كله. حدّد المواد ذات المعامل الأكبر وابدأ بخطوة قابلة للإنجاز."}</p>
+          <div className="bz-calc-pro-result-details">
+            <div><span>مجموع النقاط</span><b>{result.totalPoints.toFixed(2)}</b></div>
+            <div><span>مجموع المعاملات</span><b>{result.totalCoef}</b></div>
+            {result.bonus > 0 && <div><span>نقاط البونص</span><b style={{ color: branch.color }}>+{result.bonus.toFixed(2)}</b></div>}
+          </div>
+          <p className="bz-calc-pro-formula">{result.totalPoints.toFixed(2)} ÷ {result.totalCoef} = <b>{result.average.toFixed(2)}</b></p>
+          <div className="bz-calc-pro-next">
+            <span>خطوتك التالية</span>
+            <Link href="/tools/weighted-average">احسب معدّلك الموزون للتوجيه <FontAwesomeIcon icon={faArrowLeft} /></Link>
+            <Link href="/specialties">اكتشف التخصصات الجامعية <FontAwesomeIcon icon={faArrowLeft} /></Link>
+          </div>
+          <p className="bz-calc-pro-note">هذه أداة تقدير وفق المعاملات المعتمدة. النتيجة الرسمية تصدر عن الديوان الوطني للامتحانات والمسابقات.</p>
+        </div>
+      )}
+    </section>
   );
 }

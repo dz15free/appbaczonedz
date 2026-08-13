@@ -32,12 +32,12 @@ function Card({
     <a
       href={href}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="flex items-start gap-3 rounded-xl border border-border bg-surface p-3.5 no-underline transition hover:border-primary/40 hover:bg-primary/[0.03]"
+      className="bz-contact-card"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+      <span className="bz-contact-card-icon">
         <FontAwesomeIcon icon={icon} className="h-4 w-4" />
       </span>
-      <span className="min-w-0">
+      <span className="bz-contact-card-copy">
         <span className="block text-[13px] font-extrabold text-text">{label}</span>
         <span className="block break-all text-[12.5px] text-primary" dir="ltr">{value}</span>
         {note && <span className="mt-0.5 block text-[11.5px] text-text-muted">{note}</span>}
