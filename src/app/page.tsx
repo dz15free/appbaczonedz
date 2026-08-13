@@ -13,7 +13,6 @@ import { PublicHeader } from "@/components/public-shell";
 import { SiteFooter } from "@/components/ui/site-footer";
 import { FaviconSync, LandingFaqRow } from "@/components/landing/landing-client";
 import { getPublicSiteSettings } from "@/features/settings/site-settings-server";
-import { getPublishedEntries } from "@/features/blog/blog-server";
 import { GUIDES } from "@/features/guides/guides-data";
 import { TOOLS } from "@/features/tools/tools-data";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
@@ -35,14 +34,8 @@ export const metadata: Metadata = {
   },
 };
 
-function arDate(ms?: number): string {
-  if (!ms) return "";
-  return new Intl.DateTimeFormat("ar-DZ", { year: "numeric", month: "long", day: "numeric" }).format(new Date(ms));
-}
-
 export default async function LandingPage() {
-  const [s, posts] = await Promise.all([getPublicSiteSettings(), getPublishedEntries()]);
-  const latestPosts = posts.slice(0, 3);
+  const s = await getPublicSiteSettings();
   const publicTools = TOOLS.filter((tool) => !tool.needsAccount).slice(0, 8);
   const landingGuides = GUIDES.slice(0, 3);
 
@@ -115,7 +108,7 @@ export default async function LandingPage() {
         <div className="absolute inset-x-0 bottom-0 h-14 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-20" />
       </section>
 
-      <PublicSidebarLayout placement="global">
+      <PublicSidebarLayout placement="global" includeArticles={false}>
         <section className="px-5 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16">
           <div className="mx-auto max-w-6xl">
             <div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">أدوات عملية</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">ابدأ بما تحتاجه اليوم</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-text-muted">أدوات موجودة فعليًا في BacZone تساعدك على الحساب، التخطيط، التدريب واتخاذ قرارك الدراسي.</p></div><Link href="/tools" className="inline-flex items-center gap-2 text-sm font-extrabold text-primary hover:underline">كل الأدوات <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div>
@@ -131,7 +124,6 @@ export default async function LandingPage() {
 
         {(s.features ?? []).length > 0 && <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mb-10 text-center"><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">داخل BacZone</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{s.featuresTitle}</h2><p className="mx-auto mt-3 max-w-lg text-sm text-text-muted">{s.featuresSubtitle}</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{(s.features ?? []).slice(0, 9).map((feature) => <article key={feature.id} className="rounded-2xl border border-border/50 bg-[var(--bz-bg)] p-5 transition hover:-translate-y-1 hover:border-primary/30"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><DynamicIcon value={feature.icon} className="h-5 w-5" emojiClass="text-xl" /></div><h3 className="mt-4 text-[15px] font-bold">{feature.title}</h3><p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{feature.desc}</p></article>)}</div></div></section>}
 
-        {latestPosts.length > 0 && <section className="px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">من مدونة BacZone</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">اقرأ ما يساعدك في المراجعة</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-text-muted">أحدث المقالات المنشورة من مدونة BacZone، بموضوعات عملية للطالب الجزائري.</p></div><Link href="/blog" className="inline-flex items-center gap-2 text-sm font-extrabold text-primary hover:underline">عرض جميع المقالات <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div><div className="grid gap-4 md:grid-cols-3">{latestPosts.map((post) => <Link key={post.id} href={`/blog/${post.slug}`} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">{post.cover ? <img src={post.cover} alt={post.coverAlt || post.title} width={640} height={336} loading="lazy" decoding="async" className="aspect-[640/336] w-full object-cover" /> : <div className="flex aspect-[640/336] items-center justify-center bg-gradient-to-br from-blue-600/15 to-emerald-500/10"><FontAwesomeIcon icon={faBookOpen} className="h-10 w-10 text-primary/60" /></div>}<span className="flex flex-1 flex-col p-5">{post.labels?.[0] && <span className="text-[11px] font-extrabold text-primary">{post.labels[0]}</span>}<span className="mt-1.5 text-[16px] font-extrabold leading-[1.55]">{post.title}</span>{post.excerpt && <span className="mt-2 line-clamp-3 text-[13px] leading-[1.8] text-text-muted">{post.excerpt}</span>}<span className="mt-auto pt-4 text-[11.5px] text-text-muted">{arDate(post.publishedAt)} · {post.readMinutes} دقائق قراءة</span></span></Link>)}</div></div></section>}
 
         {landingGuides.length > 0 && <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">أدلة الدراسة</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">أدلة تساعدك على التقدّم</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-text-muted">محتوى مرجعي موجود فعليًا في BacZone، يمكنك العودة إليه أثناء المراجعة.</p></div><Link href="/guides" className="inline-flex items-center gap-2 text-sm font-extrabold text-primary hover:underline">كل الأدلة <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div><div className="grid gap-4 md:grid-cols-3">{landingGuides.map((guide) => <Link key={guide.slug} href={`/guides/${guide.slug}`} className="rounded-2xl border border-border/60 bg-[var(--bz-bg)] p-5 transition hover:-translate-y-1 hover:border-primary/30"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl text-white" style={{ backgroundColor: guide.color }}><FontAwesomeIcon icon={faBookOpen} className="h-4 w-4" /></span><span className="text-sm font-extrabold leading-snug">{guide.title}</span></div><p className="mt-4 text-[13px] leading-relaxed text-text-muted">{guide.description}</p><span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-primary">اقرأ الدليل <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>)}</div></div></section>}
 

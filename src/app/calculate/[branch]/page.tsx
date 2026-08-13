@@ -173,8 +173,8 @@ export default async function BranchCalculatorPage(
                         <td className="p-2 font-semibold">
                           {s.name}
                           {s.optional && (
-                            <span className="ms-1.5 rounded bg-[var(--bz-amber-050)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--bz-amber)]">
-                              اختيارية
+                            <span className="ms-1.5 rounded bg-[var(--bz-blue-050)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--bz-blue)]">
+                              دعها فارغة إن لم تجتزها
                             </span>
                           )}
                         </td>
@@ -191,9 +191,7 @@ export default async function BranchCalculatorPage(
                 </table>
               </div>
               <p className="bz-spec-note">
-                المادّة الاختيارية (الأمازيغية) تُحتسب بونصاً: تُؤخذ النقاط فوق 10 فقط
-                وتُضرب في معاملها وتُضاف إلى المجموع، <b>دون</b> إضافة معاملها إلى القاسم.
-                فإن كانت علامتك تحت 10 فلن تنقص معدّلك.
+                الأمازيغية يمكنك تركها فارغة إن لم تجتزها. وإذا أدخلت علامةً لها، تُحتسب النقاط فوق 10 فقط وتُضرب في معاملها وتُضاف إلى المجموع، <b>دون</b> إضافة معاملها إلى القاسم. وإن كانت علامتك تحت 10 فلن تنقص معدّلك.
               </p>
             </section>
 

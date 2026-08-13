@@ -18,6 +18,7 @@ export function WeightedCalculator() {
   const [count, setCount] = useState(5);
   const [showErr, setShowErr] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const countdownDeadlineRef = useRef<number | null>(null);
 
   const errors = useMemo(() => {
     const e: Record<string, string | null> = { bac: gradeError(bac) };
@@ -26,25 +27,38 @@ export function WeightedCalculator() {
   }, [bac, vals, domain]);
 
   useEffect(() => {
+    let timer: number | undefined;
+    let interval: number | undefined;
+
     if (phase === "ready") {
-      const timer = window.setTimeout(() => setPhase("counting"), 600);
-      return () => window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        countdownDeadlineRef.current = Date.now() + 5000;
+        setCount(5);
+        setPhase("counting");
+      }, 600);
+      return () => { if (timer !== undefined) window.clearTimeout(timer); };
     }
-    if (phase !== "counting") return;
-    const timer = window.setInterval(() => {
-      setCount((current) => {
-        if (current <= 1) {
-          window.clearInterval(timer);
-          setPhase("idle");
-          setResult(pendingResult);
-          setPendingResult(null);
-          window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 390);
-    return () => window.clearInterval(timer);
+
+    if (phase !== "counting") return undefined;
+
+    const deadline = countdownDeadlineRef.current ?? (Date.now() + 5000);
+    countdownDeadlineRef.current = deadline;
+    const syncCount = () => {
+      const remaining = deadline - Date.now();
+      const next = Math.max(0, Math.ceil(remaining / 1000));
+      setCount((current) => (current === next ? current : next));
+      if (remaining <= 0) {
+        if (interval !== undefined) window.clearInterval(interval);
+        countdownDeadlineRef.current = null;
+        setPhase("idle");
+        setResult(pendingResult);
+        setPendingResult(null);
+        window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+      }
+    };
+    syncCount();
+    interval = window.setInterval(syncCount, 60);
+    return () => { if (interval !== undefined) window.clearInterval(interval); };
   }, [phase, pendingResult]);
 
   function pick(nextDomain: WDomain) {
@@ -53,6 +67,7 @@ export function WeightedCalculator() {
     setResult(null);
     setPendingResult(null);
     setPhase("idle");
+    countdownDeadlineRef.current = null;
     setShowErr(false);
   }
 
@@ -64,6 +79,7 @@ export function WeightedCalculator() {
     if (!nextResult) return;
     setResult(null);
     setPendingResult(nextResult);
+    countdownDeadlineRef.current = null;
     setCount(5);
     setPhase("ready");
   }
@@ -74,6 +90,7 @@ export function WeightedCalculator() {
     setResult(null);
     setPendingResult(null);
     setPhase("idle");
+    countdownDeadlineRef.current = null;
     setCount(5);
     setShowErr(false);
   }

@@ -108,11 +108,17 @@ async function SidebarArticles() {
 export async function PublicSidebarLayout({
   placement,
   children,
+  includeArticles = true,
 }: {
   placement: SidebarPlacement;
   children: React.ReactNode;
+  /** Landing keeps its own content architecture and never renders article cards. */
+  includeArticles?: boolean;
 }) {
-  const [widgets, articles] = await Promise.all([getPublicSidebarWidgets(placement), SidebarArticles()]);
+  const [widgets, articles] = await Promise.all([
+    getPublicSidebarWidgets(placement),
+    includeArticles ? SidebarArticles() : Promise.resolve(null),
+  ]);
   if (widgets.length === 0 && !articles) return <>{children}</>;
 
   return (

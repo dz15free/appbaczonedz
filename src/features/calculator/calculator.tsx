@@ -153,7 +153,7 @@ export function Calculator({ branch }: { branch: Branch }) {
         <div>
           <p className="bz-calc-pro-eyebrow">المرحلة الثانية · أدخل علاماتك</p>
           <h2>لنحسبها مادةً مادة</h2>
-          <p>اكتب علامة كل مادة بين 0 و20. المادّة الاختيارية تبقى بونصًا ويمكن تركها فارغة.</p>
+          <p>اكتب علامة كل مادة بين 0 و20. الأمازيغية يمكنك تركها فارغة إن لم تجتزها.</p>
         </div>
         <div className="bz-calc-pro-total" style={{ borderColor: `${branch.color}44` }}>
           <span>المعاملات</span><b style={{ color: branch.color }}>{totalCoef(branch)}</b>
@@ -173,7 +173,7 @@ export function Calculator({ branch }: { branch: Branch }) {
               </span>
               <span className="bz-calc-pro-subject-body">
                 <span className="bz-calc-pro-subject-name">{subject.name}</span>
-                <span className="bz-calc-pro-subject-meta">معامل ×{subject.coef}{subject.optional ? " · اختيارية وبونص" : " · إجبارية"}</span>
+                <span className="bz-calc-pro-subject-meta">معامل ×{subject.coef}{subject.optional ? " · دعها فارغة إن لم تجتزها" : " · إجبارية"}</span>
                 {invalid && <span className="bz-calc-pro-error"><FontAwesomeIcon icon={faTriangleExclamation} /> {error}</span>}
               </span>
               <input
@@ -202,7 +202,7 @@ export function Calculator({ branch }: { branch: Branch }) {
       </div>
 
       {showErr && !result && !isBusy && (
-        <p className="bz-calc-pro-hint">أكمل علامات المواد الإجبارية بقيم بين 0 و20. المادّة الاختيارية يمكن تركها فارغة.</p>
+        <p className="bz-calc-pro-hint">أكمل علامات المواد الإجبارية بقيم بين 0 و20. يمكنك ترك الأمازيغية فارغة إن لم تجتزها.</p>
       )}
 
       {isBusy && (

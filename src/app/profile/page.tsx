@@ -226,7 +226,7 @@ export default function ProfilePage() {
       </section>
 
       {/* تقييم الطلاب — للأستاذ والإدارة */}
-      {user && isStaff && <MyRatingSummary uid={user.uid} />}
+      {user && isStaff && <MyRatingSummary uid={user.uid} owner />}
 
       {/* بيانات تواصل الأستاذ — بجانب لوحة أرباحه */}
       {profile?.role === "teacher" && user && <TeacherContactEditor uid={user.uid} />}

@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 
-const LOGO_URL = DEFAULT_LOGO;
-const FADE_OUT_MS = 220;
+const FADE_OUT_MS = 180;
 const SAFETY_TIMEOUT_MS = 900;
 
 export function Preloader() {
@@ -12,29 +11,32 @@ export function Preloader() {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    let safetyTimer: number | undefined;
     let removeTimer: number | undefined;
+    let safetyTimer: number | undefined;
     let frame: number | undefined;
+    let finished = false;
 
     const finish = () => {
-      setLeaving(true);
-      removeTimer = window.setTimeout(() => setGone(true), FADE_OUT_MS);
-    };
-
-    const onLoad = () => {
+      if (finished) return;
+      finished = true;
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
-      frame = window.requestAnimationFrame(finish);
+      frame = window.requestAnimationFrame(() => {
+        setLeaving(true);
+        removeTimer = window.setTimeout(() => setGone(true), FADE_OUT_MS);
+      });
     };
 
-    if (document.readyState === "complete") {
-      frame = window.requestAnimationFrame(finish);
+    if (document.readyState !== "loading") {
+      finish();
     } else {
-      window.addEventListener("load", onLoad, { once: true });
-      safetyTimer = window.setTimeout(onLoad, SAFETY_TIMEOUT_MS);
+      document.addEventListener("DOMContentLoaded", finish, { once: true });
+      window.addEventListener("load", finish, { once: true });
+      safetyTimer = window.setTimeout(finish, SAFETY_TIMEOUT_MS);
     }
 
     return () => {
-      window.removeEventListener("load", onLoad);
+      document.removeEventListener("DOMContentLoaded", finish);
+      window.removeEventListener("load", finish);
       if (frame !== undefined) window.cancelAnimationFrame(frame);
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
@@ -44,19 +46,20 @@ export function Preloader() {
   if (gone) return null;
 
   return (
-    <div
-      className={`bz-preloader ${leaving ? "is-leaving" : ""}`}
-      role="status"
-      aria-live="polite"
-      aria-label="جارٍ فتح BacZone"
-    >
-      <div className="bz-preloader-mark">
-        <span className="bz-preloader-halo" aria-hidden="true" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO_URL} alt="BacZone" className="bz-preloader-logo" />
+    <div className={`bz-preloader ${leaving ? "is-leaving" : ""}`} role="status" aria-live="polite" aria-label="جارٍ فتح BacZone">
+      <div className="bz-preloader-panel">
+        <div className="bz-preloader-brand">
+          <span className="bz-preloader-orbit orbit-a" aria-hidden="true" />
+          <span className="bz-preloader-orbit orbit-b" aria-hidden="true" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={DEFAULT_LOGO} alt="BacZone" width={58} height={58} className="bz-preloader-logo" />
+        </div>
+        <div className="bz-preloader-copy">
+          <strong>BacZone</strong>
+          <span>نفتح لك مساحة دراسة هادئة</span>
+        </div>
+        <div className="bz-preloader-track" aria-hidden="true"><span /></div>
       </div>
-      <div className="bz-preloader-progress" aria-hidden="true"><span /></div>
-      <span className="bz-preloader-label">نجهّز مساحتك للدراسة</span>
     </div>
   );
 }

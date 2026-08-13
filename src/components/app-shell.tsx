@@ -90,8 +90,7 @@ const TEACH_DROPDOWN = [
   { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
 ];
 
-/* أدوات البكالوريا في قسم واحد — تُستخدم في هيدر المنصة للطالب والأستاذ،
-   وتستعمل المسارات الداخلية الفعلية بدل روابط خارجية متفرقة. */
+/* روابط الأدوات العامة — نقطة وصول واحدة خارج قوائم الدراسة والتدريس. */
 const BAC_TOOLS_DROPDOWN = [
   { href: "/calculate", label: "حساب معدل البكالوريا", icon: faCalculator, external: false, desc: "اعرف معدلك حسب شعبتك" },
   { href: "/tools/weighted-average", label: "حساب المعدل الموزون", icon: faScaleBalanced, external: false, desc: "قارن فرصك في الميادين" },
@@ -158,11 +157,8 @@ const MENU_ITEMS_TEACHER = [
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
 ];
-// روابط خارجية ثابتة تُضاف بعد الروابط القابلة للتعديل من الأدمن
-const MENU_ITEMS_EXTERNAL = [
-  { href: "/tools/exam-simulator", label: "محاكاة البكالوريا", icon: faClipboardCheck, external: false },
-  { href: "/tools/study-planner", label: "إنشاء برنامج مراجعة", icon: faCalendarCheck, external: false },
-];
+const PLATFORM_PUBLIC_LINK = { href: "/tools", label: "الأدوات العامة", icon: faLayerGroup, external: false };
+
 
 interface ShellLink {
   href: string;
@@ -227,8 +223,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
      على الهاتف. **مصدر واحد** الآن، يقرؤه السطحان — فيستحيل اختلافهما.
      والأدمن يتحكّم به من لوحته. */
   const navLinks = useNavLinks();
-  const bacToolHrefs = new Set(BAC_TOOLS_DROPDOWN.map((item) => item.href));
-  const dynamicLinks = navLinks.filter((l) => !bacToolHrefs.has(l.href)).map((l) => ({
+  const publicToolHrefs = new Set(BAC_TOOLS_DROPDOWN.map((item) => item.href));
+  const dynamicLinks = navLinks.filter((l) => !publicToolHrefs.has(l.href)).map((l) => ({
     href: l.href,
     label: l.label,
     icon: NAV_FA[l.icon ?? ""] ?? faLink,
@@ -237,20 +233,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   /* «المزيد»: تسقط إلى القائمة المدمجة إن لم يحفظ الأدمن شيئاً —
      كانت `MORE_DROPDOWN_BASE` مُعرَّفة ولا تُستعمل إطلاقاً، فلو أخفى
      الأدمن روابطه صارت القائمة **صندوقاً أبيض فارغاً**. */
-  const moreDropdown = dedupe(dynamicLinks.length ? dynamicLinks : MORE_DROPDOWN_BASE);
+  const moreDropdown = dedupe([
+    ...(dynamicLinks.length ? dynamicLinks : MORE_DROPDOWN_BASE),
+    PLATFORM_PUBLIC_LINK,
+  ]);
   const isTeacher = profile?.role === "teacher";
   const courseLinks = courseLinksFor(profile?.role);
-  /* القائمة تتبع الدور: أدوات مراجعة للطالب، وأدوات تدريس للأستاذ.
-     الأدمن يرى قائمة الطالب لأنّه يحتاج معاينة ما يراه الطلبة. */
+  /* القائمة تتبع الدور: الطالب يرى أدوات المراجعة، والأستاذ يرى أدوات التدريس.
+     أدوات الحساب والمحاكاة العامة لا تدخل أيّاً من القائمتين، ولها نقطة وصول
+     مستقلة باسم «الأدوات العامة» في المزيد والدرج. */
   const menuItems = dedupe([
     ...courseLinks,
     ...(isTeacher ? MENU_ITEMS_TEACHER : MENU_ITEMS_BASE),
-    ...BAC_TOOLS_DROPDOWN,
+    PLATFORM_PUBLIC_LINK,
     ...dynamicLinks,
-    ...MENU_ITEMS_EXTERNAL,
   ]);
-  const toolsMenu = dedupe(isTeacher ? [...TEACH_DROPDOWN, ...BAC_TOOLS_DROPDOWN] : [...courseLinks.slice(1), ...BAC_TOOLS_DROPDOWN, ...TOOLS_DROPDOWN]);
-  const toolsLabel = isTeacher ? "أدوات التدريس" : "أدوات البكالوريا";
+  const toolsMenu = dedupe(isTeacher ? TEACH_DROPDOWN : [...courseLinks.slice(1), ...TOOLS_DROPDOWN]);
+  const toolsLabel = isTeacher ? "أدوات التدريس" : "أدوات الدراسة";
   const toolsIcon = isTeacher ? faChalkboardUser : faLayerGroup;
   const isGuest = !user;
 

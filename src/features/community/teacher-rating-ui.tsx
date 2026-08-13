@@ -186,48 +186,52 @@ export function RateTeacherSheet({
 }
 
 /* ─────────── ملخّص التقييم على بروفايل الأستاذ ───────────
-   يعرض للجميع: المتوسّط، توزيع النجوم، ومن قيّم مع آرائهم. */
-export function MyRatingSummary({ uid }: { uid: string; owner?: boolean }) {
+   نفس مصدر البيانات للعرض العام وحساب الأستاذ؛ `owner` يحدد فقط
+   مقدار التفاصيل، ولا يغير قواعد التقييم أو صلاحية القراءة. */
+export function MyRatingSummary({ uid, owner = false }: { uid: string; owner?: boolean }) {
   const { list, stats } = useTeacherRating(uid);
-  if (stats.count === 0) return null;
+  const comments = list.filter((rating) => Boolean(rating.comment?.trim()));
+  const visibleList = owner || stats.visible ? list : [];
+  const visibleComments = owner || stats.visible ? comments : [];
+  const averageReady = stats.visible;
+
+  if (stats.count === 0) {
+    return (
+      <section className="bz-teacher-ratings bz-teacher-ratings-empty" aria-label="تقييمات الطلاب">
+        <div className="bz-teacher-ratings-empty-icon"><FontAwesomeIcon icon={faStarOutline} /></div>
+        <div><span className="bz-teacher-ratings-kicker">تقييمات الطلاب</span><h2>لم تحصل على تقييمات بعد.</h2><p>بعد أن يحضر الطلاب حصصك، يمكنهم مشاركة تجربتهم ليستفيد منها طلاب آخرون.</p></div>
+      </section>
+    );
+  }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text-primary">
-          <FontAwesomeIcon icon={faStar} className="h-3.5 w-3.5 text-amber-500" />
-          تقييم الطلاب
-        </h3>
-        <RatingBadge stats={stats} size="md" />
-      </div>
-
-      <div className="mt-3 space-y-1">
-        {[5, 4, 3, 2, 1].map((n) => {
-          const c = stats.breakdown[n] ?? 0;
-          const pct = stats.count ? (c / stats.count) * 100 : 0;
-          return (
-            <div key={n} className="flex items-center gap-2">
-              <span className="w-3 shrink-0 text-[11px] font-bold text-text-muted">{n}</span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border">
-                <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
-              </div>
-              <span className="w-5 shrink-0 text-left text-[11px] text-text-muted">{c}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {list.filter((r) => r.comment).length > 0 && (
-        <div className="mt-3 space-y-2 border-t border-border pt-3">
-          {list.filter((r) => r.comment).slice(0, 5).map((r) => (
-            <div key={r.studentUid} className="rounded-xl bg-background p-2.5">
-              <span className="text-[11px] font-bold text-amber-600">{"★".repeat(r.stars)}</span>
-              <p className="mt-1 text-xs leading-relaxed text-text-primary" dir="auto">{r.comment}</p>
-            </div>
-          ))}
+    <section className="bz-teacher-ratings" aria-label="تقييمات الطلاب">
+      <div className="bz-teacher-ratings-head">
+        <div><span className="bz-teacher-ratings-kicker">{owner ? "لوحة الأستاذ" : "تجارب الطلاب"}</span><h2>تقييمات الطلاب</h2><p>{owner ? "تابع الانطباع العام وآخر ما كتبه الطلاب عن حصصك." : "آراء منشورة تساعدك على التعرف إلى تجربة الطلاب مع الأستاذ."}</p></div>
+        <div className="bz-teacher-ratings-summary">
+          <span className="bz-teacher-ratings-stars" aria-label={averageReady ? `${stats.avg} من 5` : "المتوسط قيد التجميع"}>{[1, 2, 3, 4, 5].map((n) => <FontAwesomeIcon key={n} icon={averageReady && n <= Math.round(stats.avg) ? faStar : faStarOutline} />)}</span>
+          <strong>{averageReady ? stats.avg.toFixed(1) : "—"}</strong>
+          <small>{stats.count} {stats.count === 1 ? "تقييم" : "تقييمات"}</small>
         </div>
-      )}
-    </div>
+      </div>
+
+      {!averageReady && <div className="bz-teacher-ratings-threshold"><FontAwesomeIcon icon={faShieldHalved} /><span>يظهر المتوسط العام بعد اكتمال 5 تقييمات، حفاظاً على دقة الانطباع وعدم بناء حكم على تجربة واحدة.</span></div>}
+
+      <div className="bz-teacher-ratings-grid">
+        <div className="bz-teacher-ratings-breakdown" aria-label="توزيع التقييمات">
+          <h3>توزيع التقييمات</h3>
+          {[5, 4, 3, 2, 1].map((n) => {
+            const c = stats.breakdown[n] ?? 0;
+            const pct = stats.count ? (c / stats.count) * 100 : 0;
+            return <div key={n} className="bz-teacher-rating-bar"><span>{n}<FontAwesomeIcon icon={faStar} /></span><div><i style={{ width: `${pct}%` }} /></div><small>{c}</small></div>;
+          })}
+        </div>
+        <div className="bz-teacher-ratings-recent">
+          <div className="bz-teacher-ratings-recent-head"><h3>{owner ? "آخر التقييمات" : "آراء منشورة"}</h3><span>{visibleComments.length} تعليق</span></div>
+          {visibleList.length === 0 ? <div className="bz-teacher-ratings-private-empty"><FontAwesomeIcon icon={faShieldHalved} /><p>تظهر الآراء بعد اكتمال الحد الأدنى من التقييمات.</p></div> : visibleComments.length === 0 ? <div className="bz-teacher-ratings-private-empty"><FontAwesomeIcon icon={faStarOutline} /><p>لا توجد تعليقات مكتوبة بعد، لكن عدد التقييمات محفوظ.</p></div> : <div className="bz-teacher-ratings-review-list">{visibleComments.slice(0, 6).map((rating) => <article key={rating.studentUid} className="bz-teacher-review-card"><div className="bz-teacher-review-meta"><span className="bz-teacher-review-author">{rating.studentName || "طالب"}</span><time dateTime={new Date(rating.updatedAt ?? rating.at).toISOString()}>{new Date(rating.updatedAt ?? rating.at).toLocaleDateString("ar-DZ", { year: "numeric", month: "short", day: "numeric" })}</time></div><span className="bz-teacher-review-stars" aria-label={`${rating.stars} من 5`}>{[1, 2, 3, 4, 5].map((n) => <FontAwesomeIcon key={n} icon={n <= rating.stars ? faStar : faStarOutline} />)}</span><p dir="auto">{rating.comment}</p></article>)}</div>}
+        </div>
+      </div>
+    </section>
   );
 }
 
