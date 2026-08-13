@@ -6,10 +6,10 @@ import { SPECIALTY_KEYS, specialty } from "@/features/rooms/exam-sim/exam-data";
 import { SoloSimulator } from "@/features/tools/solo-simulator";
 import { absUrl } from "@/features/guide/site-url";
 
-const TITLE = "عش تجربة امتحان حقيقي — محاكاة البكالوريا";
+const TITLE = "غرفة امتحان البكالوريا الافتراضية (Virtual Bac Room) — محاكاة امتحان البكالوريا";
 const DESC =
-  "محاكاة امتحان البكالوريا بمواضيع حقيقية وتوقيت رسمي: اختر شعبتك ومادّتك، " +
-  "احلّ بالمدّة المعتمدة، ثمّ صحّح بالحلّ النموذجي — بلا تسجيل.";
+  "غرفة امتحان البكالوريا الافتراضية بمواضيع حقيقية وتوقيت رسمي: اختر شعبتك ومادّتك، " +
+  "ادخل القاعة، حلّ بالمدّة المعتمدة، ثمّ راجع الحلّ النموذجي — بلا تسجيل.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -94,10 +94,10 @@ export default function ExamSimulatorPage() {
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>
           </nav>
           <h1 className="font-display text-[24px] font-extrabold leading-[1.25] sm:text-[34px]">
-            عش تجربة امتحان حقيقي
+            غرفة امتحان البكالوريا الافتراضية
           </h1>
           <p className="mt-2.5 max-w-2xl text-[13px] leading-[1.9] text-white/80">
-            مواضيع حقيقية · التوقيت الرسمي · جرس البداية والنهاية · بلا تسجيل
+            محاكاة امتحان البكالوريا · موضوع حقيقي · توقيت رسمي · تصحيح بعد النهاية
           </p>
         </div>
       </header>

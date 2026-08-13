@@ -93,14 +93,23 @@ function PublicAuthActions({ mobile = false }: { mobile?: boolean }) {
 export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuId = "bz-public-menu";
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (variant !== "landing") return;
+    const onScroll = () => setScrolled(window.scrollY > 28);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [variant]);
+
   return (
-    <header className={`bz-pubheader ${variant === "landing" ? "is-landing" : ""}`} data-variant={variant}>
+    <header className={`bz-pubheader ${variant === "landing" ? "is-landing" : ""} ${scrolled ? "is-scrolled" : ""}`} data-variant={variant} data-scrolled={scrolled ? "true" : "false"}>
       <div className="bz-pubheader-inner mx-auto flex min-h-[58px] max-w-6xl items-center gap-2 px-3 sm:min-h-16 sm:px-4">
         <Brand href="/" size="sm" beta={false} className="bz-public-brand" />
 
