@@ -5663,7 +5663,9 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 /* STEP 18 — shared notes PDF output and published file card */
 .bz-notes-pdf-source {
   direction: rtl;
-  width: 794px;
+  width: 688px;
+  max-width: 688px;
+  box-sizing: border-box;
   padding: 46px 54px;
   color: #131722;
   background: #fff;
@@ -5674,10 +5676,10 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-.bz-notes-pdf-source header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 3px solid #2563eb; }
-.bz-notes-pdf-source header strong { color: #2563eb; font-size: 1.5rem; }
-.bz-notes-pdf-source header span { color: #2563eb; font-size: 1.05rem; font-weight: 800; }
-.bz-notes-pdf-source .bz-pdf-meta { margin: 8px 0 26px; color: #64748b; font-size: .82rem; }
+.bz-notes-pdf-source header { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; box-sizing: border-box; padding-bottom: 14px; border-bottom: 3px solid #2563eb; overflow: hidden; }
+.bz-notes-pdf-source header strong { min-width: 0; max-width: 100%; color: #2563eb; font-size: 1.5rem; overflow-wrap: anywhere; }
+.bz-notes-pdf-source header span { flex: 0 0 auto; color: #2563eb; font-size: 1.05rem; font-weight: 800; }
+.bz-notes-pdf-source .bz-pdf-meta { width: 100%; box-sizing: border-box; margin: 8px 0 26px; color: #64748b; font-size: .82rem; overflow-wrap: anywhere; }
 .bz-notes-pdf-source .bz-pdf-body,
 .bz-notes-pdf-source .bz-pdf-body p,
 .bz-notes-pdf-source .bz-pdf-body h1,
@@ -5688,7 +5690,10 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-notes-pdf-source .bz-pdf-body table,
 .bz-notes-pdf-source .bz-pdf-body th,
 .bz-notes-pdf-source .bz-pdf-body td,
-.bz-notes-pdf-source .bz-pdf-body blockquote {
+.bz-notes-pdf-source   .bz-pdf-body blockquote {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-family: inherit;
   direction: rtl;
   text-align: right;
@@ -5706,11 +5711,11 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-notes-pdf-source .bz-pdf-body h2,
 .bz-notes-pdf-source .bz-pdf-body h3,
 .bz-notes-pdf-source .bz-pdf-body h4 { break-after: avoid; page-break-after: avoid; }
-.bz-notes-pdf-source .bz-pdf-body table { width: 100%; border-collapse: collapse; margin: .9em 0; }
+.bz-notes-pdf-source .bz-pdf-body table { width: 100%; max-width: 100%; box-sizing: border-box; table-layout: fixed; border-collapse: collapse; margin: .9em 0; }
 .bz-notes-pdf-source .bz-pdf-body th,
-.bz-notes-pdf-source .bz-pdf-body td { border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; }
+.bz-notes-pdf-source .bz-pdf-body td { box-sizing: border-box; max-width: 100%; border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; overflow-wrap: anywhere; word-break: break-word; }
 .bz-notes-pdf-source .bz-pdf-body th { background: #f1f5f9; font-weight: 800; }
-.bz-notes-pdf-source footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: .72rem; text-align: center; }
+.bz-notes-pdf-source footer { box-sizing: border-box; max-width: 100%; margin-top: 36px; padding-top: 12px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: .72rem; text-align: center; overflow-wrap: anywhere; }
 .bz-notes-pdf-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 4px; padding: 12px 14px; border: 1px solid rgb(239 68 68 / .2); border-radius: 16px; background: rgb(239 68 68 / .05); }
 .bz-notes-pdf-card > div { display: flex; min-width: 0; align-items: center; gap: 9px; }
 .bz-notes-pdf-card > div > div { display: grid; min-width: 0; gap: 2px; }

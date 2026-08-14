@@ -739,9 +739,12 @@ export function RoomNotes({
     source.style.display = "block";
     source.style.transform = "";
     source.style.marginLeft = "100vw";
-    source.style.width = "794px";
+    source.style.width = "688px";
+    source.style.maxWidth = "688px";
+    source.style.boxSizing = "border-box";
     source.style.height = "auto";
-    source.style.minHeight = "1123px";
+    source.style.overflowX = "hidden";
+    source.style.overflowWrap = "anywhere";
     source.style.opacity = "1";
     source.style.pointerEvents = "none";
     source.setAttribute("aria-hidden", "true");
@@ -772,6 +775,11 @@ export function RoomNotes({
               cloned.style.position = "static";
               cloned.style.display = "block";
               cloned.style.marginLeft = "0";
+              cloned.style.width = "688px";
+              cloned.style.maxWidth = "688px";
+              cloned.style.boxSizing = "border-box";
+              cloned.style.overflowX = "hidden";
+              cloned.style.overflowWrap = "anywhere";
               cloned.style.visibility = "visible";
               cloned.style.opacity = "1";
               cloned.style.direction = "rtl";
