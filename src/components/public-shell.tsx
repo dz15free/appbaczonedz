@@ -119,10 +119,12 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
   const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const desktopToolsMenuRef = useRef<HTMLDivElement>(null);
   const mobileToolsMenuRef = useRef<HTMLDivElement>(null);
   const aboutMenuRef = useRef<HTMLDivElement>(null);
+  const mobileAboutMenuRef = useRef<HTMLDivElement>(null);
   const menuId = "bz-public-menu";
 
   useEffect(() => {
@@ -130,19 +132,22 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
     setDesktopToolsOpen(false);
     setMobileToolsOpen(false);
     setAboutOpen(false);
+    setMobileAboutOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!desktopToolsOpen && !mobileToolsOpen && !aboutOpen) return;
+    if (!desktopToolsOpen && !mobileToolsOpen && !aboutOpen && !mobileAboutOpen) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       const insideDesktop = desktopToolsMenuRef.current?.contains(target) ?? false;
       const insideMobile = mobileToolsMenuRef.current?.contains(target) ?? false;
       const insideAbout = aboutMenuRef.current?.contains(target) ?? false;
-      if (!insideDesktop && !insideMobile && !insideAbout) {
+      const insideMobileAbout = mobileAboutMenuRef.current?.contains(target) ?? false;
+      if (!insideDesktop && !insideMobile && !insideAbout && !insideMobileAbout) {
         setDesktopToolsOpen(false);
         setMobileToolsOpen(false);
         setAboutOpen(false);
+        setMobileAboutOpen(false);
       }
     };
     const onKey = (event: KeyboardEvent) => {
@@ -150,6 +155,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
         setDesktopToolsOpen(false);
         setMobileToolsOpen(false);
         setAboutOpen(false);
+        setMobileAboutOpen(false);
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -158,7 +164,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKey);
     };
-  }, [desktopToolsOpen, mobileToolsOpen, aboutOpen]);
+  }, [desktopToolsOpen, mobileToolsOpen, aboutOpen, mobileAboutOpen]);
 
   useEffect(() => {
     if (variant !== "landing") return;
@@ -222,7 +228,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
             aria-expanded={menuOpen}
             aria-controls={menuId}
             aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() => { setMenuOpen((open) => !open); setMobileToolsOpen(false); setMobileAboutOpen(false); }}
           >
             <FontAwesomeIcon icon={menuOpen ? faXmark : faBars} className="h-4 w-4" />
           </button>
@@ -236,7 +242,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
             const active = item.href === "/" ? pathname === "/" || pathname === "/home" : isActivePath(pathname, item.href);
             if (item.href === "/tools") return (
               <div key={item.href} ref={mobileToolsMenuRef} className="bz-public-mobile-tools">
-                <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${mobileToolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={mobileToolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => setMobileToolsOpen((open) => !open)}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} /></button>
+                <button type="button" className={`bz-pubmenu-link bz-public-mobile-tools-trigger ${mobileToolsOpen || pathname?.startsWith("/tools") || pathname === "/calculate" ? "is-active" : ""}`} aria-expanded={mobileToolsOpen} aria-controls="bz-public-mobile-tools-list" onClick={() => { setMobileToolsOpen((open) => !open); setMobileAboutOpen(false); }}><FontAwesomeIcon icon={item.icon} className="h-4 w-4" /><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${mobileToolsOpen ? "rotate-180" : ""}`} /></button>
                 {mobileToolsOpen && <div id="bz-public-mobile-tools-list" className="bz-public-mobile-tools-list"><Link href="/tools" onClick={() => { setMobileToolsOpen(false); setMenuOpen(false); }}><b>كل أدوات البكالوريا</b><small>فهرس الأدوات</small></Link>{BAC_TOOLS.map((tool) => <Link key={tool.href} href={tool.href} onClick={() => { setMobileToolsOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={tool.icon} /><span><b>{tool.label}</b><small>{tool.desc}</small></span></Link>)}</div>}
               </div>
             );
@@ -247,9 +253,9 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
               </Link>
             );
           })}
-          <div className="bz-pubmenu-about mt-2 border-t border-border/70 pt-3">
-            <button type="button" className="bz-pubmenu-link" onClick={() => setAboutOpen((open) => !open)} aria-expanded={aboutOpen}><FontAwesomeIcon icon={faCircleInfo} className="h-4 w-4" /><span>عن BacZone</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${aboutOpen ? "rotate-180" : ""}`} /></button>
-            {aboutOpen && <div className="bz-pubmenu-about-list"><Link href="/about" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faCircleInfo} /> من نحن</Link><Link href="/contact" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faEnvelope} /> اتصل بنا</Link><Link href="/privacy" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faShieldHalved} /> سياسة الخصوصية</Link><Link href="/terms" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faFileContract} /> اتفاقية الاستخدام</Link></div>}
+          <div ref={mobileAboutMenuRef} className="bz-pubmenu-about mt-2 border-t border-border/70 pt-3">
+            <button type="button" className="bz-pubmenu-link" onClick={() => { setMobileAboutOpen((open) => !open); setMobileToolsOpen(false); }} aria-expanded={mobileAboutOpen} aria-controls="bz-public-mobile-about-list"><FontAwesomeIcon icon={faCircleInfo} className="h-4 w-4" /><span>عن BacZone</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${mobileAboutOpen ? "rotate-180" : ""}`} /></button>
+            {mobileAboutOpen && <div id="bz-public-mobile-about-list" className="bz-pubmenu-about-list"> <Link href="/about" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faCircleInfo} /> من نحن</Link><Link href="/contact" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faEnvelope} /> اتصل بنا</Link><Link href="/privacy" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faShieldHalved} /> سياسة الخصوصية</Link><Link href="/terms" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faFileContract} /> اتفاقية الاستخدام</Link></div>}
           </div>
           <div className="mt-2 border-t border-border/70 pt-3"><PublicAuthActions mobile /></div>
         </nav>

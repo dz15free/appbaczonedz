@@ -5957,3 +5957,106 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 @media (prefers-reduced-motion: reduce) {
   .bz-landing-v2 *, .bz-site-footer * { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+
+/* Landing v2 responsive refinement — Hero, audience cards, showcase and mobile menu */
+.bz-landing-hero-copy { width: min(100%, 690px); }
+.bz-landing-hero-title { font-size: clamp(2.25rem, 5.2vw, 4.15rem); line-height: 1.22; text-wrap: balance; }
+.bz-landing-hero-badges { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+.bz-landing-badge { min-height: 2rem; white-space: nowrap; }
+.bz-landing-platform-shot { min-width: 0; }
+.bz-landing-platform-shot img { max-height: 30rem; object-fit: contain; object-position: center; }
+.bz-landing-audience-card { min-height: 100%; border: 1px solid rgb(148 163 184 / .22); border-radius: 1.6rem; background: linear-gradient(145deg, #ffffff, #f5f8ff); padding: 1.45rem; box-shadow: 0 16px 36px -30px rgb(15 23 42 / .42); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.bz-landing-audience-card.is-teacher { background: linear-gradient(145deg, #effcf8, #f7fbff); }
+.bz-landing-audience-card:hover { border-color: rgb(37 99 235 / .32); transform: translateY(-3px); box-shadow: 0 20px 40px -28px rgb(15 23 42 / .45); }
+.bz-landing-audience-icon { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; height: 3.25rem; width: 3.25rem; border-radius: 1.1rem; background: rgb(37 99 235 / .11); color: #2563eb; }
+.bz-landing-audience-card.is-teacher .bz-landing-audience-icon { background: rgb(16 185 129 / .13); color: #059669; }
+.bz-landing-audience-card h3 { margin-top: .32rem; font-family: var(--font-display, inherit); font-size: 1.3rem; font-weight: 950; line-height: 1.4; }
+.bz-landing-audience-card p { margin-top: .65rem; color: var(--bz-text-muted); font-size: .84rem; line-height: 2; }
+.bz-landing-audience-card a { display: inline-flex; align-items: center; gap: .4rem; margin-top: 1rem; color: #2563eb; font-size: .76rem; font-weight: 900; }
+.bz-landing-guides-card, .bz-landing-specialties-card { display: flex; min-height: 285px; align-items: center; justify-content: space-between; gap: 1.5rem; overflow: hidden; border-radius: 1.75rem; padding: 1.7rem; }
+.bz-landing-guides-card { background: #f3f8f5; }
+.bz-landing-specialties-card { background: #eef4ff; }
+.bz-landing-guide-chip { display: inline-flex; max-width: 100%; align-items: center; gap: .4rem; overflow: hidden; border: 1px solid rgb(16 185 129 / .17); border-radius: .8rem; background: rgb(255 255 255 / .78); padding: .55rem .7rem; color: #047857; font-size: .68rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.bz-landing-guide-chip:hover { background: #fff; border-color: rgb(16 185 129 / .35); }
+
+@media (max-width: 1023px) {
+  .bz-landing-hero-title { font-size: clamp(2.35rem, 7vw, 4rem); }
+  .bz-landing-platform-shot img { max-height: 25rem; }
+}
+
+@media (max-width: 639px) {
+  .bz-landing-v2-hero { min-height: 770px; }
+  .bz-landing-v2-hero .bz-landing-hero-image { object-position: 66% center; transform: scale(1.05); transform-origin: 66% center; }
+  .bz-landing-v2-hero .absolute.inset-0.bg-gradient-to-l { background: linear-gradient(180deg, rgb(6 23 53 / .36) 0%, rgb(6 23 53 / .7) 45%, rgb(6 23 53 / .9) 100%); }
+  .bz-landing-v2-hero .relative.mx-auto { min-height: 770px; align-items: flex-start; padding-top: 8.5rem; }
+  .bz-landing-hero-copy { width: 100%; max-width: none; text-align: right; }
+  .bz-landing-hero-title { max-width: 100%; font-size: clamp(2.2rem, 10.5vw, 3.1rem); line-height: 1.25; letter-spacing: -.04em; }
+  .bz-landing-hero-title span { margin-top: .2rem; }
+  .bz-landing-hero-copy > p { max-width: 100%; font-size: .93rem; line-height: 1.95; }
+  .bz-landing-v2-hero .bz-landing-primary-btn, .bz-landing-v2-hero .bz-landing-ghost-btn { flex: 1 1 100%; min-height: 3rem; }
+  .bz-landing-hero-badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: .55rem; margin-top: 1.2rem; }
+  .bz-landing-badge { min-width: 0; justify-content: center; padding: .55rem .45rem; font-size: .62rem; line-height: 1.35; text-align: center; white-space: normal; }
+  .bz-landing-badge:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; min-width: 9.8rem; }
+  .bz-landing-platform-shot img { max-height: none; width: 100%; object-fit: contain; }
+  .bz-landing-showcase-grid { display: flex; flex-direction: column; }
+  .bz-landing-showcase-grid > * { width: 100%; }
+  .bz-landing-showcase-grid .bz-landing-platform-shot { order: 1; }
+  .bz-landing-showcase-grid > div:last-child { order: 2; }
+  .bz-landing-audience-card { padding: 1.15rem; }
+  .bz-landing-audience-card p { font-size: .78rem; line-height: 1.9; }
+  .bz-landing-guides-card, .bz-landing-specialties-card { min-height: 0; align-items: flex-start; flex-direction: column; padding: 1.3rem; }
+  .bz-landing-guides-card .bz-landing-illustration, .bz-landing-specialties-card .bz-landing-illustration { align-self: center; min-height: 4.5rem; font-size: 4.8rem; }
+  .bz-landing-guide-chip { max-width: 100%; font-size: .62rem; }
+  .bz-pubmenu-about-list { padding-inline: .35rem .6rem; }
+  .bz-pubmenu-about-list a { min-height: 2.6rem; font-size: .76rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bz-landing-audience-card, .bz-landing-hero-image { transition: none !important; }
+}
+
+
+/* Final mobile hero visibility refinement */
+@media (max-width: 639px) {
+  .bz-landing-v2-hero .bz-landing-hero-image { object-position: 73% 36%; transform: scale(1.02); opacity: .96; }
+  .bz-landing-v2-hero .bz-landing-hero-overlay { background: radial-gradient(circle at 74% 24%, rgb(37 99 235 / .08), transparent 34%), linear-gradient(180deg, rgb(3 13 35 / .18) 0%, rgb(3 13 35 / .48) 47%, rgb(3 13 35 / .76) 100%); }
+}
+
+
+/* Mobile Hero composition: one integrated visual layer, no floating image patch. */
+.bz-landing-mobile-visual { display: none; }
+@media (max-width: 639px) {
+  .bz-landing-v2-hero { min-height: 820px; }
+  .bz-landing-v2-hero .bz-landing-hero-image { object-position: 76% 58%; transform: scale(1.04); opacity: .28; }
+  .bz-landing-v2-hero .relative.mx-auto { min-height: 820px; align-items: flex-start; padding-top: 7.9rem; padding-bottom: 0; }
+  .bz-landing-hero-copy { position: relative; z-index: 3; width: 100%; max-width: none; }
+  .bz-landing-mobile-visual { position: absolute; inset-inline: 0; bottom: 0; z-index: 1; display: block; height: 14.5rem; overflow: hidden; pointer-events: none; }
+  .bz-landing-mobile-visual-image { position: absolute; inset-inline: 0; bottom: -3.5rem; height: 18rem; width: 100%; object-fit: cover; object-position: 76% 30%; opacity: .72; filter: saturate(.96) contrast(1.03); }
+  .bz-landing-mobile-visual-shade { position: absolute; inset: 0; display: block; background: linear-gradient(180deg, rgb(6 23 53 / .98) 0%, rgb(6 23 53 / .78) 25%, rgb(6 23 53 / .22) 65%, rgb(6 23 53 / .12) 100%); }
+}
+
+
+/* Hero title line control: preserve the intended Arabic rhythm at every viewport. */
+.bz-landing-hero-title { display: block; overflow: visible; padding-block: .06em .12em; line-height: 1.18; }
+.bz-landing-hero-title-lead, .bz-landing-hero-title-review, .bz-landing-hero-title-success { display: block; }
+.bz-landing-hero-title-review { margin-top: .08em; white-space: nowrap; }
+.bz-landing-hero-title-success { margin-top: .08em; white-space: nowrap; }
+@media (max-width: 1023px) {
+  .bz-landing-hero-title { font-size: clamp(2.45rem, 6.8vw, 4rem); line-height: 1.18; }
+}
+@media (max-width: 639px) {
+  .bz-landing-hero-title { font-size: clamp(2.05rem, 9.7vw, 2.8rem); line-height: 1.18; letter-spacing: -.045em; }
+  .bz-landing-hero-title-review { margin-top: .06em; }
+  .bz-landing-hero-title-success { margin-top: .08em; font-size: clamp(1.7rem, 8.2vw, 2.4rem); letter-spacing: -.06em; }
+}
+
+
+/* Arabic glyph descender fix: give the success line real paint room below the baseline. */
+.bz-landing-hero-title,
+.bz-landing-hero-title-success { overflow: visible; }
+.bz-landing-hero-title-success { line-height: 1.34; padding-block: .08em .24em; margin-bottom: -.24em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+@media (max-width: 639px) {
+  .bz-landing-hero-title { line-height: 1.24; padding-bottom: .1em; }
+  .bz-landing-hero-title-success { line-height: 1.36; padding-bottom: .28em; margin-bottom: -.28em; }
+}
