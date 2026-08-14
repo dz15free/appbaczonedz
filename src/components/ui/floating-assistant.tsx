@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon, type IconName } from "@/components/ui/icon";
+import { getRoomOverlayRoot } from "@/features/rooms/room-overlay";
 
 /* ════════════════════════════════════════════════════════════
    المساعد العائم الصغير (Mini Floating Assistant)
@@ -89,6 +90,8 @@ export function FloatingAssistant({
     : t === "primary" ? "var(--bz-blue)"
     : "var(--bz-ink-2)";
 
+  const portalRoot = getRoomOverlayRoot() ?? document.body;
+
   return createPortal(
     <>
       {open && (
@@ -101,7 +104,7 @@ export function FloatingAssistant({
 
       <div
         ref={rootRef}
-        className={`fixed z-[10055] flex-col items-start gap-2 ${hideOnDesktop ? "flex lg:hidden" : "flex"}`}
+        className={`pointer-events-auto fixed z-[10055] flex-col items-start gap-2 ${hideOnDesktop ? "flex lg:hidden" : "flex"}`}
         style={{
           // يتبع ارتفاع شريط الصوت الحقيقي بدل رقم مخمّن
           /* فوق شريط الصوت **وشريط أدوات الهاتف** معاً — كلاهما ينشر
@@ -161,6 +164,6 @@ export function FloatingAssistant({
         </button>
       </div>
     </>,
-    document.body,
+    portalRoot,
   );
 }

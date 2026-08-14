@@ -17,6 +17,7 @@ import {
 } from "@/features/rooms/rooms";
 import { useKatex } from "@/features/rooms/use-katex";
 import { useAuth } from "@/features/auth/auth-provider";
+import { getRoomOverlayRoot } from "@/features/rooms/room-overlay";
 import { connectDrive, initDrive, isDriveConfigured, hasDriveToken, uploadToDrive } from "@/lib/gdrive";
 
 /* ════════════════════════════════════════════════════════════
@@ -770,8 +771,17 @@ export function RoomNotes({
               cloned.style.transform = "none";
               cloned.style.position = "static";
               cloned.style.display = "block";
+              cloned.style.marginLeft = "0";
               cloned.style.visibility = "visible";
               cloned.style.opacity = "1";
+              cloned.style.direction = "rtl";
+              cloned.style.textAlign = "right";
+              cloned.style.fontFamily = 'var(--font-tajawal), var(--font-cairo), "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif';
+              cloned.querySelectorAll<HTMLElement>(".bz-pdf-body, .bz-pdf-body p, .bz-pdf-body h1, .bz-pdf-body h2, .bz-pdf-body h3, .bz-pdf-body h4, .bz-pdf-body li, .bz-pdf-body table, .bz-pdf-body th, .bz-pdf-body td, .bz-pdf-body blockquote").forEach((node) => {
+                node.style.direction = "rtl";
+                node.style.textAlign = "right";
+                node.style.fontFamily = "inherit";
+              });
             }
           },
         },
@@ -815,6 +825,7 @@ export function RoomNotes({
   /* «غير منشور» = المسودّة تختلف عن المنشور فعلاً. المقارنة على النصّ
      المُسلسَل نفسه، فلا تُطلق شارةً لأنّ المتصفّح أعاد ترتيب سمة. */
   const unpublished = editable && !(blank(html) && blank(published)) && html !== (published ?? "");
+  const roomOverlayRoot = typeof document !== "undefined" ? (getRoomOverlayRoot() ?? document.body) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -885,7 +896,7 @@ export function RoomNotes({
       {notesError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{notesError}</p>}
       {pdfError && <p className="border-b border-danger/20 bg-danger/5 px-3 py-2 text-[11.5px] font-bold text-danger" role="alert">{pdfError}</p>}
       {!isOwner && pdfNotice && typeof document !== "undefined" && createPortal(
-        <div className="bz-room-file-notice" role="status" aria-live="polite">
+        <div className="pointer-events-auto bz-room-file-notice" role="status" aria-live="polite">
           <span className="bz-room-file-notice-icon"><FontAwesomeIcon icon={faFilePdf} /></span>
           <span className="bz-room-file-notice-copy">
             <span className="bz-room-file-notice-kicker">ملف جديد في الغرفة</span>
@@ -895,7 +906,7 @@ export function RoomNotes({
           </span>
           <button type="button" onClick={() => setPdfNotice(null)} aria-label="إغلاق إشعار الملف" title="إغلاق"><FontAwesomeIcon icon={faXmark} /></button>
         </div>,
-        document.body,
+        roomOverlayRoot ?? document.body,
       )}
 
       {/* ── شريط الأدوات ──
@@ -1310,6 +1321,7 @@ function Pop({
       /* قبل أوّل قياس نُخفيها بـ`visibility` لا بـ`display`: بلا مقاس
          محسوب لا يمكن حساب موضعها، ومع `display:none` تبقى بلا مقاس. */
       style={{
+        pointerEvents: "auto",
         position: "fixed",
         top: pos?.top ?? 0,
         left: pos?.left ?? 0,
@@ -1319,7 +1331,7 @@ function Pop({
     >
       {children}
     </div>,
-    document.body,
+    getRoomOverlayRoot() ?? document.body,
   );
 }
 

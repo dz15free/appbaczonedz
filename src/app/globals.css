@@ -220,8 +220,11 @@ input::placeholder, textarea::placeholder {
 }
 
 /* يُمنع تمرير الجسم بالكامل أثناء وضع الشاشة الكاملة */
-body.bz-fullscreen-active {
+body.bz-fullscreen-active,
+body.bz-room-focus-active {
   overflow: hidden !important;
+}
+body.bz-fullscreen-active {
   position: fixed !important;
   width: 100% !important;
   height: 100% !important;
@@ -1849,12 +1852,20 @@ html { scrollbar-gutter: stable; }
   .bz-bs-fade, .bz-bs-slide, .bz-radial-in { animation-duration: .01ms !important; }
 }
 
+/* مضيف نوافذ الغرفة: لا يحجب المسرح بنفسه، لكن أبناءه التفاعليين
+   يظهرون فوق الشاشة الكاملة مهما كان مصدر الفتح. */
+#bz-room-overlay-root { pointer-events: none; isolation: isolate; }
+#bz-room-overlay-root > * { pointer-events: auto; }
+
 /* ═══ وضع التركيز الدراسي (Study Focus Mode) ═══ */
 .bz-focus-root {
   position: fixed; inset: 0; z-index: 9990;
   background: var(--bz-bg, #f8fafc);
   display: flex; flex-direction: column;
-  height: 100dvh;
+  width: 100vw;
+  height: var(--bz-vvh, 100dvh);
+  min-height: var(--bz-vvh, 100dvh);
+  overflow: hidden;
 }
 .bz-focus-topbar {
   height: 46px; flex-shrink: 0;
@@ -4084,7 +4095,8 @@ body { font-weight: 450; text-rendering: optimizeLegibility; }
   .bz-exam-tool *, .bz-study-planner-tool *, .bz-exam-running * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 .bz-fullscreen-active { overflow: hidden !important; }
-.bz-fullscreen { position: fixed !important; z-index: 2147483000 !important; inset: 0 !important; width: 100vw !important; height: 100dvh !important; max-width: none !important; border-radius: 0 !important; overflow: auto !important; }
+/* قواعد الغرفة الأساسية موجودة أعلى الملف؛ لا نعيد تعريف .bz-fullscreen
+   هنا حتى لا تتغلب قاعدة متأخرة على ارتفاع viewport أو overflow. */
 .bz-fullscreen .bz-exam-paper,
 .bz-fullscreen .bz-exam-paper iframe { min-height: 0; height: 100%; }
 .bz-fullscreen .bz-exam-running-grid { min-height: calc(100dvh - 76px); }
@@ -5655,13 +5667,33 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   padding: 46px 54px;
   color: #131722;
   background: #fff;
-  font-family: "Tajawal", "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-tajawal), var(--font-cairo), "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
   line-height: 1.9;
+  text-align: right;
+  unicode-bidi: plaintext;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 .bz-notes-pdf-source header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 14px; border-bottom: 3px solid #2563eb; }
 .bz-notes-pdf-source header strong { color: #2563eb; font-size: 1.5rem; }
 .bz-notes-pdf-source header span { color: #2563eb; font-size: 1.05rem; font-weight: 800; }
 .bz-notes-pdf-source .bz-pdf-meta { margin: 8px 0 26px; color: #64748b; font-size: .82rem; }
+.bz-notes-pdf-source .bz-pdf-body,
+.bz-notes-pdf-source .bz-pdf-body p,
+.bz-notes-pdf-source .bz-pdf-body h1,
+.bz-notes-pdf-source .bz-pdf-body h2,
+.bz-notes-pdf-source .bz-pdf-body h3,
+.bz-notes-pdf-source .bz-pdf-body h4,
+.bz-notes-pdf-source .bz-pdf-body li,
+.bz-notes-pdf-source .bz-pdf-body table,
+.bz-notes-pdf-source .bz-pdf-body th,
+.bz-notes-pdf-source .bz-pdf-body td,
+.bz-notes-pdf-source .bz-pdf-body blockquote {
+  font-family: inherit;
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
 .bz-notes-pdf-source .bz-pdf-body h1,
 .bz-notes-pdf-source .bz-pdf-body h2,
 .bz-notes-pdf-source .bz-pdf-body h3,

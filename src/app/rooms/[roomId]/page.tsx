@@ -47,7 +47,7 @@ import { ExamGradingSheet } from "@/features/rooms/exam-sim/exam-papers";
 import { listenExam, type ExamSession } from "@/features/rooms/exam-sim/exam-session";
 import { FloatingAssistant } from "@/components/ui/floating-assistant";
 import { StatusDot } from "@/components/ui/status-dot";
-import { Icon } from "@/components/ui/icon";
+import { Icon, type IconName } from "@/components/ui/icon";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -180,35 +180,48 @@ export default function RoomPage() {
   const [dockTab, setDockTab] = useState("chat");
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
+  // وضع التركيز للطالب + الأدراج الثانوية داخله
+  const [studentFocus, setStudentFocus] = useState(false);
+  const [studentMoreOpen, setStudentMoreOpen] = useState(false);
+  const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
 
-  // شاشة كاملة حقيقية (Fullscreen API) للحاسوب + CSS لـ iOS
-  async function enterFullscreen() {
+  // دخول موحّد للشاشة الكاملة: يحاول Fullscreen API بعد نقرة المستخدم،
+  // ثم يفعّل طبقة CSS الآمنة على iOS أو عند رفض المتصفح.
+  async function requestRoomFullscreen() {
     try {
       const el = document.documentElement as any;
       if (el.requestFullscreen) await el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen(); // Safari
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
       else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
-    } catch { /* iOS — يكتفي بـ CSS */ }
+    } catch { /* iOS/Safari — نستخدم طبقة CSS */ }
+  }
+  async function enterFullscreen() {
+    await requestRoomFullscreen();
     setFullscreen(true);
+  }
+  async function enterStudentFocus() {
+    await requestRoomFullscreen();
+    setStudentFocus(true);
   }
   async function exitFullscreen() {
     try {
       const doc = document as any;
-      if (doc.exitFullscreen) await doc.exitFullscreen();
-      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+      if (doc.fullscreenElement && doc.exitFullscreen) await doc.exitFullscreen();
+      else if (doc.webkitFullscreenElement && doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
     } catch {}
     setFullscreen(false);
+    setStudentFocus(false);
   }
 
   // قفل تمرير الصفحة بالكامل أثناء الشاشة الكاملة (يمنع ظهور المحتوى خلفها على iOS)
   useEffect(() => {
-    if (fullscreen) {
-      document.body.classList.add("bz-fullscreen-active");
-    } else {
+    document.body.classList.toggle("bz-fullscreen-active", fullscreen);
+    document.body.classList.toggle("bz-room-focus-active", studentFocus);
+    return () => {
       document.body.classList.remove("bz-fullscreen-active");
-    }
-    return () => document.body.classList.remove("bz-fullscreen-active");
-  }, [fullscreen]);
+      document.body.classList.remove("bz-room-focus-active");
+    };
+  }, [fullscreen, studentFocus]);
 
   /* مزامنة الحالة مع المتصفّح.
      بدون هذا: يخرج المستخدم بمفتاح Esc أو بزرّ المتصفّح فتبقى الحالة true
@@ -219,7 +232,8 @@ export default function RoomPage() {
       const active = !!(document.fullscreenElement || doc.webkitFullscreenElement);
       // على iOS لا توجد Fullscreen API — نبقى على وضع CSS ولا نُلغيه
       if (!active && (document.fullscreenEnabled || doc.webkitFullscreenElement !== undefined)) {
-        setFullscreen((cur) => (cur ? false : cur));
+        setFullscreen(false);
+        setStudentFocus(false);
       }
     }
     document.addEventListener("fullscreenchange", sync);
@@ -246,7 +260,7 @@ export default function RoomPage() {
       window.removeEventListener("resize", update);
       document.documentElement.style.removeProperty("--bz-vvh");
     };
-  }, [fullscreen]);
+  }, [fullscreen, studentFocus]);
 
   // مزامنة عند الخروج من الشاشة بـ ESC أو زر المتصفّح
   useEffect(() => {
@@ -255,7 +269,10 @@ export default function RoomPage() {
       const active = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
       // تجاهل الخروج المؤقّت بسبب فتح منتقي الملفات (الرفع داخل الشاشة الكاملة)
       if ((window as any).__bzIgnoreFSExit) return;
-      if (!active) setFullscreen(false);
+      if (!active) {
+        setFullscreen(false);
+        setStudentFocus(false);
+      }
     };
     document.addEventListener("fullscreenchange", onFSChange);
     document.addEventListener("webkitfullscreenchange", onFSChange);
@@ -267,9 +284,6 @@ export default function RoomPage() {
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [roomAccess, setRoomAccess] = useState(false);
-  // وضع التركيز للطالب + الأدراج الثانوية داخله
-  const [studentFocus, setStudentFocus] = useState(false);
-  const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
   // الخروج من وضع التركيز يغلق أي درج مفتوح تابع له (وإلا بقي معلّقاً فوق الغرفة العادية)
   useEffect(() => {
     focusRef.current = studentFocus || fullscreen;
@@ -338,10 +352,10 @@ export default function RoomPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, user, router]);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && fullscreen) exitFullscreen(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && (fullscreen || studentFocus)) exitFullscreen(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [fullscreen]);
+  }, [fullscreen, studentFocus]);
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -529,6 +543,25 @@ export default function RoomPage() {
           onClick={() => setParticipantsOpen(true)}
         />
 
+        {!isOwner && (
+          <>
+            <BarButton
+              icon="hand"
+              title={myHand ? "إنزال اليد" : "رفع اليد"}
+              active={myHand}
+              onClick={toggleHand}
+            />
+            <span className="hidden sm:inline-flex">
+              <BarButton
+                icon="plus"
+                title="وظائف الطالب"
+                active={studentMoreOpen}
+                onClick={() => setStudentMoreOpen(true)}
+              />
+            </span>
+          </>
+        )}
+
         <span className="lg:hidden">
           <BarButton
             icon="chat"
@@ -577,7 +610,7 @@ export default function RoomPage() {
               icon="expand"
               title="وضع التركيز"
               tone="primary"
-              onClick={() => setStudentFocus(true)}
+              onClick={() => { void enterStudentFocus(); }}
             />
           </>
         )}
@@ -1028,6 +1061,11 @@ export default function RoomPage() {
             isMod={isMod}
             myUid={user?.uid}
           />
+
+          {/* مضيف موحّد لكل نوافذ الغرفة. وجوده داخل المسرح يجعل
+              BottomSheet وFloatingAssistant وواجهات الأدوات تظهر داخل
+              الشاشة الكاملة بدل أن تُركّب خلفها على body. */}
+          <div id="bz-room-overlay-root" className="pointer-events-none absolute inset-0 z-[2147483500]" />
         </section>
 
         {/* ══ الشريط الجانبي الواحد ══
@@ -1118,11 +1156,33 @@ export default function RoomPage() {
                 ? [{ id: "actions", icon: "more" as const, label: "إجراءات الحصة",
                      badge: anonQs.filter((q) => !q.answered).length,
                      onClick: () => setMoreOpen(true) }]
-                : [{ id: "focus", icon: "target" as const, label: "وضع التركيز", tone: "primary" as const,
-                     onClick: () => setStudentFocus(true) }]),
+                : [
+                    { id: "cards", icon: "layers" as const, label: "بطاقاتي",
+                      onClick: () => setFocusSheet("cards") },
+                    { id: "focus", icon: "target" as const, label: "وضع التركيز", tone: "primary" as const,
+                     onClick: () => { void enterStudentFocus(); } },
+                  ]),
             ]}
           />
         </div>
+      )}
+
+      {/* وظائف الطالب الثانوية خارج وضع التركيز */}
+      {!isOwner && (
+        <BottomSheet
+          open={studentMoreOpen}
+          onClose={() => setStudentMoreOpen(false)}
+          title="وظائف الطالب"
+          maxHeight="72vh"
+        >
+          <div className="grid grid-cols-2 gap-2 pb-2">
+            <StudentQuickAction icon="file" label="ملفات الغرفة" onClick={() => { setStudentMoreOpen(false); setFocusSheet("files"); }} />
+            <StudentQuickAction icon="note" label="ملاحظات الدرس" onClick={() => { setStudentMoreOpen(false); setFocusSheet("notes"); }} />
+            <StudentQuickAction icon="layers" label="بطاقاتي" onClick={() => { setStudentMoreOpen(false); setFocusSheet("cards"); }} />
+            <StudentQuickAction icon="users" label="الحاضرون" onClick={() => { setStudentMoreOpen(false); setParticipantsOpen(true); }} />
+            <StudentQuickAction icon="target" label="وضع التركيز" onClick={() => { setStudentMoreOpen(false); void enterStudentFocus(); }} />
+          </div>
+        </BottomSheet>
       )}
 
       {/* درج الدردشة على الجوال */}
@@ -1203,7 +1263,7 @@ export default function RoomPage() {
           memberCount={members.length}
           myHandRaised={myHand}
           onToggleHand={toggleHand}
-          onExit={() => setStudentFocus(false)}
+          onExit={() => { void exitFullscreen(); }}
           onSaveToCards={quickSaveCard}
           onAnonymousQuestion={submitAnonQuestion}
           onOpenFiles={() => setFocusSheet("files")}
@@ -1352,6 +1412,23 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
         </div>
       ))}
     </div>
+  );
+}
+
+function StudentQuickAction({ icon, label, onClick }: {
+  icon: IconName;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-surface p-3 text-sm font-bold text-text-primary transition hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]"
+    >
+      <Icon name={icon} size={20} className="text-primary" />
+      <span>{label}</span>
+    </button>
   );
 }
 

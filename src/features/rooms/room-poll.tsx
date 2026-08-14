@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faChartBar, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { getRoomOverlayRoot } from "@/features/rooms/room-overlay";
 import { closePoll, castVote, type RoomPoll } from "@/features/rooms/rooms";
 
 interface Props {
@@ -134,11 +135,12 @@ export function CreatePollModal({
     }
   }
 
-  // تُركَّب على body لتظهر فوق مسرح الشاشة الكاملة (z-9999) بدل أن تُدفن خلفه
+  // تُركَّب داخل طبقة الغرفة عند وجودها، وإلا تعود إلى body خارج الغرفة.
   if (typeof document === "undefined") return null;
+  const portalRoot = getRoomOverlayRoot() ?? document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10065] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="pointer-events-auto fixed inset-0 z-[10065] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-bold">إنشاء استفتاء سريع</h3>
@@ -198,6 +200,6 @@ export function CreatePollModal({
         </button>
       </div>
     </div>,
-    document.body,
+    portalRoot,
   );
 }

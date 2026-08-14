@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { getRoomOverlayRoot } from "@/features/rooms/room-overlay";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 /* ════════════════════════════════════════════
@@ -68,8 +69,10 @@ export function BottomSheet({
     startY.current = null;
   }
 
+  const portalRoot = getRoomOverlayRoot() ?? document.body;
+
   return createPortal(
-    <div className="fixed inset-0 z-[10060] flex flex-col justify-end" role="dialog" aria-modal="true">
+    <div className="pointer-events-auto fixed inset-0 z-[10060] flex flex-col justify-end" role="dialog" aria-modal="true">
       {/* خلفية معتمة */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px] bz-bs-fade"
@@ -105,7 +108,7 @@ export function BottomSheet({
         </div>
       </div>
     </div>,
-    document.body,
+    portalRoot,
   );
 }
 
