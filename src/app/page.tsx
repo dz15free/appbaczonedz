@@ -4,9 +4,18 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
   faBookOpen,
+  faCalculator,
+  faChalkboard,
   faChevronLeft,
+  faClock,
+  faFileLines,
   faFlag,
   faGraduationCap,
+  faListCheck,
+  faPlay,
+  faScaleBalanced,
+  faUsers,
+  faVideo,
 } from "@fortawesome/free-solid-svg-icons";
 import { DynamicIcon } from "@/components/ui/dynamic-icon";
 import { PublicHeader } from "@/components/public-shell";
@@ -15,6 +24,7 @@ import { FaviconSync, LandingFaqRow } from "@/components/landing/landing-client"
 import { getPublicSiteSettings } from "@/features/settings/site-settings-server";
 import { GUIDES } from "@/features/guides/guides-data";
 import { TOOLS } from "@/features/tools/tools-data";
+import { getPublishedEntries } from "@/features/blog/blog-server";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { PublicRootGate } from "@/components/ui/public-root-gate";
@@ -23,117 +33,111 @@ export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: "BacZone — منصة الدراسة التفاعلية لطلاب البكالوريا",
-  description: "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر: أدوات، أدلة، مجتمع، غرف دراسة ودورات في مكان واحد.",
+  description: "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تفاعلية لطلاب البكالوريا في الجزائر.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "ar_DZ",
     url: "/",
-    title: "BacZone — ادرس أذكى وراجع أسرع",
-    description: "بوابتك إلى أدوات البكالوريا والأدلة والمجتمع الدراسي.",
+    title: "BacZone — منصة الدراسة التفاعلية لطلاب البكالوريا",
+    description: "أدوات ومحتوى وغرف دراسة تساعدك على الاستعداد للبكالوريا بوضوح.",
     siteName: "BacZone",
   },
 };
 
+function toolIcon(href: string) {
+  if (href.includes("weighted")) return faScaleBalanced;
+  if (href.includes("exam")) return faVideo;
+  if (href.includes("planner")) return faListCheck;
+  if (href.includes("youtube")) return faPlay;
+  if (href.includes("pomodoro")) return faClock;
+  return faCalculator;
+}
+
+function articleDate(value?: number) {
+  if (!value) return "مقال تعليمي";
+  return new Intl.DateTimeFormat("ar-DZ", { day: "numeric", month: "long", year: "numeric" }).format(new Date(value));
+}
+
+function overviewHref(title: string) {
+  if (title.includes("غرف") || title.includes("صوت")) return "/rooms";
+  if (title.includes("مجتمع") || title.includes("مجموعات")) return "/community";
+  if (title.includes("ملفات") || title.includes("خباشة")) return "/home";
+  return "/tools";
+}
+
 export default async function LandingPage() {
   const s = await getPublicSiteSettings();
   const publicTools = TOOLS.filter((tool) => !tool.needsAccount).slice(0, 8);
-  const landingGuides = GUIDES.slice(0, 3);
+  const landingGuides = GUIDES.slice(0, 4);
+  const articles = (await getPublishedEntries()).slice(0, 4);
+  const overviewCards = (s.features ?? []).slice(0, 6);
+  const heroImage = s.landingHeroImageUrl || "/landing/baczone-student-hero.png";
+  const footerDescription = s.landingFooterDescription || "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر. تجمع الأدوات والمحتوى والأدلة والغرف والمجتمع في تجربة واحدة.";
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "WebSite",
-        name: s.siteName || "BacZone",
-        description: "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر.",
-        url: "https://baczone.app/",
-        inLanguage: "ar",
-      },
-      {
-        "@type": "Organization",
-        name: s.siteName || "BacZone",
-        url: "https://baczone.app/",
-        logo: s.logoUrl || DEFAULT_LOGO,
-      },
+      { "@type": "WebSite", name: s.siteName || "BacZone", description: metadata.description, url: "https://baczone.app/", inLanguage: "ar" },
+      { "@type": "Organization", name: s.siteName || "BacZone", url: "https://baczone.app/", logo: s.logoUrl || DEFAULT_LOGO },
     ],
   };
 
   return (
     <PublicRootGate>
-      <main className="relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
-      <FaviconSync href={s.faviconUrl} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PublicHeader variant="landing" />
+      <main dir="rtl" className="bz-landing-v2 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
+        <FaviconSync href={s.faviconUrl} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <PublicHeader variant="landing" />
 
-      <section className="relative overflow-hidden bg-[#07080f] text-white">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-32 top-0 h-[520px] w-[520px] rounded-full bg-blue-600/25 blur-[140px]" />
-          <div className="absolute -right-24 bottom-10 h-[420px] w-[420px] rounded-full bg-emerald-500/15 blur-[120px]" />
-          <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[100px]" />
-          <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px)", backgroundSize: "56px 56px" }} />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#07080f_75%)]" />
-        </div>
-        <div className="relative mx-auto grid min-h-[min(760px,100svh)] max-w-6xl items-center gap-12 px-5 pb-24 pt-32 sm:px-6 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:pb-28 lg:pt-40">
-          <div className="text-center lg:text-right">
-            {s.landingBadge && (
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-[12px] font-semibold text-blue-200/90 backdrop-blur-md sm:text-[13px]">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20"><FontAwesomeIcon icon={faFlag} className="h-2.5 w-2.5 text-blue-300" /></span>
-                {s.landingBadge}
+        <section className="bz-landing-v2-hero relative isolate overflow-hidden bg-[#061735] text-white">
+          <img src={heroImage} alt={s.landingHeroImageAlt || "طالب جزائري يراجع دروسه على الحاسوب"} className="absolute inset-0 h-full w-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-l from-[#061735]/20 via-[#061735]/55 to-[#061735]/95" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_25%,rgba(37,99,235,.22),transparent_34%),linear-gradient(180deg,rgba(3,13,35,.1),rgba(3,13,35,.72))]" />
+          <div className="relative mx-auto grid min-h-[680px] max-w-7xl items-center gap-12 px-5 pb-24 pt-28 sm:px-8 lg:grid-cols-[.92fr_1.08fr] lg:gap-16 lg:px-10 lg:pb-32 lg:pt-36" dir="ltr">
+            <div className="max-w-2xl text-left" dir="rtl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-bold text-blue-100 backdrop-blur-md"><FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5 text-blue-300" />{s.landingBadge || "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر"}</div>
+              <h1 className="max-w-2xl font-display text-4xl font-black leading-[1.28] tracking-tight sm:text-5xl lg:text-[4.15rem]">{s.heroTitleLine1 || "منصة الدراسة التفاعلية"}<span className="mt-1 block bg-gradient-to-l from-blue-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">{s.heroTitleLine2 || "لطلاب البكالوريا في الجزائر"}</span></h1>
+              <p className="mt-6 max-w-xl text-base leading-[2] text-white/75 sm:text-lg">{s.heroSubtitle || "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تساعدك على الدراسة بوضوح."}</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/tools" className="bz-landing-primary-btn"><span>{s.heroCtaPrimary || "اكتشف BacZone"}</span><FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
+                <Link href="/login" className="bz-landing-ghost-btn">{s.heroCtaSecondary || "دخول المنصة"}<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
               </div>
-            )}
-            <h1 className="max-w-3xl font-display text-[2.2rem] font-extrabold leading-[1.28] tracking-tight sm:text-5xl sm:leading-[1.2] md:text-[4rem]">
-              <span className="block">{s.heroTitleLine1}</span>
-              <span className="mt-2 block bg-gradient-to-l from-blue-400 via-sky-300 to-emerald-300 bg-clip-text pb-3 pt-1 text-transparent sm:mt-3">{s.heroTitleLine2}</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-white/60 sm:text-lg lg:mx-0">{s.heroSubtitle}</p>
-            <div className="mt-9 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4 lg:justify-start">
-              <Link href="/register" className="group relative flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-gradient-to-l from-blue-600 to-blue-500 px-7 py-4 text-[15px] font-bold text-white shadow-[0_16px_40px_-12px_rgba(37,99,235,0.7)] transition hover:brightness-110 active:scale-[0.98] sm:px-9">
-                <span className="absolute inset-0 bg-gradient-to-t from-white/0 to-white/10 opacity-0 transition group-hover:opacity-100" />
-                {s.heroCtaPrimary}
-                <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5 transition group-hover:-translate-x-1" />
-              </Link>
-              <Link href="/login" className="flex items-center justify-center rounded-2xl border border-white/15 bg-white/[0.05] px-7 py-4 text-[15px] font-bold text-white backdrop-blur-sm transition hover:bg-white/[0.1] active:scale-[0.98] sm:px-9">{s.heroCtaSecondary}</Link>
+              <div className="mt-8 flex flex-wrap gap-2.5">
+                {(s.badges ?? []).slice(0, 3).map((badge) => <span key={badge.id} className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white/75"><DynamicIcon value={badge.icon} className="h-3.5 w-3.5 text-blue-200" emojiClass="text-sm" />{badge.label}</span>)}
+              </div>
             </div>
-            {(s.badges ?? []).length > 0 && (
-              <div className="mt-10 flex max-w-2xl flex-wrap justify-center gap-2.5 lg:justify-start">
-                {(s.badges ?? []).map((badge) => (
-                  <div key={badge.id} className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[12px] font-medium text-white/70 backdrop-blur-sm sm:text-[13px]">
-                    <DynamicIcon value={badge.icon} className="h-3.5 w-3.5 text-blue-300" emojiClass="text-sm" />{badge.label}
-                  </div>
-                ))}
+            <div className="relative min-h-[360px] lg:min-h-[480px]" aria-hidden="true">
+              <div className="absolute right-0 top-8 w-64 rounded-3xl border border-white/15 bg-[#071a3a]/80 p-5 shadow-2xl shadow-blue-950/40 backdrop-blur-xl sm:w-72 lg:right-4 lg:top-12">
+                <div className="flex items-center justify-between text-xs text-white/60"><span>معدل البكالوريا</span><span className="rounded-full bg-emerald-400/15 px-2 py-1 text-emerald-200">محسوب</span></div><strong className="mt-3 block text-3xl font-black text-white">أضف علاماتك</strong><div className="mt-4 h-2 rounded-full bg-white/10"><div className="h-2 w-1/3 rounded-full bg-gradient-to-l from-emerald-300 to-blue-400" /></div><div className="mt-3 flex justify-between text-[11px] text-white/55"><span>الحساب حسب شعبتك</span><span>ابدأ الآن</span></div>
               </div>
-            )}
-          </div>
-
-        </div>
-        <div className="absolute inset-x-0 bottom-0 h-14 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-20" />
-      </section>
-
-      <PublicSidebarLayout placement="global" includeArticles={false}>
-        <section className="px-5 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-16">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">أدوات عملية</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">ابدأ بما تحتاجه اليوم</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-text-muted">أدوات موجودة فعليًا في BacZone تساعدك على الحساب، التخطيط، التدريب واتخاذ قرارك الدراسي.</p></div><Link href="/tools" className="inline-flex items-center gap-2 text-sm font-extrabold text-primary hover:underline">كل الأدوات <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {publicTools.map((tool) => (<Link key={tool.href} href={tool.href} className="group rounded-2xl border border-border/60 bg-surface p-5 transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white"><FontAwesomeIcon icon={faGraduationCap} className="h-4 w-4" /></span><h3 className="mt-4 text-[15px] font-extrabold leading-snug">{tool.name}</h3><p className="mt-2 text-[12.5px] leading-relaxed text-text-muted">{tool.desc}</p><span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-primary">{tool.cta}<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>))}
+              <div className="absolute bottom-8 left-0 w-56 rounded-3xl border border-white/15 bg-white/[0.1] p-4 shadow-2xl backdrop-blur-xl sm:w-64 lg:left-4"><div className="flex items-center gap-2 text-sm font-bold"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/25 text-blue-200"><FontAwesomeIcon icon={faListCheck} /></span>خطة هذا الأسبوع</div><div className="mt-4 space-y-2.5 text-xs text-white/75"><div className="flex items-center justify-between"><span>اختر شعبتك</span><span className="text-emerald-200">خطوة أولى</span></div><div className="flex items-center justify-between"><span>رتّب موادك</span><span className="text-blue-200">خطة أسبوع</span></div><div className="flex items-center justify-between"><span>ابدأ جلسة</span><span className="text-white/45">بومودورو</span></div></div></div>
+              <div className="absolute bottom-24 right-20 w-48 rounded-3xl border border-blue-300/20 bg-blue-600/20 p-4 shadow-2xl backdrop-blur-xl sm:right-24 lg:right-28"><div className="flex items-center gap-2 text-xs font-bold text-blue-100"><FontAwesomeIcon icon={faVideo} /> محاكاة البكالوريا</div><p className="mt-3 text-xs leading-relaxed text-white/70">تدرّب في توقيت الامتحان بموضوع فعلي.</p><span className="mt-3 inline-flex rounded-xl bg-white px-3 py-2 text-[11px] font-extrabold text-blue-800">ابدأ الاختبار</span></div>
             </div>
           </div>
+          <div className="absolute inset-x-0 bottom-0 h-12 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-16" />
         </section>
 
-        {(s.steps ?? []).length > 0 && <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-5xl"><div className="mb-10 text-center sm:mb-14"><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">كيف تعمل المنصة</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">{s.stepsTitle}</h2></div><div className="grid gap-5 sm:grid-cols-3 sm:gap-6">{(s.steps ?? []).map((step) => <div key={step.id} className="group relative overflow-hidden rounded-3xl border border-border/60 bg-[var(--bz-bg)] p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl sm:p-7"><div className="absolute -right-4 -top-4 select-none text-[5.5rem] font-black leading-none text-primary/[0.04]">{step.n}</div><div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-base font-extrabold text-white shadow-lg shadow-blue-500/25">{step.n}</div><h3 className="relative mt-5 font-display text-lg font-bold">{step.title}</h3><p className="relative mt-2 text-[13.5px] leading-relaxed text-text-muted">{step.desc}</p></div>)}</div></div></section>}
+        <PublicSidebarLayout placement="global" includeArticles={false}>
+          <section className="px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker">مسارات BacZone</span><h2 className="bz-landing-section-title">{s.landingOverviewTitle || "كل ما تحتاجه في مكان واحد"}</h2><p className="bz-landing-section-subtitle">{s.landingOverviewSubtitle}</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{overviewCards.map((card) => <article key={card.id} className="bz-landing-info-card"><span className="bz-landing-icon-box"><DynamicIcon value={card.icon} className="h-5 w-5" emojiClass="text-xl" /></span><h3>{card.title}</h3><p>{card.desc}</p><Link href={overviewHref(card.title)}>اكتشف المزيد <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></Link></article>)}</div></div></section>
 
-        {(s.audience ?? []).length > 0 && <section className="px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-5xl"><div className="mb-10 text-center"><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">للطلاب والأساتذة</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{s.audienceTitle}</h2><p className="mx-auto mt-3 max-w-lg text-sm text-text-muted">{s.audienceSubtitle}</p></div><div className="grid gap-5 md:grid-cols-2">{(s.audience ?? []).map((item, index) => <article key={item.id} className={`rounded-3xl border p-6 sm:p-8 ${index === 0 ? "border-blue-500/20 bg-blue-500/[0.06]" : "border-emerald-500/20 bg-emerald-500/[0.06]"}`}><div className="flex gap-5"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-white"><DynamicIcon value={item.icon} className="h-6 w-6" emojiClass="text-2xl" /></div><div><h3 className="font-display text-xl font-extrabold">{item.title}</h3><p className="mt-2.5 text-[14px] leading-[1.9] text-text-muted">{item.desc}</p></div></div></article>)}</div></div></section>}
+          <section className="bg-[#eef4ff] px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker">تجربة المنتج</span><h2 className="bz-landing-section-title">شاهد BacZone وهي تعمل</h2><p className="bz-landing-section-subtitle">معاينة من واجهة BacZone الحالية، ثم مساحة دراسة تتوسع مع احتياجك.</p></div><div className="grid items-center gap-5 lg:grid-cols-[1.15fr_.85fr]" dir="ltr"><div className="overflow-hidden rounded-[28px] border border-white bg-white p-2 shadow-xl shadow-blue-950/10"><div className="overflow-hidden rounded-[20px] border border-slate-200"><img src="/landing/site-preview.png" alt="معاينة واجهة BacZone" className="block h-auto w-full" /></div></div><div className="rounded-[28px] bg-[#071a3a] p-7 text-white sm:p-9" dir="rtl"><span className="bz-landing-kicker !bg-blue-400/15 !text-blue-200">داخل المنصة</span><h2 className="mt-4 font-display text-2xl font-black sm:text-3xl">تجربة دراسة لا تتوقف عند المقال</h2><ul className="mt-6 space-y-4 text-sm leading-relaxed text-white/75"><li className="flex gap-3"><FontAwesomeIcon icon={faChalkboard} className="mt-1 h-4 w-4 shrink-0 text-blue-300" />غرف للدراسة والمراجعة مع لوح وملفات وملاحظات.</li><li className="flex gap-3"><FontAwesomeIcon icon={faUsers} className="mt-1 h-4 w-4 shrink-0 text-emerald-300" />مجتمع دراسي للنقاش والتفاعل حول المواد.</li><li className="flex gap-3"><FontAwesomeIcon icon={faBookOpen} className="mt-1 h-4 w-4 shrink-0 text-orange-300" />دورات وموارد منظمة عندما تتوفر الدورات المنشورة.</li></ul><Link href="/home" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-blue-400">دخول المنصة <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link></div></div></div></section>
 
-        {(s.features ?? []).length > 0 && <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mb-10 text-center"><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">داخل BacZone</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{s.featuresTitle}</h2><p className="mx-auto mt-3 max-w-lg text-sm text-text-muted">{s.featuresSubtitle}</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{(s.features ?? []).slice(0, 9).map((feature) => <article key={feature.id} className="rounded-2xl border border-border/50 bg-[var(--bz-bg)] p-5 transition hover:-translate-y-1 hover:border-primary/30"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><DynamicIcon value={feature.icon} className="h-5 w-5" emojiClass="text-xl" /></div><h3 className="mt-4 text-[15px] font-bold">{feature.title}</h3><p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{feature.desc}</p></article>)}</div></div></section>}
+          <section className="px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><span className="bz-landing-kicker">الأدوات الفعلية</span><h2 className="bz-landing-section-title">{s.landingToolsTitle || "أدوات ذكية تساعدك على التقدم"}</h2><p className="bz-landing-section-subtitle !mx-0 text-right">{s.landingToolsSubtitle}</p></div><Link href="/tools" className="bz-landing-text-link">استكشف كل الأدوات <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{publicTools.map((tool) => <Link key={tool.href} href={tool.href} className="bz-landing-tool-card"><span className="bz-landing-tool-icon" style={{ color: tool.color, backgroundColor: `${tool.color}14` }}><FontAwesomeIcon icon={toolIcon(tool.href)} /></span><h3>{tool.name}</h3><p>{tool.desc}</p><span className="bz-landing-card-link">{tool.cta}<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>)}</div></div></section>
 
+          {articles.length > 0 && <section className="bg-[#f5f8fd] px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 flex flex-wrap items-end justify-between gap-4"><div><span className="bz-landing-kicker">محتوى قابل للقراءة</span><h2 className="bz-landing-section-title">{s.landingArticlesTitle || "أحدث المقالات والدروس"}</h2><p className="bz-landing-section-subtitle !mx-0 text-right">{s.landingArticlesSubtitle}</p></div><Link href="/blog" className="bz-landing-text-link">عرض جميع المقالات <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">{articles.map((article) => <Link key={article.id} href={`/blog/${article.slug}`} className="bz-landing-article-card"><div className="relative aspect-[1.35] overflow-hidden bg-slate-200">{article.cover ? <img src={article.cover} alt={article.coverAlt || article.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-blue-950 to-blue-500 text-5xl text-white/30"><FontAwesomeIcon icon={faBookOpen} /></div>}<span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold text-blue-800">{article.labels?.[0] || "مقال تعليمي"}</span></div><div className="p-4"><div className="flex items-center gap-2 text-[11px] text-text-muted"><span>{articleDate(article.publishedAt)}</span><span>•</span><span>{article.readMinutes} دقائق</span></div><h3 className="mt-3 line-clamp-2 font-display text-[15px] font-black leading-relaxed">{article.title}</h3><p className="mt-2 line-clamp-3 text-[12.5px] leading-relaxed text-text-muted">{article.excerpt}</p><span className="mt-4 inline-flex items-center gap-1.5 text-xs font-extrabold text-primary">اقرأ المقال <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></div></Link>)}</div></div></section>}
 
-        {landingGuides.length > 0 && <section className="bg-surface/60 px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-6xl"><div className="mb-9 flex flex-wrap items-end justify-between gap-4"><div><span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">أدلة الدراسة</span><h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">أدلة تساعدك على التقدّم</h2><p className="mt-2 max-w-xl text-sm leading-relaxed text-text-muted">محتوى مرجعي موجود فعليًا في BacZone، يمكنك العودة إليه أثناء المراجعة.</p></div><Link href="/guides" className="inline-flex items-center gap-2 text-sm font-extrabold text-primary hover:underline">كل الأدلة <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link></div><div className="grid gap-4 md:grid-cols-3">{landingGuides.map((guide) => <Link key={guide.slug} href={`/guides/${guide.slug}`} className="rounded-2xl border border-border/60 bg-[var(--bz-bg)] p-5 transition hover:-translate-y-1 hover:border-primary/30"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl text-white" style={{ backgroundColor: guide.color }}><FontAwesomeIcon icon={faBookOpen} className="h-4 w-4" /></span><span className="text-sm font-extrabold leading-snug">{guide.title}</span></div><p className="mt-4 text-[13px] leading-relaxed text-text-muted">{guide.description}</p><span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-primary">اقرأ الدليل <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>)}</div></div></section>}
+          <section className="px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-2"><article className="bz-landing-split-card bg-[#eef4ff]"><div><span className="bz-landing-kicker">ما بعد البكالوريا</span><h2 className="mt-4 font-display text-2xl font-black">اكتشف التخصصات الجامعية</h2><p className="mt-3 max-w-md text-sm leading-[1.9] text-text-muted">افهم خياراتك بعد البكالوريا: الصحة والطب، الهندسة والتكنولوجيا، الإعلام الآلي، الاقتصاد، اللغات والآداب، والعلوم الإنسانية.</p><Link href="/specialties" className="bz-landing-primary-btn mt-6 !px-5 !py-3 !text-xs">عرض التخصصات <FontAwesomeIcon icon={faArrowLeft} /></Link></div><div className="bz-landing-illustration"><FontAwesomeIcon icon={faGraduationCap} /></div></article><article className="bz-landing-split-card bg-[#f3f8f5]"><div><span className="bz-landing-kicker !bg-emerald-500/10 !text-emerald-700">محتوى إرشادي</span><h2 className="mt-4 font-display text-2xl font-black">{s.landingGuidesTitle || "أدلة ونصائح للمراجعة والتوجيه"}</h2><p className="mt-3 max-w-md text-sm leading-[1.9] text-text-muted">{s.landingGuidesSubtitle}</p><Link href="/guides" className="bz-landing-primary-btn mt-6 !bg-emerald-600 !px-5 !py-3 !text-xs">تصفح الأدلة <FontAwesomeIcon icon={faArrowLeft} /></Link></div><div className="bz-landing-illustration !text-emerald-600"><FontAwesomeIcon icon={faFileLines} /></div></article></div></section>
 
-        {(s.faq ?? []).length > 0 && <section className="px-5 py-16 sm:px-6 sm:py-24"><div className="mx-auto max-w-3xl"><h2 className="text-center font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{s.faqTitle}</h2><div className="mt-10 space-y-3">{(s.faq ?? []).map((faq) => <LandingFaqRow key={faq.id} q={faq.q} a={faq.a} />)}</div></div></section>}
-      </PublicSidebarLayout>
+          <section className="bg-[#071a3a] px-5 py-16 text-white sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker !bg-white/10 !text-blue-200">تعلم مع الآخرين</span><h2 className="bz-landing-section-title !text-white">{s.landingCommunityTitle || "مجتمع دراسي وغرف تفاعلية"}</h2><p className="bz-landing-section-subtitle !text-white/65">{s.landingCommunitySubtitle}</p></div><div className="grid gap-5 lg:grid-cols-2"><Link href="/community" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-200"><FontAwesomeIcon icon={faUsers} className="h-7 w-7" /></div><h3>المجتمع</h3><p>أسئلة ونقاشات وبطاقات وتحديات داخل مساحة دراسية لا تشبه التصفح العشوائي.</p><span>استكشف المجتمع <FontAwesomeIcon icon={faArrowLeft} /></span></Link><Link href="/rooms" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-200"><FontAwesomeIcon icon={faChalkboard} className="h-7 w-7" /></div><h3>غرف الدراسة</h3><p>لوح، ملفات، ملاحظات، صوت ومشاركة تساعد الطالب والأستاذ على الدراسة معًا.</p><span>استكشف الغرف <FontAwesomeIcon icon={faArrowLeft} /></span></Link></div></div></section>
 
-      <section className="relative overflow-hidden bg-[#07080f] px-5 py-20 text-white sm:px-6 sm:py-28"><div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/20 blur-[100px]" /><div className="relative mx-auto max-w-xl text-center"><img src={s.logoUrl || DEFAULT_LOGO} alt="" width={72} height={72} className="mx-auto mb-6 h-16 w-16 rounded-2xl object-contain shadow-[0_0_48px_-8px_rgba(59,130,246,0.6)]" /><h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">{s.ctaTitle}</h2><p className="mx-auto mt-4 max-w-md text-[15px] text-white/55">{s.ctaSubtitle}</p><Link href="/register" className="mt-9 inline-flex items-center gap-2.5 rounded-2xl bg-white px-8 py-4 text-[15px] font-bold text-slate-900 shadow-2xl transition hover:bg-white/95 active:scale-[0.98]"><span>{s.ctaButton}</span><FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link></div></section>
-        <SiteFooter variant="full" />
+          <section className="px-5 py-14 sm:px-8 sm:py-18"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 rounded-[28px] border border-border/70 bg-surface px-6 py-8 text-center shadow-sm md:flex-row md:text-right"><div><span className="bz-landing-kicker">الدورات</span><h2 className="mt-3 font-display text-xl font-black">{s.landingCoursesTitle || "تعلم منظم عندما تتوفر الدورات المنشورة"}</h2><p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted">{s.landingCoursesSubtitle}</p></div><div className="flex shrink-0 flex-wrap justify-center gap-2 text-xs font-bold text-text-muted"><span className="rounded-xl bg-red-500/10 px-3 py-2 text-red-600">فيديو</span><span className="rounded-xl bg-blue-500/10 px-3 py-2 text-blue-600">ملف PDF</span><span className="rounded-xl bg-emerald-500/10 px-3 py-2 text-emerald-700">درس نصي</span><span className="rounded-xl bg-orange-500/10 px-3 py-2 text-orange-700">مصدر خارجي</span></div></div></section>
+
+          {(s.faq ?? []).length > 0 && <section className="bg-[#f5f8fd] px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto max-w-4xl"><div className="mb-9 text-center"><span className="bz-landing-kicker">أسئلة شائعة</span><h2 className="bz-landing-section-title">أسئلة تساعدك على البدء</h2></div><div className="grid gap-3 md:grid-cols-2">{(s.faq ?? []).slice(0, 4).map((faq) => <LandingFaqRow key={faq.id} q={faq.q} a={faq.a} />)}</div></div></section>}
+        </PublicSidebarLayout>
+
+        <section className="bz-landing-final-cta relative overflow-hidden px-5 py-20 text-white sm:px-8 sm:py-28"><div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(99,102,241,.35),transparent_30%),linear-gradient(120deg,#101447,#2563eb)]" /><div className="relative mx-auto max-w-3xl text-center"><img src={s.logoUrl || DEFAULT_LOGO} alt="" width={64} height={64} className="mx-auto mb-5 h-14 w-14 rounded-2xl object-contain" /><h2 className="font-display text-3xl font-black sm:text-5xl">{s.ctaTitle || "جاهز لتبدأ بطريقتك؟"}</h2><p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/75">{s.ctaSubtitle || "ابدأ بما تحتاجه اليوم: أداة، دليل، مقال، أو مساحة دراسة."}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/tools" className="bz-landing-primary-btn !bg-white !text-blue-800">اكتشف الأدوات <FontAwesomeIcon icon={faArrowLeft} /></Link><Link href="/login" className="bz-landing-ghost-btn">دخول المنصة <FontAwesomeIcon icon={faArrowLeft} /></Link></div></div></section>
+        <SiteFooter variant="full" landingDescription={footerDescription} />
       </main>
     </PublicRootGate>
   );

@@ -68,6 +68,21 @@ export function LandingEditor() {
       ctaTitle: draft.ctaTitle,
       ctaSubtitle: draft.ctaSubtitle,
       ctaButton: draft.ctaButton,
+      landingHeroImageUrl: draft.landingHeroImageUrl,
+      landingHeroImageAlt: draft.landingHeroImageAlt,
+      landingOverviewTitle: draft.landingOverviewTitle,
+      landingOverviewSubtitle: draft.landingOverviewSubtitle,
+      landingToolsTitle: draft.landingToolsTitle,
+      landingToolsSubtitle: draft.landingToolsSubtitle,
+      landingArticlesTitle: draft.landingArticlesTitle,
+      landingArticlesSubtitle: draft.landingArticlesSubtitle,
+      landingGuidesTitle: draft.landingGuidesTitle,
+      landingGuidesSubtitle: draft.landingGuidesSubtitle,
+      landingCommunityTitle: draft.landingCommunityTitle,
+      landingCommunitySubtitle: draft.landingCommunitySubtitle,
+      landingCoursesTitle: draft.landingCoursesTitle,
+      landingCoursesSubtitle: draft.landingCoursesSubtitle,
+      landingFooterDescription: draft.landingFooterDescription,
     });
     if (user?.uid) {
       await fetch("/api/public/revalidate", {
@@ -212,6 +227,29 @@ export function LandingEditor() {
             ]}
             newItem={() => ({ id: uid(), icon: "star", title: "ميزة جديدة", desc: "" })}
           />
+        </div>
+      </section>
+
+      {/* إعدادات الأقسام الجديدة */}
+      <section className="rounded-xl border border-border bg-surface p-4">
+        <h3 className="mb-3 font-display text-lg font-bold">🧭 بنية Landing الجديدة</h3>
+        <p className="mb-4 text-sm leading-relaxed text-text-muted">عدّل النصوص والصورة من هنا. الروابط والأدوات والمقالات والأدلة تُقرأ من صفحات BacZone الفعلية.</p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="رابط صورة الطالب في Hero" value={draft.landingHeroImageUrl ?? ""} onChange={(v) => set("landingHeroImageUrl", v)} placeholder="/landing/baczone-student-hero.png" />
+          <Field label="وصف الصورة" value={draft.landingHeroImageAlt ?? ""} onChange={(v) => set("landingHeroImageAlt", v)} />
+          <Field label="عنوان قسم البداية" value={draft.landingOverviewTitle ?? ""} onChange={(v) => set("landingOverviewTitle", v)} />
+          <Field label="وصف قسم البداية" value={draft.landingOverviewSubtitle ?? ""} onChange={(v) => set("landingOverviewSubtitle", v)} textarea />
+          <Field label="عنوان قسم الأدوات" value={draft.landingToolsTitle ?? ""} onChange={(v) => set("landingToolsTitle", v)} />
+          <Field label="وصف قسم الأدوات" value={draft.landingToolsSubtitle ?? ""} onChange={(v) => set("landingToolsSubtitle", v)} textarea />
+          <Field label="عنوان المقالات" value={draft.landingArticlesTitle ?? ""} onChange={(v) => set("landingArticlesTitle", v)} />
+          <Field label="وصف المقالات" value={draft.landingArticlesSubtitle ?? ""} onChange={(v) => set("landingArticlesSubtitle", v)} textarea />
+          <Field label="عنوان الأدلة والتخصصات" value={draft.landingGuidesTitle ?? ""} onChange={(v) => set("landingGuidesTitle", v)} />
+          <Field label="وصف الأدلة والتخصصات" value={draft.landingGuidesSubtitle ?? ""} onChange={(v) => set("landingGuidesSubtitle", v)} textarea />
+          <Field label="عنوان المجتمع والغرف" value={draft.landingCommunityTitle ?? ""} onChange={(v) => set("landingCommunityTitle", v)} />
+          <Field label="وصف المجتمع والغرف" value={draft.landingCommunitySubtitle ?? ""} onChange={(v) => set("landingCommunitySubtitle", v)} textarea />
+          <Field label="عنوان الدورات" value={draft.landingCoursesTitle ?? ""} onChange={(v) => set("landingCoursesTitle", v)} />
+          <Field label="وصف الدورات" value={draft.landingCoursesSubtitle ?? ""} onChange={(v) => set("landingCoursesSubtitle", v)} textarea />
+          <Field label="وصف الفوتر" value={draft.landingFooterDescription ?? ""} onChange={(v) => set("landingFooterDescription", v)} textarea />
         </div>
       </section>
 

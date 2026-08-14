@@ -151,6 +151,21 @@ export interface SiteSettings {
   ctaTitle?: string;              // عنوان CTA النهائي
   ctaSubtitle?: string;           // وصف CTA النهائي
   ctaButton?: string;             // نص زر CTA
+  landingHeroImageUrl?: string;   // صورة الطالب في الـHero
+  landingHeroImageAlt?: string;   // وصف صورة الـHero
+  landingOverviewTitle?: string;
+  landingOverviewSubtitle?: string;
+  landingToolsTitle?: string;
+  landingToolsSubtitle?: string;
+  landingArticlesTitle?: string;
+  landingArticlesSubtitle?: string;
+  landingGuidesTitle?: string;
+  landingGuidesSubtitle?: string;
+  landingCommunityTitle?: string;
+  landingCommunitySubtitle?: string;
+  landingCoursesTitle?: string;
+  landingCoursesSubtitle?: string;
+  landingFooterDescription?: string;
 
   /* ── محتوى صفحة "مرحباً بعودتك" (بعد الدخول) ── */
   homeWelcomeTitle?: string;      // "مرحباً بعودتك"

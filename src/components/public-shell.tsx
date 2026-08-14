@@ -17,6 +17,10 @@ import {
   faUserPlus,
   faCheckCircle,
   faChevronDown,
+  faCircleInfo,
+  faEnvelope,
+  faShieldHalved,
+  faFileContract,
   faCalendarCheck,
   faCalendarDays,
   faFileLines,
@@ -114,32 +118,38 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
   const [menuOpen, setMenuOpen] = useState(false);
   const [desktopToolsOpen, setDesktopToolsOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const desktopToolsMenuRef = useRef<HTMLDivElement>(null);
   const mobileToolsMenuRef = useRef<HTMLDivElement>(null);
+  const aboutMenuRef = useRef<HTMLDivElement>(null);
   const menuId = "bz-public-menu";
 
   useEffect(() => {
     setMenuOpen(false);
     setDesktopToolsOpen(false);
     setMobileToolsOpen(false);
+    setAboutOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!desktopToolsOpen && !mobileToolsOpen) return;
+    if (!desktopToolsOpen && !mobileToolsOpen && !aboutOpen) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       const insideDesktop = desktopToolsMenuRef.current?.contains(target) ?? false;
       const insideMobile = mobileToolsMenuRef.current?.contains(target) ?? false;
-      if (!insideDesktop && !insideMobile) {
+      const insideAbout = aboutMenuRef.current?.contains(target) ?? false;
+      if (!insideDesktop && !insideMobile && !insideAbout) {
         setDesktopToolsOpen(false);
         setMobileToolsOpen(false);
+        setAboutOpen(false);
       }
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setDesktopToolsOpen(false);
         setMobileToolsOpen(false);
+        setAboutOpen(false);
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -148,7 +158,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKey);
     };
-  }, [desktopToolsOpen, mobileToolsOpen]);
+  }, [desktopToolsOpen, mobileToolsOpen, aboutOpen]);
 
   useEffect(() => {
     if (variant !== "landing") return;
@@ -163,7 +173,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
       <div className="bz-pubheader-inner mx-auto flex min-h-[58px] max-w-6xl items-center gap-2 px-3 sm:min-h-16 sm:px-4">
         <Brand href="/" size="sm" beta={false} className="bz-public-brand" />
 
-        <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 md:flex">
+        <nav aria-label="التنقّل العام" className="mx-auto hidden items-center gap-1 xl:flex">
           {PUBLIC_NAV.map((item) => {
             const resolvedHref = item.href === "/" && !authLoading && user ? "/home" : item.href;
             const isHomeActive = item.href === "/" && (pathname === "/" || pathname === "/home");
@@ -188,16 +198,27 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
               </Link>
             );
           })}
+          <div ref={aboutMenuRef} className="bz-public-about-menu relative">
+            <button type="button" className={`bz-pubnav ${aboutOpen ? "is-active" : ""}`} aria-expanded={aboutOpen} aria-haspopup="menu" onClick={() => setAboutOpen((open) => !open)}>
+              <FontAwesomeIcon icon={faCircleInfo} className="h-[14px] w-[14px]" /> عن BacZone <FontAwesomeIcon icon={faChevronDown} className={`h-2.5 w-2.5 opacity-60 transition-transform ${aboutOpen ? "rotate-180" : ""}`} />
+            </button>
+            {aboutOpen && <div className="bz-public-about-dropdown" role="menu">
+              <Link href="/about" role="menuitem" onClick={() => setAboutOpen(false)}><FontAwesomeIcon icon={faCircleInfo} /> من نحن</Link>
+              <Link href="/contact" role="menuitem" onClick={() => setAboutOpen(false)}><FontAwesomeIcon icon={faEnvelope} /> اتصل بنا</Link>
+              <Link href="/privacy" role="menuitem" onClick={() => setAboutOpen(false)}><FontAwesomeIcon icon={faShieldHalved} /> سياسة الخصوصية</Link>
+              <Link href="/terms" role="menuitem" onClick={() => setAboutOpen(false)}><FontAwesomeIcon icon={faFileContract} /> اتفاقية الاستخدام</Link>
+            </div>}
+          </div>
         </nav>
 
         <div className="bz-pub-actions ms-auto flex min-w-0 shrink-0 items-center gap-1.5">
           <ThemeToggle compact />
-          <div className="bz-pub-auth-desktop hidden items-center gap-1.5 md:flex">
+          <div className="bz-pub-auth-desktop hidden items-center gap-1.5 xl:flex">
             <PublicAuthActions />
           </div>
           <button
             type="button"
-            className="bz-pubmenu-toggle md:hidden"
+            className="bz-pubmenu-toggle xl:hidden"
             aria-expanded={menuOpen}
             aria-controls={menuId}
             aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
@@ -208,7 +229,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
         </div>
       </div>
 
-      <div id={menuId} className={`bz-pubmenu md:hidden ${menuOpen ? "is-open" : ""}`} hidden={!menuOpen}>
+      <div id={menuId} className={`bz-pubmenu xl:hidden ${menuOpen ? "is-open" : ""}`} hidden={!menuOpen}>
         <nav aria-label="قائمة الموقع العامة" className="grid gap-1 p-3">
           {PUBLIC_NAV.map((item) => {
             const resolvedHref = item.href === "/" && !authLoading && user ? "/home" : item.href;
@@ -226,9 +247,11 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
               </Link>
             );
           })}
-          <div className="mt-2 border-t border-border/70 pt-3">
-            <PublicAuthActions mobile />
+          <div className="bz-pubmenu-about mt-2 border-t border-border/70 pt-3">
+            <button type="button" className="bz-pubmenu-link" onClick={() => setAboutOpen((open) => !open)} aria-expanded={aboutOpen}><FontAwesomeIcon icon={faCircleInfo} className="h-4 w-4" /><span>عن BacZone</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${aboutOpen ? "rotate-180" : ""}`} /></button>
+            {aboutOpen && <div className="bz-pubmenu-about-list"><Link href="/about" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faCircleInfo} /> من نحن</Link><Link href="/contact" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faEnvelope} /> اتصل بنا</Link><Link href="/privacy" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faShieldHalved} /> سياسة الخصوصية</Link><Link href="/terms" onClick={() => setMenuOpen(false)}><FontAwesomeIcon icon={faFileContract} /> اتفاقية الاستخدام</Link></div>}
           </div>
+          <div className="mt-2 border-t border-border/70 pt-3"><PublicAuthActions mobile /></div>
         </nav>
       </div>
     </header>
