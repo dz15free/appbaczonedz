@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SiteFooter } from "@/components/ui/site-footer";
 
 const APP_SHELL_PREFIXES = [
@@ -38,5 +39,14 @@ function shouldRender(pathname: string | null): boolean {
 /** فوتر الصفحات العامة التي لا تملك غلافاً محلياً أو فوتر AppShell. */
 export function PublicSiteFooter() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // لا نرسم الفوتر العام أثناء أول رسم أو على Landing؛ ذلك يمنع ظهوره
+  // أعلى الصفحة أثناء انتظار بوابة الجلسة قبل ظهور محتوى Landing.
+  if (!mounted || pathname === "/") return null;
   return shouldRender(pathname) ? <SiteFooter /> : null;
 }

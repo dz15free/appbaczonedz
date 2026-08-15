@@ -3570,9 +3570,12 @@ body.bz-fullscreen-active .bz-voicebar {
   position: fixed;
   top: 0;
   inset-inline: 0;
-  background: transparent;
-  border-bottom-color: transparent;
+  background: linear-gradient(180deg, rgb(3 13 35 / .72), rgb(3 13 35 / .18));
+  border-bottom-color: rgb(255 255 255 / .08);
   color: #fff;
+  box-shadow: 0 10px 28px -24px rgb(0 0 0 / .72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .bz-pubheader.is-landing .bz-lock-name { color: #fff; }
 .bz-pubheader.is-landing .bz-pubnav { color: rgb(255 255 255 / .78); }
