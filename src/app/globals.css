@@ -603,6 +603,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
 /* ــ بطاقة الدعوة ــ */
 .bz-pubcta {
+  container-type: inline-size;
   padding: 4px 12px 48px;
 }
 .bz-pubcta-in {
@@ -610,11 +611,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 24px;
+  gap: 28px;
   max-width: 68rem;
   margin: 0 auto;
   overflow: hidden;
-  padding: 26px 22px;
+  padding: 30px 30px;
   border: 1px solid rgba(147, 197, 253, .28);
   border-radius: 28px;
   color: #fff;
@@ -650,12 +651,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .bz-pubcta-in > div:first-child {
   min-width: 0;
 }
-@media (min-width: 960px) {
+@container (min-width: 760px) {
   .bz-pubcta-in {
-    grid-template-columns: minmax(0, 1fr) minmax(210px, 246px);
-    align-items: center;
-    gap: 34px;
-    padding: 32px 38px;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+    align-items: stretch;
+    gap: 30px;
+    padding: 34px 36px;
+  }
+  .bz-pubcta-act {
+    max-width: none;
   }
 }
 .bz-pubcta-t {
@@ -678,9 +682,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   color: rgba(255,255,255,.92) !important;
 }
 .bz-pubcta-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 17px 0 0;
   padding: 0;
   list-style: none;
@@ -709,7 +713,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  max-width: 270px;
+  max-width: none;
   justify-self: stretch;
   padding: 14px;
   border: 1px solid rgba(255,255,255,.22);
@@ -764,18 +768,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   border-color: rgba(255,255,255,.3);
   background: rgba(255,255,255,.14);
 }
-@media (min-width: 520px) and (max-width: 719px) {
-  .bz-pubcta-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .bz-pubcta-list li { justify-content: center; text-align: center; }
-}
-@media (min-width: 960px) {
-  .bz-pubcta-list { grid-template-columns: repeat(3, minmax(0, max-content)); }
-  .bz-pubcta-list li { white-space: nowrap; }
-}
-@media (min-width: 720px) and (max-width: 959px) {
-  .bz-pubcta-act { max-width: none; }
-  .bz-pubcta-btn,
-  .bz-pubcta-alt { width: 100%; }
+@container (min-width: 760px) {
+  .bz-pubcta-list { gap: 10px; }
 }
 @media (max-width: 719px) {
   .bz-pubcta { padding-inline: 10px; }

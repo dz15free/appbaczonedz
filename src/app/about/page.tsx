@@ -27,6 +27,7 @@ export default function AboutPage() {
       path="/about"
       updated={UPDATED}
       intro="منصّة صنعها جزائريون لطلبة البكالوريا في الجزائر — لا نسخة معرَّبة من منتج أجنبي."
+      afterContent={<PublicCta />}
     >
       <h2>لماذا وُجدت هذه المنصّة</h2>
       <p>
@@ -112,7 +113,6 @@ export default function AboutPage() {
         وهذه الأسس مكتوبة بتفصيلها في <Link href="/terms">شروط الاستخدام</Link>.
       </p>
 
-      <PublicCta />
     </LegalShell>
   );
 }
