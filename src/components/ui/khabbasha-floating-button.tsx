@@ -60,7 +60,7 @@ export function KhabbashaFloatingButton() {
 
       {/* الزر */}
       <Link
-        href="/omibot"
+        href="/aibot"
         aria-label="الخباشة"
         className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-white shadow-glow transition hover:scale-105"
       >

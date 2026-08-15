@@ -16,7 +16,9 @@
     "test:feed": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-feed-test \"node feed-rules-test.mjs\"",
     "test:sidebar": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-sidebar-test \"node sidebar-rules-test.mjs\"",
     "test:rooms": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-room-notes-test \"node room-notes-rules-test.mjs\"",
-    "test:all": "npm run test:lifecycle && npm run test:sidebar && npm run test:rooms"
+    "test:khabbasha": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-khabbasha-test \"node khabbasha-rules-test.mjs\"",
+    "test:admin-rooms": "npx --yes firebase-tools@13 emulators:exec --only database --project baczone-admin-room-delete-test \"node admin-room-delete-test.mjs\"",
+    "test:all": "npm run test:lifecycle && npm run test:sidebar && npm run test:rooms && npm run test:khabbasha && npm run test:admin-rooms"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.7.2",

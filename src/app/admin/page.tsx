@@ -504,13 +504,29 @@ export default function AdminPage() {
     );
   }
 
+  async function adminRoomAction(roomId: string, action: "close" | "delete") {
+    if (!user) throw new Error("انتهت جلسة الدخول.");
+    const idToken = await user.getIdToken();
+    const response = await fetch("/api/admin/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken, roomId, action }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "تعذّر تنفيذ الإجراء.");
+  }
+
   async function closeRoom(roomId: string) {
     if (!confirm("هل تريد إغلاق هذه الغرفة؟")) return;
-    await remove(ref(rtdb, `roomLive/${roomId}`));
+    try { await adminRoomAction(roomId, "close"); }
+    catch (error) { alert(error instanceof Error ? error.message : "تعذّر إغلاق الغرفة."); }
   }
   async function deleteRoom(roomId: string) {
     if (!confirm("حذف الغرفة نهائياً من القائمة؟")) return;
-    await remove(ref(rtdb, `rooms/${roomId}`));
+    try {
+      await adminRoomAction(roomId, "delete");
+      setActiveRooms((items) => items.filter((item) => item.id !== roomId));
+    } catch (error) { alert(error instanceof Error ? error.message : "تعذّر حذف الغرفة."); }
   }
   async function deleteLibraryEntry(id: string) {
     if (!confirm("حذف هذا المصدر؟")) return;
@@ -1095,10 +1111,12 @@ export default function AdminPage() {
               {activeRooms.length > 0 && (
                 <button onClick={async () => {
                   if (!confirm("حذف كل الغرف نهائياً؟ لا يمكن التراجع.")) return;
-                  await Promise.all(activeRooms.flatMap((r) => [
-                    remove(ref(rtdb, `rooms/${r.id}`)),
-                    remove(ref(rtdb, `roomLive/${r.id}`)),
-                  ]));
+                  try {
+                    await Promise.all(activeRooms.map((room) => adminRoomAction(room.id, "delete")));
+                    setActiveRooms([]);
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : "تعذّر حذف بعض الغرف.");
+                  }
                 }}
                   className="flex items-center gap-1.5 rounded-md border border-danger/30 px-3 py-1.5 text-xs font-bold text-danger hover:bg-danger/10">
                   <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />

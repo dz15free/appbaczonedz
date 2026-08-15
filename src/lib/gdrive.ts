@@ -86,9 +86,10 @@ export function connectDrive(): Promise<string> {
   });
 }
 
-export async function uploadToDrive(
+async function uploadFileToDrive(
   file: File,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  makePublic = true,
 ): Promise<{ id: string; name: string }> {
   const token = cachedToken;
   if (!token) throw new Error("لم يتم ربط حساب Google بعد.");
@@ -127,13 +128,25 @@ export async function uploadToDrive(
     xhr.send(file);
   });
 
-  await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ role: "reader", type: "anyone" }),
-  });
+  if (makePublic) {
+    await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "reader", type: "anyone" }),
+    });
+  }
 
   return result;
+}
+
+/** Public/shared Drive upload retained for Rooms and Groups. */
+export async function uploadToDrive(file: File, onProgress?: (pct: number) => void) {
+  return uploadFileToDrive(file, onProgress, true);
+}
+
+/** Private-by-default upload for personal Khabbasha conversation files. */
+export async function uploadToDrivePrivate(file: File, onProgress?: (pct: number) => void) {
+  return uploadFileToDrive(file, onProgress, false);
 }
 
 export function drivePreviewUrl(id: string) {

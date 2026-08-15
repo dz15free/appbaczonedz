@@ -151,7 +151,7 @@
       ],
       "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null && !data.exists() && newData.child('ownerId').val() === auth.uid",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))",
         "messages": {
           ".write": "auth != null"
         },
@@ -166,19 +166,20 @@
     "notesDraft": {
       "$roomId": {
         ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))",
         ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200000)"
       }
     },
     "scheduledSessions": {
       ".read": "auth != null",
       "$sessionId": {
-        ".write": "auth != null && (!data.exists() || data.child('ownerId').val() === auth.uid)"
+        ".write": "auth != null && ((!data.exists() || data.child('ownerId').val() === auth.uid) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))"
       }
     },
     "presence": {
       ".read": "auth != null",
       "$roomId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
         }
@@ -204,6 +205,7 @@
     "bannedUsers": {
       "$roomId": {
         ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "$uid": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         }
@@ -212,6 +214,7 @@
     "roomLive": {
       "$roomId": {
         ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "mods": {
           "$uid": {
             ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
@@ -306,6 +309,55 @@
         "createdAt"
       ]
     },
+    "khabbashaConversations": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$conversationId": {
+          ".validate": "!newData.exists() || (newData.hasChildren(['id','title','createdAt','updatedAt','lastMessagePreview','messageCount']) && newData.child('id').val() === $conversationId && newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 80 && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber() && newData.child('lastMessagePreview').isString() && newData.child('lastMessagePreview').val().length <= 140 && newData.child('messageCount').isNumber() && newData.child('messageCount').val() >= 0)"
+        }
+      }
+    },
+    "khabbashaMessages": {
+      "$uid": {
+        "$conversationId": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('khabbashaConversations').child($uid).child($conversationId).exists())",
+          "$messageId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['id','role','createdAt']) && newData.child('id').val() === $messageId && newData.child('role').val().matches(/^(user|assistant)$/) && newData.child('createdAt').isNumber() && (!newData.hasChild('text') || (newData.child('text').isString() && newData.child('text').val().length <= 20000)))"
+          }
+        }
+      }
+    },
+    "khabbashaAttachments": {
+      "$uid": {
+        "$conversationId": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('khabbashaConversations').child($uid).child($conversationId).exists())",
+          "$attachmentId": {
+            ".validate": "!newData.exists() || (newData.hasChildren(['dataUrl','fileName','mimeType','size','createdAt']) && newData.child('dataUrl').isString() && newData.child('dataUrl').val().length <= 12000000 && newData.child('fileName').isString() && newData.child('fileName').val().length <= 255 && newData.child('mimeType').isString() && newData.child('size').isNumber() && newData.child('size').val() <= 8388608 && newData.child('createdAt').isNumber() && (!newData.hasChild('previewDataUrl') || (newData.child('previewDataUrl').isString() && newData.child('previewDataUrl').val().length <= 2000000)))"
+          }
+        }
+      }
+    },
+    "khabbashaActive": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "khabbashaChats": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "!newData.exists() || (newData.hasChildren(['messages','updatedAt']) && newData.child('messages').hasChildren() && newData.child('updatedAt').isNumber())",
+        "messages": {
+          "$messageId": {
+            ".validate": "newData.hasChildren(['role','text']) && newData.child('role').val().matches(/^(user|assistant)$/) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 20000"
+          }
+        }
+      }
+    },
     "studyTasks": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
@@ -338,7 +390,7 @@
     "roomChallengeAnswers": {
       "$roomId": {
         ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))",
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
@@ -349,13 +401,13 @@
     "roomChallengeScores": {
       "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))"
       }
     },
     "roomSummaries": {
       "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
+        ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))"
       }
     },
     "attendance": {
@@ -601,6 +653,7 @@
     "roomExamPapers": {
       "$roomId": {
         ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "$uid": {
           ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
           ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.exists() && root.child('roomLive').child($roomId).child('exam').exists()) || (!newData.exists() && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid))",
@@ -611,7 +664,7 @@
     "roomExamGrades": {
       "$roomId": {
         ".read": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-        ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+        ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))",
         "$uid": {
           ".read": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid)",
           ".validate": "!newData.exists() || (newData.hasChildren(['score','max','gradedAt','released']) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('max').isNumber() && newData.child('max').val() > 0 && newData.child('score').val() <= newData.child('max').val() && newData.child('released').isBoolean() && (!newData.hasChild('notes') || newData.child('notes').val().length <= 1500))"
@@ -674,6 +727,7 @@
     "sessionReminders": {
       ".read": "auth != null",
       "$sessionId": {
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid"
         }
