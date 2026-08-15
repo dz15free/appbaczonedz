@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowUp,
+  faBars,
   faBookOpen,
   faCheck,
   faChevronLeft,
@@ -483,7 +484,7 @@ export default function AibotPage() {
 
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-sm">
           <header className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3 sm:px-5">
-            <button onClick={() => setMobileConversationsOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary lg:hidden" aria-label="فتح محادثاتي"><FontAwesomeIcon icon={faClock} className="h-4 w-4" /></button>
+            <button onClick={() => setMobileConversationsOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary lg:hidden" aria-label="فتح قائمة المحادثات" title="فتح قائمة المحادثات"><FontAwesomeIcon icon={faBars} className="h-4 w-4" /></button>
             <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-primary text-white shadow-glow"><FontAwesomeIcon icon={faRobot} className="h-5 w-5" /><span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-secondary" /></span>
             <div className="min-w-0 flex-1"><h1 className="truncate font-display text-lg font-extrabold leading-tight">الخباشة</h1><span className="flex items-center gap-1 text-xs text-secondary"><span className="h-1.5 w-1.5 rounded-full bg-secondary" /> مساعدتك الآلية — محادثة حرة</span></div>
             <button onClick={createNewConversation} className="hidden min-h-10 items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-3 text-xs font-extrabold text-primary transition hover:bg-primary/10 sm:flex"><FontAwesomeIcon icon={faPlus} className="h-3.5 w-3.5" /> جديدة</button>

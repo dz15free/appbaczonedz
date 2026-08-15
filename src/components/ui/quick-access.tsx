@@ -142,7 +142,7 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
     },
     {
       key: "sim",
-      href: settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html",
+      href: settings.bacSimUrl || "/tools/exam-simulator",
       label: "محاكاة البكالوريا",
       desc: "امتحان بتوقيت رسمي ومواضيع حقيقية",
       icon: faClipboardCheck, tone: "rose", external: true,
