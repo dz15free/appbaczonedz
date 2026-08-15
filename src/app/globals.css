@@ -650,7 +650,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 .bz-pubcta-in > div:first-child {
   min-width: 0;
 }
-@media (min-width: 720px) {
+@media (min-width: 960px) {
   .bz-pubcta-in {
     grid-template-columns: minmax(0, 1fr) minmax(210px, 246px);
     align-items: center;
@@ -660,19 +660,22 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 .bz-pubcta-t {
   max-width: 34rem;
+  margin: 0;
   font-family: var(--font-cairo), var(--font-tajawal), sans-serif;
   font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 900;
   line-height: 1.45;
   letter-spacing: -.02em;
+  color: #fff !important;
+  text-shadow: 0 2px 14px rgba(2, 6, 23, .28);
   text-wrap: balance;
 }
 .bz-pubcta-d {
   max-width: 42rem;
   margin-top: 9px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.95;
-  color: rgba(255,255,255,.84);
+  color: rgba(255,255,255,.92) !important;
 }
 .bz-pubcta-list {
   display: grid;
@@ -688,13 +691,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   gap: 8px;
   min-height: 32px;
   padding: 5px 10px;
-  border: 1px solid rgba(191, 219, 254, .18);
+  border: 1px solid rgba(255,255,255,.28);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
-  color: rgba(255,255,255,.94);
-  background: rgba(15, 23, 42, .18);
+  color: #fff !important;
+  background: rgba(3, 13, 35, .34);
   line-height: 1.55;
+  white-space: nowrap;
 }
 .bz-pubcta-list li svg {
   flex: 0 0 auto;
@@ -705,8 +709,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  max-width: 246px;
+  max-width: 270px;
   justify-self: stretch;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 22px;
+  background: rgba(3, 13, 35, .24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
 }
 .bz-pubcta-btn {
   display: inline-flex;
@@ -719,7 +728,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   border-radius: 16px;
   font-size: 14px;
   font-weight: 900;
-  color: #173b91;
+  color: #123b91 !important;
   background: #fff;
   box-shadow: 0 12px 24px -16px rgba(2, 6, 23, .9);
   transition: transform .16s cubic-bezier(.23,1,.32,1), box-shadow .16s ease, background-color .16s ease;
@@ -739,30 +748,43 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  padding: 4px 10px;
+  min-height: 38px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,.16);
   border-radius: 10px;
   text-align: center;
   font-size: 12.5px;
   font-weight: 800;
-  color: rgba(255,255,255,.86);
+  color: #fff !important;
+  background: rgba(255,255,255,.06);
   transition: color .16s ease, background-color .16s ease;
 }
 .bz-pubcta-alt:hover {
-  color: #fff;
-  background: rgba(255,255,255,.1);
+  color: #fff !important;
+  border-color: rgba(255,255,255,.3);
+  background: rgba(255,255,255,.14);
 }
 @media (min-width: 520px) and (max-width: 719px) {
   .bz-pubcta-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .bz-pubcta-list li { justify-content: center; text-align: center; }
 }
-@media (min-width: 720px) {
+@media (min-width: 960px) {
   .bz-pubcta-list { grid-template-columns: repeat(3, minmax(0, max-content)); }
   .bz-pubcta-list li { white-space: nowrap; }
 }
-@media (max-width: 519px) {
+@media (min-width: 720px) and (max-width: 959px) {
+  .bz-pubcta-act { max-width: none; }
+  .bz-pubcta-btn,
+  .bz-pubcta-alt { width: 100%; }
+}
+@media (max-width: 719px) {
   .bz-pubcta { padding-inline: 10px; }
-  .bz-pubcta-in { padding: 23px 17px 20px; border-radius: 24px; }
+  .bz-pubcta-in { gap: 22px; padding: 25px 18px 21px; border-radius: 24px; }
+  .bz-pubcta-in > div:first-child { text-align: center; }
+  .bz-pubcta-t,
+  .bz-pubcta-d { margin-inline: auto; }
+  .bz-pubcta-list { justify-content: center; }
+  .bz-pubcta-list li { justify-content: center; text-align: center; white-space: normal; }
   .bz-pubcta-act { max-width: none; }
   .bz-pubcta-btn { width: 100%; }
   .bz-pubcta-alt { width: 100%; }
