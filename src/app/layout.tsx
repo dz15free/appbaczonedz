@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
@@ -104,6 +105,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
+        <Script
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9915600428717387"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="min-h-screen font-sans">
         {/* بيانات منظّمة على مستوى الموقع: تُعرّف المنصّة لمحرّكات
