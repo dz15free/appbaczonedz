@@ -36,7 +36,16 @@ export function LandingEditor() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { if (loaded) setDraft(settings); }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!loaded) return;
+    const legacyCoursesTitle = "تعلم منظم عندما تتوفر الدورات المنشورة";
+    setDraft({
+      ...settings,
+      landingCoursesTitle: settings.landingCoursesTitle === legacyCoursesTitle
+        ? "دورات تعليمية منظمة"
+        : settings.landingCoursesTitle,
+    });
+  }, [loaded, settings]);
 
   function set<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setDraft((d) => ({ ...d, [key]: value }));

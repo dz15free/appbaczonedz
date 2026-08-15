@@ -92,7 +92,7 @@ export const DEFAULTS: SiteSettings = {
   landingGuidesSubtitle: "أدلة تعود إليها عندما تحتاج شرحًا واضحًا أو خطوة عملية.",
   landingCommunityTitle: "مجتمع دراسي وغرف تفاعلية",
   landingCommunitySubtitle: "مساحة للتعلم الجماعي، والغرف، والملاحظات، والملفات، والتفاعل مع الأساتذة والطلاب.",
-  landingCoursesTitle: "تعلم منظم عندما تتوفر الدورات المنشورة",
+  landingCoursesTitle: "دورات تعليمية منظمة",
   landingCoursesSubtitle: "تُراجع الدورات قبل نشرها، ويمكن أن تضم فيديو وملفات PDF ودروسًا نصية ومصادر خارجية.",
   landingFooterDescription: "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر. تجمع الأدوات والمحتوى والأدلة والغرف والمجتمع في تجربة واحدة.",
 
