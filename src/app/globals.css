@@ -6080,3 +6080,7 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   .bz-landing-hero-title { line-height: 1.24; padding-bottom: .1em; }
   .bz-landing-hero-title-success { line-height: 1.36; padding-bottom: .28em; margin-bottom: -.28em; }
 }
+
+/* روابط الفوتر المختصر على الخلفية الفاتحة — لا ترث لون فوتر Landing الداكن */
+.bz-footer-link-compact { color: var(--bz-ink-2); }
+.bz-footer-link-compact:hover { color: var(--bz-blue); }

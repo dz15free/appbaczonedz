@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LEGAL_LINKS } from "@/features/settings/legal-links";
 
-function FooterLink({ href, label }: { href: string; label: string }) {
+function FooterLink({ href, label, compact = false }: { href: string; label: string; compact?: boolean }) {
   const internal = href.startsWith("/");
-  const cls = "bz-footer-link";
+  const cls = `bz-footer-link${compact ? " bz-footer-link-compact" : ""}`;
   if (internal) return <Link href={href} className={cls}>{label}</Link>;
   return <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>{label}</a>;
 }
@@ -57,7 +57,7 @@ export function SiteFooter({
 
   return (
     <footer className={`border-t border-border bg-surface px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4 ${className}`}>
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-2.5"><p>{copyright}</p>{custom.length > 0 && <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">{custom.map((link, index) => <FooterLink key={`compact-${index}`} href={link.href} label={link.label} />)}</nav>}<nav aria-label="روابط قانونية" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-2.5">{LEGAL_LINKS.map((link) => <FooterLink key={link.href} href={link.href} label={link.label} />)}</nav></div>
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-2.5"><p>{copyright}</p>{custom.length > 0 && <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">{custom.map((link, index) => <FooterLink key={`compact-${index}`} href={link.href} label={link.label} compact />)}</nav>}<nav aria-label="روابط قانونية" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-2.5">{LEGAL_LINKS.map((link) => <FooterLink key={link.href} href={link.href} label={link.href === "/terms" ? "اتفاقية الاستخدام" : link.label} compact />)}</nav></div>
     </footer>
   );
 }
