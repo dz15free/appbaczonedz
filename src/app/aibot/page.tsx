@@ -456,7 +456,7 @@ export default function AibotPage() {
                   <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-lg text-text-muted hover:bg-border" aria-label="خيارات المحادثة">
                     <FontAwesomeIcon icon={faEllipsisVertical} className="h-3.5 w-3.5" />
                   </summary>
-                  <div className={`absolute ${compact ? "left-1" : "right-1"} top-9 z-20 w-32 rounded-xl border border-border bg-surface p-1 shadow-xl`}>
+                  <div className="absolute left-1 top-9 z-30 w-32 rounded-xl border border-border bg-surface p-1 shadow-xl">
                     <button onClick={() => beginRename(item)} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-right text-xs font-bold hover:bg-background"><FontAwesomeIcon icon={faPen} className="h-3 w-3 text-primary" /> إعادة تسمية</button>
                     <button onClick={() => setDeleteTarget(item)} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-right text-xs font-bold text-danger hover:bg-danger/5"><FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> حذف</button>
                   </div>
@@ -476,7 +476,7 @@ export default function AibotPage() {
       <div className="mx-auto flex h-[calc(100dvh-9rem)] max-w-6xl gap-3 px-3 lg:h-[calc(100dvh-4.5rem)] lg:gap-5">
         <aside className="hidden w-72 shrink-0 flex-col rounded-2xl border border-border bg-surface p-3 shadow-sm lg:flex">
           <div className="mb-3 flex items-center gap-2 border-b border-border px-1 pb-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary"><FontAwesomeIcon icon={faClock} className="h-4 w-4" /></span>
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary"><FontAwesomeIcon icon={faBars} className="h-4 w-4" /></span>
             <div><b className="block text-sm">محادثات خباشة</b><span className="text-[11px] text-text-muted">موضوعك تختاره أنت</span></div>
           </div>
           {ready ? <ConversationList /> : <div className="space-y-2"><div className="h-11 animate-pulse rounded-xl bg-border" /><div className="h-14 animate-pulse rounded-xl bg-border" /><div className="h-14 animate-pulse rounded-xl bg-border" /></div>}
