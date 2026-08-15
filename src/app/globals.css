@@ -4625,6 +4625,20 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-blog-editorial-card-copy > span:not(.bz-blog-card-label) { display: -webkit-box; overflow: hidden; margin-top: 7px; color: var(--bz-ink-2); font-size: 11px; line-height: 1.75; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .bz-blog-editorial-card-copy > small { display: flex; justify-content: space-between; gap: 7px; margin-top: auto; padding-top: 16px; color: var(--bz-ink-3); font-size: 9px; }
 .bz-blog-editorial-card-copy > small b { color: var(--bz-blue); font-size: 10px; }
+
+/* مقالات الصفحة الرئيسية — قائمة عمودية مستقرة داخل العمود الجانبي وعلى الهاتف */
+.bz-home-articles-grid { display: grid; min-width: 0; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+.bz-home-article-card { display: flex; width: 100%; min-width: 0; height: auto; flex-direction: column; }
+.bz-home-article-card > img, .bz-home-article-card > div { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 7; object-fit: cover; }
+.bz-home-article-card .bz-blog-editorial-card-copy { min-width: 0; }
+.bz-home-article-card .bz-blog-editorial-card-copy > strong { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.bz-home-article-card .bz-blog-editorial-card-copy > span:not(.bz-blog-card-label) { min-width: 0; -webkit-line-clamp: 3; }
+.bz-home-article-card .bz-blog-editorial-card-copy > small { flex-wrap: wrap; }
+@media (max-width: 639px) {
+  .bz-home-articles-grid { gap: 12px; }
+  .bz-home-article-card > img, .bz-home-article-card > div { aspect-ratio: 16 / 8; }
+  .bz-home-article-card .bz-blog-editorial-card-copy { padding: 13px; }
+}
 .bz-blog-empty { padding: 55px 20px; border: 1px dashed var(--bz-line); border-radius: 22px; background: var(--bz-surface); text-align: center; }
 .bz-blog-empty h2 { margin-top: 12px; color: var(--bz-ink); font-size: 17px; }
 .bz-blog-empty p { max-width: 390px; margin: 5px auto 16px; color: var(--bz-ink-2); font-size: 12px; line-height: 1.8; }

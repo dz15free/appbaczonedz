@@ -5,6 +5,7 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
+import { PublicSiteFooter } from "@/components/ui/public-site-footer";
 import { Analytics } from "@/components/analytics";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -136,7 +137,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ]) }}
         />
         <Preloader />
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <PublicSiteFooter />
+        </Providers>
         {/* آخر ما في الصفحة، وبعد التفاعل — فلا يزاحم الرسم الأوّل */}
         {/* ⚠️ `Suspense` إلزامية هنا: `Analytics` تستعمل
             `useSearchParams`، وبدون حدّ Suspense يُخرج Next **كل صفحة**

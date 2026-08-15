@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faBookOpen, faClock } from "@fortawesome/free-solid-svg-icons";
 import { useBlogIndex } from "@/features/blog/blog-store";
+import { getBlogCoverFallback } from "@/features/blog/blog-cover-fallbacks";
 import type { BlogIndexEntry } from "@/features/blog/types";
 
 function arDate(ms?: number): string {
@@ -16,10 +17,14 @@ function arDate(ms?: number): string {
 }
 
 function PostImage({ post }: { post: BlogIndexEntry }) {
-  return post.cover ? (
+  const fallback = getBlogCoverFallback(post.slug);
+  const cover = post.cover?.trim() || fallback?.cover;
+  const coverAlt = post.coverAlt?.trim() || fallback?.coverAlt || post.title;
+
+  return cover ? (
     <img
-      src={post.cover}
-      alt={post.coverAlt || post.title}
+      src={cover}
+      alt={coverAlt}
       loading="lazy"
       decoding="async"
       className="aspect-[480/252] w-full object-cover"
@@ -55,7 +60,7 @@ export function HomeArticles({ title, slugs, anchor = false }: { title?: string;
         <div className="mb-3 flex items-end justify-between gap-3">
           <h2 className="font-display text-[17px] font-extrabold">{title || "مقالات قد تفيدك"}</h2>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3" aria-hidden="true">
+        <div className="bz-home-articles-grid" aria-hidden="true">
           {[0, 1, 2].map((item) => <div key={item} className="h-56 animate-pulse rounded-2xl border border-border bg-surface" />)}
         </div>
       </section>
@@ -78,9 +83,9 @@ export function HomeArticles({ title, slugs, anchor = false }: { title?: string;
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="bz-home-articles-grid">
         {posts.map((post) => (
-          <Link key={post.id} href={`/blog/${post.slug}`} className="bz-blog-editorial-card group">
+          <Link key={post.id} href={`/blog/${post.slug}`} className="bz-blog-editorial-card bz-home-article-card group">
             <PostImage post={post} />
             <span className="bz-blog-editorial-card-copy">
               <span className="bz-blog-card-label">

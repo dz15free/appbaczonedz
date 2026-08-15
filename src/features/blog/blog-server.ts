@@ -1,4 +1,5 @@
 import type { BlogContent, BlogIndexEntry, BlogPost } from "@/features/blog/types";
+import { getBlogCoverFallback } from "@/features/blog/blog-cover-fallbacks";
 
 /* ════════════════════════════════════════════════════════════
    قراءة المدوّنة **على الخادم**
@@ -43,13 +44,18 @@ async function readJson<T>(path: string, ttl = TTL): Promise<T | null> {
 }
 
 function normalize(id: string, raw: Omit<BlogIndexEntry, "id">): BlogIndexEntry {
+  const slug = raw.slug ?? id;
+  const fallback = getBlogCoverFallback(slug);
+  const cover = raw.cover?.trim() || fallback?.cover || "";
+  const coverAlt = raw.coverAlt?.trim() || fallback?.coverAlt || "";
+
   return {
     id,
-    slug: raw.slug ?? id,
+    slug,
     title: raw.title ?? "بلا عنوان",
     excerpt: raw.excerpt ?? "",
-    cover: raw.cover ?? "",
-    coverAlt: raw.coverAlt ?? "",
+    cover,
+    coverAlt,
     labels: Array.isArray(raw.labels) ? raw.labels : [],
     status: raw.status === "published" ? "published" : "draft",
     publishedAt: raw.publishedAt ?? 0,
