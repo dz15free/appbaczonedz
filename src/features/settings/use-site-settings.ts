@@ -170,6 +170,8 @@ export interface SiteSettings {
   /* ── محتوى صفحة "مرحباً بعودتك" (بعد الدخول) ── */
   homeWelcomeTitle?: string;      // "مرحباً بعودتك"
   homeWelcomeSubtitle?: string;   // النص أسفله
+  homeArticlesTitle?: string;     // عنوان قسم المقالات في الصفحة الرئيسية
+  homeArticleSlugs?: string[];    // روابط المقالات المختارة للصفحة الرئيسية
   homeCards?: HomeCard[];         // بطاقات الوصول السريع
 
   /* ── روابط التواصل الاجتماعي (قابلة للتعديل من الأدمن) ── */
@@ -291,6 +293,13 @@ export function useSiteSettings() {
         label: typeof rawArticles?.label === "string" ? rawArticles.label : "",
         limit: Number.isFinite(rawLimit) ? Math.min(8, Math.max(2, Math.round(rawLimit))) : 4,
       };
+      const rawHomeSlugs = (val as { homeArticleSlugs?: SiteSettings["homeArticleSlugs"] } | null)?.homeArticleSlugs;
+      const homeSlugList = Array.isArray(rawHomeSlugs)
+        ? rawHomeSlugs
+        : rawHomeSlugs && typeof rawHomeSlugs === "object"
+          ? Object.values(rawHomeSlugs)
+          : [];
+      merged.homeArticleSlugs = homeSlugList.filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0).slice(0, 3);
       setSettings(merged);
       setLoaded(true);
     });

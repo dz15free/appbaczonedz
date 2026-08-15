@@ -70,27 +70,26 @@ export function Preloader() {
 
   return (
     <div
-      className={`bz-preloader-v3 ${state === "leaving" ? "is-leaving" : ""}`}
+      className={`bz-preloader-v4 ${state === "leaving" ? "is-leaving" : ""}`}
       role="status"
       aria-live="polite"
       aria-label="جارٍ فتح BacZone"
       data-state={state}
     >
-      <div className="bz-preloader-v3-aura bz-preloader-v3-aura-a" aria-hidden="true" />
-      <div className="bz-preloader-v3-aura bz-preloader-v3-aura-b" aria-hidden="true" />
-      <section className="bz-preloader-v3-card">
-        <div className="bz-preloader-v3-logo-wrap">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={DEFAULT_FAVICON} alt="" className="bz-preloader-v3-logo" width={96} height={96} />
-        </div>
-        <div className="bz-preloader-v3-brand">Bac<span>Zone</span></div>
-        <p className="bz-preloader-v3-tag">منصّة البكالوريا والدراسة الذكية في الجزائر</p>
-        <div className="bz-preloader-v3-rule" aria-hidden="true" />
-        <h1>نجهّز لك مساحة الدراسة</h1>
-        <p className="bz-preloader-v3-copy">لحظات قليلة ونفتح لك أدواتك وملاحظاتك وغرفتك.</p>
-        <div className="bz-preloader-v3-progress" aria-hidden="true"><span /></div>
-        <div className="bz-preloader-v3-status"><b>جارٍ التجهيز</b><span>استعد</span></div>
-      </section>
+      <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-a" aria-hidden="true" />
+      <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-b" aria-hidden="true" />
+      <div className="bz-preloader-v4-brand-wrapper" aria-hidden="true">
+        <div className="bz-preloader-v4-pulse" />
+        <div className="bz-preloader-v4-pulse" />
+        <div className="bz-preloader-v4-spinner" />
+        <div className="bz-preloader-v4-spinner-mask" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={DEFAULT_FAVICON} alt="" className="bz-preloader-v4-logo" width={88} height={88} />
+      </div>
+      <div className="bz-preloader-v4-text">
+        مرحباً بك<span>.</span><span>.</span><span>.</span>
+      </div>
+      <p className="bz-preloader-v4-subtitle">نفتح لك مساحة BacZone</p>
     </div>
   );
 }

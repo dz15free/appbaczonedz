@@ -19,6 +19,7 @@ import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
 import { InstallAppBanner } from "@/components/ui/install-app-banner";
 import { SocialLinks, AdvertiseCard, YoutubeSourceCard, NotificationToggle } from "@/components/ui/home-feature-sections";
 import { QuickAccess } from "@/components/ui/quick-access";
+import { HomeArticles } from "@/components/ui/home-articles";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { HomeCourses } from "@/components/ui/home-courses";
 import { TeacherTools } from "@/components/ui/teacher-tools";
@@ -290,7 +291,7 @@ export default function HomePage() {
 
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
             <div className="bz-res-grid is-stack">
-                            <a href="/tools/study-planner" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -329,6 +330,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          <HomeArticles title={settings.homeArticlesTitle} slugs={settings.homeArticleSlugs} />
         </aside>
       </div>
 
@@ -388,7 +390,7 @@ export default function HomePage() {
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
           <div className="bz-res-grid is-stack">
-            <a href="/tools/study-planner" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
               <span className="bz-res-bg" aria-hidden />
               <span className="bz-res-in">
                 <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -427,6 +429,12 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
+
+        <HomeArticles
+          title={settings.homeArticlesTitle}
+          slugs={settings.homeArticleSlugs}
+          anchor
+        />
 
         {/* أدوات الباكلوريا — للطالب وحده (كما على الحاسوب) */}
         {!isTeacher && (

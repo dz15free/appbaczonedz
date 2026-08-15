@@ -54,7 +54,7 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
   return (
     <div className="bz-specialty-explorer">
       <div className="bz-specialty-overview bz-specialty-overview-pro" aria-label="ملخص دليل التخصصات">
-        <div className="is-primary"><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faGraduationCap} /></span><strong>{rows.length}+</strong><span>تخصصًا في الدليل</span></div>
+        <div className="is-primary"><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faGraduationCap} /></span><strong>+250</strong><span>تخصصًا في الدليل</span></div>
         <div><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faCheck} /></span><strong>{published}</strong><span>صفحة مفصلة جاهزة</span></div>
         <div><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faCircleInfo} /></span><strong>{SPEC_FIELDS.length}</strong><span>مجالات للدراسة</span></div>
       </div>

@@ -139,6 +139,7 @@ const MENU_ITEMS_BASE = [
   { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/library", label: "مكتبة البكالوريا", icon: faBookOpen, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
+  { href: "/blog", label: "مقالات BacZone", icon: faFileLines, external: false },
   { href: "/tools/tasks", label: "مهامي الدراسية", icon: faListCheck, external: false },
   { href: "/tools/flashcards", label: "بطاقات المراجعة", icon: faClone, external: false },
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false },
@@ -156,6 +157,7 @@ const MENU_ITEMS_TEACHER = [
   { href: "/aibot", label: "الخباشة — مساعدتك الآلية", icon: faRobot, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
+  { href: "/blog", label: "مقالات BacZone", icon: faFileLines, external: false },
 ];
 const PLATFORM_PUBLIC_LINK = { href: "/tools", label: "الأدوات العامة", icon: faLayerGroup, external: false };
 
@@ -234,7 +236,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
      كانت `MORE_DROPDOWN_BASE` مُعرَّفة ولا تُستعمل إطلاقاً، فلو أخفى
      الأدمن روابطه صارت القائمة **صندوقاً أبيض فارغاً**. */
   const moreDropdown = dedupe([
-    ...(dynamicLinks.length ? dynamicLinks : MORE_DROPDOWN_BASE),
+    ...MORE_DROPDOWN_BASE,
+    ...dynamicLinks,
     PLATFORM_PUBLIC_LINK,
   ]);
   const isTeacher = profile?.role === "teacher";

@@ -49,7 +49,7 @@ export function SiteFooter({
             <FooterColumn title="الحساب" links={[{ href: "/login", label: "دخول" }, { href: "/register", label: "إنشاء حساب" }]} />
           </div>
           {custom.length > 0 && <nav aria-label="روابط إضافية" className="bz-footer-custom-links">{custom.map((link, index) => <FooterLink key={`custom-${index}`} href={link.href} label={link.label} />)}</nav>}
-          <div className="bz-footer-bottom"><span>{copyright}</span><span>BacZone · منصة دراسة تفاعلية</span></div>
+          <div className="bz-footer-bottom"><span>{copyright}</span></div>
         </div>
       </footer>
     );

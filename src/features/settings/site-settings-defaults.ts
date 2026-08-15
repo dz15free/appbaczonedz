@@ -98,6 +98,8 @@ export const DEFAULTS: SiteSettings = {
 
   homeWelcomeTitle: "مرحباً بعودتك",
   homeWelcomeSubtitle: "ماذا تريد أن تفعل اليوم؟",
+  homeArticlesTitle: "مقالات قد تفيدك",
+  homeArticleSlugs: [],
 
   telegramUrl: "https://t.me/baczonedz",
   instagramUrl: "https://www.instagram.com/baczonedz",

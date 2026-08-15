@@ -42,6 +42,7 @@ const SECTIONS = [
 const JUMPS: { id: string; label: string; icon: IconDefinition; studentOnly: boolean }[] = [
   { id: "bz-res", label: "مصادر إضافية", icon: faCompass, studentOnly: false },
   { id: "bz-tools", label: "أدوات الباكلوريا", icon: faListCheck, studentOnly: true },
+  { id: "bz-home-articles", label: "مقالات قد تفيدك", icon: faBookOpen, studentOnly: false },
   { id: "bz-social", label: "تابعنا", icon: faShareNodes, studentOnly: false },
   { id: "bz-ads", label: "أعلن معنا", icon: faBullhorn, studentOnly: false },
 ];
@@ -142,7 +143,7 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
     },
     {
       key: "sim",
-      href: settings.bacSimUrl || "/tools/exam-simulator",
+      href: settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html",
       label: "محاكاة البكالوريا",
       desc: "امتحان بتوقيت رسمي ومواضيع حقيقية",
       icon: faClipboardCheck, tone: "rose", external: true,
@@ -160,6 +161,13 @@ export function QuickAccess({ isTeacher }: { isTeacher: boolean }) {
       label: "التخصّصات الجامعية",
       desc: "اعرف تخصّصك قبل أن تملأ رغباتك",
       icon: faCompass, tone: "amber",
+    },
+    {
+      key: "blog",
+      href: "/blog",
+      label: "مقالات BacZone",
+      desc: "محتوى تعليمي للمراجعة والتوجيه",
+      icon: faBookOpen, tone: "rose",
     },
     {
       key: "telegram",

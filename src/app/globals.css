@@ -5731,33 +5731,30 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 }
 
 
-/* STEP 20 — BacZone v3: preloader بالهوية الرسمية وقاعة امتحان متجاوبة */
-.bz-preloader-v3 { position: fixed; inset: 0; z-index: 2147482000; display: grid; place-items: center; overflow: hidden; isolation: isolate; color: #fff; background: radial-gradient(circle at 50% 38%, #173e80 0, #0c244a 28%, #07152c 72%); opacity: 1; transition: opacity .28s cubic-bezier(.23,1,.32,1); }
-.bz-preloader-v3.is-leaving { pointer-events: none; opacity: 0; }
-.bz-preloader-v3::before { position: absolute; inset: 0; z-index: -2; content: ""; opacity: .55; background: linear-gradient(120deg, transparent 0 48%, rgb(63 130 255 / .1) 48.5% 49%, transparent 49.5% 100%), linear-gradient(300deg, transparent 0 58%, rgb(43 212 163 / .1) 58.5% 59%, transparent 59.5% 100%); }
-.bz-preloader-v3::after { position: absolute; z-index: -1; width: min(720px, 90vw); aspect-ratio: 1; border: 1px solid rgb(141 186 255 / .15); border-radius: 50%; box-shadow: 0 0 0 42px rgb(141 186 255 / .035), 0 0 0 84px rgb(141 186 255 / .02); content: ""; transform: rotate(18deg) scaleY(.42); }
-.bz-preloader-v3-aura { position: absolute; z-index: -1; width: 35vw; max-width: 420px; aspect-ratio: 1; border-radius: 50%; filter: blur(35px); opacity: .22; }
-.bz-preloader-v3-aura-a { inset-inline-start: 8%; top: 13%; background: #2563eb; }
-.bz-preloader-v3-aura-b { inset-inline-end: 8%; bottom: 12%; background: #16a085; }
-.bz-preloader-v3-card { position: relative; z-index: 2; display: grid; width: min(430px, calc(100% - 34px)); place-items: center; padding: 30px 30px 27px; border: 1px solid rgb(168 201 255 / .2); border-radius: 28px; background: rgb(7 26 54 / .9); box-shadow: 0 28px 90px rgb(2 8 23 / .5), 0 0 0 1px rgb(255 255 255 / .04) inset; text-align: center; backdrop-filter: blur(18px); }
-.bz-preloader-v3-logo-wrap { position: relative; display: grid; width: 112px; height: 112px; place-items: center; margin-bottom: 19px; }
-.bz-preloader-v3-logo-wrap::before,
-.bz-preloader-v3-logo-wrap::after { position: absolute; border: 1px solid rgb(117 170 255 / .32); border-radius: 50%; content: ""; transform: rotate(23deg) scaleY(.5); }
-.bz-preloader-v3-logo-wrap::before { inset: -14px; }
-.bz-preloader-v3-logo-wrap::after { inset: -27px; border-color: rgb(110 231 199 / .3); transform: rotate(-27deg) scaleY(.5); }
-.bz-preloader-v3-logo { position: relative; z-index: 1; width: 88px; height: 88px; border-radius: 25px; object-fit: cover; box-shadow: 0 16px 38px rgb(36 99 215 / .4); }
-.bz-preloader-v3-brand { color: #fff; font-size: 28px; font-weight: 950; letter-spacing: -.05em; }
-.bz-preloader-v3-brand span { color: #75b6ff; }
-.bz-preloader-v3-tag { margin: 7px 0 0; color: #b5cbea; font-size: 11px; font-weight: 700; }
-.bz-preloader-v3-rule { width: 100%; height: 1px; margin: 25px 0 21px; background: linear-gradient(90deg, transparent, rgb(139 183 244 / .33), transparent); }
-.bz-preloader-v3-card h1 { margin: 0; color: #fff; font-size: 17px; font-weight: 900; }
-.bz-preloader-v3-copy { margin: 6px 0 0; color: #9eb6da; font-size: 11px; line-height: 1.8; }
-.bz-preloader-v3-progress { width: 100%; height: 5px; overflow: hidden; margin-top: 25px; border-radius: 99px; background: #2c4a78; }
-.bz-preloader-v3-progress span { display: block; width: 64%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #64a5ff, #53dfb6); animation: bz-preloader-v3-progress 1.55s ease-in-out infinite alternate; }
-.bz-preloader-v3-status { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 10px; color: #b4c9e7; font-size: 10px; font-weight: 800; }
-.bz-preloader-v3-status b { color: #73e3be; }
-.bz-preloader-v3-status b::before { display: inline-block; width: 6px; height: 6px; margin-inline-end: 6px; border-radius: 50%; background: #54dfb5; box-shadow: 0 0 0 5px rgb(84 223 181 / .1); content: ""; }
-@keyframes bz-preloader-v3-progress { from { transform: translateX(-12%); } to { transform: translateX(58%); } }
+/* STEP 22 — شاشة تحميل BacZone v4 مستوحاة من ملف التحميل المرفق */
+.bz-preloader-v4 { position: fixed; inset: 0; z-index: 2147482000; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; color: #64748b; background: radial-gradient(circle at center, #fff 0%, #e2e8f0 100%); opacity: 1; transition: opacity .28s cubic-bezier(.23,1,.32,1); }
+.bz-preloader-v4.is-leaving { pointer-events: none; opacity: 0; }
+.bz-preloader-v4::before { position: absolute; inset: 0; z-index: -2; background: radial-gradient(circle at 50% 42%, rgb(255 255 255 / .86), transparent 28%), linear-gradient(135deg, transparent 0 45%, rgb(37 99 235 / .045) 45.5% 46%, transparent 46.5% 100%), linear-gradient(315deg, transparent 0 58%, rgb(14 165 233 / .05) 58.5% 59%, transparent 59.5% 100%); content: ""; }
+.bz-preloader-v4::after { position: absolute; z-index: -1; width: min(720px, 90vw); aspect-ratio: 1; border: 1px solid rgb(59 130 246 / .1); border-radius: 50%; box-shadow: 0 0 0 42px rgb(59 130 246 / .035), 0 0 0 84px rgb(99 102 241 / .025); content: ""; transform: rotate(18deg) scaleY(.42); }
+.bz-preloader-v4-orbit { position: absolute; z-index: -1; width: min(35vw, 420px); aspect-ratio: 1; border-radius: 50%; filter: blur(35px); opacity: .18; }
+.bz-preloader-v4-orbit-a { inset-inline-start: 8%; top: 13%; background: #60a5fa; }
+.bz-preloader-v4-orbit-b { inset-inline-end: 8%; bottom: 12%; background: #2dd4bf; }
+.bz-preloader-v4-brand-wrapper { position: relative; display: flex; width: min(160px, 42vw); height: min(160px, 42vw); align-items: center; justify-content: center; }
+.bz-preloader-v4-pulse { position: absolute; width: min(100px, 27vw); aspect-ratio: 1; border-radius: 30px; background: rgb(59 130 246 / .15); animation: bz-preloader-v4-ripple 2.5s cubic-bezier(.21,.53,.56,.8) infinite; }
+.bz-preloader-v4-pulse:nth-child(2) { animation-delay: 1.25s; background: rgb(99 102 241 / .1); }
+.bz-preloader-v4-spinner { position: absolute; width: min(140px, 37vw); aspect-ratio: 1; border-radius: 36px; background: conic-gradient(from 0deg, transparent 60%, #3b82f6 80%, #6366f1 100%); animation: bz-preloader-v4-spin 1.5s linear infinite; filter: drop-shadow(0 0 8px rgb(59 130 246 / .3)); }
+.bz-preloader-v4-spinner-mask { position: absolute; width: min(134px, 35vw); aspect-ratio: 1; border-radius: 33px; background: #fff; }
+.bz-preloader-v4-logo { position: relative; z-index: 2; width: min(85px, 23vw); height: min(85px, 23vw); border-radius: 22px; object-fit: contain; box-shadow: 0 10px 25px rgb(15 23 42 / .12); animation: bz-preloader-v4-float 3s ease-in-out infinite; }
+.bz-preloader-v4-text { z-index: 2; display: flex; align-items: center; margin-top: clamp(30px, 4vw, 40px); color: #64748b; font-size: clamp(15px, 1.5vw, 18px); font-weight: 800; line-height: 1.5; }
+.bz-preloader-v4-text span { margin-inline-start: 2px; font-size: 1em; line-height: 0; animation: bz-preloader-v4-dot 1.4s infinite ease-in-out both; }
+.bz-preloader-v4-text span:nth-child(1) { animation-delay: -.32s; }
+.bz-preloader-v4-text span:nth-child(2) { animation-delay: -.16s; }
+.bz-preloader-v4-text span:nth-child(3) { animation-delay: 0s; }
+.bz-preloader-v4-subtitle { margin: 7px 0 0; color: #94a3b8; font-size: clamp(10px, 1.1vw, 12px); font-weight: 700; }
+@keyframes bz-preloader-v4-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes bz-preloader-v4-ripple { 0% { transform: scale(.8); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes bz-preloader-v4-float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.03); } }
+@keyframes bz-preloader-v4-dot { 0%, 80%, 100% { opacity: 0; } 40% { opacity: 1; } }
 
 .bz-vbr-running { display: flex !important; min-height: min(100dvh, 100vh); flex-direction: column; overflow: hidden; }
 .bz-vbr-running-header { position: relative; z-index: 4; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; flex: 0 0 auto; gap: 12px; }
@@ -5806,7 +5803,10 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   .bz-vbr-running .bz-vbr-paper-toolbar > div { max-width: 100%; overflow-x: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bz-preloader-v3-progress span { animation: none; }
+  .bz-preloader-v4-pulse,
+  .bz-preloader-v4-spinner,
+  .bz-preloader-v4-logo,
+  .bz-preloader-v4-text span { animation: none; }
 }
 
 
@@ -5964,8 +5964,14 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-landing-hero-title { font-size: clamp(2.25rem, 5.2vw, 4.15rem); line-height: 1.22; text-wrap: balance; }
 .bz-landing-hero-badges { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
 .bz-landing-badge { min-height: 2rem; white-space: nowrap; }
-.bz-landing-platform-shot { min-width: 0; }
-.bz-landing-platform-shot img { max-height: 30rem; object-fit: contain; object-position: center; }
+.bz-landing-platform-shot { width: 100%; min-width: 0; }
+.bz-landing-platform-shot > div { width: 100%; min-width: 0; }
+.bz-landing-platform-shot img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 30rem; object-fit: contain; object-position: center; }
+@media (max-width: 639px) {
+  .bz-landing-platform-shot { border-radius: 1.25rem; padding: .3rem; }
+  .bz-landing-platform-shot > div { border-radius: .95rem; }
+  .bz-landing-platform-shot img { max-height: none; }
+}
 .bz-landing-audience-card { min-height: 100%; border: 1px solid rgb(148 163 184 / .22); border-radius: 1.6rem; background: linear-gradient(145deg, #ffffff, #f5f8ff); padding: 1.45rem; box-shadow: 0 16px 36px -30px rgb(15 23 42 / .42); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
 .bz-landing-audience-card.is-teacher { background: linear-gradient(145deg, #effcf8, #f7fbff); }
 .bz-landing-audience-card:hover { border-color: rgb(37 99 235 / .32); transform: translateY(-3px); box-shadow: 0 20px 40px -28px rgb(15 23 42 / .45); }
