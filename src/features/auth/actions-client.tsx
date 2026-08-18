@@ -88,7 +88,7 @@ export function ActionsClient() {
       setAutoSignedIn(false);
 
       if (mode === "invalid" || !code) {
-        setError("الرابط غير مكتمل. افتح الرابط من رسالة Firebase أو اطلب رسالة جديدة.");
+        setError("الرابط غير مكتمل. افتح الرابط الذي وصلك عبر بريدك الإلكتروني أو اطلب رسالة جديدة.");
         setScreen("error");
         return;
       }

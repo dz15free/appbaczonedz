@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { DEFAULT_FAVICON } from "@/lib/brand-assets";
 import { useAuth } from "@/features/auth/auth-provider";
 
-const MIN_VISIBLE_MS = 1620;
+const MIN_VISIBLE_MS = 2400;
 const EXIT_MS = 280;
 const SAFETY_MS = 8000;
 
