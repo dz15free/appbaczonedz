@@ -143,8 +143,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             },
           ]) }}
         />
-        <Preloader />
         <Providers>
+          <Preloader />
           {children}
           <PublicSiteFooter />
         </Providers>

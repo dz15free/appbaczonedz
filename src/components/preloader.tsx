@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { DEFAULT_FAVICON } from "@/lib/brand-assets";
+import { useAuth } from "@/features/auth/auth-provider";
 
 const MIN_VISIBLE_MS = 1620;
 const EXIT_MS = 280;
-const SAFETY_MS = 6000;
+const SAFETY_MS = 8000;
 
 type PreloaderState = "visible" | "leaving" | "gone";
 
@@ -16,6 +18,9 @@ function nextPaint(): Promise<void> {
 }
 
 export function Preloader() {
+  const pathname = usePathname();
+  const { loading: authLoading } = useAuth();
+  const waitForLandingAuth = pathname === "/";
   const [state, setState] = useState<PreloaderState>("visible");
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export function Preloader() {
         // جاهزية الخطوط تحسين بصري وليست شرطاً لفتح المنصة.
       }
       await nextPaint();
-      leaveWhenReady();
+      if (!waitForLandingAuth || !authLoading) leaveWhenReady();
     };
 
     const onDomReady = () => { void appReady(); };
@@ -64,7 +69,7 @@ export function Preloader() {
       if (leaveTimer !== undefined) window.clearTimeout(leaveTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
-  }, []);
+  }, [authLoading, waitForLandingAuth]);
 
   if (state === "gone") return null;
 
@@ -75,6 +80,7 @@ export function Preloader() {
       aria-live="polite"
       aria-label="جارٍ فتح BacZone"
       data-state={state}
+      data-auth-pending={waitForLandingAuth && authLoading ? "true" : "false"}
     >
       <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-a" aria-hidden="true" />
       <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-b" aria-hidden="true" />

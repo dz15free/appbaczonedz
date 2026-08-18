@@ -4,6 +4,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  verifyBeforeUpdateEmail,
   updateProfile,
   signOut,
   type User,
@@ -70,6 +72,33 @@ export async function resetPassword(email: string) {
   if (!email) throw new AuthError("الرجاء إدخال بريدك الإلكتروني.");
   try {
     await sendPasswordResetEmail(auth, email);
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code ?? "";
+    throw new AuthError(arabicError(code));
+  }
+}
+
+const ACTIONS_URL = "https://baczone.app/actions";
+
+function actionSettings(continuePath = "/profile") {
+  const query = new URLSearchParams({ continueUrl: continuePath });
+  return { url: `${ACTIONS_URL}?${query.toString()}`, handleCodeInApp: false };
+}
+
+export async function sendVerificationEmail(user: User) {
+  try {
+    await sendEmailVerification(user, actionSettings("/profile"));
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code ?? "";
+    throw new AuthError(arabicError(code));
+  }
+}
+
+export async function sendEmailChangeVerification(user: User, newEmail: string) {
+  const normalized = newEmail.trim().toLowerCase();
+  if (!normalized) throw new AuthError("الرجاء إدخال البريد الإلكتروني الجديد.");
+  try {
+    await verifyBeforeUpdateEmail(user, normalized, actionSettings("/profile"));
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
     throw new AuthError(arabicError(code));

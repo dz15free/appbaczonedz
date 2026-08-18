@@ -8,12 +8,13 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGraduationCap, faLocationDot, faStar, faRightFromBracket,
-  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines, faChartLine,
+  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines, faChartLine, faEnvelope,
+
 } from "@fortawesome/free-solid-svg-icons";
 import { listenOwnerCodes, splitAmount, type AccessCode } from "@/features/paid/paid-access";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
+import { logoutUser, updateAccount, updateAvatar, sendVerificationEmail, sendEmailChangeVerification } from "@/lib/firebase/auth";
 import { compressAvatar } from "@/lib/avatar";
 import { TRACKS, WILAYAS, ALL_SUBJECTS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
@@ -38,6 +39,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [securityEmail, setSecurityEmail] = useState("");
+  const [securityBusy, setSecurityBusy] = useState<"verify" | "change" | null>(null);
+  const [securityMessage, setSecurityMessage] = useState("");
+  const [securityError, setSecurityError] = useState("");
   const avatarInput = useRef<HTMLInputElement>(null);
   const rank = useLeaderboardRank(user?.uid, profile?.points);
   const isTeacher = profile?.role === "teacher";
@@ -72,6 +77,37 @@ export default function ProfilePage() {
     setWilaya(profile?.wilaya || "");
     setErr("");
     setEditing(true);
+  }
+
+  async function requestVerification() {
+    if (!user) return;
+    setSecurityBusy("verify");
+    setSecurityMessage("");
+    setSecurityError("");
+    try {
+      await sendVerificationEmail(user);
+      setSecurityMessage("أرسلنا رابط تأكيد جديداً إلى بريدك الإلكتروني.");
+    } catch (e) {
+      setSecurityError(e instanceof Error ? e.message : "تعذر إرسال رسالة التأكيد.");
+    } finally {
+      setSecurityBusy(null);
+    }
+  }
+
+  async function requestEmailChange() {
+    if (!user) return;
+    setSecurityBusy("change");
+    setSecurityMessage("");
+    setSecurityError("");
+    try {
+      await sendEmailChangeVerification(user, securityEmail);
+      setSecurityMessage("أرسلنا رابط التأكيد إلى البريد الجديد. لن يتغير بريد الحساب قبل فتح الرابط.");
+      setSecurityEmail("");
+    } catch (e) {
+      setSecurityError(e instanceof Error ? e.message : "تعذر بدء تغيير البريد.");
+    } finally {
+      setSecurityBusy(null);
+    }
   }
 
   async function save() {
@@ -200,6 +236,31 @@ export default function ProfilePage() {
             />
           </div>
         )}
+
+        <section className="mt-4 rounded-xl border border-border bg-surface p-5 text-right">
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4 text-primary" />
+            <div>
+              <h2 className="font-bold">أمان البريد الإلكتروني</h2>
+              <p className="mt-1 text-xs text-text-muted">تصل الروابط إلى صفحة BacZone الآمنة لإتمام العملية.</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-background p-3 text-sm">
+            <span className="min-w-0 truncate font-semibold" dir="ltr">{user.email}</span>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${user.emailVerified ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
+              {user.emailVerified ? "البريد مؤكد" : "يحتاج إلى تأكيد"}
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {!user.emailVerified && <button type="button" onClick={requestVerification} disabled={securityBusy !== null} className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs font-bold text-primary disabled:opacity-50">{securityBusy === "verify" ? "جارٍ الإرسال…" : "إرسال تأكيد البريد"}</button>}
+            <div className="flex min-w-0 gap-2 sm:col-span-2">
+              <input value={securityEmail} onChange={(e) => setSecurityEmail(e.target.value)} type="email" placeholder="البريد الإلكتروني الجديد" dir="ltr" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-xs outline-none focus:border-primary" />
+              <button type="button" onClick={requestEmailChange} disabled={securityBusy !== null || !securityEmail.trim()} className="shrink-0 rounded-lg bg-gradient-primary px-3 py-2.5 text-xs font-bold text-white disabled:opacity-50">{securityBusy === "change" ? "جارٍ…" : "تغيير البريد"}</button>
+            </div>
+          </div>
+          {securityMessage && <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-semibold leading-relaxed text-emerald-700">{securityMessage}</p>}
+          {securityError && <p className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-xs font-semibold leading-relaxed text-danger">{securityError}</p>}
+        </section>
 
         <Button
           variant="ghost"
