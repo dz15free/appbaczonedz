@@ -5930,12 +5930,7 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   .bz-vbr-running .bz-vbr-paper-toolbar { position: sticky; top: 0; z-index: 3; }
   .bz-vbr-running .bz-vbr-paper-toolbar > div { max-width: 100%; overflow-x: auto; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .bz-preloader-v4-pulse,
-  .bz-preloader-v4-spinner,
-  .bz-preloader-v4-logo,
-  .bz-preloader-v4-text span { animation: none; }
-}
+/* حركة الـPreloader تُدار في الكتلة النهائية أسفل الملف حتى لا تتعارض مع قواعد الإتاحة العامة. */
 
 
 /* STEP 20 — إصلاح ارتفاع عارض الموضوع داخل شبكة Flex/Fullscreen */
@@ -6270,13 +6265,12 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   .bz-actions-card h1 { font-size: 23px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bz-preloader-v4-orbit,
-  .bz-preloader-v4-pulse,
-  .bz-preloader-v4-spinner,
-  .bz-preloader-v4-logo,
-  .bz-preloader-v4-text span { -webkit-animation: none !important; animation: none !important; }
-  .bz-preloader-v4-pulse { opacity: .2; transform: scale(1); }
-  .bz-preloader-v4-spinner { background: linear-gradient(135deg, #3b82f6, #6366f1); }
-  .bz-preloader-v4-logo { transform: none; }
+  /* حركة أهدأ بدلاً من إلغائها: لا يجمّد الـPreloader على Safari وDesktop. */
+  .bz-preloader-v4-orbit { -webkit-animation: bz-preloader-v4-orbit 12s ease-in-out infinite !important; animation: bz-preloader-v4-orbit 12s ease-in-out infinite !important; }
+  .bz-preloader-v4-pulse { -webkit-animation: bz-preloader-v4-ripple 4.5s cubic-bezier(.21,.53,.56,.8) infinite !important; animation: bz-preloader-v4-ripple 4.5s cubic-bezier(.21,.53,.56,.8) infinite !important; opacity: .2; }
+  .bz-preloader-v4-pulse:nth-child(2) { animation-delay: 2.25s !important; }
+  .bz-preloader-v4-spinner { -webkit-animation: bz-preloader-v4-spin 3.2s linear infinite !important; animation: bz-preloader-v4-spin 3.2s linear infinite !important; background: conic-gradient(from 0deg, transparent 60%, #3b82f6 80%, #6366f1 100%); }
+  .bz-preloader-v4-logo { -webkit-animation: bz-preloader-v4-float 6s ease-in-out infinite !important; animation: bz-preloader-v4-float 6s ease-in-out infinite !important; }
+  .bz-preloader-v4-text span { -webkit-animation: bz-preloader-v4-dot 2.8s ease-in-out infinite both !important; animation: bz-preloader-v4-dot 2.8s ease-in-out infinite both !important; }
   .bz-actions-fallback-dot { animation: none; border-color: #93c5fd; }
 }

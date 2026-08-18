@@ -29,23 +29,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let disposed = false;
     let unsubscribe: (() => void) | undefined;
 
-    /* نثبّت الجلسة محلياً قبل الاستماع إلى auth state. لا يعتمد الرابط
-       أو الشعار على التخمين أثناء هذه المهلة، ولا يتم مسح الجلسة عند
-       الانتقال بين صفحات عامة وصفحات المنصة. */
-    void setPersistence(auth, browserLocalPersistence)
-      .catch((error) => {
-        // الاستماع يجب أن يستمر حتى لو منع المتصفح persistence صراحةً.
-        console.warn("[Auth] Local persistence unavailable:", error);
-      })
-      .then(() => {
-        if (disposed) return;
-        unsubscribe = onAuthStateChanged(auth, (u) => {
-          if (disposed) return;
-          // التسجيل مباشر دون تأكيد البريد
-          setUser(u ?? null);
-          setLoading(false);
-        });
-      });
+    /* نستمع لحالة الحساب فوراً حتى لا تنتظر الشاشة الأولى عملية persistence
+       البطيئة في Safari أو بعض متصفحات الحاسوب. ضبط الحفظ المحلي تحسين
+       مستقل ويعمل بالتوازي، ولا يمنع حسم حالة المستخدم أو فتح المنصة. */
+    unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (disposed) return;
+      // التسجيل مباشر دون تأكيد البريد
+      setUser(u ?? null);
+      setLoading(false);
+    });
+
+    void setPersistence(auth, browserLocalPersistence).catch((error) => {
+      // الاستماع يستمر حتى لو منع المتصفح persistence صراحةً.
+      console.warn("[Auth] Local persistence unavailable:", error);
+    });
 
     return () => {
       disposed = true;

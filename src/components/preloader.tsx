@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { DEFAULT_FAVICON } from "@/lib/brand-assets";
 import { useAuth } from "@/features/auth/auth-provider";
 
-const MIN_VISIBLE_MS = 2400;
+const MIN_VISIBLE_MS = 1500;
 const EXIT_MS = 280;
 const SAFETY_MS = 8000;
 
@@ -22,10 +22,18 @@ export function Preloader() {
   const { loading: authLoading } = useAuth();
   const waitForLandingAuth = pathname === "/";
   const [state, setState] = useState<PreloaderState>("visible");
+  const authLoadingRef = useRef(authLoading);
+  const finishCheckRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    authLoadingRef.current = authLoading;
+    finishCheckRef.current?.();
+  }, [authLoading]);
 
   useEffect(() => {
     const startedAt = performance.now();
     let settled = false;
+    let paintReady = false;
     let leaveTimer: number | undefined;
     let removeTimer: number | undefined;
     let safetyTimer: number | undefined;
@@ -43,6 +51,14 @@ export function Preloader() {
       leaveTimer = window.setTimeout(remove, wait);
     };
 
+    const maybeLeave = () => {
+      if (!paintReady) return;
+      if (waitForLandingAuth && authLoadingRef.current) return;
+      leaveWhenReady();
+    };
+
+    finishCheckRef.current = maybeLeave;
+
     const appReady = async () => {
       try {
         if ("fonts" in document) await document.fonts.ready;
@@ -50,7 +66,8 @@ export function Preloader() {
         // جاهزية الخطوط تحسين بصري وليست شرطاً لفتح المنصة.
       }
       await nextPaint();
-      if (!waitForLandingAuth || !authLoading) leaveWhenReady();
+      paintReady = true;
+      maybeLeave();
     };
 
     const onDomReady = () => { void appReady(); };
@@ -63,13 +80,14 @@ export function Preloader() {
     safetyTimer = window.setTimeout(leaveWhenReady, SAFETY_MS);
 
     return () => {
+      if (finishCheckRef.current === maybeLeave) finishCheckRef.current = null;
       document.removeEventListener("DOMContentLoaded", onDomReady);
       window.removeEventListener("load", onDomReady);
       if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
       if (leaveTimer !== undefined) window.clearTimeout(leaveTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
-  }, [authLoading, waitForLandingAuth]);
+  }, [waitForLandingAuth]);
 
   if (state === "gone") return null;
 
