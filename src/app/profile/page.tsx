@@ -8,13 +8,14 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGraduationCap, faLocationDot, faStar, faRightFromBracket,
-  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines, faChartLine, faEnvelope,
+  faPen, faXmark, faCamera, faFire, faComments, faUsers, faFileLines, faChartLine,
 
 } from "@fortawesome/free-solid-svg-icons";
 import { listenOwnerCodes, splitAmount, type AccessCode } from "@/features/paid/paid-access";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
-import { logoutUser, updateAccount, updateAvatar, sendVerificationEmail, sendEmailChangeVerification } from "@/lib/firebase/auth";
+import { logoutUser, updateAccount, updateAvatar } from "@/lib/firebase/auth";
+import { AccountSecurity } from "@/features/auth/account-security";
 import { compressAvatar } from "@/lib/avatar";
 import { TRACKS, WILAYAS, ALL_SUBJECTS, subjectName } from "@/lib/constants";
 import { AppShell } from "@/components/app-shell";
@@ -39,10 +40,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [securityEmail, setSecurityEmail] = useState("");
-  const [securityBusy, setSecurityBusy] = useState<"verify" | "change" | null>(null);
-  const [securityMessage, setSecurityMessage] = useState("");
-  const [securityError, setSecurityError] = useState("");
   const avatarInput = useRef<HTMLInputElement>(null);
   const rank = useLeaderboardRank(user?.uid, profile?.points);
   const isTeacher = profile?.role === "teacher";
@@ -77,37 +74,6 @@ export default function ProfilePage() {
     setWilaya(profile?.wilaya || "");
     setErr("");
     setEditing(true);
-  }
-
-  async function requestVerification() {
-    if (!user) return;
-    setSecurityBusy("verify");
-    setSecurityMessage("");
-    setSecurityError("");
-    try {
-      await sendVerificationEmail(user);
-      setSecurityMessage("أرسلنا رابط تأكيد جديداً إلى بريدك الإلكتروني.");
-    } catch (e) {
-      setSecurityError(e instanceof Error ? e.message : "تعذر إرسال رسالة التأكيد.");
-    } finally {
-      setSecurityBusy(null);
-    }
-  }
-
-  async function requestEmailChange() {
-    if (!user) return;
-    setSecurityBusy("change");
-    setSecurityMessage("");
-    setSecurityError("");
-    try {
-      await sendEmailChangeVerification(user, securityEmail);
-      setSecurityMessage("أرسلنا رابط التأكيد إلى البريد الجديد. لن يتغير بريد الحساب قبل فتح الرابط.");
-      setSecurityEmail("");
-    } catch (e) {
-      setSecurityError(e instanceof Error ? e.message : "تعذر بدء تغيير البريد.");
-    } finally {
-      setSecurityBusy(null);
-    }
   }
 
   async function save() {
@@ -237,30 +203,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <section className="mt-4 rounded-xl border border-border bg-surface p-5 text-right">
-          <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4 text-primary" />
-            <div>
-              <h2 className="font-bold">أمان البريد الإلكتروني</h2>
-              <p className="mt-1 text-xs text-text-muted">تصل الروابط إلى صفحة BacZone الآمنة لإتمام العملية.</p>
-            </div>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-background p-3 text-sm">
-            <span className="min-w-0 truncate font-semibold" dir="ltr">{user.email}</span>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${user.emailVerified ? "bg-emerald-500/10 text-emerald-700" : "bg-amber-500/10 text-amber-700"}`}>
-              {user.emailVerified ? "البريد مؤكد" : "يحتاج إلى تأكيد"}
-            </span>
-          </div>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {!user.emailVerified && <button type="button" onClick={requestVerification} disabled={securityBusy !== null} className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs font-bold text-primary disabled:opacity-50">{securityBusy === "verify" ? "جارٍ الإرسال…" : "إرسال تأكيد البريد"}</button>}
-            <div className="flex min-w-0 gap-2 sm:col-span-2">
-              <input value={securityEmail} onChange={(e) => setSecurityEmail(e.target.value)} type="email" placeholder="البريد الإلكتروني الجديد" dir="ltr" className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-xs outline-none focus:border-primary" />
-              <button type="button" onClick={requestEmailChange} disabled={securityBusy !== null || !securityEmail.trim()} className="shrink-0 rounded-lg bg-gradient-primary px-3 py-2.5 text-xs font-bold text-white disabled:opacity-50">{securityBusy === "change" ? "جارٍ…" : "تغيير البريد"}</button>
-            </div>
-          </div>
-          {securityMessage && <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-semibold leading-relaxed text-emerald-700">{securityMessage}</p>}
-          {securityError && <p className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-xs font-semibold leading-relaxed text-danger">{securityError}</p>}
-        </section>
+        <AccountSecurity />
 
         <Button
           variant="ghost"
@@ -286,8 +229,8 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* تقييم الطلاب — للأستاذ والإدارة */}
-      {user && isStaff && <MyRatingSummary uid={user.uid} owner />}
+      {/* تقييمات الطلاب — تظهر للأستاذ صاحب الحساب فقط */}
+      {user && isTeacher && <MyRatingSummary uid={user.uid} owner />}
 
       {/* بيانات تواصل الأستاذ — بجانب لوحة أرباحه */}
       {profile?.role === "teacher" && user && <TeacherContactEditor uid={user.uid} />}
@@ -408,35 +351,43 @@ function TeacherEarnings({ uid }: { uid: string }) {
   ]).size;
 
   return (
-    <section className="mx-auto mt-4 max-w-md px-4">
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <FontAwesomeIcon icon={faChartLine} className="h-4 w-4 text-secondary" />
-          <h2 className="font-display text-base font-extrabold">أرباحي من المحتوى المدفوع</h2>
+    <section className="mx-auto mt-4 w-full max-w-3xl px-4 sm:px-5">
+      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+        <div className="flex flex-col gap-3 bg-gradient-to-l from-primary/10 via-surface to-secondary/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-secondary/15 text-secondary">
+              <FontAwesomeIcon icon={faChartLine} className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-base font-extrabold sm:text-lg">لوحة أرباح الأستاذ</h2>
+              <p className="mt-1 text-xs leading-relaxed text-text-muted">ملخّص مبيعاتك وتسوياتك في مكان واحد.</p>
+            </div>
+          </div>
+          <span className="w-fit rounded-full border border-secondary/25 bg-secondary/10 px-3 py-1.5 text-[11px] font-bold text-secondary">بياناتك المالية</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="rounded-xl bg-secondary/10 p-3 text-center">
-            <p className="text-lg font-extrabold text-secondary">{totalNet}</p>
-            <p className="text-[11px] text-text-muted">صافي أرباحك (دج)</p>
+        <div className="grid grid-cols-2 gap-2.5 p-4 sm:grid-cols-4 sm:p-5">
+          <div className="rounded-2xl border border-secondary/20 bg-secondary/10 p-3 text-center sm:p-3.5">
+            <p className="text-xl font-extrabold text-secondary">{totalNet}</p>
+            <p className="mt-1 text-[11px] text-text-muted">صافي الأرباح (دج)</p>
           </div>
-          <div className="rounded-xl bg-primary/10 p-3 text-center">
-            <p className="text-lg font-extrabold text-primary">{sold.length}</p>
-            <p className="text-[11px] text-text-muted">عدد المبيعات</p>
+          <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3 text-center sm:p-3.5">
+            <p className="text-xl font-extrabold text-primary">{sold.length}</p>
+            <p className="mt-1 text-[11px] text-text-muted">المبيعات</p>
           </div>
-          <div className="rounded-xl bg-amber-400/15 p-3 text-center">
-            <p className="text-lg font-extrabold text-amber-600">{pendingNet}</p>
-            <p className="text-[11px] text-text-muted">بانتظار التسوية (دج)</p>
+          <div className="rounded-2xl border border-amber-400/25 bg-amber-400/15 p-3 text-center sm:p-3.5">
+            <p className="text-xl font-extrabold text-amber-600">{pendingNet}</p>
+            <p className="mt-1 text-[11px] text-text-muted">قيد التسوية (دج)</p>
           </div>
-          <div className="rounded-xl bg-border p-3 text-center">
-            <p className="text-lg font-extrabold">{buyers}</p>
-            <p className="text-[11px] text-text-muted">عدد المشترين</p>
+          <div className="rounded-2xl border border-border bg-background p-3 text-center sm:p-3.5">
+            <p className="text-xl font-extrabold">{buyers}</p>
+            <p className="mt-1 text-[11px] text-text-muted">المشترون</p>
           </div>
         </div>
 
         {/* الشفافية المالية: الأستاذ يرى **كم دخل وكم أخذ الموقع** بلا
             حساب يدوي. إخفاء العمولة يفتح باب الشكّ لا الطمأنينة. */}
-        <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-background p-3 text-[11.5px]">
+        <div className="mx-4 space-y-1.5 rounded-2xl border border-border bg-background p-3.5 text-[11.5px] sm:mx-5">
           <div className="flex items-center justify-between">
             <span className="text-text-muted">إجمالي المبيعات قبل العمولة</span>
             <span className="font-bold">{totalGross} دج</span>
@@ -456,11 +407,12 @@ function TeacherEarnings({ uid }: { uid: string }) {
         </div>
 
         {sales.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-1.5 text-xs font-bold text-text-muted">
-              مبيعات الدفع بالبطاقة ({sales.length})
-            </p>
-            <div className="max-h-56 space-y-1.5 overflow-y-auto">
+          <div className="mt-4 px-4 sm:px-5">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-extrabold">مبيعات الدفع بالبطاقة</p>
+              <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{sales.length} عملية</span>
+            </div>
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-0.5">
               {sales.map((x) => (
                 <div key={x.id} className="flex items-center gap-2 rounded-lg border border-border p-2 text-[11.5px]">
                   <span className="min-w-0 flex-1">
@@ -484,13 +436,16 @@ function TeacherEarnings({ uid }: { uid: string }) {
           </div>
         )}
 
-        <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
-          التسوية تتم مع أدمن الموقع. المبالغ تصل إلى حساب الموقع أوّلاً ثم تُحوَّل إليك بعد خصم العمولة.
+        <p className="mx-4 mt-4 rounded-xl bg-primary/5 px-3 py-2.5 text-[11px] leading-relaxed text-text-muted sm:mx-5">
+          التسوية تتم مع إدارة الموقع. تصل المبالغ إلى حساب المنصّة أولاً ثم تُحوّل إليك بعد خصم العمولة.
         </p>
 
         {sold.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-bold text-text-muted">تفاصيل المبيعات</p>
+          <div className="mt-4 space-y-2 px-4 pb-5 sm:px-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-extrabold">تفاصيل مبيعات الأكواد</p>
+              <span className="text-[11px] text-text-muted">{sold.length} عملية</span>
+            </div>
             <div className="max-h-72 space-y-2 overflow-y-auto">
               {sold.map((c) => {
                 const sp = splitAmount(c.price, c.commissionPct);

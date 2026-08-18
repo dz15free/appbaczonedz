@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listenTeacherContact, type TeacherContact } from "@/features/paid/teacher-sales";
+import { listenTeacherContact, type TeacherContact, type TeacherContactVisibility } from "@/features/paid/teacher-sales";
 
 /* ════════════════════════════════════════════════════════════
    عرض وسائل تواصل الأستاذ
@@ -85,12 +85,19 @@ export function hrefFor(k: ContactKey, value: string): string {
   return /^https?:\/\//i.test(v) ? v : `https://${v}`;
 }
 
+function normalizedVisibility(value: TeacherContactVisibility | undefined): "admin" | "students" | "all" {
+  if (value === "public" || value === "all") return "all";
+  if (value === "students") return "students";
+  return "admin";
+}
+
 export function TeacherContactCard({
-  uid, viewerUid, viewerIsAdmin,
+  uid, viewerUid, viewerIsAdmin, viewerRole,
 }: {
   uid: string;
   viewerUid?: string;
   viewerIsAdmin?: boolean;
+  viewerRole?: string;
 }) {
   const [c, setC] = useState<TeacherContact | null>(null);
 
@@ -102,9 +109,10 @@ export function TeacherContactCard({
   if (!c) return null;
 
   const isOwner = Boolean(viewerUid && viewerUid === uid);
-  const isPublic = c.visibility === "public";
+  const visibility = normalizedVisibility(c.visibility);
+  const canView = isOwner || viewerIsAdmin || visibility === "all" || (visibility === "students" && viewerRole === "student");
   // قرار الظهور في مكان واحد فلا يتناقض بين الأسطح
-  if (!isPublic && !viewerIsAdmin && !isOwner) return null;
+  if (!canView) return null;
 
   const items = (c.links ?? [])
     .map((l) => ({ k: (l.label as ContactKey), url: l.url }))
@@ -116,16 +124,19 @@ export function TeacherContactCard({
   return (
     <section className="mx-auto mt-4 max-w-md px-4">
       <div className="rounded-2xl border border-border bg-surface p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <h2 className="font-display text-sm font-extrabold">تواصل مع الأستاذ</h2>
-          {!isPublic && (
-            <span className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">
-              خاصّة — لا تظهر للطلبة
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-sm font-extrabold">تواصل مع الأستاذ</h2>
+            <p className="mt-1 text-[10.5px] text-text-muted">اختر الوسيلة المناسبة للتواصل معه خارج المنصّة.</p>
+          </div>
+          {isOwner && (
+            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
+              {visibility === "admin" ? "للإدارة" : visibility === "students" ? "للطلاب" : "للجميع"}
             </span>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {items.map((x, i) => {
             const m = CONTACT_META[x.k];
             return (

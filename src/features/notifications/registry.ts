@@ -77,6 +77,9 @@ export const NOTIF_META: Record<string, NotifMeta> = {
   course_review: { label: "تقييم دورتك", icon: "star", tone: "amber" },
   course_sale:   { label: "بيع دورة", icon: "cart", tone: "green" },
   announcement:  { label: "إعلان من الإدارة", icon: "megaphone", tone: "red" },
+  account_verification: {
+    label: "أمان الحساب", icon: "support", tone: "amber", canonical: "/profile#account-security",
+  },
 };
 
 const FALLBACK: NotifMeta = { label: "إشعار", icon: "bell", tone: "muted" };
@@ -95,7 +98,7 @@ export const NOTIF_GROUPS: { id: string; label: string; types: string[] }[] = [
   { id: "social",  label: "اجتماعي", types: ["friend_request", "friend_accept", "post_comment", "comment_reply", "post_upvote", "mention", "dm"] },
   { id: "rooms",   label: "الغرف",   types: ["room", "room_invite", "room_scheduled", "exam"] },
   { id: "courses", label: "الدورات", types: ["course", "course-submitted", "purchase", "course_review", "course_sale"] },
-  { id: "system",  label: "المنصّة", types: ["daily", "announcement", "support", "payment"] },
+  { id: "system",  label: "المنصّة", types: ["daily", "announcement", "support", "payment", "account_verification"] },
 ];
 
 /**

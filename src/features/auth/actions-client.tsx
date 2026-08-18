@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faCheck, faCircleExclamation, faKey, faRotate, faShieldHalved, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { auth } from "@/lib/firebase/config";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
+import { removeAccountVerificationNotification } from "@/features/notifications/account-verification";
 
 type ActionMode = "resetPassword" | "verifyEmail" | "verifyAndChangeEmail" | "recoverEmail" | "invalid";
 type Screen = "loading" | "reset" | "success" | "error";
@@ -113,6 +114,9 @@ export function ActionsClient() {
 
         await applyActionCode(auth, code);
         if (auth.currentUser) await reload(auth.currentUser);
+        if ((mode === "verifyEmail" || mode === "verifyAndChangeEmail") && auth.currentUser?.emailVerified) {
+          await removeAccountVerificationNotification(auth.currentUser.uid).catch(() => {});
+        }
         if (cancelled) return;
         setMessage(mode === "verifyAndChangeEmail" ? "تم تأكيد بريدك الإلكتروني الجديد وتحديث الحساب." : "تم تأكيد بريدك الإلكتروني بنجاح.");
         setScreen("success");

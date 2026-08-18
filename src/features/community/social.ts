@@ -706,6 +706,8 @@ export interface AppNotification {
   text: string;
   link?: string;
   read?: boolean;
+  /** إشعار نظامي لا يجوز مسحه قبل اكتمال سببه. */
+  persistent?: boolean;
   createdAt: number;
 }
 
@@ -744,7 +746,13 @@ export async function markNotificationsRead(uid: string, ids: string[]) {
 }
 
 export async function clearNotifications(uid: string) {
-  await remove(ref(rtdb, `notifications/${uid}`));
+  const snapshot = await get(ref(rtdb, `notifications/${uid}`));
+  const value = (snapshot.val() as Record<string, AppNotification> | null) ?? {};
+  const updates: Record<string, null> = {};
+  for (const [id, item] of Object.entries(value)) {
+    if (id !== "account-verification" && !item?.persistent) updates[id] = null;
+  }
+  if (Object.keys(updates).length > 0) await update(ref(rtdb, `notifications/${uid}`), updates);
 }
 
 /* ═══════════════════════════════

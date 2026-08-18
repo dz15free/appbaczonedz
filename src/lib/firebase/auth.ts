@@ -6,6 +6,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   verifyBeforeUpdateEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
   updateProfile,
   signOut,
   type User,
@@ -19,6 +22,8 @@ function arabicError(code: string): string {
     "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة.",
     "auth/weak-password": "كلمة المرور ضعيفة جداً (6 أحرف على الأقل).",
     "auth/invalid-credential": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    "auth/wrong-password": "كلمة السر الحالية غير صحيحة.",
+    "auth/requires-recent-login": "لأمان حسابك، سجّل الدخول من جديد ثم أعد المحاولة.",
     "auth/user-not-found": "لا يوجد حساب بهذا البريد الإلكتروني.",
     "auth/too-many-requests": "محاولات كثيرة. حاول لاحقاً.",
     "auth/network-request-failed": "تحقّق من اتصالك بالإنترنت.",
@@ -87,7 +92,7 @@ function actionSettings(continuePath = "/profile") {
 
 export async function sendVerificationEmail(user: User) {
   try {
-    await sendEmailVerification(user, actionSettings("/profile"));
+    await sendEmailVerification(user, actionSettings("/profile#account-security"));
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
     throw new AuthError(arabicError(code));
@@ -98,7 +103,23 @@ export async function sendEmailChangeVerification(user: User, newEmail: string) 
   const normalized = newEmail.trim().toLowerCase();
   if (!normalized) throw new AuthError("الرجاء إدخال البريد الإلكتروني الجديد.");
   try {
-    await verifyBeforeUpdateEmail(user, normalized, actionSettings("/profile"));
+    await verifyBeforeUpdateEmail(user, normalized, actionSettings("/profile#account-security"));
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code ?? "";
+    throw new AuthError(arabicError(code));
+  }
+}
+
+export async function changePassword(user: User, currentPassword: string, newPassword: string) {
+  if (!currentPassword) throw new AuthError("أدخل كلمة السر الحالية أولاً.");
+  if (newPassword.length < 6) throw new AuthError("كلمة السر الجديدة يجب أن تكون 6 أحرف على الأقل.");
+  if (currentPassword === newPassword) throw new AuthError("اختر كلمة سر جديدة مختلفة عن الحالية.");
+  if (!user.email) throw new AuthError("لا يوجد بريد إلكتروني مرتبط بهذا الحساب.");
+
+  try {
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
     throw new AuthError(arabicError(code));

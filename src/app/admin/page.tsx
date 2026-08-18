@@ -12,7 +12,7 @@ import { ref, onValue, remove, query, orderByChild, limitToLast, get, update, se
 import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faShield, faFlag, faStar, faLayerGroup, faTrash, faChartBar,
+  faShield, faFlag, faLayerGroup, faTrash, faChartBar,
   faCircleExclamation, faCheckCircle, faGear, faCalendarDays,
   faFloppyDisk, faLock, faLockOpen, faBullhorn, faPaperPlane,
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
@@ -30,8 +30,6 @@ import { listenCommissionPct, setCommissionPct as setCommissionPctFn, listenAllC
 import { LandingEditor } from "@/features/admin/landing-editor";
 import { WelcomeEditor } from "@/features/admin/welcome-editor";
 import { createPost, deletePost, setPostLocked, type Post } from "@/features/community/social";
-import { AdminRatingRow } from "@/features/community/teacher-rating-ui";
-import { detectBrigading, listenTeacherRatings, computeStats, type TeacherRating } from "@/features/community/teacher-rating";
 import { setSupportAccount, useSupportInfo, SUPPORT_DEFAULTS } from "@/features/support/admin-chat";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AdminCourses } from "@/features/courses/admin-courses";
@@ -113,52 +111,8 @@ function SupportAccountCard() {
   );
 }
 
-/* مراقبة التقييمات — كشف الحملات المنسّقة ضد الأساتذة */
-function RatingsAdminPanel({ users }: { users: { uid: string; name?: string; role?: string }[] }) {
-  const teachers = users.filter((u) => u.role === "teacher" || u.role === "admin");
-  const [flags, setFlags] = useState<Record<string, ReturnType<typeof detectBrigading>>>({});
-
-  useEffect(() => {
-    const unsubs = teachers.map((t) =>
-      listenTeacherRatings(t.uid, (list: TeacherRating[]) => {
-        setFlags((prev) => ({ ...prev, [t.uid]: detectBrigading(list, t.uid) }));
-      })
-    );
-    return () => unsubs.forEach((u) => u());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teachers.map((t) => t.uid).join(",")]);
-
-  const flagged = teachers.filter((t) => flags[t.uid]);
-
-  return (
-    <div className="space-y-3">
-      <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
-        <p className="text-xs font-bold text-warning">⚠️ أنماط تستحق المراجعة ({flagged.length})</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
-          إشارة لا حكم: ثلاثة تقييمات منخفضة أو أكثر وصلت خلال أقل من ٢٤ ساعة.
-          قد يكون سبباً وجيهاً، وقد يكون حملة. القرار لك — لا يُحذف شيء تلقائياً.
-        </p>
-      </div>
-
-      {flagged.map((t) => {
-        const f = flags[t.uid]!;
-        return (
-          <div key={t.uid} className="rounded-xl border border-danger/30 bg-danger/5 p-3">
-            <p className="text-sm font-bold text-text-primary">{t.name ?? t.uid}</p>
-            <p className="mt-1 text-[11px] text-danger">
-              {f.lowCount} تقييمات منخفضة — أضيق نافذة: {f.windowHours} ساعة — المتوسّط {f.avg} من {f.total}
-            </p>
-          </div>
-        );
-      })}
-
-      <p className="pt-2 text-xs font-bold text-text-muted">كل الأساتذة</p>
-      {teachers.map((t) => (
-        <AdminRatingRow key={t.uid} teacherUid={t.uid} teacherName={t.name ?? t.uid} />
-      ))}
-    </div>
-  );
-}
+/* تقييمات الطلاب لا تُعرض في لوحة الإدارة. تبقى البيانات ومكوّن الأستاذ
+   محفوظين لعرض الملخّص داخل مساحة الأستاذ فقط. */
 
 const TABS = [
   { id: "overview",  label: "إحصائيات",  icon: faChartBar },
@@ -182,7 +136,6 @@ const TABS = [
   { id: "site",      label: "القائمة والصفحات", icon: faBookOpen },
   { id: "seo",       label: "الأرشفة والسيو", icon: faLink },
   { id: "posts",     label: "المنشورات",  icon: faMessage },
-  { id: "ratings",   label: "التقييمات",  icon: faStar },
   { id: "reports",   label: "البلاغات",   icon: faFlag },
 ] as const;
 
@@ -1218,11 +1171,6 @@ export default function AdminPage() {
               ))}
             </div>
           </div>
-        )}
-
-        {/* ════ البلاغات ════ */}
-        {tab === "ratings" && (
-          <RatingsAdminPanel users={appUsers} />
         )}
 
         {tab === "reports" && (

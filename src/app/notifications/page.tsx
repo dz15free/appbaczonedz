@@ -83,10 +83,11 @@ export default function NotificationsPage() {
   /* الدمج والترتيب في مكان واحد: الأحدث أوّلاً بغضّ النظر عن مصدره،
      فلا يشعر المستخدم بوجود قائمتين. */
   const merged = [...items, ...casts].sort((a, b) => b.createdAt - a.createdAt);
+  const clearableCount = items.filter((n) => !n.persistent).length;
 
   useEffect(() => {
     if (!user || merged.length === 0) return;
-    const unread = merged.filter((n) => !n.read).map((n) => n.id);
+    const unread = merged.filter((n) => !n.read && !n.persistent).map((n) => n.id);
     // البثّ يُعلَّم عند القارئ لا في السجلّ العامّ (لا صلاحية كتابة فيه)
     const own = unread.filter((id) => !isBroadcastId(id));
     if (own.length) markNotificationsRead(user.uid, own);
@@ -120,9 +121,9 @@ export default function NotificationsPage() {
       <section className="mx-auto max-w-2xl px-4 py-4">
         <div className="mb-3 flex items-center justify-between">
           <h1 className="font-display text-xl font-extrabold">الإشعارات</h1>
-          {items.length > 0 && (
+          {clearableCount > 0 && (
             <button onClick={() => clearNotifications(user.uid)} className="flex items-center gap-1.5 text-sm text-text-muted hover:text-danger">
-              <FontAwesomeIcon icon={faCheckDouble} className="h-4 w-4" /> مسح الكل
+              <FontAwesomeIcon icon={faCheckDouble} className="h-4 w-4" /> مسح الإشعارات الأخرى
             </button>
           )}
         </div>
@@ -159,17 +160,21 @@ export default function NotificationsPage() {
           <div className="space-y-2">
             {merged.map((n) => {
               const meta = notifMeta(n.type);
+              const persistent = Boolean(n.persistent);
               const body = (
-                <div className={`flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 ${n.read ? "border-border bg-surface" : "border-primary/40 bg-primary/5"}`}>
+                <div className={`flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 ${persistent ? "border-amber-400/40 bg-amber-400/10" : n.read ? "border-border bg-surface" : "border-primary/40 bg-primary/5"}`}>
                   <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${TONES[meta.tone]}`}>
                     <FontAwesomeIcon icon={ICONS[meta.icon]} className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <span className="text-[10.5px] font-extrabold text-text-muted">{meta.label}</span>
-                    <p className="text-sm">{n.text}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10.5px] font-extrabold text-text-muted">{meta.label}</span>
+                      {persistent && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700">يبقى حتى التأكيد</span>}
+                    </div>
+                    <p className="text-sm leading-relaxed">{n.text}</p>
                     <span className="text-xs text-text-muted">{timeAgo(n.createdAt)}</span>
                   </div>
-                  {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
+                  {!n.read && !persistent && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </div>
               );
               /* كل اشعار قابل للنقر الآن. وكان الاشعار بلا `link` يُعرض

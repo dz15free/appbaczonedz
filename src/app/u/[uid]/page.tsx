@@ -167,6 +167,7 @@ export default function UserProfilePage() {
               uid={uid}
               viewerUid={user?.uid}
               viewerIsAdmin={myProfile?.role === "admin"}
+              viewerRole={myProfile?.role}
             />
           )}
 

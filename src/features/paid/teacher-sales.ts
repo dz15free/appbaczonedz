@@ -47,16 +47,15 @@ export async function markSaleSettled(ownerId: string, saleId: string, settled: 
 
 /* ── بيانات تواصل الأستاذ ── */
 
+export type TeacherContactVisibility = "admin" | "students" | "all" | "private" | "public";
+
 export interface TeacherContact {
   /** رقم الهاتف — اختياري تماماً */
   phone?: string;
   /** روابط: فيسبوك · تيليغرام · إنستغرام · موقع… */
   links?: { label: string; url: string }[];
-  /**
-   * public  = يراها كل زائر في صفحة الأستاذ
-   * private = يراها الأدمن فقط (للتسوية المالية)
-   */
-  visibility?: "public" | "private";
+  /** جمهور الظهور الجديد: الإدارة أو الطلاب أو الجميع؛ private/public قديمان للتوافق. */
+  visibility?: TeacherContactVisibility;
 }
 
 export function listenTeacherContact(uid: string, cb: (c: TeacherContact | null) => void) {
@@ -65,9 +64,15 @@ export function listenTeacherContact(uid: string, cb: (c: TeacherContact | null)
   });
 }
 
+function normalizeContactVisibility(value: TeacherContactVisibility | undefined): "admin" | "students" | "all" {
+  if (value === "public" || value === "all") return "all";
+  if (value === "students") return "students";
+  return "admin";
+}
+
 export async function saveTeacherContact(uid: string, c: TeacherContact) {
   const clean: Record<string, unknown> = {
-    visibility: c.visibility === "public" ? "public" : "private",
+    visibility: normalizeContactVisibility(c.visibility),
     updatedAt: Date.now(),
   };
   // قاعدة البيانات ترفض undefined وتُسقط الكتابة كلّها

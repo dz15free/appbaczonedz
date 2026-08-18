@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import {
-  listenTeacherContact, saveTeacherContact, type TeacherContact,
+  listenTeacherContact, saveTeacherContact, type TeacherContact, type TeacherContactVisibility,
 } from "@/features/paid/teacher-sales";
 import {
   CONTACT_META, CONTACT_ORDER, ContactIcon, type ContactKey,
@@ -26,14 +26,20 @@ import {
 /* الشبكات المدعومة — الهاتف له خانته الخاصّة أعلاه */
 const NET_KEYS: ContactKey[] = CONTACT_ORDER.filter((k) => k !== "phone");
 
+function editorVisibility(value: TeacherContactVisibility | undefined): "admin" | "students" | "all" {
+  if (value === "public" || value === "all") return "all";
+  if (value === "students") return "students";
+  return "admin";
+}
+
 export function TeacherContactEditor({ uid }: { uid: string }) {
-  const [c, setC] = useState<TeacherContact>({ visibility: "private", links: [] });
+  const [c, setC] = useState<TeacherContact>({ visibility: "admin", links: [] });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     const unsub = listenTeacherContact(uid, (v) => {
-      if (v) setC({ visibility: v.visibility ?? "private", phone: v.phone ?? "", links: v.links ?? [] });
+      if (v) setC({ visibility: editorVisibility(v.visibility), phone: v.phone ?? "", links: v.links ?? [] });
     });
     return () => { if (typeof unsub === "function") unsub(); };
   }, [uid]);
@@ -74,8 +80,7 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
           <h2 className="font-display text-base font-extrabold">وسائل التواصل معك</h2>
         </div>
         <p className="mb-4 text-[11.5px] leading-relaxed text-text-muted">
-          اختيارية بالكامل. الرسائل داخل المنصّة تبقى الطريق الأساسي، وهذه إضافة
-          لمن يريد الوصول إليك خارجها.
+          اختر ما تريد مشاركته خارج المنصّة. الرسائل داخل BacZone تبقى الطريق الأساسي، ويمكنك تعديل الجمهور في أي وقت.
         </p>
 
         <label className="mb-1 block text-[11px] font-bold text-text-muted">رقم الهاتف (اختياري)</label>
@@ -119,31 +124,30 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
         {/* الظهور */}
         <div className="mt-4 rounded-xl border border-border p-3">
           <p className="mb-2 text-[11px] font-bold text-text-muted">من يرى هذه البيانات؟</p>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="grid gap-2 sm:grid-cols-3">
             {([
-              { v: "private", t: "الإدارة فقط", d: "للتسوية المالية" },
-              { v: "public", t: "كل الزوّار", d: "تظهر في صفحتك" },
+              { v: "admin", t: "الإدارة فقط", d: "للمتابعة والتسوية" },
+              { v: "students", t: "الطلاب", d: "للطلاب داخل المنصّة" },
+              { v: "all", t: "الجميع", d: "تظهر في صفحتك العامة" },
             ] as const).map((o) => (
               <button
                 key={o.v}
+                type="button"
                 onClick={() => setC({ ...c, visibility: o.v })}
-                className={`flex-1 rounded-lg border px-3 py-2 text-right transition ${
-                  (c.visibility ?? "private") === o.v
-                    ? "border-primary bg-primary/10"
+                className={`min-h-[66px] rounded-xl border px-3 py-2 text-right transition ${
+                  editorVisibility(c.visibility) === o.v
+                    ? "border-primary bg-primary/10 shadow-sm"
                     : "border-border hover:border-primary/40"
                 }`}
               >
                 <span className="block text-xs font-extrabold">{o.t}</span>
-                <span className="block text-[10.5px] text-text-muted">{o.d}</span>
+                <span className="mt-1 block text-[10.5px] leading-relaxed text-text-muted">{o.d}</span>
               </button>
             ))}
           </div>
-          {c.visibility === "public" && (
-            <p className="mt-2 rounded-lg bg-amber-400/15 px-2.5 py-1.5 text-[10.5px] leading-relaxed text-amber-700">
-              سيراها كل زائر. لا تنشر رقماً لا تريد وصوله إلى الجميع — الرقم المنشور
-              لا يمكن سحبه بعد أن يُنسَخ.
-            </p>
-          )}
+          <p className="mt-2 rounded-lg bg-primary/5 px-2.5 py-1.5 text-[10.5px] leading-relaxed text-text-muted">
+            ستظهر لك معاينة العرض بحسب اختيارك، ويمكنك تغيير هذا القرار لاحقاً.
+          </p>
         </div>
 
         <button

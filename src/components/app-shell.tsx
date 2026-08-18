@@ -306,7 +306,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = listenNotifications(user.uid, (list) => setUnreadOwn(list.filter((n) => !n.read).length));
+    const unsub = listenNotifications(user.uid, (list) => setUnreadOwn(list.filter((n) => !n.read || n.persistent).length));
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user?.uid]);
 

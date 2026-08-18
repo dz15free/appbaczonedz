@@ -9,6 +9,7 @@ import {
   type User,
 } from "firebase/auth";
 import { clearProfileCache } from "@/features/auth/use-profile";
+import { ensureAccountVerificationNotification, removeAccountVerificationNotification } from "@/features/notifications/account-verification";
 import { ref, onValue } from "firebase/database";
 import { auth, rtdb } from "@/lib/firebase/config";
 
@@ -34,9 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
        مستقل ويعمل بالتوازي، ولا يمنع حسم حالة المستخدم أو فتح المنصة. */
     unsubscribe = onAuthStateChanged(auth, (u) => {
       if (disposed) return;
-      // التسجيل مباشر دون تأكيد البريد
+      // التسجيل يبقى مباشراً دون فرض تأكيد البريد قبل الدخول.
       setUser(u ?? null);
       setLoading(false);
+      if (u && !u.emailVerified) {
+        void ensureAccountVerificationNotification(u.uid).catch(() => {});
+      } else if (u?.emailVerified) {
+        void removeAccountVerificationNotification(u.uid).catch(() => {});
+      }
     });
 
     void setPersistence(auth, browserLocalPersistence).catch((error) => {
