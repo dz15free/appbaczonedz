@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { getRoomOverlayRoot } from "@/features/rooms/room-overlay";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
 /* ════════════════════════════════════════════
@@ -123,11 +122,13 @@ export function BottomSheet({
 
   const viewport = viewportHeight || readViewportHeight() || 760;
   const maxHeightPx = Math.max(260, Math.min(viewport - 12, Math.round(viewport * readHeightRatio(maxHeight))));
-  const portalRoot = getRoomOverlayRoot() ?? document.body;
+  // يجب أن يعيش الدرج على body لا داخل مسرح الغرفة؛ المسرح يملك overflow-hidden،
+  // وSafari iPhone يقصّ fixed descendants داخله حتى لو كان z-index مرتفعاً.
+  const portalRoot = document.body;
 
   return createPortal(
     <div
-      className="pointer-events-auto fixed inset-0 z-[10060] flex flex-col justify-end"
+      className="pointer-events-auto fixed inset-0 z-[2147483600] flex flex-col justify-end"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "bz-sheet-title" : undefined}

@@ -12,6 +12,7 @@ import { useProfile } from "@/features/auth/use-profile";
 import { Input, Button } from "@/components/ui/field";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faArrowLeft,
   faCheck,
   faGraduationCap,
   faGlobe,
@@ -257,10 +258,25 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <footer className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-surface px-5 py-4 sm:flex-row sm:px-7" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-          <Button variant="ghost" onClick={onClose} className="h-12 sm:w-28">إلغاء</Button>
-          <Button onClick={handleCreate} loading={loading} disabled={!name.trim() || loading} className="h-12 flex-1">
-            إنشاء ودخول
+        <footer
+          className="flex shrink-0 flex-col gap-2.5 border-t border-border bg-surface px-5 py-4 sm:flex-row sm:items-center sm:px-7"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          <Button
+            onClick={handleCreate}
+            loading={loading}
+            disabled={!name.trim() || loading}
+            className="order-1 min-h-12 w-full min-w-0 px-4 text-[15px] shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:order-2 sm:h-12 sm:flex-1 sm:w-auto"
+          >
+            <span>إنشاء ودخول</span>
+            <FontAwesomeIcon icon={faArrowLeft} className="h-4 w-4 -scale-x-100" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="order-2 min-h-11 w-full min-w-0 px-4 text-sm sm:order-1 sm:h-12 sm:w-28"
+          >
+            إلغاء
           </Button>
         </footer>
       </div>
