@@ -75,7 +75,7 @@ export function BarButton({
   active = false, badge, title, disabled, onClick,
 }: BarButtonProps) {
   const base =
-    "relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[11.5px] font-semibold transition disabled:opacity-40";
+    "relative inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[11.5px] font-semibold transition active:scale-[.97] disabled:opacity-40 sm:h-8 sm:min-w-0 sm:rounded-lg";
   const tones =
     tone === "primary"
       ? "border-[var(--bz-blue)] bg-[var(--bz-blue)] text-white hover:brightness-110"

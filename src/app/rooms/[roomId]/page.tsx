@@ -594,7 +594,7 @@ export default function RoomPage() {
               icon="grid"
               title="إجراءات الحصة"
               badge={anonQs.filter((q) => !q.answered).length}
-              active={Boolean(challenge)}
+              active={moreOpen || Boolean(challenge)}
               onClick={() => setMoreOpen(true)}
             />
           </>
@@ -713,8 +713,15 @@ export default function RoomPage() {
 
       {/* درج «إجراءات الحصة» — للمالك */}
       {isOwner && (
-        <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة">
-          <div className="grid grid-cols-2 gap-2.5 p-1 sm:grid-cols-3">
+        <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة" maxHeight="88dvh">
+          <div className="space-y-5 pb-2">
+            <section>
+              <div className="mb-2 flex items-center gap-2 px-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <h4 className="text-xs font-extrabold text-text-primary">أدوات الحصة</h4>
+                <span className="text-[10px] text-text-muted">الصوت والوقت</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {/* وقت التمرين — زرّ بنفس شكل بقيّة الإجراءات.
                 لا يُصيَّر المؤقّت نفسه هنا: كان داخل هذا الدرج، فإغلاق
                 الدرج يُفكّك المكوّن ويقتل حالته، فيختفي الاثنان معاً. */}
@@ -836,6 +843,8 @@ export default function RoomPage() {
                 دعوة أصدقاء
               </button>
             )}
+              </div>
+            </section>
           </div>
         </BottomSheet>
       )}
@@ -1127,7 +1136,7 @@ export default function RoomPage() {
           <PhoneToolButton icon="note" label="ملاحظات" active={tool === "notes"}
             onClick={() => isOwner && setTool("notes")} />
           {isOwner && (
-            <PhoneToolButton icon="grid" label="إجراءات"
+            <PhoneToolButton icon="grid" label="إجراءات" active={moreOpen}
               badge={anonQs.filter((q) => !q.answered).length}
               onClick={() => setMoreOpen(true)} />
           )}
