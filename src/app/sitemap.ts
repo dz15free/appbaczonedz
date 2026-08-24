@@ -9,9 +9,9 @@ import { getPublishedEntries } from "@/features/blog/blog-server";
 /* ════════════════════════════════════════════════════════════
    خريطة الموقع
 
-   بدونها قد يمرّ شهور قبل أن يكتشف Google 260 صفحة تخصّص — لا يصل
-   إليها إلّا بتتبّع الروابط واحدة واحدة. الخريطة تعرضها كلّها دفعة
-   واحدة.
+   الخريطة تعلن الصفحات العامة المكتملة لمحركات البحث، بينما تبقى صفحات
+   التخصصات التي تحتاج استكمالاً قابلة للوصول عبر الدليل والروابط المباشرة
+   دون أن تُقدَّم في الخريطة كأنها مراجع مكتملة.
 
    الصفحات المحمية بتسجيل الدخول **ليست هنا عمداً**: إدراج صفحة لا
    يستطيع الزائر رؤيتها يُهدر ميزانية الزحف ويُضعف تقييم الموقع.
@@ -24,12 +24,12 @@ import { getPublishedEntries } from "@/features/blog/blog-server";
 const BASE = SITE_URL;
 
 /* التخصصات من نفس loader الذي تصيّر به الصفحة العامة. بهذا لا ينفصل
-   شرط النشر في Sitemap عن شرط النشر في الصفحة، ولا يعود fallback
-   الشبكة إلى إدراج فهرس ثابت قد يحتوي صفحات «قيد الإعداد». */
+   شرط النشر وقابلية الفهرسة في Sitemap عن الصفحة، ولا يعود fallback
+   الشبكة إلى إدراج صفحة ناقصة على أنها دليل مكتمل. */
 async function guidePages(): Promise<{ slug: string; at?: number }[]> {
   const rows = await getGuideRows();
   return rows
-    .filter((row) => row.published)
+    .filter((row) => row.published && row.indexable)
     .map((row) => ({
       slug: (row.permalink?.trim() || row.slug).replace(/^\/+|\/+$/g, ""),
       at: row.updatedAt,

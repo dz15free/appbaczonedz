@@ -11,7 +11,7 @@ import {
 import { clearProfileCache } from "@/features/auth/use-profile";
 import { ensureAccountVerificationNotification, removeAccountVerificationNotification } from "@/features/notifications/account-verification";
 import { ref, onValue } from "firebase/database";
-import { auth, rtdb } from "@/lib/firebase/config";
+import { auth, isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 interface AuthContextValue {
   user: User | null;
@@ -27,6 +27,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [banned, setBanned] = useState(false);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     let disposed = false;
     let unsubscribe: (() => void) | undefined;
 
@@ -58,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // فرض إيقاف الحساب: إن كان platformBan=true نُخرجه فوراً
   useEffect(() => {
-    if (!user) {
+    if (!isFirebaseConfigured || !user) {
       setBanned(false);
       return;
     }

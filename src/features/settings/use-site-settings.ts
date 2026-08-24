@@ -6,7 +6,7 @@ export { DEFAULTS };
 export { DEFAULT_LOGO, DEFAULT_FAVICON };
 import { useEffect, useState } from "react";
 import { ref, onValue, set, update } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 /* ─── نوع الإعدادات الكاملة للموقع ─── */
 export interface LandingCard {
@@ -255,6 +255,11 @@ export function useSiteSettings() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setLoaded(true);
+      return;
+    }
+
     const unsub = onValue(ref(rtdb, "settings"), (snap) => {
       const val = snap.val() as SiteSettings | null;
 

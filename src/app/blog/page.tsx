@@ -61,6 +61,27 @@ export default async function BlogIndex({ searchParams }: { searchParams: Promis
         </div>
       </header>
       {used.length > 0 && <nav aria-label="تصنيفات المدونة" className="bz-blog-editorial-filters mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-5 py-4 sm:px-6"><Link href="/blog" className={`bz-blog-filter ${!label ? "is-active" : ""}`}>كل المقالات</Link>{used.map((item) => <Link key={item.id} href={`/blog?label=${encodeURIComponent(item.id)}`} className={`bz-blog-filter ${label === item.id ? "is-active" : ""}`}>{item.label}</Link>)}</nav>}
+      <section className="mx-auto w-full max-w-6xl px-5 pt-7 sm:px-6">
+        <div className="rounded-3xl border border-border/80 bg-surface px-5 py-5 sm:px-7">
+          <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr] lg:items-start">
+            <div>
+              <span className="text-[11px] font-black text-primary">كيف تستعمل مكتبة القراءة؟</span>
+              <h2 className="mt-2 font-display text-xl font-extrabold">ابدأ بسؤال واضح، ثم انتقل إلى التطبيق</h2>
+              <p className="mt-2 text-sm leading-7 text-text-muted">
+                اختر المقال الذي يجيب عن المشكلة التي تواجهها الآن: بناء برنامج، فهم مادة، التعامل مع القلق، أو الاستعداد ليوم الامتحان. اقرأ الخطوات، جرّب ما يناسبك، ثم استخدم أدوات BacZone لتسجيل ما أنجزته بدل جمع نصائح بلا تطبيق.
+              </p>
+            </div>
+            <div className="text-sm leading-7 text-text-muted">
+              <p><strong className="text-text-primary">للمعلومة المتغيرة:</strong> المقالات تقدّم شرحاً عملياً، لكن معاملات البكالوريا ومواعيد التوجيه وشروط القبول تُراجع من الجهة الرسمية عند صدورها.</p>
+              <nav aria-label="مسارات مرتبطة" className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-extrabold text-primary">
+                <Link href="/guides">الأدلة المرجعية <FontAwesomeIcon icon={faArrowLeft} className="ms-1 h-2.5 w-2.5" /></Link>
+                <Link href="/tools">أدوات المراجعة <FontAwesomeIcon icon={faArrowLeft} className="ms-1 h-2.5 w-2.5" /></Link>
+                <Link href="/specialties">دليل التخصصات <FontAwesomeIcon icon={faArrowLeft} className="ms-1 h-2.5 w-2.5" /></Link>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </section>
       <PublicSidebarLayout placement="blog">
         <section className="bz-blog-index-shell mx-auto w-full max-w-6xl px-5 pb-14 pt-4 sm:px-6 sm:pb-20">
           {featured ? <>

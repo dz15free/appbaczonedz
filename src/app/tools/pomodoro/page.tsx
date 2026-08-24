@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faPause, faRotateLeft, faBrain, faMugHot, faBed } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faPause, faRotateLeft, faBrain, faMugHot, faBed, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
 import { PublicBackButton } from "@/components/ui/public-back-button";
 
@@ -79,9 +79,34 @@ export default function PomodoroPage() {
     <AppShell>
       <section className={`flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center bg-gradient-to-b ${BG[phase]} px-4 py-8 transition-all duration-700`}>
         <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" className="mb-6 self-start" />
-        <div className="mb-6 text-center">
-          <h1 className="font-display text-2xl font-extrabold">مؤقّت التركيز</h1>
-          <p className="mt-1 text-xs text-text-muted">جلسات قصيرة تساعدك على الدراسة بتركيز واستراحات محسوبة.</p>
+        <div className="mb-6 max-w-2xl text-center">
+          <h1 className="font-display text-2xl font-extrabold">مؤقّت التركيز بطريقة بومودورو</h1>
+          <p className="mt-2 text-sm leading-7 text-text-muted">
+            اقسم المراجعة إلى جلسة تركيز، ثم استراحة قصيرة، وكرّر الدورة قبل الاستراحة الطويلة.
+            القيم الافتراضية هنا هي 25 دقيقة للدراسة و5 دقائق للاستراحة، ويمكنك تعديلها حسب المادة وطاقتك.
+          </p>
+          <div className="mt-4 grid gap-2 text-right sm:grid-cols-3">
+            {[
+              ["1", "اختر المهمة", "حدّد درساً أو مجموعة تمارين واحدة قبل تشغيل العداد."],
+              ["2", "ابدأ دون تبديل", "أبعد الهاتف ومصادر التشتيت حتى تنتهي الجلسة."],
+              ["3", "راجع ما أنجزت", "سجّل الخطوة التالية في مخطّطك بدل تمديد الجلسة بلا هدف."],
+            ].map(([n, title, text]) => (
+              <div key={n} className="rounded-2xl border border-border bg-surface/80 p-3">
+                <span className="text-xs font-black text-primary">{n}</span>
+                <h2 className="mt-1 text-xs font-extrabold">{title}</h2>
+                <p className="mt-1 text-[11px] leading-5 text-text-muted">{text}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] leading-5 text-text-muted">
+            المؤقّت أداة لتنظيم الوقت لا مقياساً لجودة تعلّمك؛ إذا كنت متعباً فعدّل المدة أو خذ استراحة.
+            لا تُحفظ الجلسات في حسابك تلقائياً بعد إغلاق الصفحة.
+          </p>
+          <nav aria-label="موارد مرتبطة" className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-bold text-primary">
+            <a href="/tools/planner" className="inline-flex items-center gap-1">خطّط أسبوعك <FontAwesomeIcon icon={faArrowLeft} className="h-2.5 w-2.5" /></a>
+            <a href="/tools/tasks" className="inline-flex items-center gap-1">حوّلها إلى مهام <FontAwesomeIcon icon={faArrowLeft} className="h-2.5 w-2.5" /></a>
+            <a href="/tools/tracker" className="inline-flex items-center gap-1">تابع تقدّمك <FontAwesomeIcon icon={faArrowLeft} className="h-2.5 w-2.5" /></a>
+          </nav>
         </div>
 
         {/* أزرار المرحلة */}

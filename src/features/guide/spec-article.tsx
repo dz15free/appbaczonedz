@@ -64,6 +64,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
   });
   const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published).slice(0, 6);
   const introText = spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "");
+  const needsEditorialReview = !spec.indexable;
   const articleUrl = `/specialties/${linkOf(spec)}`;
 
   const jsonLd = {
@@ -121,6 +122,9 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
       <PublicSidebarLayout placement="guides">
         <article id="guide-content" className="bz-spec-article-pro mx-auto w-full max-w-6xl px-4 pb-14 pt-7">
           <div className="bz-spec-lede bz-spec-lede-editorial"><div className="bz-spec-lede-mark"><Icon name="ai" size={17} /></div><div><span>خلاصة البداية</span><p>{introText || "هذا الدليل يجمع أهم ما تحتاجه لفهم التخصّص ومساره وآفاقه."}</p></div><span className="bz-spec-lede-count">{written.length} أقسام</span></div>
+          {needsEditorialReview && <aside role="note" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] leading-6 text-amber-950">
+            <strong>تنبيه قبل ترتيب الرغبات:</strong> هذا الدليل متاح للقراءة، لكن بعض معلوماته ما زالت تحتاج استكمالاً أو تدقيقاً تحريرياً. لا تعتمد على هذه الصفحة وحدها في القبول أو اختيار المؤسسة؛ راجع دليل التوجيه الرسمي للسنة التي تتقدم فيها.
+          </aside>}
           <div className="bz-spec-reading-layout">
             {written.length > 1 && <aside className="bz-spec-sticky-toc" aria-label="أقسام الدليل"><p><Icon name="file" size={13} /> في هذا الدليل <b>{written.length}</b></p><div>{written.map(({ key, label }, index) => <a key={String(key)} href={`#sec-${String(key)}`}><span>{String(index + 1).padStart(2, "0")}</span>{label}</a>)}</div></aside>}
             <div className="bz-spec-sections">

@@ -130,8 +130,8 @@ export default function CoursesPage() {
                 دورات تساعدك على التفوّق
               </h1>
               <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-text-muted">
-                دورات يُعدّها أساتذة، تُراجعها إدارة المنصّة قبل النشر، ومصمّمة لبرنامج
-                البكالوريا الجزائري وشعبتك بالتحديد.
+                دورات منشورة في كتالوج BacZone، ينشئها أساتذة وتركّز على برنامج
+                البكالوريا الجزائري؛ استخدم التصفية لاختيار المادة والشعبة المناسبتين.
               </p>
             </div>
 
@@ -153,7 +153,7 @@ export default function CoursesPage() {
 
           <p className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-surface/70 px-3 py-1.5 text-[11px] font-semibold text-text-muted">
             <FontAwesomeIcon icon={faShieldHalved} className="h-3 w-3 text-emerald-500" />
-            كل دورة منشورة مرّت بمراجعة الإدارة
+            يعرض هذا الكتالوج الدورات المنشورة فقط؛ راجع تفاصيل كل دورة قبل الشراء
           </p>
         </header>
 

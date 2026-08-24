@@ -50,8 +50,9 @@ export async function generateMetadata(
     keywords: [spec.ar, spec.fr, spec.field, "التوجيه الجامعي", "الجزائر", "بكالوريا"]
       .filter(Boolean) as string[],
     alternates: { canonical },
-    /* الصفحة غير المكتوبة لا تُفهرَس — لكنّ روابطها تُتبع */
-    robots: spec.published ? undefined : { index: false, follow: true },
+    /* وجود مقدمة لا يعني أن الدليل مكتمل؛ الصفحات التي تفتقد حقولاً
+       أساسية تبقى accessible وروابطها تُتبع، لكنها لا تُعلن في البحث كمرجع مكتمل. */
+    robots: spec.indexable ? undefined : { index: false, follow: true },
     openGraph: {
       type: "article", locale: "ar_DZ", url: absUrl(canonical),
       title, description, siteName: "BacZoneDZ",

@@ -159,6 +159,18 @@ export default function PlannerPage() {
         <div className="rounded-2xl border border-border bg-surface p-4">
           <h1 className="font-display text-xl font-extrabold">مخطّط البكالوريا للطباعة</h1>
           <p className="mt-1 text-sm text-text-muted">اختر التصميم والحجم، ثم اطبعه واملأه يدوياً أو استعمله رقمياً.</p>
+          <div className="mt-4 rounded-2xl border border-border/80 bg-background/70 p-3 text-right">
+            <h2 className="text-sm font-extrabold text-text-primary">كيف تختار القالب؟</h2>
+            <p className="mt-1 text-[12px] leading-6 text-text-muted">
+              استعمل المخطّط اليومي عندما تريد تحويل جلسة واحدة إلى مهام واضحة، والأسبوعي لرؤية توزيع المواد،
+              وقالب العدّ التنازلي عندما تقسم الأسابيع المتبقية قبل الامتحان. قالب الأهداف مناسب لمتابعة ما تريد
+              إنجازه، وليس بديلاً عن قياس فهمك بالتمارين والمواضيع السابقة.
+            </p>
+            <p className="mt-1 text-[12px] leading-6 text-text-muted">
+              بعد اختيار القالب، حدّد حجماً يناسب طريقة الاستعمال: A4 للطباعة أو الهاتف للقراءة على الشاشة.
+              يمكنك تعديل اللون ثم طباعة الورقة أو تنزيلها كصورة؛ البيانات التي تكتبها في النسخة المطبوعة لا تُرسل إلى BacZone.
+            </p>
+          </div>
 
           {/* بلانرات جاهزة: من يريد التنظيم اليوم لا يريد تصميماً — يريد
               ملفّاً يطبعه الآن. فنعرضهما قبل أدوات التخصيص. */}

@@ -27,7 +27,7 @@ import { TOOLS } from "@/features/tools/tools-data";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
-import { PublicRootGate } from "@/components/ui/public-root-gate";
+import { PublicRootRedirect } from "@/components/ui/public-root-redirect";
 
 export const revalidate = 600;
 
@@ -90,7 +90,8 @@ export default async function LandingPage() {
   };
 
   return (
-    <PublicRootGate>
+    <>
+      <PublicRootRedirect />
       <main dir="rtl" className="bz-landing-v2 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased selection:bg-blue-500/30">
         <FaviconSync href={s.faviconUrl} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -140,7 +141,7 @@ export default async function LandingPage() {
 
         <section className="bz-landing-final-cta relative overflow-hidden px-5 py-20 text-white sm:px-8 sm:py-28"><div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(99,102,241,.35),transparent_30%),linear-gradient(120deg,#101447,#2563eb)]" /><div className="relative mx-auto max-w-3xl text-center"><img src={s.logoUrl || DEFAULT_LOGO} alt="" width={64} height={64} className="mx-auto mb-5 h-14 w-14 rounded-2xl object-contain" /><h2 className="font-display text-3xl font-black sm:text-5xl">{s.ctaTitle || "جاهز لتبدأ بطريقتك؟"}</h2><p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/75">{s.ctaSubtitle || "ابدأ بما تحتاجه اليوم: أداة، دليل، مقال، أو مساحة دراسة."}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/tools" className="bz-landing-primary-btn !bg-blue-600 !text-white hover:!bg-blue-500">اكتشف الأدوات <FontAwesomeIcon icon={faArrowLeft} /></Link><Link href="/login" className="bz-landing-ghost-btn">دخول المنصة <FontAwesomeIcon icon={faArrowLeft} /></Link></div></div></section>
         <SiteFooter variant="full" landingDescription={footerDescription} />
-      </main>
-    </PublicRootGate>
+        </main>
+    </>
   );
 }

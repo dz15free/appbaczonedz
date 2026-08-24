@@ -55,7 +55,44 @@ export interface SpecContent {
   updatedAt?: number;
 }
 
-export type SpecFull = SpecLite & SpecContent & { published: boolean };
+export type SpecQuality = "rich" | "medium" | "needs-review";
+
+export type SpecFull = SpecLite & SpecContent & {
+  published: boolean;
+  /** عدد الأحرف النصية في الحقول التحريرية، بعد إزالة تنسيق Markdown البسيط. */
+  contentChars: number;
+  /** عدد الحقول الأساسية المكتوبة: التعريف، الدراسة، القبول، العمل، والخلاصة. */
+  coreFieldCount: number;
+  /** صفحة مكتملة بما يكفي للإعلان عنها في sitemap، لا مجرد صفحة لها مقدمة. */
+  indexable: boolean;
+  quality: SpecQuality;
+};
+
+const CONTENT_FIELDS: (keyof SpecContent)[] = [
+  "intro", "study", "admission", "subjects", "careers", "pros", "cons", "verdict",
+  "modules", "master", "where", "numbers", "future", "salary", "daily", "voices", "prosCons",
+];
+const CORE_FIELDS: (keyof SpecContent)[] = ["intro", "study", "admission", "careers", "verdict"];
+
+function plainText(value: unknown): string {
+  return typeof value === "string"
+    ? value.replace(/[*#_`>•\-]/g, " ").replace(/\s+/g, " ").trim()
+    : "";
+}
+
+function editorialQuality(content: SpecContent): Pick<SpecFull, "contentChars" | "coreFieldCount" | "indexable" | "quality"> {
+  const contentChars = CONTENT_FIELDS.reduce((total, field) => total + plainText(content[field]).length, 0);
+  const coreFieldCount = CORE_FIELDS.filter((field) => plainText(content[field]).length > 0).length;
+  // لا نعتمد على عدد الكلمات وحده: نطلب الحد الأدنى من الحقول التي يحتاجها
+  // الطالب لاتخاذ قرار، مع إبقاء الصفحة الضعيفة متاحة للمراجعة المباشرة.
+  const indexable = contentChars >= 1200 && coreFieldCount >= 4;
+  const quality: SpecQuality = contentChars >= 2600 && coreFieldCount === CORE_FIELDS.length
+    ? "rich"
+    : indexable
+      ? "medium"
+      : "needs-review";
+  return { contentChars, coreFieldCount, indexable, quality };
+}
 
 /* بعض مفاتيح المحتوى تحمل علامات فرنسية، بينما الروابط الثابتة في الفهرس
    تستعمل صيغة ASCII. نطابق الصيغتين بعد إزالة العلامات فقط؛ لا نغيّر
@@ -80,15 +117,17 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       ...(baseSeed ?? {}),
       ...(content?.[s.slug] ?? {}),
     };
+    const published = Boolean(c.intro?.trim()) && c.draft !== true;
+    const quality = editorialQuality(c);
     return {
       ...s,
       ...c,
       ar: c.title?.trim() || s.ar,
       fr: c.fr?.trim() || s.fr,
       field: c.field?.trim() || s.field,
-      // منشور = له مقدّمة وليس مسودّة. صفحة فارغة أسوأ من غيابها.
-      // منشور = له مقدّمة وليس مسودّة صراحةً
-      published: Boolean(c.intro?.trim()) && c.draft !== true,
+      // وجود مقدمة يتيح الوصول إلى الصفحة، لكنه لا يكفي وحده لإدراجها في sitemap.
+      published,
+      ...quality,
     };
   });
 }
