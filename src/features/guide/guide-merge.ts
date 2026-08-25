@@ -19,7 +19,7 @@
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
-import { P10_ENRICHED_CONTENT, P10_KEEP_NOINDEX_SLUGS } from "@/features/guide/p10-enriched-content";
+import { P11_ENRICHED_CONTENT, P11_KEEP_NOINDEX_SLUGS } from "@/features/guide/p11-enriched-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -45,6 +45,7 @@ export interface SpecContent {
   modules?: string;
   master?: string;
   where?: string;
+  sources?: string;
   salary?: string;
   daily?: string;
   numbers?: string;
@@ -71,7 +72,7 @@ export type SpecFull = SpecLite & SpecContent & {
 
 const CONTENT_FIELDS: (keyof SpecContent)[] = [
   "intro", "study", "admission", "subjects", "careers", "pros", "cons", "verdict",
-  "modules", "master", "where", "numbers", "future", "salary", "daily", "voices", "prosCons",
+  "modules", "master", "where", "sources", "numbers", "future", "salary", "daily", "voices", "prosCons",
 ];
 const CORE_FIELDS: (keyof SpecContent)[] = ["intro", "study", "admission", "careers", "verdict"];
 
@@ -131,13 +132,16 @@ const UNVERIFIED_VOICE_SLUGS = new Set([
    نزيل السطر الذي يحمل claim، لا الصفحة ولا الحقل التعليمي كله؛ أما
    salary/numbers فهما حقول مخصصة للأرقام ولذلك يُخفَيان إذا لم يثبتا. */
 const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary", "numbers"]);
-const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|توظيف|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|(?:19|20)\d{2}|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|سنة|سنوات|شهر|طالب|مقعد)/u;
+const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|توظيف|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|شهر|طالب|مقعد)/u;
+const SAFE_EDUCATIONAL_DURATION = /(?:مدة الدراسة|نظام الدراسة|مدة التكوين|الدراسة لمدة|تكوين يمتد|تستغرق الدراسة)[^\n]{0,140}?\d+(?:[.,]\d+)?\s*(?:سنة|سنوات|عام|أعوام|عامين|ثلاث سنوات|أربع سنوات|خمس سنوات|ست سنوات)/u;
 const URL_TOKEN = /https?:\/\/[^\s]+/gu;
 
 /* لا نحسب الأرقام الموجودة داخل URL-encoded الرسمي كـclaim؛ فالتسلسل
    `%D8%...` يحتوي أرقاماً وعلامة `%` لكنه ليس معدل قبول أو نسبة. */
 function hasUnverifiedRisk(value: string): boolean {
-  return RISKY_CLAIM.test(value.replace(URL_TOKEN, ""));
+  const withoutUrls = value.replace(URL_TOKEN, "");
+  const withoutSafeDurations = withoutUrls.split("\n").map((line) => line.replace(SAFE_EDUCATIONAL_DURATION, "")).join("\n");
+  return RISKY_CLAIM.test(withoutSafeDurations);
 }
 
 function cleanUnverifiedRisk(value: string): string | undefined {
@@ -246,12 +250,13 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
     const c = personalizeEditorialText(s.slug, sanitizePublicEditorialContent(s.slug, {
       ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
       ...(baseSeed ?? {}),
-      ...(P10_ENRICHED_CONTENT[s.slug] ?? {}),
+      ...(P11_ENRICHED_CONTENT[s.slug] ?? {}),
       ...(content?.[s.slug] ?? {}),
+      ...(P11_ENRICHED_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
-    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P10_KEEP_NOINDEX_SLUGS.has(s.slug)
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P11_KEEP_NOINDEX_SLUGS.has(s.slug)
       ? { ...quality, indexable: false, quality: "needs-review" as const }
       : quality;
     return {

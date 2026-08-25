@@ -26,6 +26,7 @@ const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pr
   { key: "prosCons", label: "مميّزات وعيوب", icon: "shapes" },
   { key: "voices", label: "ملاحظات عملية قبل الاختيار", icon: "chat" },
   { key: "verdict", label: "الخلاصة", icon: "check" },
+  { key: "sources", label: "مصادر المعلومات", icon: "book" },
 ];
 
 function Rich({ text }: { text: string }) {
@@ -139,7 +140,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
           <div className="bz-spec-reading-layout">
             {written.length > 1 && <aside className="bz-spec-sticky-toc" aria-label="أقسام الدليل"><p><Icon name="file" size={13} /> في هذا الدليل <b>{written.length}</b></p><div>{written.map(({ key, label }, index) => <a key={String(key)} href={`#sec-${String(key)}`}><span>{String(index + 1).padStart(2, "0")}</span>{label}</a>)}</div></aside>}
             <div className="bz-spec-sections">
-              {SECTIONS.map(({ key, label, icon, tone }) => {
+              {SECTIONS.filter(({ key }) => key !== "sources").map(({ key, label, icon, tone }) => {
                 const value = spec[key];
                 if (typeof value !== "string" || !value.trim()) return null;
                 const sectionNumber = written.findIndex((item) => item.key === key) + 1;
@@ -152,6 +153,10 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
             </div>
           </div>
           {related.length > 0 && <aside className="bz-spec-related-pro"><div><span>مقترحات من نفس الميدان</span><h2>قد تجد ضالتك في تخصّص قريب</h2></div><div className="bz-spec-related-grid">{related.map((row) => <Link key={row.slug} href={`/specialties/${linkOf(row)}`}><span>{row.ar}</span><Icon name="chevLeft" size={13} /></Link>)}</div></aside>}
+          {typeof spec.sources === "string" && spec.sources.trim() && <section id="sec-sources" className="bz-spec-sec bz-spec-sec-pro">
+            <div className="bz-spec-sec-heading"><span><Icon name="book" size={15} /></span><div><small>القسم {String(written.findIndex((item) => item.key === "sources") + 1).padStart(2, "0")}</small><h2>مصادر المعلومات</h2></div></div>
+            <Body text={spec.sources} />
+          </section>}
         </article>
       </PublicSidebarLayout>
       <PublicCta title={`تدرس ${spec.ar}؟ جهّز معدّلك أوّلاً`} hint="انضمّ إلى BacZone: غرف مراجعة مباشرة، دورات من أساتذة، وملخّصات لكل الشُّعب — مجّاناً." />
