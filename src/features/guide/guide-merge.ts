@@ -19,6 +19,7 @@
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
+import { P10_ENRICHED_CONTENT, P10_KEEP_NOINDEX_SLUGS } from "@/features/guide/p10-enriched-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -245,11 +246,12 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
     const c = personalizeEditorialText(s.slug, sanitizePublicEditorialContent(s.slug, {
       ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
       ...(baseSeed ?? {}),
+      ...(P10_ENRICHED_CONTENT[s.slug] ?? {}),
       ...(content?.[s.slug] ?? {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
-    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug)
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P10_KEEP_NOINDEX_SLUGS.has(s.slug)
       ? { ...quality, indexable: false, quality: "needs-review" as const }
       : quality;
     return {
