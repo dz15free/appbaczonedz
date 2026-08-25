@@ -19,7 +19,7 @@
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
-import { P11_ENRICHED_CONTENT, P11_KEEP_NOINDEX_SLUGS } from "@/features/guide/p11-enriched-content";
+import { P12_ENRICHED_CONTENT, P12_KEEP_NOINDEX_SLUGS } from "@/features/guide/p12-enriched-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -246,18 +246,20 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
     const baseSeed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
-    /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم يفوز عليه ما حُرّر من الإدارة حقلاً حقلاً. */
+    /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم تفوز طبقة P12 الفصيحة على المحتوى القديم لهذه الصفحات لضمان اتساق المراجعة الجديدة. */
     const c = personalizeEditorialText(s.slug, sanitizePublicEditorialContent(s.slug, {
       ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
       ...(baseSeed ?? {}),
-      ...(P11_ENRICHED_CONTENT[s.slug] ?? {}),
       ...(content?.[s.slug] ?? {}),
-      ...(P11_ENRICHED_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(P12_ENRICHED_CONTENT[s.slug] ?? {}),
+      ...(P12_ENRICHED_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
-    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P11_KEEP_NOINDEX_SLUGS.has(s.slug)
-      ? { ...quality, indexable: false, quality: "needs-review" as const }
+    // noindex يعبّر عن سياسة فهرسة محافظة، ولا يعني أن المقال نفسه ناقص؛
+    // لذلك نحافظ على تقييم المحتوى الحقيقي ونفصل بين جودة التحرير وقابلية الفهرسة.
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P12_KEEP_NOINDEX_SLUGS.has(s.slug)
+      ? { ...quality, indexable: false }
       : quality;
     return {
       ...s,

@@ -76,7 +76,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
   });
   const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published).slice(0, 6);
   const introText = spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "");
-  const needsEditorialReview = !spec.indexable;
+  const needsEditorialReview = !spec.indexable && spec.quality === "needs-review";
   const articleUrl = `/specialties/${linkOf(spec)}`;
 
   const jsonLd = {
@@ -147,7 +147,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
                 return <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec bz-spec-sec-pro ${tone ? `is-${tone}` : ""}`}>
                   <div className="bz-spec-sec-heading"><span><Icon name={icon} size={15} /></span><div><small>القسم {String(sectionNumber).padStart(2, "0")}</small><h2>{label}</h2></div></div>
                   <Body text={value} />
-                  {key === "admission" && <p className="bz-spec-note">المعدّلات مؤشّر من سنوات سابقة وتتغيّر كل سنة بحسب عدد الناجحين ورغباتهم — لا تعتبرها ضماناً.</p>}
+
                 </section>;
               })}
             </div>
