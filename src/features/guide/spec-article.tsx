@@ -32,7 +32,7 @@ const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pr
 function Rich({ text }: { text: string }) {
   const parts = text.split("**");
   const renderPart = (part: string, keyPrefix: string, emphasized: boolean) => {
-    const tokens = part.split(/(https?:\/\/[^\s]+)/gu);
+    const tokens = part.split(/(https?:\/\/[^\s)]+)/gu);
     return tokens.map((token, tokenIndex) => {
       if (/^https?:\/\//u.test(token)) {
         return <a key={`${keyPrefix}-url-${tokenIndex}`} href={token} target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--bz-blue)] underline decoration-dotted underline-offset-2">{token}</a>;

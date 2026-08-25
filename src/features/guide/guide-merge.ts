@@ -19,7 +19,7 @@
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
-import { P12_ENRICHED_CONTENT, P12_KEEP_NOINDEX_SLUGS } from "@/features/guide/p12-enriched-content";
+import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS, P13_NEW_INDEX } from "@/features/guide/p13-fusha-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -56,6 +56,8 @@ export interface SpecContent {
   draft?: boolean;
   updatedAt?: number;
 }
+
+const P13_CONTENT = P13_ENRICHED_CONTENT as Record<string, Partial<SpecContent>>;
 
 export type SpecQuality = "rich" | "medium" | "needs-review";
 
@@ -242,23 +244,24 @@ function personalizeEditorialText(slug: string, content: SpecContent, fallbackTi
 
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
-  return SPEC_INDEX.map((s) => {
+  const allSpecIndex: SpecLite[] = [...SPEC_INDEX, ...P13_NEW_INDEX];
+  return allSpecIndex.map((s) => {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
     const baseSeed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
-    /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم تفوز طبقة P12 الفصيحة على المحتوى القديم لهذه الصفحات لضمان اتساق المراجعة الجديدة. */
+    /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم تفوز طبقة P13 العربية الفصيحة على المحتوى القديم لهذه الصفحات لضمان اتساق المراجعة الجديدة. */
     const c = personalizeEditorialText(s.slug, sanitizePublicEditorialContent(s.slug, {
       ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
       ...(baseSeed ?? {}),
       ...(content?.[s.slug] ?? {}),
-      ...(P12_ENRICHED_CONTENT[s.slug] ?? {}),
-      ...(P12_ENRICHED_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(P13_CONTENT[s.slug] ?? {}),
+      ...(P13_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
     // noindex يعبّر عن سياسة فهرسة محافظة، ولا يعني أن المقال نفسه ناقص؛
     // لذلك نحافظ على تقييم المحتوى الحقيقي ونفصل بين جودة التحرير وقابلية الفهرسة.
-    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P12_KEEP_NOINDEX_SLUGS.has(s.slug)
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P13_KEEP_NOINDEX_SLUGS.has(s.slug)
       ? { ...quality, indexable: false }
       : quality;
     return {

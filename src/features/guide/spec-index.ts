@@ -274,7 +274,17 @@ export const SPEC_INDEX: SpecLite[] = [
   {"slug": "archi-civil", "ar": "هندسة معمارية + هندسة مدنية | ARCHITECTURAL ENGINEERING (ARCHI-CIVIL)", "fr": "", "field": "هندسة وتكنولوجيا"},
   {"slug": "gendarmerie", "ar": "المدرسة العليا للدرك الوطني — زرالدة", "fr": "École Supérieure de la Gendarmerie Nationale", "field": "أسلاك نظامية وعسكرية"},
   {"slug": "military-health", "ar": "المدرسة الوطنية للصحة العسكرية — عين النعجة", "fr": "École Nationale de Santé Militaire", "field": "أسلاك نظامية وعسكرية"},
-  {"slug": "republican-guard", "ar": "المدرسة العليا للحرس الجمهوري — برج الكيفان", "fr": "École Supérieure de la Garde Républicaine", "field": "أسلاك نظامية وعسكرية"}
+  {"slug": "republican-guard", "ar": "المدرسة العليا للحرس الجمهوري — برج الكيفان", "fr": "École Supérieure de la Garde Républicaine", "field": "أسلاك نظامية وعسكرية"},
+  {"slug": "biomedical-eng", "ar": "الهندسة البيوطبية", "fr": "Biomedical Engineering", "field": "صحّة وطبّ"},
+  {"slug": "marine-eng", "ar": "الهندسة البحرية", "fr": "Marine Engineering", "field": "هندسة وتكنولوجيا"},
+  {"slug": "renewable-energy", "ar": "الطاقات المتجددة وتخزين الطاقة", "fr": "Renewable Energy and Energy Storage", "field": "هندسة وتكنولوجيا"},
+  {"slug": "industrial-engineering", "ar": "الهندسة الصناعية", "fr": "Industrial Engineering", "field": "هندسة وتكنولوجيا"},
+  {"slug": "logistics-engineering", "ar": "هندسة السلسلة اللوجستيكية", "fr": "Logistics Chain Engineering", "field": "اقتصاد وتسيير"},
+  {"slug": "food-science", "ar": "علوم الغذاء", "fr": "Food Science", "field": "فلاحة وبيئة"},
+  {"slug": "architecture", "ar": "الهندسة المعمارية", "fr": "Architecture", "field": "هندسة وتكنولوجيا"},
+  {"slug": "political-science", "ar": "العلوم السياسية", "fr": "Political Science", "field": "حقوق وعلوم سياسية"},
+  {"slug": "autonomous-systems", "ar": "تكنولوجيا الأنظمة المستقلة", "fr": "Autonomous Systems Technology", "field": "إعلام آلي ورقمنة"},
+  {"slug": "data-science", "ar": "علوم البيانات والذكاء الاصطناعي", "fr": "Data Science and Artificial Intelligence", "field": "إعلام آلي ورقمنة"}
 ];
 
 export const SPEC_FIELDS: string[] = [...new Set(SPEC_INDEX.map((s) => s.field))].sort(
