@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, onValue } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 export interface Profile {
   name?: string;
@@ -86,7 +86,7 @@ export function useProfileState(uid?: string) {
   const [loadedUid, setLoadedUid] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!uid) {
+    if (!uid || !isFirebaseConfigured) {
       setProfile(null);
       setLoading(false);
       setLoadedUid(null);

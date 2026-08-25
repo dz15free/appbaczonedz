@@ -1,6 +1,10 @@
-"use client";
-
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+  alternates: { canonical: "/" },
+};
 /* الشعار من المصدر الوحيد — كان مكتوباً بيده هنا مرّتين */
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 

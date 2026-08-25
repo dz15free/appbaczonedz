@@ -58,12 +58,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const posts = await getPublishedEntries();
   const blogPages: MetadataRoute.Sitemap = [
-    {
+    ...(posts.length > 0 ? [{
       url: `${BASE}/blog`,
       lastModified: posts[0]?.updatedAt ? new Date(posts[0].updatedAt) : now,
-      changeFrequency: "daily",
+      changeFrequency: "daily" as const,
       priority: 0.8,
-    },
+    }] : []),
     ...posts.filter((post) => !post.noindex).map((post) => ({
       url: `${BASE}/blog/${encodeURIComponent(post.slug)}`,
       lastModified: new Date(post.updatedAt || post.publishedAt || now),

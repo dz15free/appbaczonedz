@@ -5,7 +5,7 @@ import { ReportLinkButton } from "@/features/community/report-link";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import Link from "next/link";
 import { ref, push, remove, update, onValue, query, orderByChild, limitToLast } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faPlus, faTrash, faSearch, faFilePdf, faFileLines, faLink, faSpinner, faXmark, faBookOpen, faLock, faToggleOn, faToggleOff, faKey , faStar, faPen, faCheck, faComments } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -58,6 +58,7 @@ export default function LibraryPage() {
 
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(200)), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, e]: [string, any]) => ({ id, ...e })) as LibEntry[];

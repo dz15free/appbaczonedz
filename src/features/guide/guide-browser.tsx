@@ -18,6 +18,26 @@ import { linkOf } from "@/features/guide/spec-link";
 import type { SpecFull } from "@/features/guide/guide-merge";
 
 const FIELD_TONES = ["blue", "violet", "green", "amber", "rose", "sky"] as const;
+const GENERIC_EXCERPT = /ماذا تدرس فيه،?\s*شروط القبول،?\s*وفرص العمل بعد التخرّج في الجزائر/;
+
+function cardExcerpt(spec: SpecFull): string {
+  const excerpt = spec.excerpt?.trim();
+  if (excerpt && !GENERIC_EXCERPT.test(excerpt)) return excerpt;
+
+  const topics = [
+    spec.study && "طبيعة الدراسة",
+    spec.subjects && "المواد أو الوحدات",
+    spec.admission && "القبول",
+    spec.careers && "الآفاق المهنية",
+    spec.master && "مواصلة الدراسة",
+    spec.daily && "اليوم العملي",
+    spec.prosCons && "نقاط مهمة قبل الاختيار",
+  ].filter(Boolean) as string[];
+  const available = topics.slice(0, 4).join("، ") || "معلومات أولية عن التخصص";
+  return spec.indexable
+    ? `يعرض هذا الدليل: ${available}.`
+    : `المتاح حالياً: ${available}. يحتاج الدليل إلى استكمال أو تدقيق.`;
+}
 
 export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
   const [q, setQ] = useState("");
@@ -97,11 +117,11 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
                   <div className="bz-specialty-grid bz-specialty-grid-pro">
                     {items.map((spec, index) => spec.published ? (
                       <Link key={spec.slug} href={`/specialties/${linkOf(spec)}`} className="bz-spec-card bz-spec-card-pro">
-                        <span className="bz-spec-card-top"><span className="bz-spec-index">{String(index + 1).padStart(2, "0")}</span><span className="bz-spec-status"><FontAwesomeIcon icon={faCheck} /> صفحة مفصلة</span></span>
+                        <span className="bz-spec-card-top"><span className="bz-spec-index">{String(index + 1).padStart(2, "0")}</span>                        <span className={`bz-spec-status ${spec.indexable ? "" : "is-muted"}`}><FontAwesomeIcon icon={spec.indexable ? faCheck : faCircleInfo} /> {spec.indexable ? "صفحة مفصلة" : "يحتاج تدقيقًا"}</span></span>
                         <span className="bz-spec-name">{spec.ar}</span>
                         {spec.fr && <span className="bz-spec-fr" dir="ltr">{spec.fr}</span>}
-                        {spec.excerpt && <span className="bz-spec-ex">{spec.excerpt}</span>}
-                        <span className="bz-spec-go">الدراسة والقبول والفرص <FontAwesomeIcon icon={faArrowLeft} /></span>
+                        <span className="bz-spec-ex">{cardExcerpt(spec)}</span>
+                        <span className="bz-spec-go">{spec.indexable ? "افتح الدليل" : "افتح المعلومات المتاحة"} <FontAwesomeIcon icon={faArrowLeft} /></span>
                       </Link>
                     ) : (
                       <div key={spec.slug} className="bz-spec-card bz-spec-card-pro is-soon" aria-disabled="true">

@@ -8,7 +8,7 @@ import {
   faFilter, faXmark, faBolt,
 } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { AppShell } from "@/components/app-shell";
 import { AdSlot } from "@/components/ui/ad-slot";
 import { useAuth } from "@/features/auth/auth-provider";
@@ -46,6 +46,7 @@ const SORTS: { id: SortKey; label: string }[] = [
 function useAverages() {
   const [map, setMap] = useState<Record<string, number>>({});
   useEffect(() => {
+    if (!isFirebaseConfigured) { setMap({}); return; }
     const unsub = onValue(ref(rtdb, "courseReviews"), (snap) => {
       const val = (snap.val() as Record<string, Record<string, { stars?: number }>> | null) ?? {};
       const out: Record<string, number> = {};
@@ -76,6 +77,7 @@ export default function CoursesPage() {
   const isStaff = profile?.role === "teacher" || profile?.role === "admin";
 
   useEffect(() => {
+    if (!isFirebaseConfigured) { setCourses([]); return; }
     const unsub = listenPublicCourses(setCourses);
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);

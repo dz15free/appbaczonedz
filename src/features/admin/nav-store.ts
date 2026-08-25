@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, onValue, set, update, remove } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 /* ════════════════════════════════════════════════════════════
    قائمة الموقع — يتحكّم بها الأدمن
@@ -87,6 +87,7 @@ export function useNavLinks(includeHidden = false) {
   const [links, setLinks] = useState<NavLink[]>(() => mergeNav(null));
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, PATH), (snap) => {
       setLinks(mergeNav((snap.val() as Record<string, Partial<NavLink>> | null) ?? null));
     });

@@ -32,7 +32,7 @@ import { AppShell } from "@/components/app-shell";
 import { MarwaMessage } from "@/components/ui/marwa-message";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { extractTasksFromPlan, addStudyTasksBatch } from "@/features/study/study-tasks";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { prepareFile, prepareImagePair } from "@/lib/upload";
 import { isDriveConfigured, initDrive, connectDrive, hasDriveToken, uploadToDrivePrivate } from "@/lib/gdrive";
@@ -187,6 +187,7 @@ export default function AibotPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     get(query(ref(rtdb, "library"), orderByChild("createdAt"), limitToLast(80)))
       .then((snap) => {
         const val = (snap.val() as Record<string, any>) ?? {};

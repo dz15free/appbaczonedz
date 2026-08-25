@@ -105,6 +105,136 @@ const SEED_BY_PLAIN_SLUG = new Map(
   Object.entries(SEED_CONTENT).map(([slug, value]) => [plainSlug(slug), value]),
 );
 
+/* لا نعرض حقل voices عندما ينسب تجارب أو آراء إلى الطلبة من دون سجل
+   منشور أو مصدر يمكن التحقق منه. تبقى بقية الحقول والروابط متاحة، ويمكن
+   للمحرر إعادة الحقل بعد توثيقه. هذا استثناء صغير، لا إعادة كتابة جماعية. */
+const UNVERIFIED_VOICE_SLUGS = new Set([
+  "informatique",
+  "ens-electrical-lycee",
+  "ens-civil-lycee",
+  "ens-mechanics-lycee",
+  "ens-process-eng-lycee",
+  "ens-sport-moyen",
+  "ens-anglais-primaire",
+  "ens-francais-primaire",
+  "ens-sport-primaire",
+  "ens-tamazight-primaire",
+  "ens",
+  "med-psy",
+  "math",
+  "ensh",
+  "hydrocarbures",
+]);
+
+/* claims عالية الخطورة لا تُترك في الصفحة بصيغة تقريرية عند غياب مصدر مطابق.
+   نزيل السطر الذي يحمل claim، لا الصفحة ولا الحقل التعليمي كله؛ أما
+   salary/numbers فهما حقول مخصصة للأرقام ولذلك يُخفَيان إذا لم يثبتا. */
+const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary", "numbers"]);
+const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|توظيف|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|(?:19|20)\d{2}|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|سنة|سنوات|شهر|طالب|مقعد)/u;
+const URL_TOKEN = /https?:\/\/[^\s]+/gu;
+
+/* لا نحسب الأرقام الموجودة داخل URL-encoded الرسمي كـclaim؛ فالتسلسل
+   `%D8%...` يحتوي أرقاماً وعلامة `%` لكنه ليس معدل قبول أو نسبة. */
+function hasUnverifiedRisk(value: string): boolean {
+  return RISKY_CLAIM.test(value.replace(URL_TOKEN, ""));
+}
+
+function cleanUnverifiedRisk(value: string): string | undefined {
+  const safeLines = value.split("\n").filter((line) => !hasUnverifiedRisk(line));
+  const cleaned = safeLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return cleaned || undefined;
+}
+
+function sanitizePublicEditorialContent(slug: string, content: SpecContent): SpecContent {
+  const sanitized: SpecContent = { ...content };
+  if (UNVERIFIED_VOICE_SLUGS.has(slug)) delete sanitized.voices;
+  if (sanitized.voices && hasUnverifiedRisk(sanitized.voices)) delete sanitized.voices;
+  for (const field of CONTENT_FIELDS) {
+    const value = sanitized[field];
+    if (typeof value !== "string" || !value.trim()) continue;
+    if (WHOLE_FIELD_RISK.has(field)) {
+      delete sanitized[field];
+      continue;
+    }
+    if (hasUnverifiedRisk(value)) (sanitized as Record<string, string | undefined>)[field] = cleanUnverifiedRisk(value);
+  }
+  if (slug === "ensm" && sanitized.pros) {
+    sanitized.pros = sanitized.pros.replace(
+      "التوظيف بعد التخرّج سريع ونسبته عالية حسب إجماع الطلبة.",
+      "فرص العمل تختلف بحسب المسار والمؤسسة وسوق العمل، ولا تكفي الشهادة وحدها للحكم عليها.",
+    );
+  }
+  return sanitized;
+}
+
+const EDITORIAL_DISAMBIGUATORS: Record<string, string> = {
+  "ens-anglais-primaire": "تدريس اللغة الإنجليزية في المرحلة الابتدائية",
+  "ens-francais-primaire": "تدريس اللغة الفرنسية في المرحلة الابتدائية",
+  "ens-sport-primaire": "التربية البدنية والرياضية في المرحلة الابتدائية",
+  "ens-tamazight-primaire": "تدريس اللغة الأمازيغية في المرحلة الابتدائية",
+};
+
+/* محتوى هذه الصفحات صار مفيداً وقابلاً للقراءة، لكن مصدره المفتوح في هذه
+   الجولة عام لشبكة ENS وسياق تكوين الأساتذة، لا بطاقة رسمية مطابقة لكل
+   لغة/طور. تبقى الصفحات accessible مع noindex إلى أن يتوفر عرض مؤسسي
+   مطابق؛ لا نرفعها إلى البحث لمجرد بلوغ حد الأحرف. */
+const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
+  "ens-anglais-primaire",
+  "ens-francais-primaire",
+  "ens-sport-primaire",
+  "ens-tamazight-primaire",
+]);
+
+function focusPhrase(content: SpecContent): string {
+  const candidates = [content.subjects, content.modules, content.study, content.pros, content.intro];
+  for (const candidate of candidates) {
+    const value = plainText(candidate);
+    if (!value) continue;
+    const first = value.split(/[.!؟؛:\n]/u)[0].trim();
+    if (first.length >= 24) return first.slice(0, 190);
+  }
+  return "المفاهيم والمهارات المرتبطة بهذا الميدان";
+}
+
+/* تقلّل القالبية الظاهرة في المقدمات والخواتيم من دون اختلاق حقائق جديدة:
+   نعيد بناء النص فقط عندما يطابق القالب العام القديم، ونستعمل جملة تركيز
+   مأخوذة من محتوى الصفحة نفسه بعد التنقية. */
+function personalizeEditorialText(slug: string, content: SpecContent, fallbackTitle: string, fallbackField: string): SpecContent {
+  const personalized: SpecContent = { ...content };
+  const title = plainText(personalized.title) || fallbackTitle;
+  const field = plainText(personalized.field) || fallbackField;
+  const focus = focusPhrase(personalized);
+  const disambiguator = EDITORIAL_DISAMBIGUATORS[slug];
+  const distinctFocus = disambiguator ? `${focus}، مع الانتباه إلى ${disambiguator}` : focus;
+  const intro = personalized.intro?.trim() || "";
+  const excerpt = personalized.excerpt?.trim() || "";
+  const genericEditorialPattern = /لماذا تقرأ هذه الصفحة|هنا تجد\s+\**?ما تدرسه فعلاً|ماذا تدرس فيه، شروط القبول، وفرص العمل بعد التخرّج في الجزائر|ماذا تدرس فيه، شروط القبول، وفرص العمل بعد التخرج في الجزائر/u;
+  const generatedIntro = `قبل أن تختار ${title}، من المفيد أن تعرف ما الذي ستقرأه وتطبّقه فعلاً داخل المسار. يركّز هذا الدليل على ${distinctFocus}، ثم يربط ذلك بطبيعة مجال ${field} وبالأسئلة التي ينبغي أن تطرحها على نفسك قبل ترتيب الرغبات.`;
+  /* بعض السجلات القديمة وضعت القالب في excerpt لا intro؛ نعالج المصدرين
+     معاً حتى لا يعود النص نفسه إلى الصفحة عبر fallback العرض أو metadata. */
+  if (genericEditorialPattern.test(intro) || (!intro && genericEditorialPattern.test(excerpt))) {
+    personalized.intro = generatedIntro;
+  }
+  if (genericEditorialPattern.test(excerpt) || (!excerpt && personalized.intro === generatedIntro)) {
+    personalized.excerpt = generatedIntro;
+  }
+  const verdict = personalized.verdict?.trim() || "";
+  if (verdict.includes("القاعدة التي ننصح بها في BacZone") || verdict.includes("المعدّلات المذكورة أعلاه من سنوات سابقة") || verdict.includes("خلاصة عملية: اسأل نفسك هل تستطيع متابعة")) {
+    let lead = verdict;
+    const ruleIndex = lead.indexOf("**القاعدة التي ننصح بها في BacZone:**");
+    if (ruleIndex >= 0) lead = lead.slice(0, ruleIndex);
+    const adviceIndex = lead.indexOf("**نصيحة عملية:**");
+    if (adviceIndex >= 0) lead = lead.slice(0, adviceIndex);
+    const practicalIndex = lead.indexOf("خلاصة عملية:");
+    if (practicalIndex >= 0) lead = lead.slice(0, practicalIndex);
+    const historicalIndex = lead.indexOf("المعدّلات المذكورة أعلاه من سنوات سابقة");
+    if (historicalIndex >= 0) lead = lead.slice(0, historicalIndex);
+    lead = lead.replace(/\n+/gu, " ").replace(/القسم\s+\d+\s+الخلاصة/gu, "").trim();
+    personalized.verdict = `${lead ? `${lead}\n\n` : ""}**خلاصة عملية تخص ${title}:** اسأل نفسك هل تستطيع متابعة ${distinctFocus} بانتظام، وهل يناسبك مجال ${field} كما هو في الدراسة اليومية لا كما يبدو في الاسم. إذا كانت الإجابة نعم، فارجع إلى شروط التوجيه الرسمية للسنة المعنية واتخذ قرارك على أساس واضح.`;
+  }
+  return personalized;
+}
+
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   return SPEC_INDEX.map((s) => {
@@ -112,13 +242,16 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
     const baseSeed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
     /* محتوى التخصصات الصحية المضافة يكمل البذرة، ثم يفوز عليه ما حُرّر من الإدارة حقلاً حقلاً. */
-    const c = {
+    const c = personalizeEditorialText(s.slug, sanitizePublicEditorialContent(s.slug, {
       ...(SOURCE_HEALTH_SPECIALTIES[s.slug] ?? {}),
       ...(baseSeed ?? {}),
       ...(content?.[s.slug] ?? {}),
-    };
+    }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug)
+      ? { ...quality, indexable: false, quality: "needs-review" as const }
+      : quality;
     return {
       ...s,
       ...c,
@@ -127,7 +260,7 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       field: c.field?.trim() || s.field,
       // وجود مقدمة يتيح الوصول إلى الصفحة، لكنه لا يكفي وحده لإدراجها في sitemap.
       published,
-      ...quality,
+      ...finalQuality,
     };
   });
 }

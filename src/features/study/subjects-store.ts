@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, onValue, set, remove, update } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { ALL_SUBJECTS, type Subject } from "@/lib/constants";
 
 /* ════════════════════════════════════════════════════════════
@@ -64,6 +64,7 @@ export function useSiteSubjects(includeHidden = false) {
   const [subjects, setSubjects] = useState<SiteSubject[]>(() => mergeSubjects({}));
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, PATH), (snap) => {
       setSubjects(mergeSubjects((snap.val() as Record<string, Row> | null) ?? {}));
     });

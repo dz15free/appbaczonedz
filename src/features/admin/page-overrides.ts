@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, onValue, update, remove } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 /* ════════════════════════════════════════════════════════════
    تعديل الصفحات من لوحة الإدارة
@@ -51,6 +51,7 @@ export const EDITABLE_PAGES: { key: string; label: string; path: string }[] = [
 export function useAllOverrides() {
   const [rows, setRows] = useState<Record<string, PageOverride>>({});
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, PATH), (snap) => {
       setRows((snap.val() as Record<string, PageOverride> | null) ?? {});
     });
@@ -64,6 +65,10 @@ export function usePageOverride(key: string) {
   const [o, setO] = useState<PageOverride | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      return;
+    }
     const unsub = onValue(
       ref(rtdb, `${PATH}/${key}`),
       (snap) => { setO((snap.val() as PageOverride | null) ?? null); setLoading(false); },

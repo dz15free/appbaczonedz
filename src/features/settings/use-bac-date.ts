@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, onValue, set } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 
 /**
  * تاريخ البكالوريا قابل للتحكّم من لوحة الإدارة (settings/bacExamDate
@@ -12,6 +12,7 @@ export function useBacExamDate() {
   const [dateStr, setDateStr] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, "settings/bacExamDate"), (snap) => {
       setDateStr((snap.val() as string | null) ?? null);
     });
@@ -29,6 +30,7 @@ export async function setBacExamDate(dateStr: string) {
 export function useBacResultsDate() {
   const [dateStr, setDateStr] = useState<string | null>(null);
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, "settings/bacResultsDate"), (snap) => {
       setDateStr((snap.val() as string | null) ?? null);
     });
@@ -79,6 +81,7 @@ export function useSiteBanner() {
   const [banner, setBanner] = useState<SiteBanner | null>(null);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, "settings/siteBanner"), (snap) => {
       setBanner((snap.val() as SiteBanner | null) ?? null);
     });

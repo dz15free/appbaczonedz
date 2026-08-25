@@ -23,12 +23,12 @@ export const revalidate = 600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getPublishedEntries();
 
-  const index: MetadataRoute.Sitemap = [{
+  const index: MetadataRoute.Sitemap = posts.length > 0 ? [{
     url: `${SITE_URL}/blog`,
     lastModified: posts[0]?.updatedAt ? new Date(posts[0].updatedAt) : new Date(),
     changeFrequency: "daily",
     priority: 0.8,
-  }];
+  }] : [];
 
   const articles: MetadataRoute.Sitemap = posts
     /* المقال الممنوع فهرسته لا يُعلَن في الخريطة — إعلانُه ثمّ منعُه

@@ -24,13 +24,24 @@ const SECTIONS: { key: keyof SpecFull; label: string; icon: IconName; tone?: "pr
   { key: "future", label: "الآفاق المستقبلية", icon: "target" },
   { key: "salary", label: "الأجر والمنح", icon: "star" },
   { key: "prosCons", label: "مميّزات وعيوب", icon: "shapes" },
-  { key: "voices", label: "من داخل التخصّص: ما يقوله طلبته", icon: "chat" },
+  { key: "voices", label: "ملاحظات عملية قبل الاختيار", icon: "chat" },
   { key: "verdict", label: "الخلاصة", icon: "check" },
 ];
 
 function Rich({ text }: { text: string }) {
   const parts = text.split("**");
-  return <>{parts.map((part, index) => index % 2 === 1 ? <strong key={index} className="font-extrabold text-[var(--bz-ink)]">{part}</strong> : <span key={index}>{part}</span>)}</>;
+  const renderPart = (part: string, keyPrefix: string, emphasized: boolean) => {
+    const tokens = part.split(/(https?:\/\/[^\s]+)/gu);
+    return tokens.map((token, tokenIndex) => {
+      if (/^https?:\/\//u.test(token)) {
+        return <a key={`${keyPrefix}-url-${tokenIndex}`} href={token} target="_blank" rel="noopener noreferrer" className="font-bold text-[var(--bz-blue)] underline decoration-dotted underline-offset-2">{token}</a>;
+      }
+      return emphasized
+        ? <strong key={`${keyPrefix}-text-${tokenIndex}`} className="font-extrabold text-[var(--bz-ink)]">{token}</strong>
+        : <span key={`${keyPrefix}-text-${tokenIndex}`}>{token}</span>;
+    });
+  };
+  return <>{parts.map((part, index) => renderPart(part, String(index), index % 2 === 1))}</>;
 }
 
 function Body({ text }: { text: string }) {

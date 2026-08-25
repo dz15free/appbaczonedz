@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ref, push, update, onValue, query, limitToLast, get } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { threadId, addNotification } from "@/features/community/social";
 import { tryPushNotification } from "@/lib/push";
 
@@ -48,6 +48,7 @@ export function supportThreadId(uid: string, adminUid: string, kind: SupportKind
 export function useSupportInfo(): SupportInfo {
   const [info, setInfo] = useState<SupportInfo>({ ...SUPPORT_DEFAULTS });
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = onValue(ref(rtdb, "settings/support"), (snap) => {
       const v = (snap.val() as Partial<SupportInfo> | null) ?? {};
       setInfo({

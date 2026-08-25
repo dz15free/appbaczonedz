@@ -34,8 +34,7 @@ export default function robots(): MetadataRoute.Robots {
              كلّها — بما فيها صفحات بُنيت خصّيصاً للفهرسة. نمنع الأدوات
              الشخصية بأسمائها فقط: هي تحفظ بيانات المستخدم ولا معنى
              لزحفها. */
-          "/api/", "/admin", "/rooms/", "/messages/", "/aibot",
-          "/tools/tracker", "/tools/flashcards", "/tools/tasks",
+          "/api/", "/admin", "/messages/",
           /* صفحات شخصية أو عابرة: زحفها بلا قيمة، وبعضها يكشف ما لا يُقصد نشره */
           "/onboarding", "/profile", "/notifications", "/groups/", "/u/",
           "/pay/", "/offline", "/indexnow-key.txt",

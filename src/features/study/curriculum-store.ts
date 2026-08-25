@@ -1,7 +1,7 @@
 "use client";
 
 import { ref, onValue, push, set, remove, update } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { LESSONS, type Lesson } from "@/features/study/curriculum";
 
 /* ════════════════════════════════════════════════════════════
@@ -29,6 +29,7 @@ export interface CustomLesson extends Lesson {
 
 /** الدروس المُضافة يدوياً فقط */
 export function listenCustomLessons(cb: (rows: CustomLesson[]) => void) {
+  if (!isFirebaseConfigured) { cb([]); return () => {}; }
   return onValue(ref(rtdb, PATH), (snap) => {
     const val = (snap.val() as Record<string, Lesson> | null) ?? {};
     const rows = Object.entries(val).map(([key, l]) => ({ ...l, key }));
@@ -124,6 +125,7 @@ function subjKey(stream: string, subject: string) {
 }
 
 export function listenHiddenSubjects(cb: (hidden: Set<string>) => void) {
+  if (!isFirebaseConfigured) { cb(new Set()); return () => {}; }
   return onValue(ref(rtdb, HIDDEN), (snap) => {
     const val = (snap.val() as Record<string, boolean> | null) ?? {};
     cb(new Set(Object.keys(val).filter((k) => val[k])));
@@ -169,6 +171,7 @@ export function listenStreamMeta(
   let hidden = new Set<string>();
   let renames: Record<string, string> = {};
   const emit = () => cb({ hidden, renames });
+  if (!isFirebaseConfigured) { emit(); return () => {}; }
   const u1 = onValue(ref(rtdb, HSTREAM), (s) => {
     const v = (s.val() as Record<string, boolean> | null) ?? {};
     hidden = new Set(Object.keys(v).filter((k) => v[k]));

@@ -13,13 +13,17 @@ const TITLE = "مدونة BacZone";
 const DESC = "أفكار وأدلة عملية تساعد طالب البكالوريا في الجزائر على تنظيم المراجعة، فهم الأدوات، والتقدّم بثقة.";
 
 export const revalidate = 600;
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESC,
-  alternates: { canonical: "/blog" },
-  openGraph: { type: "website", locale: "ar_DZ", url: "/blog", title: TITLE, description: DESC, siteName: "BacZone" },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESC },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const published = await getPublishedEntries();
+  return {
+    title: TITLE,
+    description: DESC,
+    alternates: { canonical: "/blog" },
+    robots: { index: published.length > 0, follow: true },
+    openGraph: { type: "website", locale: "ar_DZ", url: "/blog", title: TITLE, description: DESC, siteName: "BacZone" },
+    twitter: { card: "summary_large_image", title: TITLE, description: DESC },
+  };
+}
 
 function arDate(ms?: number): string {
   if (!ms) return "";

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faMedal, faStar, faArrowRight, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { ref, query, orderByChild, limitToLast, onValue } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { AppShell } from "@/components/app-shell";
@@ -43,6 +43,7 @@ export default function LeaderboardPage() {
   /* المستبعدون بقرار الإدارة لا يظهرون — نقاط مضخّمة أو حساب تجريبي
      يُفسدان معنى الترتيب كلّه. */
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const unsub = listenExcluded(setExcluded);
     return () => { if (typeof unsub === "function") unsub(); };
   }, []);
@@ -52,6 +53,7 @@ export default function LeaderboardPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) return;
     const q = query(ref(rtdb, "users"), orderByChild("points"), limitToLast(50));
     const unsub = onValue(q, (snap) => {
       const val = (snap.val() as Record<string, any>) ?? {};
