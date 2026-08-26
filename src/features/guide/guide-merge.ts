@@ -19,7 +19,7 @@
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
-import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS, P13_NEW_INDEX } from "@/features/guide/p13-fusha-content";
+import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS } from "@/features/guide/p13-fusha-content";
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -133,7 +133,7 @@ const UNVERIFIED_VOICE_SLUGS = new Set([
 /* claims عالية الخطورة لا تُترك في الصفحة بصيغة تقريرية عند غياب مصدر مطابق.
    نزيل السطر الذي يحمل claim، لا الصفحة ولا الحقل التعليمي كله؛ أما
    salary/numbers فهما حقول مخصصة للأرقام ولذلك يُخفَيان إذا لم يثبتا. */
-const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary", "numbers"]);
+const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary"]);
 const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|توظيف|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|شهر|طالب|مقعد)/u;
 const SAFE_EDUCATIONAL_DURATION = /(?:مدة الدراسة|نظام الدراسة|مدة التكوين|الدراسة لمدة|تكوين يمتد|تستغرق الدراسة)[^\n]{0,140}?\d+(?:[.,]\d+)?\s*(?:سنة|سنوات|عام|أعوام|عامين|ثلاث سنوات|أربع سنوات|خمس سنوات|ست سنوات)/u;
 const URL_TOKEN = /https?:\/\/[^\s]+/gu;
@@ -159,6 +159,9 @@ function sanitizePublicEditorialContent(slug: string, content: SpecContent): Spe
   for (const field of CONTENT_FIELDS) {
     const value = sanitized[field];
     if (typeof value !== "string" || !value.trim()) continue;
+    /* numbers هو قسم معدلات منقولة من ملف مصدر مع تنبيه السنة؛ لا نحذفه
+       كحقول الرواتب، ولا نسمح له بتجاوز بقية قواعد التنقية. */
+    if (field === "numbers") continue;
     if (WHOLE_FIELD_RISK.has(field)) {
       delete sanitized[field];
       continue;
@@ -244,7 +247,7 @@ function personalizeEditorialText(slug: string, content: SpecContent, fallbackTi
 
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
-  const allSpecIndex: SpecLite[] = [...SPEC_INDEX, ...P13_NEW_INDEX];
+  const allSpecIndex: SpecLite[] = SPEC_INDEX;
   return allSpecIndex.map((s) => {
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
