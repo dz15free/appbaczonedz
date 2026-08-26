@@ -20,6 +20,16 @@ import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
 import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS } from "@/features/guide/p13-fusha-content";
+import { P15_SOURCE_CONTENT } from "@/features/guide/p15-source-driven-content";
+
+export interface SourceSection {
+  id: string;
+  sourceKey?: string;
+  label: string;
+  icon?: string;
+  tone?: "pro" | "con" | null;
+  body: string;
+}
 
 export interface SpecContent {
   /** الرابط الظاهر — إن غاب استُعمل المعرّف */
@@ -52,12 +62,15 @@ export interface SpecContent {
   future?: string;
   voices?: string;
   prosCons?: string;
+  /** أقسام مصدرية متغيرة بحسب بنية صفحة التخصص الأصلية */
+  sections?: SourceSection[];
   /** مسودّة لا تظهر للزوّار */
   draft?: boolean;
   updatedAt?: number;
 }
 
 const P13_CONTENT = P13_ENRICHED_CONTENT as Record<string, Partial<SpecContent>>;
+const P15_CONTENT = P15_SOURCE_CONTENT as unknown as Record<string, Partial<SpecContent>>;
 
 export type SpecQuality = "rich" | "medium" | "needs-review";
 
@@ -85,7 +98,11 @@ function plainText(value: unknown): string {
 }
 
 function editorialQuality(content: SpecContent): Pick<SpecFull, "contentChars" | "coreFieldCount" | "indexable" | "quality"> {
-  const contentChars = CONTENT_FIELDS.reduce((total, field) => total + plainText(content[field]).length, 0);
+  const fieldChars = CONTENT_FIELDS.reduce((total, field) => total + plainText(content[field]).length, 0);
+  const sectionChars = Array.isArray(content.sections)
+    ? content.sections.reduce((total, section) => total + plainText(section.body).length, 0)
+    : 0;
+  const contentChars = fieldChars + sectionChars;
   const coreFieldCount = CORE_FIELDS.filter((field) => plainText(content[field]).length > 0).length;
   // لا نعتمد على عدد الكلمات وحده: نطلب الحد الأدنى من الحقول التي يحتاجها
   // الطالب لاتخاذ قرار، مع إبقاء الصفحة الضعيفة متاحة للمراجعة المباشرة.
@@ -258,7 +275,8 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       ...(baseSeed ?? {}),
       ...(content?.[s.slug] ?? {}),
       ...(P13_CONTENT[s.slug] ?? {}),
-      ...(P13_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(P15_CONTENT[s.slug] ?? {}),
+      ...(P15_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);

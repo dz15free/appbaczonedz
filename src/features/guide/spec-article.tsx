@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { linkOf } from "@/features/guide/spec-link";
-import type { SpecFull } from "@/features/guide/guide-merge";
+import type { SourceSection, SpecFull } from "@/features/guide/guide-merge";
 import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader, PublicCta } from "@/components/public-shell";
 import { PublicBackButton } from "@/components/ui/public-back-button";
@@ -68,11 +68,21 @@ export function SpecNotFound({ spec }: { spec?: SpecFull | null }) {
   </>;
 }
 
+type ArticleNavItem = { key: string; label: string; icon: IconName; tone?: "pro" | "con" };
+
+function dynamicNavItem(section: SourceSection): ArticleNavItem {
+  return { key: section.id, label: section.label, icon: (section.icon || "book") as IconName, tone: section.tone === "pro" || section.tone === "con" ? section.tone : undefined };
+}
+
 export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }) {
-  const written = SECTIONS.filter(({ key }) => {
-    const value = spec[key];
-    return typeof value === "string" && value.trim().length > 0;
-  });
+  const dynamicSections = (spec.sections ?? []).filter((section) => typeof section.body === "string" && section.body.trim().length > 0);
+  const hasDynamicSections = dynamicSections.length > 0;
+  const written: ArticleNavItem[] = hasDynamicSections
+    ? [...dynamicSections.map(dynamicNavItem), ...(spec.sources?.trim() ? [{ key: "sources", label: "مصادر المعلومات", icon: "book" as IconName }] : [])]
+    : SECTIONS.filter(({ key }) => {
+      const value = spec[key];
+      return typeof value === "string" && value.trim().length > 0;
+    });
   const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published).slice(0, 6);
   const introText = spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "");
   const needsEditorialReview = !spec.indexable && spec.quality === "needs-review";
@@ -139,16 +149,20 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
           <div className="bz-spec-reading-layout">
             {written.length > 1 && <aside className="bz-spec-sticky-toc" aria-label="أقسام الدليل"><p><Icon name="file" size={13} /> في هذا الدليل <b>{written.length}</b></p><div>{written.map(({ key, label }, index) => <a key={String(key)} href={`#sec-${String(key)}`}><span>{String(index + 1).padStart(2, "0")}</span>{label}</a>)}</div></aside>}
             <div className="bz-spec-sections">
-              {SECTIONS.filter(({ key }) => key !== "sources").map(({ key, label, icon, tone }) => {
-                const value = spec[key];
-                if (typeof value !== "string" || !value.trim()) return null;
-                const sectionNumber = written.findIndex((item) => item.key === key) + 1;
-                return <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec bz-spec-sec-pro ${tone ? `is-${tone}` : ""}`}>
-                  <div className="bz-spec-sec-heading"><span><Icon name={icon} size={15} /></span><div><small>القسم {String(sectionNumber).padStart(2, "0")}</small><h2>{label}</h2></div></div>
-                  <Body text={value} />
-
-                </section>;
-              })}
+              {hasDynamicSections
+                ? dynamicSections.map((section, index) => <section key={section.id} id={`sec-${section.id}`} className={`bz-spec-sec bz-spec-sec-pro ${section.tone ? `is-${section.tone}` : ""}`}>
+                  <div className="bz-spec-sec-heading"><span><Icon name={(section.icon || "book") as IconName} size={15} /></span><div><small>القسم {String(index + 1).padStart(2, "0")}</small><h2>{section.label}</h2></div></div>
+                  <Body text={section.body} />
+                </section>)
+                : SECTIONS.filter(({ key }) => key !== "sources").map(({ key, label, icon, tone }) => {
+                  const value = spec[key];
+                  if (typeof value !== "string" || !value.trim()) return null;
+                  const sectionNumber = written.findIndex((item) => item.key === key) + 1;
+                  return <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec bz-spec-sec-pro ${tone ? `is-${tone}` : ""}`}>
+                    <div className="bz-spec-sec-heading"><span><Icon name={icon} size={15} /></span><div><small>القسم {String(sectionNumber).padStart(2, "0")}</small><h2>{label}</h2></div></div>
+                    <Body text={value} />
+                  </section>;
+                })}
             </div>
           </div>
           {related.length > 0 && <aside className="bz-spec-related-pro"><div><span>مقترحات من نفس الميدان</span><h2>قد تجد ضالتك في تخصّص قريب</h2></div><div className="bz-spec-related-grid">{related.map((row) => <Link key={row.slug} href={`/specialties/${linkOf(row)}`}><span>{row.ar}</span><Icon name="chevLeft" size={13} /></Link>)}</div></aside>}
