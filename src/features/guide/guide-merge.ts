@@ -21,6 +21,7 @@ import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
 import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS } from "@/features/guide/p13-fusha-content";
 import { P15_SOURCE_CONTENT } from "@/features/guide/p15-source-driven-content";
+import { P16_EDITORIAL_CONTENT } from "@/features/guide/p16-editorial-content";
 
 export interface SourceSection {
   id: string;
@@ -73,6 +74,7 @@ export interface SpecContent {
 
 const P13_CONTENT = P13_ENRICHED_CONTENT as Record<string, Partial<SpecContent>>;
 const P15_CONTENT = P15_SOURCE_CONTENT as unknown as Record<string, Partial<SpecContent>>;
+const P16_CONTENT = P16_EDITORIAL_CONTENT as unknown as Record<string, Partial<SpecContent>>;
 
 export type SpecQuality = "rich" | "medium" | "needs-review";
 
@@ -153,7 +155,7 @@ const UNVERIFIED_VOICE_SLUGS = new Set([
    نزيل السطر الذي يحمل claim، لا الصفحة ولا الحقل التعليمي كله؛ أما
    salary/numbers فهما حقول مخصصة للأرقام ولذلك يُخفَيان إذا لم يثبتا. */
 const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary"]);
-const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|توظيف|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|شهر|طالب|مقعد)/u;
+const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|وظيفة مضمونة|وظائف مضمونة|التوظيف المباشر|التوظيف الحكومي|التوظيف السريع|التوظيف الفوري|التوظيف التلقائي|توظيف مباشر|توظيف حكومي|توظيف سريع|توظيف فوري|توظيف تلقائي|توظيف مضمون|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|شهر|طالب|مقعد)/u;
 const SAFE_EDUCATIONAL_DURATION = /(?:مدة الدراسة|نظام الدراسة|مدة التكوين|الدراسة لمدة|تكوين يمتد|تستغرق الدراسة)[^\n]{0,140}?\d+(?:[.,]\d+)?\s*(?:سنة|سنوات|عام|أعوام|عامين|ثلاث سنوات|أربع سنوات|خمس سنوات|ست سنوات)/u;
 const URL_TOKEN = /https?:\/\/[^\s]+/gu;
 
@@ -279,6 +281,8 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       ...(P13_CONTENT[s.slug] ?? {}),
       ...(P15_CONTENT[s.slug] ?? {}),
       ...(P15_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(P16_CONTENT[s.slug] ?? {}),
+      ...(P16_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
