@@ -64,6 +64,8 @@ export interface SpecContent {
   prosCons?: string;
   /** أقسام مصدرية متغيرة بحسب بنية صفحة التخصص الأصلية */
   sections?: SourceSection[];
+  /** تاريخ آخر مراجعة تحريرية/مصدرية بصيغة ISO، لا يعني أن كل claim تحقق ويبياً في هذا اليوم */
+  lastVerifiedAt?: string;
   /** مسودّة لا تظهر للزوّار */
   draft?: boolean;
   updatedAt?: number;

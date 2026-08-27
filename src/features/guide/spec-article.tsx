@@ -96,7 +96,11 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
     inLanguage: "ar",
     about: { "@type": "Thing", name: spec.field },
     publisher: { "@type": "Organization", name: "BacZone" },
-    ...(spec.updatedAt ? { dateModified: new Date(spec.updatedAt).toISOString() } : {}),
+    ...(spec.updatedAt
+      ? { dateModified: new Date(spec.updatedAt).toISOString() }
+      : spec.lastVerifiedAt
+        ? { dateModified: new Date(spec.lastVerifiedAt).toISOString() }
+        : {}),
     mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(articleUrl) },
   };
   const crumbs = {
@@ -127,6 +131,7 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
               <div className="bz-spec-identity-line"><span className="bz-spec-hero-kicker"><Icon name="compass" size={12} /> دليل اختيار التخصّص</span><span className="bz-spec-field-pill">{spec.field}</span></div>
               <h1 className="mt-4 max-w-3xl font-display text-[30px] font-extrabold leading-[1.23] sm:text-[48px]">{spec.ar}</h1>
               {spec.fr && <p className="mt-2 text-[13px] font-bold tracking-wide text-white/65" dir="ltr">{spec.fr}</p>}
+              {spec.lastVerifiedAt && <p className="mt-2 text-[11px] font-bold text-white/55">آخر مراجعة للمعلومات: {new Intl.DateTimeFormat("ar-DZ", { dateStyle: "long" }).format(new Date(spec.lastVerifiedAt))}</p>}
               <p className="bz-spec-editorial-intro mt-5 max-w-2xl text-[14px] leading-[2] text-white/80 sm:text-[16px]">{introText || "اقرأ الدليل كاملاً قبل اتخاذ قرارك الدراسي."}</p>
               <div className="bz-spec-hero-actions"><a href="#guide-content"><Icon name="chevDown" size={13} /> ابدأ القراءة</a><Link href="/specialties">تصفّح كل التخصّصات <Icon name="chevLeft" size={12} /></Link></div>
             </div>
