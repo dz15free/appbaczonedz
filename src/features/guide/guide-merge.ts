@@ -20,8 +20,7 @@ import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
 import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS } from "@/features/guide/p13-fusha-content";
-import { P15_SOURCE_CONTENT } from "@/features/guide/p15-source-driven-content";
-import { P16_EDITORIAL_CONTENT } from "@/features/guide/p16-editorial-content";
+import { P17_SPECIALTIES_CONTENT } from "@/features/guide/p17-specialties-content";
 
 export interface SourceSection {
   id: string;
@@ -73,8 +72,7 @@ export interface SpecContent {
 }
 
 const P13_CONTENT = P13_ENRICHED_CONTENT as Record<string, Partial<SpecContent>>;
-const P15_CONTENT = P15_SOURCE_CONTENT as unknown as Record<string, Partial<SpecContent>>;
-const P16_CONTENT = P16_EDITORIAL_CONTENT as unknown as Record<string, Partial<SpecContent>>;
+const P17_CONTENT = P17_SPECIALTIES_CONTENT as unknown as Record<string, Partial<SpecContent>>;
 
 export type SpecQuality = "rich" | "medium" | "needs-review";
 
@@ -102,12 +100,15 @@ function plainText(value: unknown): string {
 }
 
 function editorialQuality(content: SpecContent): Pick<SpecFull, "contentChars" | "coreFieldCount" | "indexable" | "quality"> {
-  const fieldChars = CONTENT_FIELDS.reduce((total, field) => total + plainText(content[field]).length, 0);
-  const sectionChars = Array.isArray(content.sections)
-    ? content.sections.reduce((total, section) => total + plainText(section.body).length, 0)
+  const hasDynamicSections = Array.isArray(content.sections) && content.sections.length > 0;
+  const fieldChars = hasDynamicSections ? 0 : CONTENT_FIELDS.reduce((total, field) => total + plainText(content[field]).length, 0);
+  const sectionChars = hasDynamicSections
+    ? content.sections!.reduce((total, section) => total + plainText(section.body).length, 0)
     : 0;
   const contentChars = fieldChars + sectionChars;
-  const coreFieldCount = CORE_FIELDS.filter((field) => plainText(content[field]).length > 0).length;
+  const coreFieldCount = hasDynamicSections
+    ? new Set(content.sections!.map((section) => section.sourceKey).filter((key): key is string => Boolean(key) && CORE_FIELDS.includes(key as keyof SpecContent))).size
+    : CORE_FIELDS.filter((field) => plainText(content[field]).length > 0).length;
   // لا نعتمد على عدد الكلمات وحده: نطلب الحد الأدنى من الحقول التي يحتاجها
   // الطالب لاتخاذ قرار، مع إبقاء الصفحة الضعيفة متاحة للمراجعة المباشرة.
   const indexable = contentChars >= 1200 && coreFieldCount >= 4;
@@ -279,10 +280,8 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       ...(baseSeed ?? {}),
       ...(content?.[s.slug] ?? {}),
       ...(P13_CONTENT[s.slug] ?? {}),
-      ...(P15_CONTENT[s.slug] ?? {}),
-      ...(P15_CONTENT[s.slug] ? { draft: false } : {}),
-      ...(P16_CONTENT[s.slug] ?? {}),
-      ...(P16_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(P17_CONTENT[s.slug] ?? {}),
+      ...(P17_CONTENT[s.slug] ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
