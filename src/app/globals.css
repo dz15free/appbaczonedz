@@ -198,6 +198,106 @@ input::placeholder, textarea::placeholder {
 /* ─────────────────────────────────────────────
    وضع الشاشة الكاملة لغرف الدراسة (يعمل على iOS/Android/Desktop)
 ───────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════
+   سلّم الطبقات — أسماء بدل أرقام سحرية
+
+   كانت الغرفة تحمل: 9999 للمسرح، و9990 لوضع التركيز، و10000 لشريط
+   الصوت، و10040 لبطاقة المتكلّم، و10055 للزرّ العائم، و2147483500
+   لمضيف النوافذ، و2147483600 للورقة السفلية — أي أنّ أيّ طبقة جديدة
+   لم يكن لها مكان تقف فيه. خمس درجات تكفي كل ما في الغرفة.
+════════════════════════════════════════════════════════ */
+:root {
+  --z-stage: 1;       /* أسطح المسرح: السبورة والفيديو والملفّات */
+  --z-overlay: 100;   /* ما يعلو المسرح: الاستفتاء، التحدّي، المؤقّت */
+  --z-chrome: 200;    /* أطراف الهيكل: الرفّ وشريط التحكّم والرصيف */
+  --z-sheet: 300;     /* الأوراق السفلية والنوافذ */
+  --z-toast: 400;     /* التنبيهات — تعلو الجميع دائماً */
+}
+
+/* ════════════════════════════════════════════════════════
+   تجاوب الغرفة على كل الأجهزة
+
+   المقاسات التي يُبنى عليها فعلاً (لا تخمين):
+     هاتف صغير   iPhone SE 375×667 · Android 360×800
+     هاتف عادي   iPhone 13 390×844 · Pixel 393×851
+     هاتف أفقي   844×390 — الارتفاع هو العائق لا العرض
+     لوح عمودي   iPad mini 768×1024 · iPad Air 820×1180
+     لوح أفقي    1024×768 · 1180×820
+     حاسوب       1280 · 1440 · 1920
+
+   ثلاث قواعد تحكم كل ما تحت:
+     ١) الارتفاع الحقيقي لا 100vh: لوحة مفاتيح iOS تقصّ الشريط السفلي.
+     ٢) المنطقة الآمنة في الجهات الأربع: نتوء iPhone في الوضع الأفقي
+        يقع على يمين الشاشة أو يسارها، لا في الأعلى فقط.
+     ٣) هدف اللمس 44px على الأجهزة اللمسية، ومضغوط على الفأرة.
+════════════════════════════════════════════════════════ */
+
+/* الارتفاع الحقيقي: `100dvh` تكفي في المتصفّحات الحديثة، و`--bz-vvh`
+   تصحّحها حين تفتح لوحة المفاتيح على iOS (تُنشرها الصفحة من
+   `visualViewport`). */
+.bz-room {
+  height: 100dvh;
+  height: var(--bz-vvh, 100dvh);
+  max-height: var(--bz-vvh, 100dvh);
+}
+
+/* المنطقة الآمنة أفقياً: في الوضع الأفقي على iPhone يقع النتوء على
+   إحدى الجهتين، فبلا هذا تختفي أوّل أيقونة في الشريط تحته. */
+.bz-room .bz-topbar,
+.bz-room .bz-rail,
+.bz-room .bz-ctlbar {
+  padding-inline-start: max(8px, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(8px, env(safe-area-inset-right, 0px));
+}
+
+/* ملء الشاشة الزائف (iOS بلا Fullscreen API): الشريط العلوي يقع تحت
+   شريط النظام بلا هذه الحشوة. */
+.bz-room.bz-fullscreen .bz-topbar {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(3rem + env(safe-area-inset-top, 0px));
+}
+
+/* هدف اللمس: 44px على اللمس، ومضغوط 34px على الفأرة — نفس المكوّن
+   بلا فرعٍ في الشيفرة. */
+@media (pointer: coarse) {
+  .bz-room .bz-ctl-btn { min-height: 44px; min-width: 52px; }
+  .bz-room .bz-dock-tab { min-height: 44px; }
+}
+@media (pointer: fine) {
+  .bz-room .bz-ctl-btn { min-height: 36px; }
+}
+
+/* ── الهاتف في الوضع الأفقي ──
+   الارتفاع 390px فقط: شريط علوي + رفّ + شريط تحكّم كانت تأكل 180px
+   منها، فلا يبقى للسبورة شيء. الرفّ يُطوى، والأشرطة تنكمش، والتسميات
+   تختفي فتبقى الأيقونات — والمسرح يكسب 90 بكسلاً. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .bz-room .bz-rail-wrap { display: none; }
+  .bz-room .bz-topbar { height: 2.5rem; }
+  .bz-room .bz-ctlbar { padding-top: 3px; padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
+  .bz-room .bz-ctl-btn { min-height: 42px; padding-top: 4px; padding-bottom: 4px; }
+  .bz-room .bz-ctl-btn > span { display: none; }   /* الأيقونة تكفي */
+}
+
+/* الشاشات العالية جداً (لوح عمودي): الرفّ يتنفّس أكثر */
+@media (min-width: 768px) and (min-height: 900px) {
+  .bz-room .bz-rail { padding-top: 8px; padding-bottom: 8px; }
+}
+
+/* الورقة السفلية على الشاشات الكبيرة: تُرفع عن الحافّة قليلاً */
+@media (min-width: 768px) { :root { --bz-sheet-gap: 18px; } }
+
+/* رفّ الصفّ: شريط أفقي منزلق بلا مسطرة تمرير مرئية */
+.bz-rail { scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.bz-rail::-webkit-scrollbar { display: none; }
+
+/* شريط التحكّم: يحترم المنطقة الآمنة على iPhone فلا يقع تحت الشريط
+   المنزلق للنظام، ولا يستهلك بكسلات المسرح فوق ذلك. */
+.bz-ctlbar {
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-chrome);
+}
+
 .bz-fullscreen {
   position: fixed !important;
   inset: 0 !important;

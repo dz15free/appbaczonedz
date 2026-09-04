@@ -140,11 +140,15 @@ export function BottomSheet({
         className="absolute inset-0 cursor-default bg-black/55 backdrop-blur-[2px] bz-bs-fade"
         onClick={onClose}
       />
+      {/* على اللوح والحاسوب لا تُترك الورقة بعرض 1440px: تُوسَّط بعرض
+          مريح وتُدوَّر حوافّها الأربع فتبدو لوحةً مقصودة لا ورقةً
+          هاتفية مشدودة. وعلى الهاتف تأخذ العرض كلّه كما هي. */}
       <section
-        className="relative flex min-h-0 w-full flex-col overflow-hidden rounded-t-[28px] border-t border-border bg-surface shadow-2xl bz-bs-slide"
+        className="relative mx-auto flex min-h-0 w-full flex-col overflow-hidden rounded-t-[28px] border-t border-border bg-surface shadow-2xl bz-bs-slide md:max-w-2xl md:rounded-[24px] lg:max-w-3xl"
         style={{
           maxHeight: `${maxHeightPx}px`,
           paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))",
+          marginBottom: "var(--bz-sheet-gap, 0px)",
           transform: dragY ? `translateY(${dragY}px)` : undefined,
           transition: dragY ? "none" : "transform .28s cubic-bezier(.23,1,.32,1)",
         }}

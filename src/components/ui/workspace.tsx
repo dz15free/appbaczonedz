@@ -18,11 +18,13 @@ import { Icon, type IconName } from "@/components/ui/icon";
 
 /* ─── الشريط العلوي ─────────────────────────────────────── */
 
-export function WorkspaceBar({ children }: { children: ReactNode }) {
+export function WorkspaceBar({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     /* `min-w-0` + `overflow-x-auto`: الشريط يمرّر أفقياً عند الضيق بدل
-       أن يفرض عرضه على الصفحة. وبدونهما كان يكسر التخطيط كلّه. */
-    <div className="bz-hide-scrollbar flex h-12 w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] px-2.5 sm:px-3.5">
+       أن يفرض عرضه على الصفحة. وبدونهما كان يكسر التخطيط كلّه.
+       و`className` تسمح للغرفة بإضافة `bz-topbar` التي تحمل المنطقة
+       الآمنة والارتفاع المضغوط في الوضع الأفقي. */
+    <div className={`bz-hide-scrollbar flex h-12 w-full min-w-0 shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--bz-line)] bg-[var(--bz-surface,#fff)] px-2.5 sm:px-3.5 ${className}`}>
       {children}
     </div>
   );

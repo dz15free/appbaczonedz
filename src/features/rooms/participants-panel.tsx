@@ -167,7 +167,12 @@ export function ParticipantsPanel({
 
               {/* أدوات الإشراف (المالك: ترقية+طرد | المشرف: طرد فقط) */}
               {!isRoomOwner && (onPromote || onKick) && (
-                <div className="flex shrink-0 gap-0.5 opacity-0 transition group-hover:opacity-100">
+                /* 🐛 كانت هذه الأدوات `opacity-0` تظهر بتمرير الفأرة وحده:
+                   أي أنّها **غير موجودة** على الهاتف واللوح، وغير
+                   قابلة للاكتشاف على الحاسوب. الترقية والطرد صلاحيتان
+                   إداريتان لا تُخفى. تظهر الآن دائماً، وباهتةً حتى لا
+                   تُزاحم الأسماء بصرياً. */
+                <div className="flex shrink-0 gap-0.5 opacity-70 transition hover:opacity-100">
                   {onPromote && (
                     <button
                       onClick={() => onPromote(m.uid)}

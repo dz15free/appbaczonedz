@@ -97,24 +97,37 @@ export function RoomActivityToasts({ members, hands, mods, activePoll, isOwner, 
 
   if (toasts.length === 0) return null;
 
+  /* 🐛 كانت البطاقة مصبوغة داكنةً بأرقام ثابتة (`rgba(19,21,31,.85)`
+     ونصّ `#f5f6f8`) داخل غرفة ذات هوية فاتحة، فتبدو كأنّها من تطبيق
+     آخر. صارت من متغيّرات التصميم نفسها، فتتبع النسق الفاتح والداكن
+     معاً بلا فرعٍ في الشيفرة. */
   const ACCENT = {
-    primary: { bg: "rgba(99,102,241,0.16)", color: "#a5b4fc", icon: "#818cf8" },
-    amber:   { bg: "rgba(251,191,36,0.16)", color: "#fde68a", icon: "#fbbf24" },
-    emerald: { bg: "rgba(52,211,153,0.16)", color: "#a7f3d0", icon: "#34d399" },
+    primary: { bg: "var(--bz-blue-050)", icon: "var(--bz-blue)" },
+    amber:   { bg: "var(--bz-amber-050)", icon: "var(--bz-amber)" },
+    emerald: { bg: "color-mix(in srgb, var(--bz-green) 14%, transparent)", icon: "var(--bz-green)" },
   } as const;
 
   return (
+    /* ⚠️ الموضع: بطاقة «يتحدّث الآن» في شريط الصوت تجلس في الزاوية
+       نفسها (`inset-inline-end: 12px`) فكانتا تتراكبان. التنبيهات
+       تُزاح إلى **يسار** المسرح (بداية السطر في RTL هي اليمين، فهذه
+       الجهة تبقى للصوت وحده)، وتحت الرفّ لا فوقه. */
     <div
-      className="pointer-events-none absolute right-3 top-3 z-30 flex flex-col gap-2"
-      style={{ maxWidth: "min(86vw, 320px)" }}
+      className="pointer-events-none absolute top-3 z-30 flex flex-col gap-2"
+      style={{ maxWidth: "min(86vw, 320px)", insetInlineStart: 12, insetInlineEnd: "auto" }}
     >
       {toasts.map((t) => {
         const a = ACCENT[t.accent];
         return (
           <div
             key={t.id}
-            className="animate-msg-in flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold shadow-lg backdrop-blur-md"
-            style={{ background: "rgba(19,21,31,0.85)", border: "1px solid rgba(255,255,255,0.08)", color: "#f5f6f8" }}
+            className="animate-msg-in flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[12.5px] font-semibold shadow-lg backdrop-blur-md"
+            style={{
+              background: "var(--bz-surface)",
+              border: "1px solid var(--bz-line)",
+              color: "var(--bz-ink)",
+              boxShadow: "0 8px 24px -12px rgba(19,23,34,.35)",
+            }}
           >
             <span
               className="grid h-7 w-7 shrink-0 place-items-center rounded-lg"

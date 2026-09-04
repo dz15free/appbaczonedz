@@ -43,15 +43,17 @@ export function roomStateLabel(s: RoomState): string {
  * المالك يقرّر الحالة، والجميع يتبعونها لحظياً.
  * الطالب يستطيع دخول تركيزه الشخصي محلّياً دون أن يغيّر حالة الغرفة.
  */
-export function useRoomState(roomId: string, isOwner: boolean) {
+export function useRoomState(roomId: string, isOwner: boolean, enabled = true) {
   const [state, setState] = useState<RoomState>("study");
 
   useEffect(() => {
-    if (!roomId) return;
+    /* `enabled`: انظر التعليق في `use-active-tool.ts` — لا نفتح
+       مستمعاً على `roomLive` قبل أن تُحسم أهليّة القراءة. */
+    if (!roomId || !enabled) return;
     const r = ref(rtdb, `roomLive/${roomId}/roomState`);
     const unsub = onValue(r, (snap) => setState(parse(snap.val())));
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+  }, [roomId, enabled]);
 
   const setRoomState = useCallback(
     (next: RoomState) => {

@@ -3,33 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { ChargilyPayButton } from "@/features/paid/chargily-button";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHouse, faVideo, faChalkboard, faFolderOpen, faXmark, faUnlock, faCircleCheck, faChartBar, faShareNodes, faNoteSticky, faSpinner, faLock, faKey, faBrain, faUserSecret, faTrash, faGraduationCap, faFilePen, faUserGroup } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faVideo, faChalkboard, faFolderOpen, faCircleCheck, faNoteSticky, faSpinner, faLock, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { InviteSheet } from "@/features/rooms/invite-sheet";
-import { getRoom, type Room, promoteToMod, demoteMod, kickUser, unbanUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
+import { getRoom, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
 import { RoomNotes } from "@/features/rooms/room-notes";
 import { ParticipantsPanel } from "@/features/rooms/participants-panel";
-import { WaitingScreen } from "@/features/rooms/waiting-screen";
 import type { RaisedHand } from "@/features/rooms/rooms";
 import { usePresence } from "@/features/rooms/use-presence";
 import { useActiveTool, type RoomTool } from "@/features/rooms/use-active-tool";
 import { ChatPanel } from "@/features/chat/chat-panel";
 import { RoomVoiceBar } from "@/features/voice/room-voice-bar";
 import { playHandRaiseSound } from "@/lib/sound";
-import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { listenHasAccess, redeemCode, createAccessCode } from "@/features/paid/paid-access";
 import { sendAnonQuestion, listenAnonQuestions, markAnonAnswered, deleteAnonQuestion, type AnonQuestion } from "@/features/rooms/rooms";
 import { saveFlashcard } from "@/features/study/save-flashcard";
-import { StudentFocusMode } from "@/features/rooms/student-focus-mode";
-import { TeacherFocusMode } from "@/features/rooms/teacher-focus-mode";
 import { StudentChallengeLayer, CreateChallengeSheet, TeacherChallengePanel, useChallenge } from "@/features/rooms/room-challenge";
 import { RateTeacherSheet } from "@/features/community/teacher-rating-ui";
 import { SupportChatSheet } from "@/features/support/support-chat";
@@ -37,17 +32,16 @@ import { markAttendance } from "@/features/community/teacher-rating";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import dynamic from "next/dynamic";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
-import {
-  WorkspaceBar, LiveBadge, BarButton, Segmented,
-  IconRail, RailButton, RailDivider, RailSpacer, SideDock,
-  PhoneToolStrip, PhoneToolButton,
-} from "@/components/ui/workspace";
+import { WorkspaceBar, LiveBadge, BarButton, Segmented } from "@/components/ui/workspace";
+import { RoomStage } from "@/features/rooms/room-stage";
+import { SpeakerRail } from "@/features/rooms/speaker-rail";
+import { RoomControlBar } from "@/features/rooms/control-bar";
+import { RoomDock, type DockTab } from "@/features/rooms/room-dock";
+import { useHasSideDock } from "@/lib/use-media";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
 import { ExamGradingSheet } from "@/features/rooms/exam-sim/exam-papers";
 import { listenExam, type ExamSession } from "@/features/rooms/exam-sim/exam-session";
-import { FloatingAssistant } from "@/components/ui/floating-assistant";
-import { StatusDot } from "@/components/ui/status-dot";
-import { Icon, type IconName } from "@/components/ui/icon";
+import { Icon } from "@/components/ui/icon";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
 const loadingTool = () => (
@@ -55,8 +49,9 @@ const loadingTool = () => (
     <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin" />
   </div>
 );
-const VideoSync = dynamic(() => import("@/features/video/video-sync").then((m) => m.VideoSync), { ssr: false, loading: loadingTool });
-const Whiteboard = dynamic(() => import("@/features/whiteboard/whiteboard").then((m) => m.Whiteboard), { ssr: false, loading: loadingTool });
+/* الأسطح (سبورة/فيديو/ملفّات/ملاحظات) انتقلت إلى `RoomStage` الذي
+   يُبقيها مُركَّبة ولا يُفكّكها عند التبديل. ولوحة الملفّات تبقى
+   مُستورَدة هنا لأنّ الأدراج الثانوية تستعملها. */
 const RoomFiles = dynamic(() => import("@/features/rooms/room-files").then((m) => m.RoomFiles), { ssr: false, loading: loadingTool });
 /* قاعة الامتحان تُحمَّل عند الحاجة فقط: بيانات المحاكاة كبيرة، ولا
    يجوز أن تُثقل كل غرفة عادية لا امتحان فيها. */
@@ -95,18 +90,19 @@ export default function RoomPage() {
   const chatOpenRef = useRef(false);
   const lastMsgCount = useRef(0);
   const chatInit = useRef(false);
-  const isDesktop = useRef(false);
+  /* الرصيف ظاهر من 768px: على اللوح والحاسوب الدردشة معروضة دائماً
+     فلا معنى لعدّاد غير مقروء، وزرّ «الدردشة» ينقل التبويب بدل أن
+     يفتح ورقة تُكرّر ما هو ظاهر. */
+  const hasSideDock = useHasSideDock();
   // في وضع التركيز تصبح الدردشة درجاً سفلياً حتى على الشاشات العريضة → يبقى العدّاد فعّالاً
   const focusRef = useRef(false);
 
-  // على الحاسوب، الشريط الجانبي للدردشة ظاهر دائماً → لا عدّاد
   useEffect(() => {
-    const check = () => { isDesktop.current = window.matchMedia("(min-width: 1024px)").matches; if (isDesktop.current && !focusRef.current) setUnreadChat(0); };
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+    if (hasSideDock && !focusRef.current) setUnreadChat(0);
+  }, [hasSideDock]);
 
+  /* الدردشة صارت تبويباً في الرصيف: مفتوحة إمّا في اللوحة الجانبية
+     على الحاسوب، أو في ورقة الرصيف على الهاتف. العدّاد يتبع ذلك. */
   useEffect(() => { chatOpenRef.current = chatOpen; if (chatOpen) setUnreadChat(0); }, [chatOpen]);
 
   useEffect(() => {
@@ -121,30 +117,53 @@ export default function RoomPage() {
       if (newCount > 0) {
         const last = textMsgs[textMsgs.length - 1];
         const fromOther = last && last.userId !== user?.uid;
-        if (fromOther && !chatOpenRef.current && (!isDesktop.current || focusRef.current)) {
+        if (fromOther && !chatOpenRef.current && (!hasSideDock || focusRef.current)) {
           setUnreadChat((u) => u + newCount);
-          // صوت إشعار قصير
+          /* 🐛 كان يُنشئ `AudioContext` **جديداً لكل رسالة** ولا يُغلقه:
+             المتصفّح يحدّ عددها، فبعد عشرات الرسائل يتوقّف الصوت
+             ويبقى التسريب. سياق واحد مُشترك يُنشأ عند أوّل حاجة. */
           try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.frequency.value = 660;
-            gain.gain.setValueAtTime(0.18, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-            osc.start(); osc.stop(ctx.currentTime + 0.25);
+            const w = window as unknown as { __bzAudioCtx?: AudioContext; AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+            const Ctor = w.AudioContext || w.webkitAudioContext;
+            if (Ctor) {
+              const ctx = (w.__bzAudioCtx ??= new Ctor());
+              if (ctx.state === "suspended") void ctx.resume();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain); gain.connect(ctx.destination);
+              osc.frequency.value = 660;
+              gain.gain.setValueAtTime(0.18, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+              osc.start(); osc.stop(ctx.currentTime + 0.25);
+            }
           } catch { /* صامت */ }
         }
       }
       lastMsgCount.current = textMsgs.length;
     });
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId, user?.uid]);
+  }, [roomId, user?.uid, hasSideDock]);
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
   const isOwner = !!room && !!user && room.ownerId === user.uid;
-  const { tool, setTool } = useActiveTool(roomId, isOwner);
-  const { state: roomState, setRoomState } = useRoomState(roomId, isOwner);
+  const [mods, setMods] = useState<Set<string>>(new Set());
+  const [roomAccess, setRoomAccess] = useState(false);
+  const isModEarly = !!user && mods.has(user.uid);
+
+  /* ── حقّ قراءة محتوى الغرفة ──
+     صارت `roomLive` مغلقة في الغرف المدفوعة على مستوى قاعدة البيانات
+     (كانت تُقرأ بـ`auth != null`، أي أنّ محتوى أيّ غرفة مدفوعة —
+     السبورة والملاحظات والمحاكاة — كان يُقرأ بلا دفع بطلبٍ مباشر
+     يتجاوز بوّابة الواجهة).
+
+     ولهذا لا نفتح مستمعاً واحداً على `roomLive` قبل أن تُحسم
+     الأهليّة: البيانات وصلت (`room`)، والغرفة مجانية أو أنا مالكها
+     أو مشرفها أو دفعتُ ثمنها. وبلا هذا الشرط يرى من لم يدفع سلسلة
+     `permission_denied` — وهي رفضٌ صحيح لكنّه ضجيج لا معنى له. */
+  const canReadLive = !!room && (!room.isPaid || isOwner || isModEarly || roomAccess);
+
+  const { tool, setTool } = useActiveTool(roomId, isOwner, canReadLive);
+  const { state: roomState, setRoomState } = useRoomState(roomId, isOwner, canReadLive);
 
   /* ── ما تفعله حالة الغرفة فعلاً ──
      كانت الأزرار الأربعة تضبط قيمة **لا يقرؤها أحد** — زينة محضة، ولهذا
@@ -157,6 +176,9 @@ export default function RoomPage() {
 
      مُشتقّة لا مُخزَّنة: حالة واحدة مصدرها `roomState` المُزامن، فلا
      يمكن أن تتناقض النسخ بين الأجهزة. */
+  /* «وضع التركيز» صار حالةً في الهيكل نفسه لا واجهةً ثانية: تتقلّص
+     الأطراف (الرفّ والرصيف) ويمتدّ المسرح، ويبقى شريط التحكّم كما هو
+     فلا يفقد المستخدم زرّاً واحداً. */
   const stateHidesSidePanels = roomState === "focus" || roomState === "review";
   const stateHidesChat = roomState === "exam" || roomState === "focus";
 
@@ -167,22 +189,24 @@ export default function RoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomState, isOwner]);
 
-  const [mods, setMods] = useState<Set<string>>(new Set());
   const [banned, setBanned] = useState<Set<string>>(new Set());
-  const [showParticipants, setShowParticipants] = useState(false);
-  // قائمة «المزيد» — تجمع إجراءات الحصة الثانوية فلا يزدحم الشريط
-  const [moreOpen, setMoreOpen] = useState(false);
   const [examSetupOpen, setExamSetupOpen] = useState(false);
   const [examGradingOpen, setExamGradingOpen] = useState(false);
   const [exam, setExam] = useState<ExamSession | null>(null);
   const [participantsOpen, setParticipantsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [dockTab, setDockTab] = useState("chat");
+  const [dockTab, setDockTab] = useState<DockTab>("chat");
+  /* «الدردشة مفتوحة» صارت حالةً مُشتقّة: تبويب الدردشة في ورقة
+     الرصيف على الهاتف. بلا هذا يبقى العدّاد يزيد وأنت تقرأ. */
+  useEffect(() => {
+    setChatOpen(participantsOpen && dockTab === "chat");
+  }, [participantsOpen, dockTab]);
+
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
   // وضع التركيز للطالب + الأدراج الثانوية داخله
   const [studentFocus, setStudentFocus] = useState(false);
-  const [studentMoreOpen, setStudentMoreOpen] = useState(false);
+  const [studentAskOpen, setStudentAskOpen] = useState(false);
   const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
 
   // دخول موحّد للشاشة الكاملة: يحاول Fullscreen API بعد نقرة المستخدم،
@@ -244,9 +268,12 @@ export default function RoomPage() {
     };
   }, []);
 
-  // تتبّع ارتفاع الواجهة الفعلي (يتغيّر مع لوحة المفاتيح على iOS)
+  /* ارتفاع الواجهة الفعلي.
+     🐛 كان يُقاس في ملء الشاشة وحده، فعلى iPhone في الوضع العادي
+     تفتح لوحة المفاتيح (كتابة رسالة أو حلّ تحدٍّ) فتدفع شريط التحكّم
+     خارج الشاشة، لأنّ `100dvh` لا تتقلّص مع اللوحة. الآن يُقاس دائماً
+     ما دامت الغرفة مفتوحة. */
   useEffect(() => {
-    if (!fullscreen) return;
     const vv = window.visualViewport;
     function update() {
       const h = vv?.height ?? window.innerHeight;
@@ -260,7 +287,7 @@ export default function RoomPage() {
       window.removeEventListener("resize", update);
       document.documentElement.style.removeProperty("--bz-vvh");
     };
-  }, [fullscreen, studentFocus]);
+  }, []);
 
   // مزامنة عند الخروج من الشاشة بـ ESC أو زر المتصفّح
   useEffect(() => {
@@ -283,7 +310,6 @@ export default function RoomPage() {
   }, []);
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
-  const [roomAccess, setRoomAccess] = useState(false);
   // الخروج من وضع التركيز يغلق أي درج مفتوح تابع له (وإلا بقي معلّقاً فوق الغرفة العادية)
   useEffect(() => {
     focusRef.current = studentFocus || fullscreen;
@@ -303,16 +329,19 @@ export default function RoomPage() {
   // تقييم الغرفة المدفوعة (لمن اشترى)
   const [rateRoomOpen, setRateRoomOpen] = useState(false);
   const prevAnon = useRef(0);
-  const { settings } = useSiteSettings();
   /* مستمع واحد لجلسة المحاكاة يقرؤه الأستاذ والطالب معاً — لا تكرار،
      ولا يعمل إلّا ما دامت الصفحة مفتوحة. */
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !canReadLive) return;
     const unsub = listenExam(roomId, setExam);
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+  }, [roomId, canReadLive]);
 
-  const isMod = !!user && mods.has(user.uid);
+  /* الوضعان القديمان (`fullscreen` للأستاذ و`studentFocus` للتلميذ)
+     صارا اسماً واحداً في الواجهة: تقلّص الأطراف. */
+  const focusMode = fullscreen || studentFocus;
+
+  const isMod = isModEarly;               // حُسبت أعلى مع أهليّة القراءة
   const isPrivileged = isOwner || isMod;
 
   useEffect(() => {
@@ -320,13 +349,17 @@ export default function RoomPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
   useEffect(() => {
+    /* `bannedUsers` مقروءة للمالك وحده في القواعد، فمستمعُ غيره
+       يُرفض بلا فائدة. القائمة تُعرض للمالك أصلاً في الرصيف. */
+    if (!isOwner) return;
     const unsub = listenBanned(roomId, setBanned);
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+  }, [roomId, isOwner]);
   useEffect(() => {
+    if (!canReadLive) return;
     const unsub = listenPoll(roomId, setActivePoll);
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+  }, [roomId, canReadLive]);
   // الأسئلة المجهولة — للمالك فقط
   useEffect(() => {
     if (!isOwner) return;
@@ -344,13 +377,13 @@ export default function RoomPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [room?.isPaid, user, roomId]);
   useEffect(() => {
-    if (!user) return;
+    if (!user || !canReadLive) return;
     const unsub = listenKicked(roomId, user.uid, (kicked) => {
       if (kicked) router.replace("/rooms");
     return () => { if (typeof unsub === "function") unsub(); };
     });
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId, user, router]);
+  }, [roomId, user, router, canReadLive]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && (fullscreen || studentFocus)) exitFullscreen(); };
     window.addEventListener("keydown", handler);
@@ -361,18 +394,29 @@ export default function RoomPage() {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
   }, [loading, user, router]);
 
+  /* 🐛 كانت بيانات الغرفة تُقرأ **مرّة واحدة**: تغيير الاسم أو
+     تحويلها إلى مدفوعة لا يظهر لمن هو داخلها إلّا بعد تحديث الصفحة.
+     مستمع حيّ على العقدة نفسها يُصلح ذلك بكتابة واحدة. */
   useEffect(() => {
-    getRoom(roomId).then((r) => (r ? setRoom(r) : setNotFound(true)));
+    if (!roomId) return;
+    const unsub = onValue(ref(rtdb, `rooms/${roomId}`), (snap) => {
+      const val = snap.val() as Omit<Room, "id"> | null;
+      if (val) setRoom({ id: roomId, ...val } as Room);
+      else setNotFound(true);
+    }, () => { getRoom(roomId).then((r) => (r ? setRoom(r) : setNotFound(true))); });
+    return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
   // رفع اليد + إشعار صوتي للمالك
   const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
   const [ownerStatus, setOwnerStatusState] = useState<OwnerStatus>("available");
   useEffect(() => {
+    if (!canReadLive) return;
     const unsub = listenOwnerStatus(roomId, setOwnerStatusState);
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId]);
+  }, [roomId, canReadLive]);
   useEffect(() => {
+    if (!canReadLive) return;
     const r = ref(rtdb, `roomLive/${roomId}/hands`);
     const unsub = onValue(r, (snap) => {
       const val = (snap.val() as Record<string, { name: string; ts?: number; at?: number }>) ?? {};
@@ -388,7 +432,7 @@ export default function RoomPage() {
       prevHands.current = list.length;
     });
     return () => { if (typeof unsub === "function") unsub(); };
-  }, [roomId, isOwner, user]);
+  }, [roomId, isOwner, user, canReadLive]);
 
   function toggleHand() {
     if (!user) return;
@@ -459,21 +503,26 @@ export default function RoomPage() {
     return <PaidRoomGate room={room} uid={user.uid} onUnlocked={() => setRoomAccess(true)} />;
   }
 
-  const currentLabel = TOOLS.find((t) => t.id === tool)?.label ?? "";
-
   return (
     /* `overflow-x-hidden` + `w-full`: أزرار الشريط العلوي `shrink-0`،
        فمجموعها على شاشة أندرويد الضيّقة يتجاوز العرض ويدفع **الصفحة
        كلّها** جانباً — فتُقصّ الحوافّ يميناً ويساراً كما في لقطتك.
        iOS يخفي ذلك لاختلاف تعامله مع الفيض. */
-    <main className="flex h-[100dvh] w-full flex-col overflow-x-hidden bg-background text-text-primary">
+    <main
+      /* `bz-room` تحمل تجاوب الغرفة كلّه: الارتفاع الحقيقي مع لوحة
+         مفاتيح iOS، والمنطقة الآمنة في الجهات الأربع، وهدف اللمس
+         44px، وطيّ الرفّ في الوضع الأفقي القصير. */
+      className={`bz-room flex w-full flex-col overflow-x-hidden bg-background text-text-primary ${
+        focusMode ? "bz-fullscreen" : ""
+      }`}
+    >
       {/* ══════════ شريط الغرفة الموحّد ══════════
           كان هنا شريطان فوق بعضهما: رأس الغرفة القديم ثم شريط مساحة
           الدراسة. كلاهما يعرض الاسم والعدد و«مباشر» — ازدواج يأكل 56
           بكسل من ارتفاع اللوح ويعطي مظهر لوحة تحكّم قديمة.
           صارا شريطاً واحداً بارتفاع 52px، بترتيب ثابت:
           هويّة الحصّة | حالة الغرفة | إجراءات. */}
-      <WorkspaceBar>
+      <WorkspaceBar className="bz-topbar">
         <button
           onClick={() => router.push("/rooms")}
           aria-label="رجوع إلى الغرف"
@@ -543,33 +592,8 @@ export default function RoomPage() {
           onClick={() => setParticipantsOpen(true)}
         />
 
-        {!isOwner && (
-          <>
-            <BarButton
-              icon="hand"
-              title={myHand ? "إنزال اليد" : "رفع اليد"}
-              active={myHand}
-              onClick={toggleHand}
-            />
-            <span className="hidden sm:inline-flex">
-              <BarButton
-                icon="plus"
-                title="وظائف الطالب"
-                active={studentMoreOpen}
-                onClick={() => setStudentMoreOpen(true)}
-              />
-            </span>
-          </>
-        )}
-
-        <span className="lg:hidden">
-          <BarButton
-            icon="chat"
-            title="الدردشة"
-            badge={unreadChat}
-            onClick={() => setChatOpen(true)}
-          />
-        </span>
+        {/* رفع اليد والدردشة ووظائف التلميذ انتقلت إلى شريط التحكّم:
+            زرّ واحد لكل فعل، لا زرّ في الأعلى وآخر في الأسفل. */}
 
         {/* أثناء المحاكاة يحتاج **الطالب** ملء الشاشة أيضاً — على iPhone
             خصوصاً حيث لا يعمل ملء الشاشة الحقيقي، فيتكفّل البديل. */}
@@ -582,38 +606,12 @@ export default function RoomPage() {
           />
         )}
 
-        {isOwner ? (
-          <>
-            <BarButton
-              icon={fullscreen ? "collapse" : "expand"}
-              title={fullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-              active={fullscreen}
-              onClick={() => (fullscreen ? exitFullscreen() : enterFullscreen())}
-            />
-            <BarButton
-              icon="grid"
-              title="إجراءات الحصة"
-              badge={anonQs.filter((q) => !q.answered).length}
-              active={moreOpen || Boolean(challenge)}
-              onClick={() => setMoreOpen(true)}
-            />
-          </>
-        ) : (
-          <>
-            {room?.isPaid && roomAccess && user && (
-              <BarButton icon="star" title="قيّم الغرفة" onClick={() => setRateRoomOpen(true)} />
-            )}
-            {room?.ownerId && room?.ownerRole === "teacher" && (
-              <BarButton icon="star" title="قيّم الأستاذ" onClick={() => setRateOpen(true)} />
-            )}
-            <BarButton
-              icon="expand"
-              title="وضع التركيز"
-              tone="primary"
-              onClick={() => { void enterStudentFocus(); }}
-            />
-          </>
-        )}
+        <BarButton
+          icon={focusMode ? "collapse" : "expand"}
+          title={focusMode ? "إنهاء وضع التركيز" : "وضع التركيز — يوسّع المسرح"}
+          active={focusMode}
+          onClick={() => (focusMode ? exitFullscreen() : isOwner ? enterFullscreen() : enterStudentFocus())}
+        />
 
         <BarButton
           icon="exit"
@@ -670,19 +668,39 @@ export default function RoomPage() {
       <BottomSheet
         open={participantsOpen}
         onClose={() => setParticipantsOpen(false)}
-        title={`الحاضرون (${members.length})`}
+        title="الصفّ"
+        maxHeight="86dvh"
       >
-        <div className="max-h-[60vh] overflow-y-auto">
-          <ParticipantsPanel
-            members={members}
-            hands={handsQueue}
-            mods={mods}
-            ownerId={room?.ownerId ?? ""}
-            myUid={user?.uid}
+        {/* نفس الرصيف الذي يراه الحاسوب — لا لوحة ثانية للهاتف */}
+        {/* `dvh` لا `vh`: على iOS يقيس `vh` الشاشة كاملةً فتتجاوز
+            الورقة الشاشة حين يظهر شريط المتصفّح. */}
+        <div className="h-[68dvh] sm:h-[62dvh]">
+          <RoomDock
+            tab={dockTab}
+            onTab={setDockTab}
+            chatEnabled={!stateHidesChat}
+            handsCount={handsQueue.length}
+            unreadChat={unreadChat}
+            unansweredAnon={anonQs.filter((q) => !q.answered).length}
+            showQuestions={isOwner}
+            roomId={roomId}
+            banned={banned}
             isOwner={isOwner}
-            onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
-            onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
-            onGrantMic={isOwner ? grantMic : undefined}
+            chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
+            classPanel={
+              <ParticipantsPanel
+                members={members}
+                hands={handsQueue}
+                mods={mods}
+                ownerId={room?.ownerId ?? ""}
+                myUid={user?.uid}
+                isOwner={isOwner}
+                onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+                onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+                onGrantMic={isOwner ? grantMic : undefined}
+              />
+            }
+            questionsPanel={<AnonQuestionsList roomId={roomId} questions={anonQs} />}
           />
         </div>
       </BottomSheet>
@@ -711,144 +729,6 @@ export default function RoomPage() {
         </>
       )}
 
-      {/* درج «إجراءات الحصة» — للمالك */}
-      {isOwner && (
-        <BottomSheet open={moreOpen} onClose={() => setMoreOpen(false)} title="إجراءات الحصة" maxHeight="88dvh">
-          <div className="space-y-5 pb-2">
-            <section>
-              <div className="mb-2 flex items-center gap-2 px-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                <h4 className="text-xs font-extrabold text-text-primary">أدوات الحصة</h4>
-                <span className="text-[10px] text-text-muted">الصوت والوقت</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {/* وقت التمرين — زرّ بنفس شكل بقيّة الإجراءات.
-                لا يُصيَّر المؤقّت نفسه هنا: كان داخل هذا الدرج، فإغلاق
-                الدرج يُفكّك المكوّن ويقتل حالته، فيختفي الاثنان معاً. */}
-            {/* الميكروفون: في الشاشة الكاملة على الهاتف يختفي شريط الصوت،
-                فلم يكن للأستاذ سبيل إلى الميكروفون إطلاقاً. */}
-            <button
-              onClick={() => { setMoreOpen(false); document.getElementById("bz-voice-join")?.click(); }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <Icon name="mic" size={20} className="text-primary" />
-              الميكروفون
-            </button>
-
-            <button
-              onClick={() => { setTimerOpen(true); setMoreOpen(false); }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <Icon name="timer" size={20} className="text-primary" />
-              وقت التمرين
-            </button>
-
-            <button
-              onClick={() => { setShowCreatePoll(true); setMoreOpen(false); }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <FontAwesomeIcon icon={faChartBar} className="h-5 w-5 text-primary" />
-              استفتاء
-            </button>
-
-            <button
-              onClick={() => { challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true); setMoreOpen(false); }}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
-                challenge ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
-              }`}
-            >
-              <FontAwesomeIcon icon={faBrain} className="h-5 w-5 text-primary" />
-              {challenge ? "لوحة التحدّي" : "تحدٍّ"}
-            </button>
-
-            {/* 🎓 محاكاة البكالوريا — بنفس شكل بقيّة الإجراءات لا زرّاً غريباً */}
-            <button
-              onClick={() => { exam ? setExamGradingOpen(true) : setExamSetupOpen(true); setMoreOpen(false); }}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
-                exam ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
-              }`}
-            >
-              <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5 text-primary" />
-              {exam ? "أوراق الامتحان" : "محاكاة البكالوريا"}
-            </button>
-
-            {/* التصحيح لا يلزم أن يقع أثناء الحصّة: يبقى الزرّ ما دامت
-                أوراق محفوظة، فيصحّح الأستاذ لاحقاً ويُرسل النتائج. */}
-            {!exam && (
-              <button
-                onClick={() => { setExamGradingOpen(true); setMoreOpen(false); }}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-              >
-                <FontAwesomeIcon icon={faFilePen} className="h-5 w-5 text-primary" />
-                تصحيح الأوراق
-              </button>
-            )}
-
-            <button
-              onClick={() => { setAnonOpen(true); setMoreOpen(false); }}
-              className={`relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
-                anonQs.some((q) => !q.answered) ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-surface text-text-primary hover:border-primary/40 hover:bg-primary/5"
-              }`}
-            >
-              <FontAwesomeIcon icon={faUserSecret} className="h-5 w-5 text-primary" />
-              أسئلة مجهولة
-              {anonQs.some((q) => !q.answered) && (
-                <span className="absolute right-2 top-2 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-                  {anonQs.filter((q) => !q.answered).length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
-                setOwnerStatus(roomId, next);
-              }}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
-                ownerStatus === "available" ? "border-border bg-surface text-secondary"
-                  : ownerStatus === "busy" ? "border-danger/40 bg-danger/10 text-danger"
-                  : "border-warning/40 bg-warning/10 text-warning"
-              }`}
-            >
-              <StatusDot status={ownerStatus} size={12} />
-              {ownerStatus === "available" ? "متفرّغ" : ownerStatus === "busy" ? "مشغول" : "سأعود"}
-            </button>
-
-            {room?.isPaid && (
-              <button
-                onClick={() => { generateAccessCode(); setMoreOpen(false); }}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 p-3 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
-              >
-                <FontAwesomeIcon icon={faKey} className="h-5 w-5" />
-                كود وصول
-              </button>
-            )}
-
-            <button
-              onClick={() => { shareRoomLink(); setMoreOpen(false); }}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-            >
-              <FontAwesomeIcon icon={faShareNodes} className="h-5 w-5 text-primary" />
-              مشاركة الرابط
-            </button>
-
-            {/* دعوة الأصدقاء — للمالك والمشرفين وحدهم. ولو أتحناها لكل
-                مشارك لصارت أداة إزعاج جماعيّ: كل مشارك × قائمة أصدقائه. */}
-            {isPrivileged && (
-              <button
-                onClick={() => { setMoreOpen(false); setInviteOpen(true); }}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-surface p-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-primary/5"
-              >
-                <FontAwesomeIcon icon={faUserGroup} className="h-5 w-5 text-primary" />
-                دعوة أصدقاء
-              </button>
-            )}
-              </div>
-            </section>
-          </div>
-        </BottomSheet>
-      )}
-
       {/* درج دعوة الأصدقاء */}
       {isPrivileged && room && (
         <InviteSheet
@@ -859,54 +739,36 @@ export default function RoomPage() {
         />
       )}
 
-      {/* المحتوى + المشاركون + الدردشة (تخطيط 3 أعمدة على الحاسوب) */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* ══ شريط الأيقونات ══
-            تبديل المحتوى انتقل إلى هنا من شريط التبويبات المحذوف.
-            أيقونة بلا تسمية: لا يزيد الازدحام البصري، والتسمية في
-            الـtooltip وفي aria-label لقارئ الشاشة. */}
-        {/* شريط الأيقونات يُبدّل ما يراه **الجميع** — فهو أداة تحكّم
-            للأستاذ وحده. كان يظهر للطالب معطّلاً: تحكّم يوهم ولا يعمل. */}
-        {isOwner && !fullscreen && roomState !== "focus" && (
-          <IconRail>
-            <RailButton icon="home" label="مرحباً" active={tool === "welcome"}
-              onClick={() => isOwner && setTool("welcome")} />
-            <RailButton icon="video" label="فيديو" active={tool === "video"}
-              onClick={() => isOwner && setTool("video")} />
-            <RailButton icon="layers" label="السبورة" active={tool === "whiteboard"}
-              onClick={() => isOwner && setTool("whiteboard")} />
-            <RailButton icon="file" label="ملفّات" active={tool === "files"}
-              onClick={() => isOwner && setTool("files")} />
-            <RailButton icon="note" label="ملاحظات" active={tool === "notes"}
-              onClick={() => isOwner && setTool("notes")} />
-            {isOwner && (
-              <>
-                <RailDivider />
-                <RailButton icon="poll" label="استفتاء"
-                  onClick={() => setShowCreatePoll(true)} />
-                <RailButton icon="target" label={challenge ? "لوحة التحدّي" : "تحدٍّ"}
-                  active={Boolean(challenge)}
-                  onClick={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))} />
-                <RailButton icon="anon" label="الأسئلة المجهولة"
-                  badge={anonQs.filter((q) => !q.answered).length}
-                  onClick={() => setAnonOpen(true)} />
-                <RailButton icon="graduation" label={exam ? "أوراق الامتحان" : "محاكاة البكالوريا"}
-                  active={Boolean(exam)}
-                  onClick={() => (exam ? setExamGradingOpen(true) : setExamSetupOpen(true))} />
-              </>
-            )}
-            <RailSpacer />
-            <RailButton icon="grid" label="إجراءات الحصة" onClick={() => setMoreOpen(true)} />
-          </IconRail>
-        )}
+      {/* ══ رفّ الصفّ ══
+          الحضور والأيدي المرفوعة وحالة الميكروفون ظاهرة دائماً في 56
+          بكسل. قبله كان في الشريط عدد مجرّد، والأيدي خلف ورقة سفلية. */}
+      {!stateHidesSidePanels && !exam && !focusMode && (
+        <SpeakerRail
+          roomId={roomId}
+          members={members}
+          hands={handsQueue}
+          mods={mods}
+          ownerId={room?.ownerId ?? ""}
+          myUid={user?.uid}
+          isOwner={isOwner}
+          onGrantMic={isOwner ? grantMic : undefined}
+          onLowerHand={isOwner ? lowerHand : undefined}
+          onOpenClass={() => { setDockTab("class"); if (!hasSideDock || focusMode) setParticipantsOpen(true); }}
+        />
+      )}
 
+      {/* المسرح + الرصيف */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* ⚠️ ملء الشاشة انتقل إلى `<main>`: كان على هذا القسم وحده
+            فيغطّي شريط التحكّم ويخفي الميكروفون، ولهذا وُلدت واجهتا
+            «وضع التركيز» المنفصلتان. الآن الهيكل كلّه يملأ الشاشة
+            وتتقلّص أطرافه فقط. */}
         <section
           id="bz-room-stage"
-          className={`relative flex flex-col overflow-hidden bg-background ${fullscreen ? "bz-fullscreen" : ""}`}
-          style={fullscreen ? undefined : { flex: 1, overflow: "hidden" }}
+          className="relative flex flex-1 flex-col overflow-hidden bg-background"
         >
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
-          <div className={`relative flex flex-1 flex-col overflow-hidden${fullscreen ? " bz-tfocus-stage" : ""}`}>
+          <div className="relative flex flex-1 flex-col overflow-hidden">
             {/* شريط يشرح الحالة غير الافتراضية.
                 الحالة تُغيّر ما يراه الطالب، فلا يجوز أن تتغيّر الشاشة
                 تحته دون تفسير — وإلّا بدت الغرفة معطوبة. */}
@@ -933,28 +795,35 @@ export default function RoomPage() {
                 تحلّ محلّ **محتوى المسرح** لا محلّ الغرفة: الشريط العلوي
                 والمشاركون والصوت وكل ما حولها يبقى حيّاً، فإنهاء المحاكاة
                 يُزيل هذه الطبقة فيعود ما تحتها كما تركه المستخدم. */}
-            {exam && user ? (
-              <ExamStage
-                roomId={roomId}
-                roomName={room?.name ?? "الغرفة"}
-                session={exam}
-                isOwner={isOwner}
-                uid={user.uid}
-                userName={user.displayName || "طالب"}
-                onLeaveRoom={() => router.push("/rooms")}
-              />
-            ) : (
-            /* المحتوى يبقى مُصيَّراً دائماً — لا يُستبدل بالاستفتاء */
-            <>
-              {tool === "welcome" && (
-                <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />
-              )}
-              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
-              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} canEdit={isPrivileged} roomName={room?.name ?? "الغرفة"} />}
-            </>
-            )}
+            {/* ══ المسرح ══
+                سطح واحد لا يُفرَّغ: كل ما زاره المستخدم يبقى مُركَّباً
+                ويُخفى بلا فقدان أبعاده، فالسبورة لا تُعاد من الصفر عند
+                العودة إليها. وقاعة الامتحان تبقى **كما هي** طبقةً
+                فوقه — لم يُمسّ شكلها. */}
+            <RoomStage
+              roomId={roomId}
+              roomName={room?.name ?? "الغرفة"}
+              subject={room?.subject ?? undefined}
+              isOwner={isOwner}
+              isPrivileged={isPrivileged}
+              tool={tool}
+              memberCount={members.length}
+              ownerStatus={ownerStatus}
+              onPickTool={isOwner ? setTool : undefined}
+              examLayer={
+                exam && user ? (
+                  <ExamStage
+                    roomId={roomId}
+                    roomName={room?.name ?? "الغرفة"}
+                    session={exam}
+                    isOwner={isOwner}
+                    uid={user.uid}
+                    userName={user.displayName || "طالب"}
+                    onLeaveRoom={() => router.push("/rooms")}
+                  />
+                ) : undefined
+              }
+            />
 
             {/* ══ الاستفتاء يعلو المحتوى ولا يحلّ محلّه ══
                 كان يُزيل اللوح تماماً، فيفقد الطالب السياق الذي يُسأل
@@ -998,7 +867,7 @@ export default function RoomPage() {
               </div>
             )}
             {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
-            {!isOwner && !studentFocus && !exam && (
+            {!isOwner && !exam && (
               <StudentChallengeLayer
                 roomId={roomId}
                 uid={user.uid}
@@ -1009,56 +878,11 @@ export default function RoomPage() {
             )}
 
             {/* مؤقّت الدرس — يظهر للجميع */}
-            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={studentFocus || fullscreen || Boolean(exam)} />
+            {/* المؤقّت كان يُخفى في وضع التركيز — وهو أحوج ما يكون
+                إليه هناك. يظهر الآن دائماً إلّا في قاعة الامتحان
+                (لها مؤقّتها الخاصّ). */}
+            <RoomTimerDisplay roomId={roomId} isOwner={isOwner} hidden={Boolean(exam)} />
           </div>
-
-          {/* ═══ طبقة وضع تركيز الأستاذ ═══ */}
-          {fullscreen && isOwner && !exam && (
-            <TeacherFocusMode
-              roomId={roomId}
-              roomName={room?.name ?? "الغرفة"}
-              memberCount={members.length}
-              ownerStatus={ownerStatus}
-              onCycleStatus={() => {
-                const next: OwnerStatus = ownerStatus === "available" ? "busy" : ownerStatus === "busy" ? "brb" : "available";
-                setOwnerStatus(roomId, next);
-              }}
-              tools={TOOLS}
-              activeTool={tool}
-              onPickTool={(id) => setTool(id as RoomTool)}
-              timerButton={<RoomTimerButton roomId={roomId} />}
-              onCreatePoll={() => setShowCreatePoll(true)}
-              onChallenge={() => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true))}
-              hasChallenge={!!challenge}
-              challengePanel={<TeacherChallengePanel roomId={roomId} memberCount={members.length} />}
-              onShare={shareRoomLink}
-              onExamSim={() => (exam ? setExamGradingOpen(true) : setExamSetupOpen(true))}
-              hasExam={Boolean(exam)}
-              onGenerateCode={room?.isPaid ? generateAccessCode : undefined}
-              chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
-              filesPanel={<RoomFiles roomId={roomId} isOwner={isOwner} />}
-              participantsPanel={
-                <ParticipantsPanel
-                  members={members}
-                  hands={handsQueue}
-                  mods={mods}
-                  ownerId={room?.ownerId ?? ""}
-                  myUid={user?.uid}
-                  isOwner={isOwner}
-                  onPromote={(uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid))}
-                  onKick={(uid) => kickUser(roomId, uid)}
-                  onGrantMic={grantMic}
-                />
-              }
-              questionsPanel={<AnonQuestionsList roomId={roomId} questions={anonQs} />}
-              unreadChat={unreadChat}
-              hands={handsQueue}
-              onLowerHand={lowerHand}
-              onGrantMic={grantMic}
-              unansweredCount={anonQs.filter((q) => !q.answered).length}
-              onExit={exitFullscreen}
-            />
-          )}
 
           {/* إشعارات الأنشطة المباشرة */}
           <RoomActivityToasts
@@ -1077,234 +901,106 @@ export default function RoomPage() {
           <div id="bz-room-overlay-root" className="pointer-events-none absolute inset-0 z-[2147483500]" />
         </section>
 
-        {/* ══ الشريط الجانبي الواحد ══
-            كان عمودين منفصلين (مشاركون w-64 + دردشة w-96) يأكلان 360px
-            من العرض دائماً. صارا لوحة واحدة بتبويبات — «Sidebar واحدة
-            تحتوي Tabs» من الملاحظات — فرَبِحت المنصّة المساحة. */}
-        {!fullscreen && !stateHidesSidePanels && (
-          <SideDock
-            tabs={
-              stateHidesChat
-                ? [{ id: "class", label: "الصفّ", badge: handsQueue.length }]
-                : [
-                    { id: "chat", label: "الدردشة" },
-                    { id: "class", label: "الصفّ", badge: handsQueue.length },
-                  ]
-            }
-            active={dockTab}
-            onSelect={setDockTab}
-            padded={false}
-          >
-            {dockTab === "chat" && !stateHidesChat ? (
-              <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
-            ) : (
-              <ParticipantsPanel
-              members={members}
-              hands={handsQueue}
-              mods={mods}
-              ownerId={room?.ownerId ?? ""}
-              myUid={user?.uid}
+        {/* ══ الرصيف ══
+            لوحة واحدة بتبويبات: الدردشة، الصفّ (ومعه المحظورون
+            وفكّ الحظر — وكانت قائمة لا تُفتح أبداً)، والأسئلة
+            المجهولة التي كانت مدفونة في ورقة للمالك وحده. */}
+        {/* 🐛 كان `lg:block` أي 1024px: فاللوح العمودي (iPad 768–820)
+            لم يكن يرى الرصيف إطلاقاً — لا دردشة ولا صفّ — مع أنّ في
+            شاشته متّسعاً واسعاً. يظهر الآن من 768px بعرض متدرّج. */}
+        {hasSideDock && !focusMode && !stateHidesSidePanels && (
+          <aside className="w-[240px] shrink-0 border-s border-border lg:w-[272px] xl:w-[300px] 2xl:w-[320px]">
+            <RoomDock
+              tab={dockTab}
+              onTab={setDockTab}
+              chatEnabled={!stateHidesChat}
+              handsCount={handsQueue.length}
+              unreadChat={unreadChat}
+              unansweredAnon={anonQs.filter((q) => !q.answered).length}
+              showQuestions={isOwner}
+              roomId={roomId}
+              banned={banned}
               isOwner={isOwner}
-              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
-              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
-              onGrantMic={isOwner ? grantMic : undefined}
+              chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
+              classPanel={
+                <ParticipantsPanel
+                  members={members}
+                  hands={handsQueue}
+                  mods={mods}
+                  ownerId={room?.ownerId ?? ""}
+                  myUid={user?.uid}
+                  isOwner={isOwner}
+                  onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
+                  onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+                  onGrantMic={isOwner ? grantMic : undefined}
+                />
+              }
+              questionsPanel={<AnonQuestionsList roomId={roomId} questions={anonQs} />}
             />
-            )}
-          </SideDock>
+          </aside>
         )}
       </div>
 
-      {/* الشريط الصوتي الدائم (يبقى في كل الأدوات) */}
-      <RoomVoiceBar roomId={roomId} isOwner={isOwner} />
-
-      {/* ══ شريط الأدوات على الهاتف ══
-          شريط الأيقونات الجانبي يختفي تحت lg، فبدونه لا يجد طالب الهاتف
-          الفيديو ولا الملفّات. يرتفع فوق شريط الصوت بالمتغيّر الذي ينشره
-          الشريط نفسه، فلا يغطّي «انضمام صوتي» كما كان يفعل سابقاً. */}
-      {/* للمالك وحده: الطالب يتابع ما يعرضه الأستاذ ولا يبدّله، فإظهار
-          الأزرار له يوهمه بتحكّم لا يملكه. */}
-      {isOwner && !studentFocus && !fullscreen && !exam && (
-        <PhoneToolStrip>
-          <PhoneToolButton icon="home" label="مرحباً" active={tool === "welcome"}
-            onClick={() => isOwner && setTool("welcome")} />
-          <PhoneToolButton icon="video" label="فيديو" active={tool === "video"}
-            onClick={() => isOwner && setTool("video")} />
-          <PhoneToolButton icon="layers" label="سبورة" active={tool === "whiteboard"}
-            onClick={() => isOwner && setTool("whiteboard")} />
-          <PhoneToolButton icon="file" label="ملفّات" active={tool === "files"}
-            onClick={() => isOwner && setTool("files")} />
-          <PhoneToolButton icon="note" label="ملاحظات" active={tool === "notes"}
-            onClick={() => isOwner && setTool("notes")} />
-          {isOwner && (
-            <PhoneToolButton icon="grid" label="إجراءات" active={moreOpen}
-              badge={anonQs.filter((q) => !q.answered).length}
-              onClick={() => setMoreOpen(true)} />
-          )}
-        </PhoneToolStrip>
+      {/* ══ شريط التحكّم الواحد ══
+          يجمع في مكان واحد ما كان موزّعاً على: شريط الصوت، ورفّ
+          الأيقونات، وشريط أدوات الهاتف، والزرّ العائم، ودرج «إجراءات
+          الحصة»، ودرج «وظائف الطالب». نفسه للأستاذ وللتلميذ وعلى كل
+          المقاسات — والتلميذ لم يكن له تنقّل على الهاتف إطلاقاً. */}
+      {(
+        <RoomControlBar
+          isOwner={isOwner}
+          isPrivileged={isPrivileged}
+          tool={tool}
+          onPickTool={(t) => isOwner && setTool(t)}
+          voiceSlot={<RoomVoiceBar roomId={roomId} isOwner={isOwner} embedded />}
+          memberCount={members.length}
+          handsCount={handsQueue.length}
+          myHand={myHand}
+          onToggleHand={toggleHand}
+          onOpenClass={() => { setDockTab("class"); if (!hasSideDock || focusMode) setParticipantsOpen(true); }}
+          onOpenChat={() => { setDockTab("chat"); if (!hasSideDock || focusMode) setParticipantsOpen(true); }}
+          unreadChat={unreadChat}
+          chatDisabled={stateHidesChat}
+          onPoll={isOwner ? () => setShowCreatePoll(true) : undefined}
+          onChallenge={isOwner ? () => (challenge ? setChallengePanelOpen(true) : setChallengeCreateOpen(true)) : undefined}
+          hasChallenge={Boolean(challenge)}
+          onTimer={isOwner ? () => setTimerOpen(true) : undefined}
+          onAnon={isOwner ? () => setAnonOpen(true) : undefined}
+          unansweredAnon={anonQs.filter((q) => !q.answered).length}
+          onExamSim={isOwner ? () => (exam ? setExamGradingOpen(true) : setExamSetupOpen(true)) : undefined}
+          hasExam={Boolean(exam)}
+          onGradePapers={isOwner ? () => setExamGradingOpen(true) : undefined}
+          ownerStatus={isOwner ? ownerStatus : undefined}
+          onPickStatus={isOwner ? (st) => setOwnerStatus(roomId, st) : undefined}
+          onShare={shareRoomLink}
+          onInvite={isPrivileged ? () => setInviteOpen(true) : undefined}
+          onAccessCode={isOwner && room?.isPaid ? generateAccessCode : undefined}
+          onFocus={() => { if (isOwner) { void enterFullscreen(); } else { void enterStudentFocus(); } }}
+          focusActive={fullscreen || studentFocus}
+          onStudentFiles={!isOwner ? () => setFocusSheet("files") : undefined}
+          onStudentNotes={!isOwner ? () => setFocusSheet("notes") : undefined}
+          onStudentCards={!isOwner ? () => setFocusSheet("cards") : undefined}
+          onAskAnon={!isOwner ? () => setStudentAskOpen(true) : undefined}
+          onRateTeacher={!isOwner && room?.ownerId && room?.ownerRole === "teacher" ? () => setRateOpen(true) : undefined}
+          onRateRoom={!isOwner && room?.isPaid && roomAccess ? () => setRateRoomOpen(true) : undefined}
+          onSaveCard={quickSaveCard}
+          roomState={roomState}
+          roomStates={isOwner ? ROOM_STATES.map((st) => ({ id: st.id, label: st.label })) : undefined}
+          onRoomState={isOwner ? (id) => setRoomState(id as typeof roomState) : undefined}
+        />
       )}
 
-      {/* ══ المساعد العائم ══
-          الهاتف لا يتّسع لشريط الأيقونات الجانبي، فالوظائف الثانوية
-          تُجمع هنا في زرّ واحد بدل أن تختفي. يظهر على الهاتف والجهاز
-          اللوحي فقط (lg:hidden) لأنّ الحاسوب يملك الشريط الجانبي.
-          ويُخفى في وضع التركيز لأنّ له مساعده الخاص. */}
-      {!studentFocus && !fullscreen && !exam && (
-        <div>
-          <FloatingAssistant
-            side="left"
-            hideOnDesktop
-            actions={[
-              { id: "files", icon: "file", label: "الملفّات", tone: "primary",
-                onClick: () => isOwner ? setTool("files") : setFocusSheet("files") },
-              { id: "notes", icon: "note", label: "الملاحظات", tone: "amber",
-                onClick: () => isOwner ? setTool("notes") : setFocusSheet("notes") },
-              { id: "class", icon: "users", label: "الحاضرون",
-                badge: handsQueue.length,
-                onClick: () => setParticipantsOpen(true) },
-              ...(isOwner
-                ? [{ id: "actions", icon: "more" as const, label: "إجراءات الحصة",
-                     badge: anonQs.filter((q) => !q.answered).length,
-                     onClick: () => setMoreOpen(true) }]
-                : [
-                    { id: "cards", icon: "layers" as const, label: "بطاقاتي",
-                      onClick: () => setFocusSheet("cards") },
-                    { id: "focus", icon: "target" as const, label: "وضع التركيز", tone: "primary" as const,
-                     onClick: () => { void enterStudentFocus(); } },
-                  ]),
-            ]}
-          />
-        </div>
-      )}
-
-      {/* وظائف الطالب الثانوية خارج وضع التركيز */}
+      {/* ورقة سؤال مجهول للتلميذ — الميزة كانت متاحة في وضع التركيز
+          وحده، فلم يجدها من لم يدخل ذلك الوضع. */}
       {!isOwner && (
-        <BottomSheet
-          open={studentMoreOpen}
-          onClose={() => setStudentMoreOpen(false)}
-          title="وظائف الطالب"
-          maxHeight="72vh"
-        >
-          <div className="grid grid-cols-2 gap-2 pb-2">
-            <StudentQuickAction icon="file" label="ملفات الغرفة" onClick={() => { setStudentMoreOpen(false); setFocusSheet("files"); }} />
-            <StudentQuickAction icon="note" label="ملاحظات الدرس" onClick={() => { setStudentMoreOpen(false); setFocusSheet("notes"); }} />
-            <StudentQuickAction icon="layers" label="بطاقاتي" onClick={() => { setStudentMoreOpen(false); setFocusSheet("cards"); }} />
-            <StudentQuickAction icon="users" label="الحاضرون" onClick={() => { setStudentMoreOpen(false); setParticipantsOpen(true); }} />
-            <StudentQuickAction icon="target" label="وضع التركيز" onClick={() => { setStudentMoreOpen(false); void enterStudentFocus(); }} />
-          </div>
+        <BottomSheet open={studentAskOpen} onClose={() => setStudentAskOpen(false)} title="اسأل الأستاذ بلا اسمك">
+          <AnonAskForm onSend={(q) => { submitAnonQuestion(q); setStudentAskOpen(false); }} />
         </BottomSheet>
-      )}
-
-      {/* درج الدردشة على الجوال */}
-      {chatOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex flex-col bg-surface lg:hidden"
-          style={{ paddingTop: "env(safe-area-inset-top)" }}
-        >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="font-bold">الدردشة</span>
-            <button
-              type="button"
-              onClick={() => setChatOpen(false)}
-              aria-label="إغلاق الدردشة"
-              className="grid h-11 w-11 place-items-center rounded-md text-text-muted active:bg-primary/10"
-            >
-              <FontAwesomeIcon icon={faXmark} className="pointer-events-none h-6 w-6" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />
-          </div>
-        </div>
-      )}
-
-      {/* درج المشاركين على الجوال */}
-      {showParticipants && (
-        <div className="fixed inset-0 z-[70] bg-black/50 xl:hidden" onClick={() => setShowParticipants(false)}>
-          <div
-            className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-surface shadow-2xl animate-fade-slide"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ParticipantsPanel
-              members={members}
-              hands={handsQueue}
-              mods={mods}
-              ownerId={room?.ownerId ?? ""}
-              myUid={user?.uid}
-              isOwner={isOwner}
-              onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
-              onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
-              onGrantMic={isOwner ? grantMic : undefined}
-            />
-            {/* قائمة المحظورين للمالك */}
-            {isOwner && banned.size > 0 && (
-              <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-bold text-danger">المحظورون ({banned.size})</p>
-                <div className="space-y-1.5">
-                  {[...banned].map((uid) => (
-                    <div key={uid} className="flex items-center justify-between gap-2 rounded-md bg-danger/5 px-3 py-2">
-                      <span className="truncate font-mono text-xs text-text-muted">{uid.slice(0, 14)}…</span>
-                      <button
-                        onClick={() => unbanUser(roomId, uid)}
-                        className="flex shrink-0 items-center gap-1 rounded-md bg-secondary/10 px-2.5 py-1 text-xs font-bold text-secondary hover:bg-secondary/20"
-                      >
-                        <FontAwesomeIcon icon={faUnlock} className="h-3 w-3" /> فك
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
       {/* نافذة إنشاء استفتاء */}
       {showCreatePoll && isOwner && (
         <CreatePollModal roomId={roomId} onClose={() => setShowCreatePoll(false)} />
-      )}
-
-      {/* ═══ وضع التركيز للطالب ═══ */}
-      {studentFocus && !isOwner && (
-        <StudentFocusMode
-          roomName={room?.name ?? "الغرفة"}
-          ownerName={room?.ownerName}
-          ownerStatus={ownerStatus}
-          memberCount={members.length}
-          myHandRaised={myHand}
-          onToggleHand={toggleHand}
-          onExit={() => { void exitFullscreen(); }}
-          onSaveToCards={quickSaveCard}
-          onAnonymousQuestion={submitAnonQuestion}
-          onOpenFiles={() => setFocusSheet("files")}
-          onOpenNotes={() => setFocusSheet("notes")}
-          onOpenCards={() => setFocusSheet("cards")}
-          onRateTeacher={() => setRateOpen(true)}
-          unreadChat={unreadChat}
-          roomId={roomId}
-          chatPanel={<ChatPanel roomId={roomId} isOwner={isOwner} canModerate={isPrivileged} />}
-          challengeLayer={
-            <StudentChallengeLayer
-              roomId={roomId}
-              uid={user.uid}
-              name={user.displayName || "طالب"}
-              subject={room?.subject}
-              roomName={room?.name}
-            />
-          }
-        >
-          {/* نفس المحتوى الذي يعرضه المعلّم */}
-          {activePoll?.open ? (
-            <RoomPollPanel roomId={roomId} poll={activePoll} isOwner={isOwner} myUid={user?.uid ?? ""} />
-          ) : (
-            <>
-              {tool === "welcome" && <WaitingScreen isOwner={isOwner} roomName={room?.name ?? "الغرفة"} memberCount={members.length} ownerStatus={ownerStatus} onPick={isOwner ? setTool : undefined} />}
-              {tool === "video" && <VideoSync roomId={roomId} isOwner={isOwner} />}
-              {tool === "whiteboard" && <Whiteboard roomId={roomId} canDraw={isOwner} roomName={room?.name} subject={room?.subject} />}
-              {tool === "files" && <RoomFiles roomId={roomId} isOwner={isOwner} />}
-              {tool === "notes" && <RoomNotes roomId={roomId} isOwner={isOwner} canEdit={isPrivileged} roomName={room?.name ?? "الغرفة"} />}
-            </>
-          )}
-        </StudentFocusMode>
       )}
 
       {/* أدراج الوظائف الثانوية — على مستوى الصفحة عمداً: يفتحها المساعد
@@ -1424,20 +1120,33 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
   );
 }
 
-function StudentQuickAction({ icon, label, onClick }: {
-  icon: IconName;
-  label: string;
-  onClick: () => void;
-}) {
+/* نموذج السؤال المجهول — كان داخل وضع تركيز الطالب وحده، فصار
+   ورقةً مستقلّة يفتحها شريط التحكّم في كل الأوضاع. */
+function AnonAskForm({ onSend }: { onSend: (q: string) => void }) {
+  const [q, setQ] = useState("");
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-surface p-3 text-sm font-bold text-text-primary transition hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]"
-    >
-      <Icon name={icon} size={20} className="text-primary" />
-      <span>{label}</span>
-    </button>
+    <div className="pb-2">
+      <p className="mb-2 text-[12.5px] leading-relaxed text-text-muted">
+        سؤالك يصل الأستاذ بلا اسمك. اكتب سؤالاً واحداً واضحاً.
+      </p>
+      <textarea
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        rows={4}
+        dir="auto"
+        maxLength={500}
+        placeholder="مثال: لم أفهم شرط مجال التعريف في المثال الثاني…"
+        className="w-full resize-none rounded-xl border border-border bg-background p-3 text-sm outline-none focus:border-primary"
+      />
+      <button
+        type="button"
+        disabled={!q.trim()}
+        onClick={() => { onSend(q.trim()); setQ(""); }}
+        className="mt-2 w-full rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white transition active:scale-95 disabled:opacity-50"
+      >
+        إرسال السؤال
+      </button>
+    </div>
   );
 }
 

@@ -213,7 +213,7 @@
     },
     "roomLive": {
       "$roomId": {
-        ".read": "auth != null",
+        ".read": "auth != null && (root.child('rooms').child($roomId).child('isPaid').val() !== true || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists() || root.child('userAccess').child(auth.uid).child('room').child($roomId).exists() || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()",
         "mods": {
           "$uid": {
@@ -237,14 +237,13 @@
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
         "roomState": {
-          ".read": "auth != null",
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         },
         "whiteboard": {
-          ".write": "auth != null"
+          ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
         "voice": {
           "$uid": {
@@ -257,12 +256,10 @@
           }
         },
         "timer": {
-          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-          ".read": "auth != null"
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         },
         "notes": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-          ".read": "auth != null",
           ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 200000)"
         },
         "typing": {

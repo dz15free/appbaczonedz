@@ -22,7 +22,12 @@ function AudioSink({ stream }: { stream: MediaStream }) {
   return <audio ref={ref} autoPlay playsInline />;
 }
 
-export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
+/* `embedded`: الشريط يعيش الآن **داخل** شريط التحكّم بدل أن يكون
+   شريطاً ثانياً أسفل الشاشة. في هذا الوضع يتخلّى عن حدّه العلوي
+   وحشوته وعن لوحته الموسّعة (الحاضرون صاروا في رفّ الصفّ والرصيف)،
+   ويبقى ما يهمّ: الانضمام والكتم والمغادرة — فلا يغيب الميكروفون
+   عن اليد في أيّ وضع، ولا تحتاجه الصفحة بنقرة على عنصر DOM. */
+export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; isOwner: boolean; embedded?: boolean }) {
   const { user } = useAuth();
   const managerRef = useRef<VoiceManager | null>(null);
   const monitors = useRef<Record<string, () => void>>({});
@@ -112,7 +117,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   const barRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = barRef.current;
-    if (!el) return;
+    if (!el || embedded) return;   // مُدمَجاً: لا يُعلن ارتفاعاً، فلا شيء يطفو فوقه
     const publish = () =>
       document.documentElement.style.setProperty("--bz-voicebar-h", `${el.offsetHeight}px`);
     publish();
@@ -122,7 +127,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
       ro.disconnect();
       document.documentElement.style.removeProperty("--bz-voicebar-h");
     };
-  }, []);
+  }, [embedded]);
 
   const speakerUid = joined
     ? participants.find((p) => speaking[p.uid] && !p.muted)?.uid ?? null
@@ -130,7 +135,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
   const speaker = speakerUid ? participants.find((p) => p.uid === speakerUid) ?? null : null;
 
   return (
-    <div ref={barRef} className="bz-voicebar border-t border-border bg-surface">
+   <div ref={barRef} className={embedded ? "flex items-center" : "bz-voicebar border-t border-border bg-surface"}>
       {Object.entries(streams).map(([uid, stream]) => (
         <AudioSink key={uid} stream={stream} />
       ))}
@@ -170,7 +175,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
       )}
 
       {/* اللوحة الموسّعة (المشاركون + أدوات المالك) */}
-      {joined && expanded && (
+      {joined && expanded && !embedded && (
         <div className="max-h-48 overflow-y-auto p-3" style={{ borderBottom: "1px solid var(--bz-border)" }}>
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
             {participants.map((p) => {
@@ -218,22 +223,32 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
       )}
 
       {/* الشريط المضغوط الدائم */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+      <div className={embedded ? "flex items-center gap-1.5" : "flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4"}>
         {!joined ? (
           <button
             id="bz-voice-join"
             onClick={join}
             disabled={connecting}
-            className="shadow-glow flex items-center gap-2 rounded-xl bg-[var(--bz-blue)] hover:brightness-110 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+            className={`shadow-glow flex items-center gap-2 rounded-xl bg-[var(--bz-blue)] font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60 ${
+              embedded ? "px-3 py-2 text-[12px]" : "px-4 py-2.5 text-sm"
+            }`}
           >
-            <FontAwesomeIcon icon={faPhone} className="h-4 w-4" />
-            {connecting ? "جارٍ الاتصال..." : "انضمام صوتي"}
+            <FontAwesomeIcon icon={faPhone} className={embedded ? "h-3.5 w-3.5" : "h-4 w-4"} />
+            {connecting ? (
+              embedded ? <span className="hidden sm:inline">جارٍ الاتصال...</span> : "جارٍ الاتصال..."
+            ) : embedded ? (
+              /* على هاتف ضيّق تكفي الأيقونة: النصّ كان يأكل عرض
+                 الشريط فتُقصّ أزرار التلميذ خلفه. */
+              <span className="hidden sm:inline">انضمّ صوتياً</span>
+            ) : (
+              "انضمام صوتي"
+            )}
           </button>
         ) : (
           <>
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10"
+              className={`items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 ${embedded ? "hidden" : "flex"}`}
             >
               <FontAwesomeIcon
                 icon={faChevronUp}
@@ -251,7 +266,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
               <button
                 onClick={toggleMute}
                 disabled={!isOwner && muted}
-                className={`grid h-10 w-10 place-items-center rounded-full transition ${
+                className={`grid place-items-center rounded-full transition ${embedded ? "h-9 w-9" : "h-10 w-10"} ${
                   muted ? "bg-danger/10 text-danger" : "bg-secondary/15 text-secondary"
                 } ${!isOwner && muted ? "opacity-70" : ""}`}
                 aria-label={muted ? "مكتوم" : "إغلاق الميكروفون"}
@@ -269,7 +284,7 @@ export function RoomVoiceBar({ roomId, isOwner }: { roomId: string; isOwner: boo
               </button>
               <button
                 onClick={leave}
-                className="grid h-10 w-10 place-items-center rounded-full bg-danger text-white transition active:scale-95"
+                className={`grid place-items-center rounded-full bg-danger text-white transition active:scale-95 ${embedded ? "h-9 w-9" : "h-10 w-10"}`}
                 aria-label="مغادرة الصوت"
               >
                 <FontAwesomeIcon icon={faPhoneSlash} className="h-4 w-4" />
