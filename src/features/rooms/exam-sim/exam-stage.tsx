@@ -19,8 +19,8 @@ import {
 } from "@/features/rooms/exam-sim/exam-session";
 import {
   useExamGuard, integrityReport, bellStart, bellEnd, primeAudio,
-  toggleFullscreen, isFullscreen,
 } from "@/features/rooms/exam-sim/exam-guard";
+import { toggleFullscreen, useFullscreenState } from "@/lib/fullscreen";
 import { ExamPapersPanel } from "@/features/rooms/exam-sim/exam-papers";
 
 /* ════════════════════════════════════════════════════════════
@@ -125,21 +125,16 @@ function TimerPill({ left, timeUp, compact }: { left: number; timeUp: boolean; c
    خالية من كل شيء عدا موضوعه.
 ══════════════════════════════════════════════════════════ */
 function FullscreenBtn({ stageRef }: { stageRef?: React.RefObject<HTMLElement | null> }) {
-  const [on, setOn] = useState(false);
-
-  useEffect(() => {
-    const sync = () => setOn(isFullscreen());
-    document.addEventListener("fullscreenchange", sync);
-    document.addEventListener("webkitfullscreenchange", sync);
-    return () => {
-      document.removeEventListener("fullscreenchange", sync);
-      document.removeEventListener("webkitfullscreenchange", sync);
-    };
-  }, []);
+  /* 🐛 كان يستمع لـ`fullscreenchange` وحده — وهو حدث **لا يقع على
+     iPhone إطلاقاً** لأنّ ملء الشاشة هناك بديلٌ بالتنسيق لا واجهة
+     متصفّح. فكانت الشاشة تُملأ فعلاً وتبقى الأيقونة على «ادخل».
+     `useFullscreenState` تجمع المصدرين: حدث المتصفّح للحقيقي،
+     وإشعار الوحدة للبديل. */
+  const on = useFullscreenState();
 
   return (
     <button
-      onClick={async () => setOn(await toggleFullscreen(stageRef?.current ?? null))}
+      onClick={() => void toggleFullscreen(stageRef?.current ?? null)}
       aria-label={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
       title={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
       className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:border-primary hover:text-primary"

@@ -87,10 +87,25 @@ export const metadata: Metadata = {
   },
 };
 
+/* ════════════════════════════════════════════════════════════
+   `viewportFit: "cover"` — السطر الذي كان ينقص
+
+   🐛 كل `env(safe-area-inset-*)` في المشروع كانت **تساوي صفراً على
+   iPhone**. المواصفة صريحة: بلا `viewport-fit=cover` لا تُعرَّف هذه
+   المتغيّرات ويقع الاحتياط على المتصفّح. وكان `globals.css` مليئاً
+   بحشوات مكتوبة لأجل النتوء وشريط الـ home ولا تفعل شيئاً — ولهذا
+   كان شريط الـ home الأسود يقع فوق تسميات أزرار شريط التحكّم في
+   لقطات الـiPhone.
+
+   `interactiveWidget: "resizes-content"` يجعل لوحة المفاتيح تُقلّص
+   المحتوى بدل أن تدفعه خارج الشاشة، فلا نعتمد على قياس
+   `visualViewport` إلّا كاحتياط. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#2563eb",
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 // منع وميض الثيم: نطبّق الوضع الداكن قبل رسم الصفحة (الافتراضي: فاتح)

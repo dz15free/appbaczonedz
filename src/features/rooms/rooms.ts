@@ -48,6 +48,57 @@ export function generateRoomId(): string {
   return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 }
 
+/* ════════════════════════════════════════════════════════════
+   `roomsPublic` — لماذا وُجدت
+
+   🐛 ثغرة قديمة، وأوسع ممّا بدت:
+
+       "rooms": { ".read": "auth != null",
+                  "$roomId": { ".read": "auth != null" } }
+
+   والقراءة في RTDB **تتوارث إلى كل الأبناء**. فمنح القراءة عند
+   `rooms/$roomId` يمنحها ضمناً عند `messages` و`files` و`attachments`.
+   أي أنّ أيّ حساب مسجَّل — بطلبٍ واحد ولا يحتاج أكثر من متصفّح —
+   يقرأ دردشة أيّ غرفة مدفوعة وملفّاتها كاملةً بلا أن يدفع.
+
+   والأسوأ أنّ التطبيق نفسه كان يفعلها في كل مرّة: `listPublicRooms`
+   و`findRoomByName` كانتا تقرآن **العقدة `rooms` كلّها** لعرض قائمة
+   أسماء — أي تنزيل كل دردشات المنصّة على هاتف كل زائر لصفحة الغرف.
+   ثغرة أمنية وفاتورة نطاق في آن.
+
+   ولا يُصلَح هذا بتضييق القاعدة وحدها: القائمة تحتاج فعلاً إلى
+   بيانات وصفية عامّة. فيلزم فصل ما هو عامّ عمّا هو خاصّ:
+
+     roomsPublic/$roomId   الاسم، النوع، المادة، المالك، السعر…
+                           يقرأها كل مسجَّل — لا محتوى فيها إطلاقاً.
+
+     rooms/$roomId         المحتوى: الدردشة، الملفّات، المرفقات.
+                           لا يقرأها إلّا من يستحقّ (مجانية، أو مالك،
+                           أو مشرف، أو دافع).
+
+   لماذا الغرف الخاصّة أيضاً في `roomsPublic`؟
+   لأنّ «الانضمام بكتابة الاسم» يبحث بالاسم قبل أن يكون الباحث
+   عضواً — فبلا فهرس عامّ للأسماء تسقط الميزة. والمكشوف اسمٌ ونوع
+   ومالك فقط، وهي بيانات يعرفها كل من دُعي إلى الغرفة أصلاً. ولا
+   يُعرض في القوائم: `listPublicRooms` تستبعد `private` كما كانت.
+   ════════════════════════════════════════════════════════════ */
+
+/** البيانات الوصفية العامّة — ما يجوز أن يراه كل مسجَّل، ولا شيء غيره */
+function publicMirror(room: Omit<Room, "id">): Record<string, unknown> {
+  return {
+    name: room.name,
+    type: room.type,
+    subject: room.subject ?? null,
+    ownerId: room.ownerId,
+    ownerName: room.ownerName,
+    ownerRole: room.ownerRole ?? null,
+    branches: room.branches ?? { all: true },
+    createdAt: room.createdAt ?? null,
+    isPaid: room.isPaid ?? null,
+    price: room.price ?? null,
+  };
+}
+
 export async function createRoom(input: {
   name: string;
   type: RoomType;
@@ -74,20 +125,71 @@ export async function createRoom(input: {
     data.isPaid = true;
     data.price = input.price;
   }
+
+  /* ⚠️ ترتيب مقصود: الغرفة أوّلاً ثمّ المرآة، لا الاثنتان في تحديث
+     واحد.
+
+     قاعدة الكتابة في `roomsPublic/$roomId` تتحقّق من الملكيّة في
+     `rooms/$roomId` — لا ممّا يدّعيه الكاتب في المرآة نفسها. وبلا
+     هذا التحقّق يستطيع أيّ حساب أن يُنشئ مدخلاً وهمياً باسم غرفة
+     موجودة فيسرق إليه من يبحث عنها بالاسم.
+
+     والقاعدة تقرأ الحالة **السابقة** للكتابة، فلو كُتبت العقدتان في
+     تحديث واحد لما وجدت الغرفة بعد ولرُفضت المرآة دائماً.
+
+     وإن انقطع الاتصال بين الكتابتين نشأت غرفة بلا مرآة — أي لا
+     تظهر في القوائم ولا تُوجد بالاسم. وهذا مؤقّت: `syncRoomPublic`
+     تُصلحه عند أوّل فتح من المالك، وهو على وشك فتحها لأنّه أنشأها
+     للتوّ. غرفةٌ متأخّرة عن القائمة دقيقةً أهون من مدخل وهمي لا
+     يملكه أحد. */
   await set(ref(rtdb, `rooms/${id}`), data);
+  await set(ref(rtdb, `roomsPublic/${id}`), publicMirror(data as unknown as Omit<Room, "id">));
   return id;
 }
 
+/**
+ * مزامنة المرآة العامّة — تُستدعى عند تعديل بيانات الغرفة الوصفية.
+ *
+ * وهي أيضاً **آليّة الترحيل**: الغرف التي أُنشئت قبل وجود
+ * `roomsPublic` لا مرآة لها. فبدل سكربت يُشغَّل مرّةً على الإنتاج
+ * بمفتاح خدمة (وقد يُنسى أو يُشغَّل ناقصاً)، يُصلح المالك غرفته من
+ * نفسه عند أوّل مرّة يفتحها — وهو الوحيد الذي تسمح له القاعدة
+ * بالكتابة أصلاً. ترحيل تدريجي بلا نافذة تعطّل ولا خطوة يدوية.
+ */
+export async function syncRoomPublic(roomId: string, room: Omit<Room, "id">): Promise<void> {
+  await set(ref(rtdb, `roomsPublic/${roomId}`), publicMirror(room));
+}
+
+/**
+ * قراءة الغرفة **بمحتواها** — لا تنجح إلّا لمن يستحقّ (مجانية، أو
+ * مالك، أو مشرف، أو دافع، أو admin). من يريد الاسم والسعر وحدهما —
+ * قبل أن يدفع مثلاً — فليقرأ `getRoomPublic`.
+ */
 export async function getRoom(roomId: string): Promise<Room | null> {
   const snap = await get(ref(rtdb, `rooms/${roomId}`));
   if (!snap.exists()) return null;
   return { id: roomId, ...(snap.val() as Omit<Room, "id">) };
 }
 
+/**
+ * البيانات الوصفية وحدها — بلا محتوى، ومتاحة لكل مسجَّل.
+ *
+ * هذا ما تقرأه صفحة الغرفة **قبل** أن تعرف إن كان القارئ يستحقّ
+ * المحتوى: لتعرض الاسم والسعر وزرّ الدفع لغير المشترك. قراءة
+ * `rooms/$roomId` في تلك اللحظة كانت سترفضها القاعدة الجديدة بحقّ.
+ */
+export async function getRoomPublic(roomId: string): Promise<Room | null> {
+  const snap = await get(ref(rtdb, `roomsPublic/${roomId}`));
+  if (!snap.exists()) return null;
+  return { id: roomId, ...(snap.val() as Omit<Room, "id">) };
+}
+
 // الغرف العامة (RTDB مفهرس على type في القواعد)
 export async function listPublicRooms(): Promise<Room[]> {
-  // نجلب كل الغرف ونستبعد فقط "الخاصة" (private) — الغرف العامة وغرف الأستاذ (بما فيها المدفوعة) تظهر في القائمة
-  const snap = await get(ref(rtdb, "rooms"));
+  /* 🐛 كانت `get(ref(rtdb, "rooms"))` — أي الشجرة كاملةً بكل دردشة
+     وكل ملفّ في المنصّة، لعرض قائمة أسماء. الآن المرآة العامّة
+     وحدها: بيانات وصفية لا محتوى. */
+  const snap = await get(ref(rtdb, "roomsPublic"));
   const val = (snap.val() as Record<string, Omit<Room, "id">>) ?? {};
   return Object.entries(val)
     .map(([id, v]) => ({ id, ...v }))
@@ -127,7 +229,9 @@ export async function listLiveRooms(): Promise<LiveRoom[]> {
 export async function findRoomByName(name: string): Promise<Room | null> {
   const trimmed = name.trim();
   if (!trimmed) return null;
-  const q = query(ref(rtdb, "rooms"), orderByChild("name"), equalTo(trimmed));
+  /* البحث بالاسم على المرآة العامّة: الباحث ليس عضواً بعد،
+     فلا يجوز أن يقرأ `rooms/$roomId` أصلاً. */
+  const q = query(ref(rtdb, "roomsPublic"), orderByChild("name"), equalTo(trimmed));
   const snap = await get(q);
   const val = (snap.val() as Record<string, Omit<Room, "id">>) ?? {};
   const matches = Object.entries(val).map(([id, v]) => ({ id, ...v }));

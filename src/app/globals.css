@@ -232,50 +232,107 @@ input::placeholder, textarea::placeholder {
      ٣) هدف اللمس 44px على الأجهزة اللمسية، ومضغوط على الفأرة.
 ════════════════════════════════════════════════════════ */
 
-/* الارتفاع الحقيقي: `100dvh` تكفي في المتصفّحات الحديثة، و`--bz-vvh`
-   تصحّحها حين تفتح لوحة المفاتيح على iOS (تُنشرها الصفحة من
-   `visualViewport`). */
+/* ════════════════════════════════════════════════════════
+   ارتفاع الغرفة — ثابت لا يرتجف
+
+   🐛 كان `--bz-vvh` يُضبط من `visualViewport.height` **في كل لحظة**.
+   وعلى iPhone يتغيّر هذا الارتفاع مع كل ظهور/انكماش لأشرطة Safari
+   أثناء التمرير، فكانت الغرفة كلّها ترتفع وتنخفض تحت الإصبع — وهو
+   بالضبط «الإطار يتحرّك وغير ثابت».
+
+   القاعدة الآن: الأساس `100dvh` (وهي ثابتة بحكم التعريف: أصغر
+   ارتفاع ممكن للنافذة)، و`--bz-vvh` **لا تُنشر إطلاقاً** إلّا حين
+   تكون لوحة المفاتيح مفتوحة فعلاً. لا شيء يتحرّك بالتمرير.
+   ════════════════════════════════════════════════════════ */
 .bz-room {
   height: 100dvh;
   height: var(--bz-vvh, 100dvh);
   max-height: var(--bz-vvh, 100dvh);
+  /* الغرفة سطح تطبيق لا صفحة تُمرَّر: بلا هذا يسحب iOS الصفحة كلّها
+     مطّاطياً فتنزلق الأشرطة عن أماكنها. */
+  overscroll-behavior: none;
 }
 
-/* المنطقة الآمنة أفقياً: في الوضع الأفقي على iPhone يقع النتوء على
-   إحدى الجهتين، فبلا هذا تختفي أوّل أيقونة في الشريط تحته. */
+/* الغرفة مفتوحة ⇒ الجسم مقفول. كان القفل في وضع ملء الشاشة وحده،
+   فبقي التمرير المطّاطي يزيح الغرفة في الوضع العادي. */
+html.bz-room-open,
+html.bz-room-open body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  height: 100%;
+}
+
+/* ════════════════════════════════════════════════════════
+   المنطقة الآمنة — الآن وقد صارت `env()` تعمل فعلاً
+
+   بعد `viewport-fit=cover` في `layout.tsx` صارت هذه القيم حقيقية.
+   الجهات الأربع مقصودة: النتوء يقع أعلى الشاشة في الوضع العمودي،
+   وعلى **إحدى الجهتين** في الأفقي، وشريط الـ home أسفلها دائماً.
+   ════════════════════════════════════════════════════════ */
 .bz-room .bz-topbar,
 .bz-room .bz-rail,
 .bz-room .bz-ctlbar {
-  padding-inline-start: max(8px, env(safe-area-inset-left, 0px));
-  padding-inline-end: max(8px, env(safe-area-inset-right, 0px));
+  padding-inline-start: max(10px, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(10px, env(safe-area-inset-right, 0px));
 }
 
-/* ملء الشاشة الزائف (iOS بلا Fullscreen API): الشريط العلوي يقع تحت
-   شريط النظام بلا هذه الحشوة. */
-.bz-room.bz-fullscreen .bz-topbar {
+/* الشريط العلوي يحمل المنطقة الآمنة العلوية **دائماً** لا في ملء
+   الشاشة وحده: في التطبيق المثبَّت (standalone) تبدأ الصفحة من
+   حافّة الشاشة فيقع الشريط تحت الساعة. */
+.bz-room .bz-topbar {
   padding-top: env(safe-area-inset-top, 0px);
-  height: calc(3rem + env(safe-area-inset-top, 0px));
+  height: calc(3.25rem + env(safe-area-inset-top, 0px));
 }
 
-/* هدف اللمس: 44px على اللمس، ومضغوط 34px على الفأرة — نفس المكوّن
+/* ── شريط التحكّم ──
+   🐛 كان `padding-bottom: 6px + env(...)` و`env()` تساوي صفراً، فوقع
+   شريط الـ home الأسود **فوق تسميات الأزرار** كما في اللقطات.
+   الآن يحترم المنطقة الآمنة فعلاً، وأدنى حشوة 8px حيث لا منطقة. */
+.bz-ctlbar {
+  padding-top: 6px;
+  padding-bottom: max(8px, calc(4px + env(safe-area-inset-bottom, 0px)));
+  z-index: var(--z-chrome);
+}
+
+/* ════════════════════════════════════════════════════════
+   المكدّس السفلي — مالك واحد للحافّة السفلية
+
+   🐛 كانت أربع طبقات تتنازع آخر ~110px بلا أن تعرف إحداها بالأخرى:
+   كونسول السبورة، وبطاقة «تتابع الأستاذ»، ومبدّل الشاشتين، وشريط
+   التحكّم. النتيجة في اللقطة الثالثة: **الكونسول مدفون خلف
+   المبدّل، فالأستاذ لا يستطيع الرسم على هاتفه إطلاقاً.**
+
+   الحلّ ليس أرقاماً أكبر: المبدّل صار صفّاً حقيقياً في التخطيط يأخذ
+   ارتفاعه (فينزل السطح فوقه بدل أن يعلوه)، وما يبقى عائماً فعلاً —
+   كونسول السبورة وبطاقة «تتابع الأستاذ» — يقرأ ارتفاع أخيه من
+   متغيّر **مقيس** لا مخمّن.
+   ════════════════════════════════════════════════════════ */
+:root { --bz-console-h: 0px; }
+
+/* هدف اللمس: 44px على اللمس، ومضغوط على الفأرة — نفس المكوّن
    بلا فرعٍ في الشيفرة. */
 @media (pointer: coarse) {
-  .bz-room .bz-ctl-btn { min-height: 44px; min-width: 52px; }
+  .bz-room .bz-ctl-btn { min-height: 46px; }
   .bz-room .bz-dock-tab { min-height: 44px; }
 }
 @media (pointer: fine) {
-  .bz-room .bz-ctl-btn { min-height: 36px; }
+  .bz-room .bz-ctl-btn { min-height: 38px; }
 }
 
 /* ── الهاتف في الوضع الأفقي ──
    الارتفاع 390px فقط: شريط علوي + رفّ + شريط تحكّم كانت تأكل 180px
    منها، فلا يبقى للسبورة شيء. الرفّ يُطوى، والأشرطة تنكمش، والتسميات
    تختفي فتبقى الأيقونات — والمسرح يكسب 90 بكسلاً. */
-@media (max-height: 520px) and (orientation: landscape) {
+@media (max-height: 560px) and (orientation: landscape) {
   .bz-room .bz-rail-wrap { display: none; }
-  .bz-room .bz-topbar { height: 2.5rem; }
-  .bz-room .bz-ctlbar { padding-top: 3px; padding-bottom: calc(3px + env(safe-area-inset-bottom, 0px)); }
-  .bz-room .bz-ctl-btn { min-height: 42px; padding-top: 4px; padding-bottom: 4px; }
+  .bz-room .bz-topbar {
+    height: calc(2.5rem + env(safe-area-inset-top, 0px));
+  }
+  .bz-room .bz-ctlbar {
+    padding-top: 3px;
+    padding-bottom: max(4px, calc(2px + env(safe-area-inset-bottom, 0px)));
+  }
+  .bz-room .bz-ctl-btn { min-height: 40px; padding-top: 3px; padding-bottom: 3px; }
   .bz-room .bz-ctl-btn > span { display: none; }   /* الأيقونة تكفي */
 }
 
@@ -287,16 +344,65 @@ input::placeholder, textarea::placeholder {
 /* الورقة السفلية على الشاشات الكبيرة: تُرفع عن الحافّة قليلاً */
 @media (min-width: 768px) { :root { --bz-sheet-gap: 18px; } }
 
+/* ════════════════════════════════════════════════════════
+   الأشرطة المنزلقة في اتجاه عربيّ
+
+   🐛 في اللقطات كان **أوّل عنصر في كل شريط منزلق مقصوصاً عند
+   الحافّة اليمنى**: زرّ الرجوع في الشريط العلوي، وأوّل صورة في رفّ
+   الصفّ، وزرّ الصوت في شريط التحكّم. الثلاثة أوّل أبنائها في
+   الـDOM، أي أقصى اليمين في RTL.
+
+   السبب اتفاقيّتان متضاربتان لـ`scrollLeft` في RTL: المعياريّة
+   (0 = البداية، والقيم سالبة يساراً) والقديمة في WebKit
+   (0 = أقصى اليسار). فيبدأ الشريط عند الطرف الخاطئ ويُقصّ أوّله.
+   `scroll-snap` على البداية يجعل المتصفّح نفسه يضبط الطرف الصحيح
+   بلا اعتماد على أيّ اتفاقيّة، ويُكملها في الشيفرة ضبطٌ صريح عند
+   التركيب (`rtl-scroll.ts`).
+   ════════════════════════════════════════════════════════ */
+.bz-hscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.bz-hscroll::-webkit-scrollbar { display: none; }
+.bz-hscroll > :first-child { scroll-snap-align: start; }
+
+/* التوسيط الآمن: يوسّط ما دام المحتوى يتّسع، ويعود إلى البداية حين
+   يفيض — فلا تُقصّ أوّل أداة في الكونسول ولا آخرها. */
+.bz-console-wrap { justify-content: center; justify-content: safe center; }
+
+/* صفّ مبدّل الشاشتين: سطحٌ خفيف يفصله عن اللوحة فوقه، ويحترم
+   المنطقة الآمنة حين يكون آخر ما في الشاشة. */
+.bz-stage-switch {
+  border-top: 1px solid var(--bz-line, #e6e9ef);
+  background: var(--bz-surface, #fff);
+  gap: 6px;
+}
+.bz-stage-switch > button { max-width: 220px; }
+
 /* رفّ الصفّ: شريط أفقي منزلق بلا مسطرة تمرير مرئية */
 .bz-rail { scrollbar-width: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 .bz-rail::-webkit-scrollbar { display: none; }
 
-/* شريط التحكّم: يحترم المنطقة الآمنة على iPhone فلا يقع تحت الشريط
-   المنزلق للنظام، ولا يستهلك بكسلات المسرح فوق ذلك. */
-.bz-ctlbar {
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
-  z-index: var(--z-chrome);
-}
+/* خلوص شريط التنقّل السفلي خارج الغرفة — يكبر مع المنطقة الآمنة */
+.bz-shell-pad { padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 1024px) { .bz-shell-pad { padding-bottom: 0; } }
+
+/* ملء الشاشة الحقيقي (Android/Chrome/Safari على الحاسوب): المتصفّح
+   يُطبّقه بنفسه ولا كلاس فيه. فنُلحق `:fullscreen` بكل ما يعتمد على
+   `.bz-fullscreen` — وإلّا لزم أن تكتب React الكلاس، وهو ما يجعل
+   لها ولوحدة ملء الشاشة مالكَين لسمة واحدة فيمحو أحدهما الآخر.
+   (`:-webkit-full-screen` منفصلة عمداً: المُحدِّد المجهول في قائمة
+   واحدة يُسقط القائمة كلّها في بعض المحرّكات.) */
+.bz-room:fullscreen,
+.bz-wbroot:fullscreen,
+.bz-room-exam-stage:fullscreen { background: var(--bz-bg); }
+.bz-room:-webkit-full-screen,
+.bz-wbroot:-webkit-full-screen,
+.bz-room-exam-stage:-webkit-full-screen { background: var(--bz-bg); }
 
 .bz-fullscreen {
   position: fixed !important;
@@ -317,6 +423,15 @@ input::placeholder, textarea::placeholder {
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* ملء الشاشة الزائف على iPhone يغطّي الشاشة **كاملةً** بما فيها
+   النتوء وشريط الـhome. الغرفة تتكفّل بمنطقتها الآمنة داخلياً
+   (الشريط العلوي وشريط التحكّم)، أمّا الأسطح الأخرى — قاعة الامتحان
+   المستقلّة مثلاً — فلا شيء داخلها يعرف بها. فتأخذها من الغلاف. */
+.bz-fullscreen:not(.bz-room) {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+           env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px) !important;
 }
 
 /* يُمنع تمرير الجسم بالكامل أثناء وضع الشاشة الكاملة */
@@ -4204,7 +4319,8 @@ body { font-weight: 450; text-rendering: optimizeLegibility; }
 .bz-exam-clock { min-width: 122px; text-align: center; }
 .bz-exam-clock small { display: block; color: #8da4c6; font-size: 9px; }
 .bz-exam-clock strong { display: block; margin-top: 2px; color: #fff; font: 800 22px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .03em; }
-.bz-exam-running.is-urgent .bz-exam-clock strong { color: #fca5a5; }
+.bz-exam-running.is-urgent .bz-exam-clock strong,
+.bz-exam-running[data-urgent] .bz-exam-clock strong { color: #fca5a5; }
 .bz-exam-running-grid { display: grid; grid-template-columns: minmax(0, 1fr) 250px; min-height: min(75vh, 850px); }
 .bz-exam-paper { min-width: 0; min-height: 520px; overflow: hidden; background: #1e293b; }
 .bz-exam-paper iframe { display: block; width: 100%; height: 100%; min-height: 520px; border: 0; background: #fff; }
@@ -4465,7 +4581,8 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 }
 
 .bz-exam-running-status.is-urgent-status { background: rgb(239 68 68 / .14); color: #fecaca; }
-.bz-exam-running.is-urgent .bz-exam-live-dot { background: #fb7185; box-shadow: 0 0 0 4px rgb(251 113 133 / .16); }
+.bz-exam-running.is-urgent .bz-exam-live-dot,
+.bz-exam-running[data-urgent] .bz-exam-live-dot { background: #fb7185; box-shadow: 0 0 0 4px rgb(251 113 133 / .16); }
 
 /* STEP 12 — دليل التخصصات: واجهة اكتشاف واضحة ومريحة على الهاتف */
 .bz-specialty-browser { position: relative; }

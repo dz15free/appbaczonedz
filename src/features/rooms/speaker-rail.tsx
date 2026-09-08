@@ -5,6 +5,7 @@ import { ref, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { useMediaQuery } from "@/lib/use-media";
+import { useInlineStartScroll } from "@/lib/rtl-scroll";
 import { Icon } from "@/components/ui/icon";
 import type { PresenceMember } from "@/features/rooms/use-presence";
 import type { RaisedHand } from "@/features/rooms/rooms";
@@ -70,6 +71,8 @@ export function SpeakerRail({
   onLowerHand?: (uid: string) => void;
   onOpenClass: () => void;
 }) {
+  const railRef = useInlineStartScroll<HTMLDivElement>();
+
   const [voice, setVoice] = useState<Record<string, VoiceEntry>>({});
   const shownCount = useShownCount();
 
@@ -117,7 +120,12 @@ export function SpeakerRail({
   }
 
   return (
-    <div className="bz-rail-wrap bz-rail flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border bg-surface py-1.5 sm:gap-2">
+    /* 🐛 كانت **أوّل صورة رمزية مقصوصة عند الحافّة اليمنى** في لقطة
+       المالك. الشريط منزلق، والتمرير في RTL يبدأ من الطرف الخطأ في
+       بعض المحرّكات — انظر الشرح الكامل في `lib/rtl-scroll.ts`.
+       `useInlineStartScroll` تُعيده إلى بدايته الصحيحة أياً كانت
+       اتفاقيّة المتصفّح، وتُبقيه كذلك كلّما دخل طالبٌ جديد. */
+    <div ref={railRef} className="bz-rail-wrap bz-rail bz-hscroll flex shrink-0 items-center gap-1.5 border-b border-border bg-surface py-1.5 sm:gap-2">
       {shown.map((m) => {
         const order = handOrder.get(m.uid);
         const v = voice[m.uid];

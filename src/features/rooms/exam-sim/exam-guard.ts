@@ -72,82 +72,42 @@ function warn5() { tone(990, 0.20, "triangle", 0.18, 0); tone(1320, 0.28, "trian
 export function primeAudio() { ctx(); }
 
 /* ════════════════════════════════════════════════════════════
-   ملء الشاشة — مع بديل iOS
+   ملء الشاشة — لماذا لم يعد هنا شيء
 
-   🐛 **iPhone لم يكن يدخل ملء الشاشة إطلاقاً.** سببه أنّ Safari على
-   iOS لا يدعم `requestFullscreen` على عنصر عادي (يدعمه على الفيديو
-   وحده)، فكان النداء يفشل بصمت ويبقى الامتحان داخل الصفحة.
+   🐛 هذا الملف كان يحمل **نسخة ثانية** من منطق ملء الشاشة، منسوخةً
+   عن `src/lib/fullscreen.ts` وناقصةً عنها في ثلاثة مواضع حاسمة:
 
-   الحلّ نفس حلّ الغرفة القائم: حين يرفض المتصفّح ملء الشاشة الحقيقي
-   نُطبّق `bz-fullscreen` — وهي الطبقة نفسها التي تستعملها الغرفة —
-   فيملأ الامتحان الشاشة فعلاً على كل جهاز.
+   ١) لا `emit()`: البديل بالتنسيق لا يُطلق `fullscreenchange`، وهذه
+      النسخة لا تُخطر أحداً. فزرّ ملء الشاشة في قاعة الامتحان كان
+      يستمع لحدث لا يأتي، وتبقى أيقونته على «ادخل» بعد الدخول.
+   ٢) لا حارس على السمة `class`: فأيّ إعادة رسم من React تمحو
+      `bz-fullscreen` وتُسقط ملء الشاشة بلا صوت.
+   ٣) لا `document.fullscreenEnabled` في الشرط: فتُحسب واجهة موجودة
+      لكن معطّلة (داخل iframe مثلاً) صالحةً للاستعمال.
+
+   ولأنّ هذه النسخة هي التي تستعملها المحاكاة، كانت هي **سبب اختلاف
+   السلوك بين iPhone وAndroid**: على Android ينجح الـAPI الحقيقي
+   فلا تظهر أيٌّ من العلل الثلاث، وعلى iPhone يقع الحمل كلّه على
+   البديل — أي على النسخة المعطوبة وحدها.
+
+   فحُذفت النسخة، وصارت الوحدة الواحدة مصدر الحقيقة. والتصدير هنا
+   إعادة تصدير لا أكثر، حتى لا تتغيّر نداءات هذا الملف.
 ════════════════════════════════════════════════════════════ */
-type FsEl = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void;
-};
-type FsDoc = Document & {
-  webkitFullscreenElement?: Element | null;
-  webkitExitFullscreen?: () => Promise<void> | void;
-};
+export {
+  isFullscreen,
+  isPseudoFullscreen,
+  enterFullscreen,
+  exitFullscreen,
+  toggleFullscreen,
+  onFullscreenChange,
+  nativeFullscreenSupported,
+} from "@/lib/fullscreen";
 
-const PSEUDO_CLASS = "bz-fullscreen";
-const BODY_CLASS = "bz-fullscreen-active";
-let pseudoEl: HTMLElement | null = null;
-
-/** ملء شاشة فعليّ أو بديلٌ بالتنسيق — كلاهما ملء شاشة عند المستخدم */
-export function isFullscreen(): boolean {
-  if (typeof document === "undefined") return false;
-  const d = document as FsDoc;
-  return Boolean(d.fullscreenElement || d.webkitFullscreenElement || pseudoEl);
-}
-
-export function isPseudoFullscreen(): boolean {
-  return Boolean(pseudoEl);
-}
-
-function applyPseudo(el: HTMLElement) {
-  pseudoEl = el;
-  el.classList.add(PSEUDO_CLASS);
-  document.body.classList.add(BODY_CLASS);
-}
-
-function clearPseudo() {
-  if (!pseudoEl) return;
-  pseudoEl.classList.remove(PSEUDO_CLASS);
-  document.body.classList.remove(BODY_CLASS);
-  pseudoEl = null;
-}
-
-export async function enterFullscreen(el?: HTMLElement | null) {
-  const target = (el ?? document.documentElement) as FsEl;
-  try {
-    if (target.requestFullscreen) {
-      await target.requestFullscreen();
-      return;
-    }
-    if (target.webkitRequestFullscreen) {
-      await target.webkitRequestFullscreen();
-      return;
-    }
-  } catch { /* iOS يرفض على العناصر العادية — نُكمل بالبديل */ }
-  if (el) applyPseudo(el);
-}
-
-export async function exitFullscreen() {
-  clearPseudo();
-  const d = document as FsDoc;
-  try {
-    if (d.exitFullscreen && d.fullscreenElement) await d.exitFullscreen();
-    else if (d.webkitExitFullscreen && d.webkitFullscreenElement) await d.webkitExitFullscreen();
-  } catch { /* تجاهل */ }
-}
-
-/** تبديل يدوي — يستعمله زرّ ملء الشاشة داخل قاعة الامتحان */
-export async function toggleFullscreen(el?: HTMLElement | null) {
-  if (isFullscreen()) await exitFullscreen();
-  else await enterFullscreen(el);
-  return isFullscreen();
-}
+import {
+  enterFullscreen as fsEnter,
+  exitFullscreen as fsExit,
+  isFullscreen as fsIs,
+} from "@/lib/fullscreen";
 
 /* ── الحارس ── */
 
@@ -213,7 +173,7 @@ export function useExamGuard({
     const onFsChange = () => {
       if (!opts.fs) return;
       // البديل بالتنسيق لا يُطلق هذا الحدث أصلاً، فالفحص يخصّ الحقيقي
-      if (!isFullscreen()) violation("خروج من ملء الشاشة");
+      if (!fsIs()) violation("خروج من ملء الشاشة");
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -250,11 +210,42 @@ export function useExamGuard({
     if (secondsLeft <= 300 && secondsLeft > 0) tick(secondsLeft % 2 === 0);
   }, [active, opts.sfx, secondsLeft]);
 
-  /* ── ملء الشاشة عند البدء، والخروج منه عند الانتهاء ── */
+  /* ── ملء الشاشة عند البدء، والخروج منه عند الانتهاء ──
+
+     🐛 «تعمل على Android ولا تفتح تلقائياً على iPhone».
+
+     على Android يوجد `requestFullscreen` فيُستدعى وينجح أو يُرفض
+     ثمّ يسقط إلى البديل — وفي الحالتين تُملأ الشاشة.
+
+     على iPhone لا يوجد `requestFullscreen` ولا `webkitRequestFullscreen`
+     على عنصر عادي، فالبديل هو **الطريق الوحيد**. وكان البديل يُطبَّق
+     على `stageRef.current` مباشرةً بشرط `if (el)`. فإن لم يكن المرجع
+     جاهزاً في تلك اللحظة، لم يحدث شيء — بلا خطأ ولا أثر ولا إعادة
+     محاولة. ضغطة تذهب في الهواء.
+
+     والآن: نحاول، فإن لم نصل إلى ملء الشاشة أعدنا المحاولة في
+     الإطار التالي بعد أن يستقرّ المرجع. محاولتان تكفيان — والثالثة
+     تعني عطباً حقيقياً لا يُداوى بالتكرار. */
   useEffect(() => {
     if (!active || !opts.fs) return;
-    void enterFullscreen(stageRef?.current ?? null);
-    return () => { void exitFullscreen(); };
+    let cancelled = false;
+    let raf = 0;
+
+    const attempt = async (retriesLeft: number) => {
+      if (cancelled) return;
+      const el = stageRef?.current ?? null;
+      if (el) await fsEnter(el);
+      if (cancelled || fsIs() || retriesLeft <= 0) return;
+      raf = requestAnimationFrame(() => void attempt(retriesLeft - 1));
+    };
+
+    void attempt(1);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      void fsExit();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, opts.fs]);
 
@@ -264,7 +255,7 @@ export function useExamGuard({
 
   const resume = useCallback(() => {
     setAlarmOpen(false);
-    if (opts.fs && !isFullscreen()) void enterFullscreen(stageRef?.current ?? null);
+    if (opts.fs && !fsIs()) void fsEnter(stageRef?.current ?? null);
   }, [opts.fs, stageRef]);
 
   return { violations, lastReason, alarmOpen, resume, grace, violation };

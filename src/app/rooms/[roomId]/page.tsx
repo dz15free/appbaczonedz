@@ -8,9 +8,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHouse, faVideo, faChalkboard, faFolderOpen, faCircleCheck, faNoteSticky, faSpinner, faLock, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { ref, onValue, set, remove, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
+/* وحدة ملء الشاشة الواحدة — انظر التعليق عند `enterFullscreen` أدناه */
+import {
+  enterFullscreen as fsEnter,
+  exitFullscreen as fsExit,
+  isFullscreen as fsIs,
+  onFullscreenChange,
+} from "@/lib/fullscreen";
 import { useAuth } from "@/features/auth/auth-provider";
 import { InviteSheet } from "@/features/rooms/invite-sheet";
-import { getRoom, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
+import { getRoomPublic, syncRoomPublic, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
@@ -241,105 +248,125 @@ export default function RoomPage() {
   const [studentAskOpen, setStudentAskOpen] = useState(false);
   const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
 
-  // دخول موحّد للشاشة الكاملة: يحاول Fullscreen API بعد نقرة المستخدم،
-  // ثم يفعّل طبقة CSS الآمنة على iOS أو عند رفض المتصفح.
-  async function requestRoomFullscreen() {
-    try {
-      const el = document.documentElement as any;
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-      else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
-    } catch { /* iOS/Safari — نستخدم طبقة CSS */ }
-  }
+  /* ════════════════════════════════════════════════════════
+     ملء الشاشة — نداءٌ واحد إلى الوحدة الواحدة
+
+     🐛 كانت هنا **نسخة ثالثة** من منطق ملء الشاشة (بعد
+     `lib/fullscreen.ts` و`exam-guard.ts`)، وفيها العطب نفسه: تحاول
+     الـAPI الحقيقي ثمّ تصمت. وعلى الـiPhone لا يوجد `requestFullscreen`
+     على `documentElement` أصلاً، فكانت `enterFullscreen` تُشغّل
+     الحالة `true` بلا أن يمتلئ شيء — تخطيطٌ يظنّ نفسه ملء شاشة
+     وشاشةٌ لم تتغيّر.
+
+     الآن الوحدة تتكفّل: تحاول الحقيقي، وتُكمل بالبديل بالتنسيق حيث
+     لا يوجد — وتُخطر المشتركين في الحالتين.
+
+     ونمرّر `roomRef` لا `documentElement`: البديل يعمل بكلاس على
+     عنصر، ووضعه على جذر المستند يُثبّت الصفحة كلّها. */
+  const roomRef = useRef<HTMLElement | null>(null);
+
   async function enterFullscreen() {
-    await requestRoomFullscreen();
+    await fsEnter(roomRef.current);
     setFullscreen(true);
   }
   async function enterStudentFocus() {
-    await requestRoomFullscreen();
+    await fsEnter(roomRef.current);
     setStudentFocus(true);
   }
   async function exitFullscreen() {
-    try {
-      const doc = document as any;
-      if (doc.fullscreenElement && doc.exitFullscreen) await doc.exitFullscreen();
-      else if (doc.webkitFullscreenElement && doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-    } catch {}
+    await fsExit();
     setFullscreen(false);
     setStudentFocus(false);
   }
 
-  // قفل تمرير الصفحة بالكامل أثناء الشاشة الكاملة (يمنع ظهور المحتوى خلفها على iOS)
-  useEffect(() => {
-    document.body.classList.toggle("bz-fullscreen-active", fullscreen);
-    document.body.classList.toggle("bz-room-focus-active", studentFocus);
-    return () => {
-      document.body.classList.remove("bz-fullscreen-active");
-      document.body.classList.remove("bz-room-focus-active");
-    };
-  }, [fullscreen, studentFocus]);
+  /* ════════════════════════════════════════════════════════
+     مزامنة الحالة مع الخارج
 
-  /* مزامنة الحالة مع المتصفّح.
-     بدون هذا: يخرج المستخدم بمفتاح Esc أو بزرّ المتصفّح فتبقى الحالة true
-     وتعلق الواجهة في تخطيط الشاشة الكاملة بلا مخرج. */
+     🐛 كان في هذا الملفّ **مُزامِنان اثنان** لنفس الحدث، أحدهما
+     يحرس iOS والآخر لا — أي أنّ أيّهما سبق قرّر النتيجة. وكلاهما
+     يستمع لحدث المتصفّح وحده، فلا يعرف شيئاً عن البديل بالتنسيق.
+
+     مُزامِن واحد الآن، ومصدره `onFullscreenChange` التي تجمع حدث
+     المتصفّح وإشعار البديل معاً. */
   useEffect(() => {
-    function sync() {
-      const doc = document as Document & { webkitFullscreenElement?: Element | null };
-      const active = !!(document.fullscreenElement || doc.webkitFullscreenElement);
-      // على iOS لا توجد Fullscreen API — نبقى على وضع CSS ولا نُلغيه
-      if (!active && (document.fullscreenEnabled || doc.webkitFullscreenElement !== undefined)) {
+    const sync = () => {
+      /* تجاهل الخروج المؤقّت بسبب منتقي الملفات (الرفع من داخل ملء
+         الشاشة يُخرج المتصفّح منه لحظةً ثمّ يعود) */
+      if ((window as unknown as { __bzIgnoreFSExit?: boolean }).__bzIgnoreFSExit) return;
+      if (!fsIs()) {
         setFullscreen(false);
         setStudentFocus(false);
       }
-    }
-    document.addEventListener("fullscreenchange", sync);
-    document.addEventListener("webkitfullscreenchange", sync);
-    return () => {
-      document.removeEventListener("fullscreenchange", sync);
-      document.removeEventListener("webkitfullscreenchange", sync);
     };
+    return onFullscreenChange(sync);
   }, []);
 
-  /* ارتفاع الواجهة الفعلي.
-     🐛 كان يُقاس في ملء الشاشة وحده، فعلى iPhone في الوضع العادي
-     تفتح لوحة المفاتيح (كتابة رسالة أو حلّ تحدٍّ) فتدفع شريط التحكّم
-     خارج الشاشة، لأنّ `100dvh` لا تتقلّص مع اللوحة. الآن يُقاس دائماً
-     ما دامت الغرفة مفتوحة. */
+  /* ════════════════════════════════════════════════════════
+     قفل الصفحة ما دامت الغرفة مفتوحة
+
+     🐛 كان القفل مربوطاً بوضع ملء الشاشة وحده. وفي الوضع العادي على
+     iPhone يبقى الجسم قابلاً للتمرير المطّاطي، فتنزلق الأشرطة عن
+     أماكنها تحت الإصبع — وهو نصف سبب «الإطار يتحرّك وغير ثابت».
+
+     الغرفة سطح تطبيق لا صفحة تُقرأ: لا شيء فيها يُمرَّر خارج
+     أسطحها الداخلية. */
+  useEffect(() => {
+    document.documentElement.classList.add("bz-room-open");
+    return () => document.documentElement.classList.remove("bz-room-open");
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("bz-room-focus-active", studentFocus);
+    return () => {
+      document.body.classList.remove("bz-room-focus-active");
+    };
+  }, [studentFocus]);
+
+  /* ════════════════════════════════════════════════════════
+     ارتفاع الغرفة — يتبع لوحة المفاتيح وحدها
+
+     🐛 كان `--bz-vvh` يُنشر من `visualViewport.height` **في كل
+     تغيّر**. وعلى iPhone يتغيّر هذا الارتفاع مع كل ظهور/انكماش
+     لأشرطة Safari أثناء التمرير — لا مع لوحة المفاتيح فقط. فكانت
+     الغرفة كلّها ترتفع وتنخفض بلا سبب ظاهر: «الإطار يتحرّك».
+
+     والنيّة الأصلية كانت صحيحة (شريط التحكّم يجب ألّا تدفعه لوحة
+     المفاتيح خارج الشاشة)، لكن التنفيذ لم يميّز بين السببين.
+
+     القاعدة الآن: `100dvh` هي الأساس — وهي ثابتة بحكم تعريفها،
+     محسوبة على **أصغر** حالة للنافذة، فلا تتأثّر بأشرطة المتصفّح
+     أصلاً. و`--bz-vvh` لا تُنشر إلّا حين يكون النقص كبيراً بما يكفي
+     ليكون لوحة مفاتيح لا شريط متصفّح.
+
+     العتبة 25%: أشرطة Safari تأخذ ~12% من ارتفاع iPhone، ولوحة
+     المفاتيح تأخذ ~40%. والفجوة بينهما واسعة فلا تحتاج دقّةً أكثر. */
   useEffect(() => {
     const vv = window.visualViewport;
+    if (!vv) return;
+
+    let raf = 0;
     function update() {
-      const h = vv?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--bz-vvh", `${h}px`);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const vp = window.visualViewport;
+        if (!vp) return;
+        const keyboardOpen = vp.height < window.innerHeight * 0.75;
+        if (keyboardOpen) {
+          document.documentElement.style.setProperty("--bz-vvh", `${vp.height}px`);
+        } else {
+          document.documentElement.style.removeProperty("--bz-vvh");
+        }
+      });
     }
     update();
-    vv?.addEventListener("resize", update);
-    window.addEventListener("resize", update);
+    vv.addEventListener("resize", update);
     return () => {
-      vv?.removeEventListener("resize", update);
-      window.removeEventListener("resize", update);
+      cancelAnimationFrame(raf);
+      vv.removeEventListener("resize", update);
       document.documentElement.style.removeProperty("--bz-vvh");
     };
   }, []);
 
-  // مزامنة عند الخروج من الشاشة بـ ESC أو زر المتصفّح
-  useEffect(() => {
-    const onFSChange = () => {
-      const doc = document as any;
-      const active = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
-      // تجاهل الخروج المؤقّت بسبب فتح منتقي الملفات (الرفع داخل الشاشة الكاملة)
-      if ((window as any).__bzIgnoreFSExit) return;
-      if (!active) {
-        setFullscreen(false);
-        setStudentFocus(false);
-      }
-    };
-    document.addEventListener("fullscreenchange", onFSChange);
-    document.addEventListener("webkitfullscreenchange", onFSChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFSChange);
-      document.removeEventListener("webkitfullscreenchange", onFSChange);
-    };
-  }, []);
   const [activePoll, setActivePoll] = useState<RoomPoll | null>(null);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   // الخروج من وضع التركيز يغلق أي درج مفتوح تابع له (وإلا بقي معلّقاً فوق الغرفة العادية)
@@ -428,16 +455,56 @@ export default function RoomPage() {
 
   /* 🐛 كانت بيانات الغرفة تُقرأ **مرّة واحدة**: تغيير الاسم أو
      تحويلها إلى مدفوعة لا يظهر لمن هو داخلها إلّا بعد تحديث الصفحة.
-     مستمع حيّ على العقدة نفسها يُصلح ذلك بكتابة واحدة. */
+     مستمع حيّ على العقدة نفسها يُصلح ذلك بكتابة واحدة.
+
+     ⚠️ وبعد إغلاق `rooms/$roomId` أمام غير المستحقّين، صار هذا
+     المستمع **يُرفض** لزائرٍ لم يدفع بعد. وهو رفضٌ في محلّه: محتوى
+     الغرفة ليس له. لكنّ الصفحة تحتاج الاسم والسعر لتعرض له بوّابة
+     الدفع أصلاً — ولو تركناها بلا بيانات لرأى «الغرفة غير موجودة»
+     بدل زرّ الشراء.
+
+     فمسار الرفض يسقط إلى المرآة العامّة: بيانات وصفية تكفي للبوّابة
+     ولا محتوى فيها. «غير موجودة» تبقى لحالتها الحقيقية وحدها. */
   useEffect(() => {
     if (!roomId) return;
     const unsub = onValue(ref(rtdb, `rooms/${roomId}`), (snap) => {
       const val = snap.val() as Omit<Room, "id"> | null;
       if (val) setRoom({ id: roomId, ...val } as Room);
       else setNotFound(true);
-    }, () => { getRoom(roomId).then((r) => (r ? setRoom(r) : setNotFound(true))); });
+    }, () => {
+      getRoomPublic(roomId).then((r) => (r ? setRoom(r) : setNotFound(true)));
+    });
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
+
+  /* ── ترحيل `roomsPublic` ──
+     الغرف التي أُنشئت قبل وجود المرآة لا مرآة لها، فلا تظهر في
+     القوائم ولا تُوجد بالاسم. والمالك وحده يملك الكتابة، وهو حاضر
+     الآن — فيُصلح غرفته بلا سكربت يُشغَّل على الإنتاج مرّةً وقد
+     يُنسى أو يُشغَّل ناقصاً.
+
+     مرّة واحدة لكل غرفة في كل جلسة: `synced` تمنع إعادة الكتابة مع
+     كل تحديث يصل من المستمع أعلاه. */
+  const syncedPublic = useRef<string | null>(null);
+  useEffect(() => {
+    if (!room || !isOwner) return;
+    if (syncedPublic.current === room.id) return;
+    syncedPublic.current = room.id;
+    void getRoomPublic(room.id).then((mirror) => {
+      /* لا نكتب إلّا إن كانت ناقصة أو تخلّفت عن الأصل — الكتابة بلا
+         سبب ثمنٌ على كل فتح غرفة بلا مقابل. */
+      const stale =
+        !mirror ||
+        mirror.name !== room.name ||
+        mirror.type !== room.type ||
+        (mirror.isPaid ?? null) !== (room.isPaid ?? null) ||
+        (mirror.price ?? null) !== (room.price ?? null);
+      if (stale) {
+        const { id: _id, ...rest } = room;
+        void syncRoomPublic(room.id, rest).catch(() => { /* ليست حرجة */ });
+      }
+    }).catch(() => { /* ليست حرجة */ });
+  }, [room, isOwner]);
 
   // رفع اليد + إشعار صوتي للمالك
   const [handsQueue, setHandsQueue] = useState<RaisedHand[]>([]);
@@ -541,12 +608,21 @@ export default function RoomPage() {
        كلّها** جانباً — فتُقصّ الحوافّ يميناً ويساراً كما في لقطتك.
        iOS يخفي ذلك لاختلاف تعامله مع الفيض. */
     <main
+      ref={roomRef}
       /* `bz-room` تحمل تجاوب الغرفة كلّه: الارتفاع الحقيقي مع لوحة
          مفاتيح iOS، والمنطقة الآمنة في الجهات الأربع، وهدف اللمس
-         44px، وطيّ الرفّ في الوضع الأفقي القصير. */
-      className={`bz-room flex w-full flex-col overflow-x-hidden bg-background text-text-primary ${
-        focusMode ? "bz-fullscreen" : ""
-      }`}
+         44px، وطيّ الرفّ في الوضع الأفقي القصير.
+
+         ⚠️ `bz-fullscreen` **لا تُكتب هنا**. كانت تُضاف من الشرط
+         `focusMode ? "bz-fullscreen" : ""`، بينما تُضيفها وحدة ملء
+         الشاشة أيضاً على العنصر نفسه — مالكان لكلاس واحد. والنتيجة
+         أنّ أوّل إعادة رسم تُغيّر `focusMode` تمحو ما كتبته الوحدة،
+         فيسقط البديل على الـiPhone بلا أثر.
+
+         المالك الآن واحد: الوحدة تكتبها للبديل، والمتصفّح يتكفّل
+         بالحقيقي عبر `:fullscreen` في التنسيق. و`focusMode` تبقى
+         لما هي له: أيّ اللوحات تُطوى. */
+      className="bz-room flex w-full flex-col overflow-x-hidden bg-background text-text-primary"
     >
       {/* ══════════ شريط الغرفة الموحّد ══════════
           كان هنا شريطان فوق بعضهما: رأس الغرفة القديم ثم شريط مساحة

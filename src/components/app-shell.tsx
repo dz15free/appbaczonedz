@@ -356,7 +356,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] pb-24 lg:pb-0">
+    /* `bz-shell-pad`: `pb-24` كانت تكفي حين كانت
+       `env(safe-area-inset-bottom)` تساوي صفراً. بعد تفعيل
+       `viewport-fit=cover` صار شريط التنقّل السفلي أطول بمقدار
+       المنطقة الآمنة فعلاً، فيجب أن يكبر الخلوص معه — وإلّا اختفى
+       آخر سطر من كل صفحة خلفه. (كلاس لا `style` حتى يبقى
+       `lg:pb-0` قادراً على إلغائه على الحاسوب.) */
+    <div className="bz-shell-pad min-h-[100dvh] lg:pb-0">
       {/* ═══════ الشريط العلوي ═══════ */}
       <header
         className={`bz-header sticky top-0 z-40 ${scrolled ? "is-scrolled" : ""}`}

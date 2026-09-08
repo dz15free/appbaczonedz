@@ -50,7 +50,20 @@ export const RATIO_DEFAULT = 0.55;
 
 const clampRatio = (r: number) => Math.min(RATIO_MAX, Math.max(RATIO_MIN, r));
 
-const VALID: RoomTool[] = ["welcome", "video", "whiteboard", "files", "notes"];
+/* ════════════════════════════════════════════════════════════
+   ما يُقبل سطحاً ثانياً
+
+   «مرحباً» خرجت من القائمة (انظر `SECOND_SCREEN_TOOLS` في
+   `control-bar.tsx`). وإخراجها من هنا أيضاً ليس تكراراً بل شرط
+   الترحيل: توجد الآن غرف حيّة مخزَّن فيها `stage.b = "welcome"`.
+
+   لو تركناها تُقرأ لبقيت معروضةً في تلك الغرف رغم إزالتها، ولو
+   شدّدنا قاعدة الكتابة في Firebase وحدها لرُفض أوّل سحبٍ للفاصل في
+   تلك الغرف (لأنّ `update` يُصادق على العقدة بعد الدمج، و`b` تبقى
+   فيها). فنعاملها هنا كأنّها لا شيء: تُغلق الشاشة الثانية من نفسها
+   عند أوّل تحميل، بلا خطوة ترحيل ولا حالة عالقة.
+   ════════════════════════════════════════════════════════════ */
+const VALID: RoomTool[] = ["video", "whiteboard", "files", "notes"];
 
 export function useStageSplit(roomId: string, isOwner: boolean, enabled = true) {
   const [split, setSplit] = useState<StageSplit>({ b: null, ratio: RATIO_DEFAULT });
@@ -68,6 +81,10 @@ export function useStageSplit(roomId: string, isOwner: boolean, enabled = true) 
   /** فتح سطح في الشاشة الثانية */
   const openSecond = useCallback((b: RoomTool) => {
     if (!isOwner) return;
+    /* الحارس هنا لا في الواجهة وحدها: عميلٌ قديم في تبويب آخر قد
+       يستدعيها بـ`welcome`، وقاعدة Firebase سترفضها — فالرفض
+       الصامت من الخادم أسوأ من منعٍ واضح هنا. */
+    if (!VALID.includes(b)) return;
     void set(ref(rtdb, `roomLive/${roomId}/stage`), {
       b, ratio: RATIO_DEFAULT, updatedAt: Date.now(),
     });

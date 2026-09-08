@@ -323,7 +323,7 @@ export default function AdminPage() {
     get(ref(rtdb, "users")).then((s) => setStats((st) => ({ ...st, users: Object.keys(s.val() ?? {}).length })));
     get(ref(rtdb, "groups")).then((s) => setStats((st) => ({ ...st, groups: Object.keys(s.val() ?? {}).length })));
     get(query(ref(rtdb, "community/posts"), limitToLast(999))).then((s) => setStats((st) => ({ ...st, posts: Object.keys(s.val() ?? {}).length })));
-    get(ref(rtdb, "rooms")).then((s) => setStats((st) => ({ ...st, rooms: Object.keys(s.val() ?? {}).length })));
+    get(ref(rtdb, "roomsPublic")).then((s) => setStats((st) => ({ ...st, rooms: Object.keys(s.val() ?? {}).length })));
     get(ref(rtdb, "library")).then((s) => setStats((st) => ({ ...st, library: Object.keys(s.val() ?? {}).length })));
   }, [user, profile]);
 
@@ -343,7 +343,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!user || profile?.role !== "admin" || tab !== "rooms") return;
     // Rooms list from /rooms
-    const unsub = onValue(ref(rtdb, "rooms"), (snap) => {
+    const unsub = onValue(ref(rtdb, "roomsPublic"), (snap) => {
       const val = snap.val() ?? {};
       const list = Object.entries(val).map(([id, r]: [string, any]) => ({
         id, name: r.name ?? id, ownerId: r.ownerId ?? "", ownerName: r.ownerName,

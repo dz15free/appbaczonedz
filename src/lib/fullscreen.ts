@@ -1,3 +1,5 @@
+"use client";
+
 /* ════════════════════════════════════════════════════════════
    ملء الشاشة — وحدة واحدة لكل المنصّة، تعمل على iPhone
 
@@ -21,6 +23,8 @@
    القاعدة: نطلب ملء الشاشة الحقيقي، وإن لم يكن مدعوماً نُطبّق البديل
    بالتنسيق. النتيجة عند المستخدم واحدة — الشاشة تُملأ.
 ════════════════════════════════════════════════════════════ */
+
+import { useEffect, useState } from "react";
 
 type FsEl = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -76,13 +80,51 @@ export function onFullscreenChange(fn: () => void): () => void {
   };
 }
 
+/* ════════════════════════════════════════════════════════════
+   لماذا مراقبٌ على السمة `class`؟
+
+   🐛 البديل يعمل بإضافة كلاس **مباشرةً على الـDOM**، والعنصر الذي
+   يُضاف إليه عنصرٌ تديره React. وReact تكتب `className` كاملةً كلّما
+   تغيّرت قيمتها بين رسمتين — فتمحو الكلاس المضاف يدوياً بلا أن
+   يشعر أحد.
+
+   ومثاله الحيّ في هذا المشروع (`solo-simulator.tsx`):
+
+       className={`bz-exam-running ... ${urgent ? "is-urgent" : ""}`}
+
+   فحين يبلغ العدّاد آخر خمس دقائق تنقلب `urgent`، وتُعيد React كتابة
+   السمة، **فيسقط ملء الشاشة من نفسه في أحرج لحظة في الامتحان**. ولا
+   يظهر العطب على Android إطلاقاً لأنّ الـAPI الحقيقي هناك لا يعتمد
+   على كلاس أصلاً — وهذا وحده يفسّر «تعمل على Android ولا تعمل على
+   iPhone».
+
+   الحلّ ألّا نأتمن أحداً على السمة: نراقبها ونُعيد الكلاس إن سقط.
+   وهذا يُبقي واجهة الوحدة كما هي فلا يحتاج أيّ نداء إلى تعديل.
+   ════════════════════════════════════════════════════════════ */
+let pseudoGuard: MutationObserver | null = null;
+
 function applyPseudo(el: HTMLElement) {
   pseudoEl = el;
   el.classList.add(PSEUDO_CLASS);
   document.body.classList.add(BODY_CLASS);
+
+  pseudoGuard?.disconnect();
+  if (typeof MutationObserver === "undefined") return;
+  pseudoGuard = new MutationObserver(() => {
+    if (pseudoEl && !pseudoEl.classList.contains(PSEUDO_CLASS)) {
+      pseudoEl.classList.add(PSEUDO_CLASS);
+    }
+    if (pseudoEl && !document.body.classList.contains(BODY_CLASS)) {
+      document.body.classList.add(BODY_CLASS);
+    }
+  });
+  pseudoGuard.observe(el, { attributes: true, attributeFilter: ["class"] });
+  pseudoGuard.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 }
 
 function clearPseudo() {
+  pseudoGuard?.disconnect();
+  pseudoGuard = null;
   if (!pseudoEl) return;
   pseudoEl.classList.remove(PSEUDO_CLASS);
   document.body.classList.remove(BODY_CLASS);
@@ -155,4 +197,24 @@ export async function exitFullscreen() {
 export async function toggleFullscreen(el?: HTMLElement | null, opts?: { landscape?: boolean }) {
   if (isFullscreen()) return exitFullscreen();
   return enterFullscreen(el, opts);
+}
+
+/* ════════════════════════════════════════════════════════════
+   الحالة في React
+
+   🐛 الأزرار كانت تستمع لـ`fullscreenchange` وحده. والبديل بالتنسيق
+   **لا يُطلق هذا الحدث أبداً** — فعلى الـiPhone كانت الشاشة تُملأ
+   فعلاً بينما تبقى الأيقونة على «ادخل» والحالة `false`. زرّ يكذب.
+
+   `onFullscreenChange` هنا يجمع الاثنين: حدث المتصفّح للحقيقي،
+   و`emit()` للبديل. فمصدر الحقيقة واحد على الجهازين.
+   ════════════════════════════════════════════════════════════ */
+export function useFullscreenState(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const sync = () => setOn(isFullscreen());
+    sync();
+    return onFullscreenChange(sync);
+  }, []);
+  return on;
 }

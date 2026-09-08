@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useMediaQuery } from "@/lib/use-media";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Icon, type IconName } from "@/components/ui/icon";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -76,7 +75,13 @@ export function CtlButton({ a, compact }: { a: CtlAction; compact?: boolean }) {
       }`}
     >
       <Icon name={a.icon} size={compact ? 17 : 18} />
-      <span className="max-w-[68px] truncate text-[10px] font-extrabold leading-none sm:max-w-none">{a.label}</span>
+      {/* 🐛 كانت التسمية `max-w-[68px] truncate` فظهرت «ارفع يدك»
+          مقصوصةً إلى «ارفع يد» في لقطة المُنضمّ. القصّ بنقاط مناسب
+          لاسم غرفة، لا لتسمية زرّ من كلمتين: الزرّ إمّا يظهر كاملاً
+          أو لا يظهر — و«كل الأدوات» تُظهره باسمه كاملاً.
+          الآن الزرّ يأخذ عرض تسميته، والقياس في الشريط هو من يقرّر
+          أيّ الأزرار يتّسع لها. */}
+      <span className="whitespace-nowrap text-[10px] font-extrabold leading-none">{a.label}</span>
       {!!a.badge && a.badge > 0 && (
         <span className="absolute -top-1.5 -left-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-extrabold text-white ring-2 ring-[var(--bz-surface)]">
           {a.badge}
@@ -176,6 +181,21 @@ const TOOL_META: { id: RoomTool; label: string; icon: IconName }[] = [
   { id: "video", label: "فيديو", icon: "video" },
   { id: "welcome", label: "مرحباً", icon: "home" },
 ];
+
+/* ════════════════════════════════════════════════════════════
+   ما يصلح أن يكون شاشةً ثانية
+
+   «مرحباً» شاشة ترحيب: تقول «أنت المضيف — اختر ما تعرضه لتبدأ
+   الحصّة». وضعها بجانب سبورة يعني دعوةً إلى بدء حصّة **بدأت
+   بالفعل** — نصٌّ يناقض ما يراه الطالب في نصف الشاشة الآخر.
+
+   وهي ليست سطح عمل أصلاً: لا حالة فيها ولا محتوى، فنصف الشاشة
+   الذي تشغله ضائع بالكامل.
+
+   الشاشة نفسها باقية كما هي شاشةً أولى — تُحذف من الخيارات لا من
+   المشروع.
+   ════════════════════════════════════════════════════════════ */
+const SECOND_SCREEN_TOOLS = TOOL_META.filter((t) => t.id !== "welcome");
 
 export function RoomControlBar(p: RoomControlBarProps) {
   const [allOpen, setAllOpen] = useState(false);
@@ -290,37 +310,85 @@ export function RoomControlBar(p: RoomControlBarProps) {
     ? [...surfaces, ...stageActions, ...activities.filter((a) => a.primary), ...people.filter((a) => a.primary)]
     : [...studentTools.filter((a) => a.primary), ...people.filter((a) => a.primary)];
 
-  /* ── كم زرّاً يبقى في الشريط ──
-     قياس لا تخمين: العرض المتاح = عرض الشاشة − زرّ الصوت (≈64)
-     − «كل الأدوات» (≈64) − الحشوات (≈20)، والزرّ 52+6.
+  /* ════════════════════════════════════════════════════════════
+     كم زرّاً يبقى في الشريط — قياس لا تخمين
 
-       360px → 212 متاحة → 3 أزرار
-       375px → 227 متاحة → 4 أزرار
-       ≥640px → الكلّ (والفائض ينزلق)
+     🐛 كان الرقم ثابتاً: `desktop ? all.length : tablet ? 8 : roomy ? 4 : 3`،
+     محسوباً يدوياً على افتراض أنّ الزرّ 52px. وتُظهر لقطة المالك
+     (390px) أنّ الافتراض خاطئ: خمسة عناصر تفيض فعلاً و**زرّ الصوت
+     الأزرق مقصوص خارج الحافّة اليمنى**.
 
-     والبقيّة ليست مخفيّة: «كل الأدوات» ورقة تسرد كل شيء بأسمائه.
-     شريطٌ ينزلق أفقياً على الهاتف يخفي الأزرار فعلياً — لأنّ أحداً
-     لا يُخمّن أنّ شريط الأسفل قابل للسحب. */
-  const desktop = useMediaQuery("(min-width: 1024px)");
-  const tablet = useMediaQuery("(min-width: 640px)");
-  const roomy = useMediaQuery("(min-width: 375px)");
-  /* 360→3 · 375→4 · 640→8 · 1024→الكلّ. الأرقام مقيسة على العرض
-     المتبقّي بعد زرّ الصوت و«كل الأدوات» والحشوات. */
-  const keep = desktop ? all.length : tablet ? 8 : roomy ? 4 : 3;
-  const kept = new Set(
-    [...all].sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)).slice(0, keep).map((a) => a.id),
+     ولا يمكن أن يكون الرقم ثابتاً أصلاً: التسمية عربية متغيّرة
+     الطول («كل الأدوات» أعرض من «فيديو» بكثير)، والمستخدم قد يكبّر
+     خطّ النظام، والدور يُغيّر مجموعة الأزرار كلّها.
+
+     فنقيس: `ResizeObserver` على الشريط، وعرض حقيقي لكل زرّ، ثمّ
+     نُبقي ما يتّسع فعلاً بترتيب الأهميّة (`rank`). والبقيّة ليست
+     مخفيّة: «كل الأدوات» ورقة تسرد كل شيء بأسمائه — وهذا أصدق من
+     شريط ينزلق أفقياً لا يُخمّن أحد أنّه قابل للسحب.
+     ════════════════════════════════════════════════════════════ */
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const [avail, setAvail] = useState(0);
+
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const measure = () => setAvail(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const ranked = useMemo(
+    () => [...all].sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [all.map((a) => a.id).join("|")],
   );
+
+  /* تقدير عرض الزرّ من طول تسميته: 7.2px للحرف العربي عند 10px،
+     زائد حشوة 20px، بحدّ أدنى 52px. تقدير محافظ عمداً — الخطأ في
+     اتجاه «أزرار أقلّ» يُنتج شريطاً مريحاً، والخطأ في الاتجاه الآخر
+     يُنتج القصّ الذي في اللقطة. */
+  const widthOf = (a: CtlAction) => Math.max(52, Math.min(96, a.label.length * 7.2 + 20));
+
+  const kept = useMemo(() => {
+    const ids = new Set<string>();
+    if (avail <= 0) {
+      /* قبل أوّل قياس: أقلّ عدد آمن. أفضل من إظهار الكلّ ثمّ قصّه
+         أمام عين المستخدم في أوّل إطار. */
+      ranked.slice(0, 3).forEach((a) => ids.add(a.id));
+      return ids;
+    }
+    let used = 0;
+    for (const a of ranked) {
+      const w = widthOf(a) + 6; // 6 = الفجوة
+      if (used + w > avail) break;
+      used += w;
+      ids.add(a.id);
+    }
+    /* زرٌّ واحد على الأقلّ مهما ضاقت الشاشة: شريطٌ فارغ يوحي بالعطب. */
+    if (ids.size === 0 && ranked[0]) ids.add(ranked[0].id);
+    return ids;
+  }, [avail, ranked]);
+
   const scroller = all.filter((a) => kept.has(a.id));
 
   return (
     <>
-      <div className="bz-ctlbar flex shrink-0 items-center gap-1.5 border-t border-border bg-surface py-1.5 sm:gap-2">
-        {/* الصوت — أوّل ما تصل إليه اليد، ولا يُخفى في أيّ وضع */}
+      <div className="bz-ctlbar flex shrink-0 items-center gap-1.5 border-t border-border bg-surface sm:gap-2">
+        {/* الصوت — أوّل ما تصل إليه اليد، ولا يُخفى في أيّ وضع.
+            🐛 كان يُقصّ خارج الحافّة اليمنى حين يفيض الشريط: `shrink-0`
+            وحدها لا تحمي من فيض الحاوية كلّها، والقياس أعلاه هو ما
+            يمنع الفيض من أصله. */}
         <div className="shrink-0">{p.voiceSlot}</div>
 
-        <div /* على الهاتف يبدأ الصفّ من الحافّة فلا يُقصّ أوّل زرّ (التوسيط في
-             صفٍّ منزلق يقصّ الطرفين)، وعلى الحاسوب يتوسّط فيبدو مقصوداً. */
-          className="bz-rail flex min-w-0 flex-1 items-center justify-start gap-1.5 overflow-x-auto lg:justify-center">
+        {/* لا `overflow-x-auto` بعد اليوم: ما يُقاس أنّه لا يتّسع لا
+            يُعرض أصلاً بدل أن يُدفن خلف تمرير خفيّ. */}
+        <div
+          ref={railRef}
+          className="flex min-w-0 flex-1 items-center justify-start gap-1.5 overflow-hidden lg:justify-center"
+        >
           {scroller.map((a) => <CtlButton key={a.id} a={a} compact />)}
         </div>
 
@@ -329,10 +397,11 @@ export function RoomControlBar(p: RoomControlBarProps) {
             type="button"
             onClick={() => setAllOpen(true)}
             title="كل أدوات الغرفة"
-            className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-border bg-background px-2 py-1.5 text-[var(--bz-ink)] transition hover:border-primary/40 hover:bg-primary/5 active:scale-95"
+            aria-label="كل أدوات الغرفة"
+            className="bz-ctl-btn flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-border bg-background px-2 py-1.5 text-[var(--bz-ink)] transition hover:border-primary/40 hover:bg-primary/5 active:scale-95"
           >
             <Icon name="grid" size={16} />
-            <span className="text-[9.5px] font-extrabold leading-none">كل الأدوات</span>
+            <span className="whitespace-nowrap text-[9.5px] font-extrabold leading-none">كل الأدوات</span>
           </button>
         </div>
       </div>
@@ -427,7 +496,7 @@ export function RoomControlBar(p: RoomControlBarProps) {
             اسحب الفاصل بينهما لتغيير الحجم، وانقر عليه نقرتين للمناصفة.
           </p>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-            {TOOL_META.filter((t) => t.id !== p.tool).map((t) => (
+            {SECOND_SCREEN_TOOLS.filter((t) => t.id !== p.tool).map((t) => (
               <button
                 key={t.id}
                 type="button"

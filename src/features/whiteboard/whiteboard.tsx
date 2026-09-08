@@ -2485,14 +2485,19 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
             }}
             aria-pressed={following}
             title={following ? "أنت تتابع صفحة الأستاذ — اضغط للتصفّح بحرّية" : "عُد إلى صفحة الأستاذ وتابعه"}
-            className="pointer-events-auto absolute bottom-[64px] left-1/2 z-20 flex -translate-x-1/2
+            /* 🐛 كان `bottom-[64px]` — رقماً مخمَّناً لارتفاع الكونسول.
+               والكونسول لا ارتفاع ثابت له: يلتفّ عند الضيق، ويكبر مع
+               خطّ النظام. فكانت البطاقة تعوم فوقه أو تركبه بحسب
+               الجهاز. الآن تقرأ ارتفاعه **مقيساً** كما ينشره هو. */
+            className="pointer-events-auto absolute left-1/2 z-20 flex -translate-x-1/2
               items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold shadow-lg
               transition active:scale-95"
-            style={
-              following
+            style={{
+              bottom: "calc(0.75rem + var(--bz-console-h, 48px) + 8px)",
+              ...(following
                 ? { background: "var(--bz-surface, #fff)", borderColor: "var(--bz-line)", color: "var(--bz-ink-2)" }
-                : { background: "var(--bz-blue)", borderColor: "var(--bz-blue)", color: "#fff" }
-            }
+                : { background: "var(--bz-blue)", borderColor: "var(--bz-blue)", color: "#fff" }),
+            }}
           >
             <Icon name={following ? "eye" : "target"} size={12} />
             {following

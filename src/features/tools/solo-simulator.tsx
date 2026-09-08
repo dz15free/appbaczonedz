@@ -26,11 +26,10 @@ import {
   bellEnd,
   bellStart,
   integrityReport,
-  isFullscreen,
   primeAudio,
-  toggleFullscreen,
   useExamGuard,
 } from "@/features/rooms/exam-sim/exam-guard";
+import { isFullscreen, toggleFullscreen, onFullscreenChange } from "@/lib/fullscreen";
 
 type Phase = "setup" | "lobby" | "running" | "done";
 type SetupStep = 1 | 2 | 3;
@@ -134,16 +133,14 @@ export function SoloSimulator() {
     };
   }, [phase]);
 
+  /* 🐛 كانت المزامنة على `fullscreenchange` وحده — حدثٌ لا يقع على
+     iPhone لأنّ ملء الشاشة هناك بديلٌ بالتنسيق. فتبقى الحالة `false`
+     والشاشة ممتلئة. `onFullscreenChange` تشترك في الاثنين معاً. */
   useEffect(() => {
     if (phase !== "running") return;
     const syncFullscreenState = () => setFullScreen(isFullscreen());
     syncFullscreenState();
-    document.addEventListener("fullscreenchange", syncFullscreenState);
-    document.addEventListener("webkitfullscreenchange", syncFullscreenState);
-    return () => {
-      document.removeEventListener("fullscreenchange", syncFullscreenState);
-      document.removeEventListener("webkitfullscreenchange", syncFullscreenState);
-    };
+    return onFullscreenChange(syncFullscreenState);
   }, [phase]);
 
   useEffect(() => {
@@ -288,6 +285,7 @@ export function SoloSimulator() {
     setFullScreen(isFullscreen());
   }
 
+
   function renderProgress() {
     return (
       <div className="bz-vbr-progress" aria-label="مراحل دخول القاعة">
@@ -426,7 +424,24 @@ export function SoloSimulator() {
   const zoomOut = () => setPaperZoom((value) => Math.max(0.75, Number((value - 0.1).toFixed(2))));
   const fitPaper = () => setPaperZoom(1);
 
-  return <section ref={stageRef} className={`bz-exam-running bz-vbr-running ${urgent ? "is-urgent" : ""}`} aria-labelledby="running-exam-title">
+  /* ════════════════════════════════════════════════════════
+     🐛 هنا كان يسقط ملء الشاشة على الـiPhone من نفسه
+
+     كانت `className` تُحسب ديناميكياً: `${urgent ? "is-urgent" : ""}`.
+     فحين يبلغ العدّاد آخر خمس دقائق تنقلب `urgent` وتتغيّر السلسلة،
+     فتكتب React السمة كاملةً من جديد — **وتمحو معها `bz-fullscreen`
+     المضاف يدوياً إلى الـDOM**. أي أنّ الامتحان كان يخرج من ملء
+     الشاشة عند الدقيقة الخامسة قبل النهاية بالضبط.
+
+     ولا أثر لذلك على Android لأنّ ملء الشاشة هناك واجهة متصفّح لا
+     كلاس، فلا شيء لتمحوه React.
+
+     العلاج في موضعين معاً: `class` هنا صارت ثابتة والحالة انتقلت
+     إلى `data-urgent` (وReact تُحدّث السمات المستقلّة بلا مساس
+     بغيرها)، وفي `lib/fullscreen.ts` حارسٌ يُعيد الكلاس إن محاه أحد
+     — لأنّ هذا النمط سيتكرّر في ملفّ آخر يوماً ما.
+     ════════════════════════════════════════════════════════ */
+  return <section ref={stageRef} data-urgent={urgent ? "true" : undefined} className="bz-exam-running bz-vbr-running" aria-labelledby="running-exam-title">
     <header className="bz-vbr-running-header">
       <div className="bz-vbr-running-brand"><span className="bz-vbr-running-mark">BZ</span><div><b>BacZone</b><small>غرفة الامتحان الافتراضية</small></div></div>
       <div className="bz-vbr-running-context"><small>{spec?.label} · {subject?.name}</small><h2 id="running-exam-title">{selectedExam?.label}</h2></div>

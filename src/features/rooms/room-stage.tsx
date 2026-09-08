@@ -212,12 +212,22 @@ export function RoomStage({
         gridTemplateAreas: `"a" "d" "b"`,
       };
     }
+    /* شاشة واحدة مقسومة على هاتف عموديّ: صفّان — السطح ثمّ المبدّل.
+       `auto` لا رقم: ارتفاع المبدّل يقرّره محتواه لا تخميننا.
+       وبلا شاشة ثانية لا صفّ للمبدّل أصلاً، فلا يتغيّر شيء عمّا كان. */
+    if (singleSplit) {
+      return {
+        gridTemplateColumns: "minmax(0,1fr)",
+        gridTemplateRows: "minmax(0,1fr) auto",
+        gridTemplateAreas: `"a" "s"`,
+      };
+    }
     return {
       gridTemplateColumns: "minmax(0,1fr)",
       gridTemplateRows: "minmax(0,1fr)",
       gridTemplateAreas: `"a"`,
     };
-  }, [mode, ratio]);
+  }, [mode, ratio, singleSplit]);
 
   /* ── سحب الفاصل ── */
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -392,29 +402,81 @@ export function RoomStage({
         </div>
       )}
 
-      {/* الهاتف العموديّ: مبدّل بين الشاشتين بدل تقسيمٍ لا يُقرأ */}
-      {singleSplit && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 z-[7] flex justify-center" style={{ gridArea: "a" }}>
-          <div className="pointer-events-auto flex items-center gap-1 rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-surface)]/95 p-1 shadow-lg backdrop-blur">
-            {([["a", examOn ? "الامتحان" : TOOL_LABEL[tool].label, examOn ? ("book" as IconName) : TOOL_LABEL[tool].icon],
-               ["b", TOOL_LABEL[second as RoomTool].label, TOOL_LABEL[second as RoomTool].icon]] as const).map(([k, label, icon]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setPhonePick(k as "a" | "b")}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-extrabold transition ${
-                  phonePick === k
-                    ? "bg-[var(--bz-blue)] text-white"
-                    : "text-[var(--bz-ink-3)] hover:bg-[var(--bz-blue-050)] hover:text-[var(--bz-blue)]"
-                }`}
-              >
-                <Icon name={icon as IconName} size={13} />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* الهاتف العموديّ: مبدّل بين الشاشتين بدل تقسيمٍ لا يُقرأ.
+          صفٌّ في التخطيط لا طبقة عائمة — انظر `StageSwitcher`. */}
+      {singleSplit && second && (
+        <StageSwitcher
+          value={phonePick}
+          onPick={setPhonePick}
+          items={[
+            {
+              k: "a",
+              label: examOn ? "الامتحان" : TOOL_LABEL[tool].label,
+              icon: examOn ? ("book" as IconName) : TOOL_LABEL[tool].icon,
+            },
+            { k: "b", label: TOOL_LABEL[second].label, icon: TOOL_LABEL[second].icon },
+          ]}
+        />
       )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   مبدّل الشاشتين على الهاتف العموديّ
+
+   🐛 كان طبقةً عائمة: `absolute inset-x-0 bottom-2 z-[7]` موضوعة في
+   `gridArea: "a"`. وثلاثة أخطاء في سطر واحد:
+
+   ١) `absolute` داخل الشبكة يتوضّع نسبةً إلى **المسرح كلّه** لا إلى
+      اللوحة، فيطفو فوق أيّ سطح مهما كان.
+   ٢) عند `bottom: 8px` وكونسول السبورة عند `12px` — في المكان نفسه.
+      واللقطة الثالثة تُظهر الكونسول مدفوناً خلفه تماماً.
+   ٣) `z-[7]` على مستوى الشبكة بينما الكونسول محبوس داخل `Pane` ذي
+      `zIndex: 2`، فلا سبيل لرفعه فوقه أبداً.
+
+   الآن صفٌّ حقيقيّ في تخطيط المسرح يأخذ ارتفاعه، فينزل السطح فوقه
+   بدل أن يعلوه — وهو بالضبط ما فُعل بـ`PaneHead` من قبل وللسبب
+   نفسه.
+
+   ولا يحتاج أحد إلى قياس ارتفاعه بعد الآن: صفٌّ في الشبكة يأخذ
+   مساحته من التخطيط نفسه، فينزل ما فوقه تلقائياً. (المتغيّر المقيس
+   بقي حيث يلزم فعلاً — ارتفاع كونسول السبورة في `console.tsx`،
+   لأنّه يعوم فوق اللوح لا يجاوره.)
+   ════════════════════════════════════════════════════════════ */
+function StageSwitcher({
+  items, value, onPick,
+}: {
+  items: { k: "a" | "b"; label: string; icon: IconName }[];
+  value: "a" | "b";
+  onPick: (k: "a" | "b") => void;
+}) {
+  return (
+    <div
+      className="bz-stage-switch flex shrink-0 items-center justify-center gap-1 px-2 py-1.5"
+      style={{ gridArea: "s" }}
+      role="tablist"
+      aria-label="تبديل بين الشاشتين"
+    >
+      {items.map(({ k, label, icon }) => (
+        <button
+          key={k}
+          type="button"
+          role="tab"
+          aria-selected={value === k}
+          onClick={() => onPick(k)}
+          /* 44px هدف لمس كامل: المبدّل هو الطريق الوحيد إلى السطح
+             الثاني على الهاتف، فزرٌّ يصعب إصابته يعني ميزةً مفقودة. */
+          className={`flex min-h-[44px] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-[12px] font-extrabold transition active:scale-[.97] ${
+            value === k
+              ? "bg-[var(--bz-blue)] text-white shadow-sm"
+              : "bg-[var(--bz-canvas)] text-[var(--bz-ink-2)]"
+          }`}
+        >
+          <Icon name={icon} size={14} />
+          <span className="truncate">{label}</span>
+        </button>
+      ))}
     </div>
   );
 }

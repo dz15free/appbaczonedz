@@ -143,14 +143,23 @@
         ".write": "auth != null && auth.uid === $uid"
       }
     },
+    // الثغرة التي أُصلحت هنا:
+    // كان `rooms` و`rooms/$roomId` كلاهما `.read: auth != null`.
+    // والقراءة في RTDB تتوارث إلى كل الأبناء — فمنحها عند الغرفة
+    // يمنحها ضمناً عند `messages` و`files` و`attachments`. أي أنّ أيّ
+    // حساب مسجَّل كان يقرأ دردشة أيّ غرفة مدفوعة وملفّاتها كاملةً بلا
+    // أن يدفع، بطلب واحد.
+    // 
+    // الشرط الجديد هو **نفسه** المستعمل في `roomLive/$roomId` حرفاً
+    // بحرف: مجانية، أو مالك، أو مشرف، أو دافع، أو admin. توحيد الشرط
+    // مقصود — شرطان مختلفان لنفس الصلاحية يفترقان مع الوقت، ويكفي أن
+    // يُنسى أحدهما مرّة ليعود التسريب.
+    // 
+    // والبيانات الوصفية العامّة انتقلت إلى `roomsPublic` أدناه، فلا
+    // يحتاج أحد إلى قراءة `rooms` ليعرف اسم غرفة أو سعرها.
     "rooms": {
-      ".read": "auth != null",
-      ".indexOn": [
-        "type",
-        "name"
-      ],
       "$roomId": {
-        ".read": "auth != null",
+        ".read": "auth != null && (root.child('rooms').child($roomId).child('isPaid').val() !== true || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists() || root.child('userAccess').child(auth.uid).child('room').child($roomId).exists() || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && !newData.exists()))",
         "messages": {
           ".write": "auth != null"
@@ -160,6 +169,68 @@
         },
         "files": {
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (newData.exists() && newData.child('uploaderId').val() === auth.uid) || (data.exists() && data.child('uploaderId').val() === auth.uid))"
+        }
+      }
+    },
+    // المرآة العامّة: بيانات وصفية لا محتوى فيها إطلاقاً — اسم الغرفة
+    // ونوعها ومادّتها ومالكها وسعرها. يقرأها كل مسجَّل، وعليها تعمل
+    // قائمة الغرف والاكتشاف والبحث و«الانضمام بالاسم».
+    // 
+    // لماذا الغرف الخاصّة هنا أيضاً؟ لأنّ البحث بالاسم يقع **قبل** أن
+    // يصير الباحث عضواً، فبلا فهرس عامّ للأسماء تسقط ميزة الانضمام
+    // بالاسم. والمكشوف اسمٌ ومالكٌ ونوع — يعرفها كل من دُعي إلى الغرفة.
+    // ولا تظهر في القوائم: العميل يستبعد `private` كما كان.
+    // 
+    // الكتابة للمالك وحده، ويُتحقَّق من ملكيّته في `rooms` لا ممّا
+    // يدّعيه في المرآة — وإلّا لأمكن لأيّ حساب أن يُنشئ مدخلاً وهمياً
+    // باسم غرفة موجودة ويسرق إليه الداخلين.
+    // 
+    // ولهذا تُكتب المرآة **بعد** الغرفة لا معها في تحديث واحد: القاعدة
+    // تقرأ الحالة السابقة، فلو كُتبتا معاً لما وجدت الغرفة بعد. وإن
+    // انقطع الاتصال بينهما تُصلح `syncRoomPublic` النقص عند أوّل فتح
+    // من المالك — وهي نفسها آليّة ترحيل الغرف القديمة.
+    "roomsPublic": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "type",
+        "name",
+        "createdAt"
+      ],
+      "$roomId": {
+        ".write": "auth != null && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid && (!newData.exists() || newData.child('ownerId').val() === auth.uid)))",
+        ".validate": "!newData.exists() || newData.hasChildren(['name', 'type', 'ownerId'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+        },
+        "type": {
+          ".validate": "newData.isString() && newData.val().matches(/^(public|private|teacher)$/)"
+        },
+        "ownerId": {
+          ".validate": "newData.isString() && newData.val() === root.child('rooms').child($roomId).child('ownerId').val()"
+        },
+        "ownerName": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "subject": {
+          ".validate": "newData.isString() || newData.val() === null"
+        },
+        "ownerRole": {
+          ".validate": "newData.val() === null || newData.val() === 'teacher'"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() || newData.val() === null"
+        },
+        "isPaid": {
+          ".validate": "newData.isBoolean() || newData.val() === null"
+        },
+        "price": {
+          ".validate": "(newData.isNumber() && newData.val() >= 0) || newData.val() === null"
+        },
+        "branches": {
+          ".validate": "newData.hasChildren() || newData.val() === null"
+        },
+        "$other": {
+          ".validate": false
         }
       }
     },
@@ -239,9 +310,19 @@
         "roomState": {
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
+        // «مرحباً» خرجت من هذا التعبير مع خروجها من خيارات الشاشة
+        // الثانية: شاشة ترحيب تقول «اختر ما تعرضه لتبدأ الحصّة» لا
+        // معنى لها بجانب سبورة في حصّة بدأت.
+        //
+        // وهنا فخّ يستحقّ الانتباه: `setRatio` تستعمل `update` لا
+        // `set`، والتحقّق يقع على العقدة **بعد الدمج**. فغرفة حيّة
+        // مخزَّن فيها `b: "welcome"` كان أوّل سحبٍ للفاصل فيها
+        // سيُرفض من الخادم بلا رسالة. ولذلك يعامل العميل
+        // (`use-stage-split.ts`) القيمة القديمة كأنّها لا شيء، فتُغلق
+        // الشاشة الثانية من نفسها ولا تصل إلى هذه القاعدة أصلاً.
         "stage": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
-          ".validate": "!newData.exists() || (newData.hasChild('b') && newData.child('b').isString() && newData.child('b').val().matches(/^(welcome|video|whiteboard|files|notes)$/) && (!newData.hasChild('ratio') || (newData.child('ratio').isNumber() && newData.child('ratio').val() >= 0.25 && newData.child('ratio').val() <= 0.75)))"
+          ".validate": "!newData.exists() || (newData.hasChild('b') && newData.child('b').isString() && newData.child('b').val().matches(/^(video|whiteboard|files|notes)$/) && (!newData.hasChild('ratio') || (newData.child('ratio').isNumber() && newData.child('ratio').val() >= 0.25 && newData.child('ratio').val() <= 0.75)))"
         },
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"

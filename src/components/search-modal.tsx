@@ -23,7 +23,9 @@ const LABEL = { room: "غرفة", group: "مجموعة", user: "مستخدم", p
 
 async function searchRooms(q: string): Promise<Result[]> {
   const lower = q.toLowerCase();
-  const snap = await get(query(ref(rtdb, "rooms"), orderByChild("name"), limitToFirst(200)));
+  /* المرآة العامّة لا العقدة الكاملة: البحث يحتاج أسماءً، وقراءة
+     `rooms` كانت تُنزّل دردشة كل غرفة في المنصّة معها. */
+  const snap = await get(query(ref(rtdb, "roomsPublic"), orderByChild("name"), limitToFirst(200)));
   const val = snap.val() ?? {};
   return Object.entries(val)
     .filter(([, r]: any) => r.name && String(r.name).toLowerCase().includes(lower))

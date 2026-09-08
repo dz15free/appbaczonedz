@@ -46,7 +46,9 @@ export interface DiscoveryRoom extends Room {
 /** قراءة واحدة تجمع الغرف والحضور والجلسات المجدولة */
 async function readDiscovery(): Promise<DiscoveryRoom[]> {
   const [roomsSnap, presSnap, sessSnap] = await Promise.all([
-    get(ref(rtdb, "rooms")),
+    /* المرآة العامّة: الاكتشاف يعرض بطاقات (اسم، مادة، مالك، عدد
+       نشط) — ولا شيء منها في محتوى الغرفة. */
+    get(ref(rtdb, "roomsPublic")),
     get(ref(rtdb, "presence")),
     get(ref(rtdb, "scheduledSessions")),
   ]);

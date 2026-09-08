@@ -47,6 +47,10 @@ export async function POST(req: NextRequest) {
   if (body.action === "delete") {
     const paths = [
       `rooms/${roomId}`,
+      /* المرآة العامّة تُحذف مع الغرفة. بلا هذا تبقى بطاقة الغرفة
+         معروضة في الاكتشاف والبحث إلى الأبد، ورابطها يؤدّي إلى
+         غرفة لا وجود لها. */
+      `roomsPublic/${roomId}`,
       `notesDraft/${roomId}`,
       `presence/${roomId}`,
       `bannedUsers/${roomId}`,
