@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChargilyPayButton } from "@/features/paid/chargily-button";
 import { useParams, useRouter } from "next/navigation";
 import { ContentRatingBadge, ContentRatingSheet } from "@/features/community/content-rating";
@@ -34,13 +34,14 @@ import dynamic from "next/dynamic";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { WorkspaceBar, LiveBadge, BarButton, Segmented } from "@/components/ui/workspace";
 import { RoomStage } from "@/features/rooms/room-stage";
+import { useStageSplit } from "@/features/rooms/use-stage-split";
 import { SpeakerRail } from "@/features/rooms/speaker-rail";
 import { RoomControlBar } from "@/features/rooms/control-bar";
 import { RoomDock, type DockTab } from "@/features/rooms/room-dock";
 import { useHasSideDock } from "@/lib/use-media";
 import { useRoomState, ROOM_STATES } from "@/features/rooms/use-room-state";
 import { ExamGradingSheet } from "@/features/rooms/exam-sim/exam-papers";
-import { listenExam, type ExamSession } from "@/features/rooms/exam-sim/exam-session";
+import { listenExam, pauseExam, resumeExam, isExamPaused, type ExamSession } from "@/features/rooms/exam-sim/exam-session";
 import { Icon } from "@/components/ui/icon";
 
 // تحميل ديناميكي للأدوات الثقيلة (تقليل حجم الحزمة الأولية)
@@ -164,6 +165,37 @@ export default function RoomPage() {
 
   const { tool, setTool } = useActiveTool(roomId, isOwner, canReadLive);
   const { state: roomState, setRoomState } = useRoomState(roomId, isOwner, canReadLive);
+
+  /* ── الشاشة الثانية ──
+     `tool` هو الشاشة الأولى كما كان، و`split.b` الثانية. الفصل مقصود:
+     العميل القديم في الميدان يقرأ `activeTool` وحده فيبقى عاملاً. */
+  const { split, openSecond, closeSecond, setRatio } = useStageSplit(roomId, isOwner, canReadLive);
+
+  /* تبديل الشاشتين: كتابتان تتبادلان القيمتين — والسطحان نفساهما
+     ينتقلان بين منطقتَي الشبكة بلا إعادة تركيب، فلا الفيديو يعود إلى
+     بدايته ولا السبورة تُمسح. */
+  const swapPanes = useCallback(() => {
+    if (!isOwner || !split.b) return;
+    const a = tool;
+    setTool(split.b);
+    openSecond(a);
+  }, [isOwner, split.b, tool, setTool, openSecond]);
+
+  /* اختيار السطح الأوّل: إن كان هو نفسه سطح الشاشة الثانية أُغلقت
+     الثانية — وإلّا بقيت العقدة تقول «مقسومة» والشاشة واحدة فعلاً،
+     فيقرأ الأستاذ في الشريط «شاشة واحدة» وهو يرى شاشة واحدة أصلاً. */
+  const pickTool = useCallback((t: RoomTool) => {
+    if (!isOwner) return;
+    if (split.b === t) closeSecond();
+    setTool(t);
+  }, [isOwner, split.b, closeSecond, setTool]);
+
+  /* «اجعلها الشاشة الوحيدة»: يصعد السطح إلى الأولى وتُغلق الثانية */
+  const expandPane = useCallback((t: RoomTool) => {
+    if (!isOwner) return;
+    if (t !== tool) setTool(t);
+    closeSecond();
+  }, [isOwner, tool, setTool, closeSecond]);
 
   /* ── ما تفعله حالة الغرفة فعلاً ──
      كانت الأزرار الأربعة تضبط قيمة **لا يقرؤها أحد** — زينة محضة، ولهذا
@@ -807,9 +839,16 @@ export default function RoomPage() {
               isOwner={isOwner}
               isPrivileged={isPrivileged}
               tool={tool}
+              second={split.b}
+              ratio={split.ratio}
               memberCount={members.length}
               ownerStatus={ownerStatus}
-              onPickTool={isOwner ? setTool : undefined}
+              onPickTool={isOwner ? pickTool : undefined}
+              onRatio={isOwner ? setRatio : undefined}
+              onSwap={isOwner ? swapPanes : undefined}
+              onCloseSecond={isOwner ? closeSecond : undefined}
+              onExpand={isOwner ? expandPane : undefined}
+              examPaused={isExamPaused(exam)}
               examLayer={
                 exam && user ? (
                   <ExamStage
@@ -951,7 +990,7 @@ export default function RoomPage() {
           isOwner={isOwner}
           isPrivileged={isPrivileged}
           tool={tool}
-          onPickTool={(t) => isOwner && setTool(t)}
+          onPickTool={pickTool}
           voiceSlot={<RoomVoiceBar roomId={roomId} isOwner={isOwner} embedded />}
           memberCount={members.length}
           handsCount={handsQueue.length}
@@ -987,6 +1026,13 @@ export default function RoomPage() {
           roomState={roomState}
           roomStates={isOwner ? ROOM_STATES.map((st) => ({ id: st.id, label: st.label })) : undefined}
           onRoomState={isOwner ? (id) => setRoomState(id as typeof roomState) : undefined}
+          second={split.b}
+          onOpenSecond={isOwner ? openSecond : undefined}
+          onCloseSecond={isOwner ? closeSecond : undefined}
+          examRunning={Boolean(exam && exam.status === "running")}
+          examPaused={isExamPaused(exam)}
+          onPauseExam={isOwner ? (hide) => void pauseExam(roomId, hide) : undefined}
+          onResumeExam={isOwner ? () => void resumeExam(roomId) : undefined}
         />
       )}
 

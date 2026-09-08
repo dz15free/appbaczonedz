@@ -15,7 +15,7 @@ import {
   type ExamSession, type ExamPaper, type ExamGrade,
   submitPaper, listenMyPaper, listenMyGrade, listenPapers, listenGrades,
   endExam, extendExam, closeExam, releaseSolution,
-  secondsLeft as calcSecondsLeft, formatClock, formatSimDuration,
+  secondsLeft as calcSecondsLeft, formatClock, formatSimDuration, isExamPaused,
 } from "@/features/rooms/exam-sim/exam-session";
 import {
   useExamGuard, integrityReport, bellStart, bellEnd, primeAudio,
@@ -60,10 +60,23 @@ export function ExamStage({
     return () => window.clearInterval(t);
   }, [session]);
 
-  const timeUp = left <= 0 || session.status === "ended";
+  /* أثناء الإيقاف المؤقّت لا «ينتهي الوقت»: بلا هذا الشرط يُسلّم
+     التسليم الآليّ الأوراق ويُقرع جرس النهاية والأستاذ يشرح. */
+  const paused = isExamPaused(session);
+  const timeUp = !paused && (left <= 0 || session.status === "ended");
 
   return (
     <div ref={stageRef} className="bz-room-exam-stage flex h-full min-h-0 flex-col bg-background">
+      {/* شريط الإيقاف — يراه الأستاذ والطالب معاً فلا يظنّ أحد أنّ
+          العدّاد تعطّل. */}
+      {paused && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-[var(--bz-amber)]/40 bg-[var(--bz-amber-050)] px-3 py-1.5 text-[11.5px] font-extrabold text-[var(--bz-amber)]">
+          <FontAwesomeIcon icon={faClock} className="h-3 w-3" />
+          {isOwner
+            ? "الوقت موقوف — استأنف من شريط التحكّم حين تنتهي من الشرح"
+            : "أوقف الأستاذ الوقت مؤقّتاً — أنصت للشرح، والعدّاد متجمّد"}
+        </div>
+      )}
       {isOwner ? (
         <TeacherExamView
           roomId={roomId} roomName={roomName} session={session}
@@ -195,7 +208,11 @@ function StudentExamView({
   const [driveReady, setDriveReady] = useState(false);
 
   const submitted = Boolean(paper);
-  const guardActive = !submitted && !timeUp;
+  /* المراقبة تتوقّف أثناء إيقاف الأستاذ: الطالب حينها يسمع شرحاً،
+     فتسجيل مخالفة عليه لأنّه نظر إلى نافذة أخرى ظلم وتشويش لتقرير
+     النزاهة. */
+  const paused = isExamPaused(session);
+  const guardActive = !submitted && !timeUp && !paused;
 
   const { violations, lastReason, alarmOpen, resume, grace } = useExamGuard({
     active: guardActive,
@@ -336,8 +353,22 @@ function StudentExamView({
 
       {/* ── المسرح ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className={`min-h-0 flex-1 ${tab === "subject" ? "block" : "hidden"} lg:block`}>
+        <div className={`relative min-h-0 flex-1 ${tab === "subject" ? "block" : "hidden"} lg:block`}>
           <SubjectViewer session={session} onOpenExternal={() => grace(4000)} />
+          {/* الحجب أثناء الإيقاف: بلاه يصير الإيقاف وقتاً إضافياً
+              للقراءة لمن انتبه إليه. الورقة تبقى ظاهرة — الممنوع هو
+              الموضوع. */}
+          {paused && session.pausedHide && (
+            <div className="absolute inset-0 z-10 grid place-items-center bg-[var(--bz-surface)]/92 backdrop-blur-[3px]">
+              <div className="px-6 text-center">
+                <FontAwesomeIcon icon={faClock} className="h-7 w-7 text-[var(--bz-amber)]" />
+                <p className="mt-2 text-[13px] font-extrabold text-text-primary">الموضوع محجوب مؤقّتاً</p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
+                  أوقف الأستاذ الوقت ليشرح. يعود الموضوع والعدّاد معاً عند الاستئناف.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={`min-h-0 flex-1 overflow-y-auto border-s border-border bg-background lg:max-w-[46%] ${

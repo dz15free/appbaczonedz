@@ -2262,6 +2262,66 @@ html { scrollbar-gutter: stable; }
     radial-gradient(120% 80% at 50% 0%, #1B1F27 0%, #14171D 55%, #101319 100%);
 }
 
+/* ════════════════════════════════════════════════════════════
+   الشاشتان — لوحتان تطفوان على المكتب
+
+   حين تكون الشاشة واحدة لا يتغيّر شيء: السطح يملأ المسرح من حافّة
+   إلى حافّة كما كان، وشكل قاعة الامتحان يبقى كما هو حرفياً. وما إن
+   تُفتح الشاشة الثانية حتّى يتحوّل المسرح إلى «مكتب» عليه بطاقتان:
+   حشوة صغيرة، وحوافّ مستديرة، وظلّ خفيف يفصل اللوحة عن الخلفية.
+   هذا هو الفرق بين تقسيمٍ يبدو ككسرٍ في التخطيط وتقسيمٍ يبدو مقصوداً.
+   ════════════════════════════════════════════════════════════ */
+.bz-stage[data-split="1"] { padding: 8px; }
+.bz-stage[data-split="1"] .bz-pane {
+  border: 1px solid var(--bz-line, #e6e9ef);
+  border-radius: 16px;
+  background: var(--bz-surface, #fff);
+  box-shadow: 0 14px 34px -26px rgb(15 23 42 / .55), 0 1px 0 0 rgb(255 255 255 / .6) inset;
+}
+.dark .bz-stage[data-split="1"] .bz-pane {
+  box-shadow: 0 14px 34px -22px rgb(0 0 0 / .8);
+}
+@media (max-width: 480px) {
+  .bz-stage[data-split="1"] { padding: 6px; }
+  .bz-stage[data-split="1"] .bz-pane { border-radius: 14px; }
+}
+
+/* الفاصل: خطّ شعريّ مساره 8px، ومساحة لمسه أوسع منه بكثير.
+   8px هدفٌ مستحيل على الإصبع، فتُوسَّع منطقة الالتقاط بعنصر زائف
+   يمتدّ 10px في كل اتجاه — بلا أن يزيح شيئاً في الشبكة. */
+.bz-divider { position: relative; display: grid; place-items: center; touch-action: none; }
+.bz-divider::before { content: ""; position: absolute; inset: -10px; }
+.bz-divider-grip {
+  display: block;
+  border-radius: 999px;
+  background: var(--bz-line, #d8dde6);
+  transition: background .16s ease, transform .16s ease;
+}
+.bz-stage[data-mode="row"] .bz-divider-grip { width: 3px; height: 48px; }
+.bz-stage[data-mode="col"] .bz-divider-grip { width: 48px; height: 3px; }
+.bz-divider:hover .bz-divider-grip,
+.bz-divider:active .bz-divider-grip { background: var(--bz-blue, #2563eb); }
+.bz-stage[data-mode="row"] .bz-divider:hover .bz-divider-grip,
+.bz-stage[data-mode="row"] .bz-divider:active .bz-divider-grip { transform: scaleX(1.8); }
+.bz-stage[data-mode="col"] .bz-divider:hover .bz-divider-grip,
+.bz-stage[data-mode="col"] .bz-divider:active .bz-divider-grip { transform: scaleY(1.8); }
+@media (pointer: coarse) {
+  .bz-stage[data-mode="row"] .bz-divider-grip { width: 4px; height: 56px; }
+  .bz-stage[data-mode="col"] .bz-divider-grip { width: 56px; height: 4px; }
+}
+
+/* رأس اللوحة: شريط 28px يحمل اسم السطح وأفعال المالك.
+   خلفيّته أفتح قليلاً من السطح تحته فيُقرأ كـ«لسان نافذة» لا كجزء
+   من المحتوى، ولا يظهر أصلاً إلّا في وضع الشاشتين. */
+.bz-panehead {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bz-surface, #fff) 100%, #2563eb 4%), var(--bz-surface, #fff));
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+.dark .bz-panehead {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bz-surface, #14171d) 100%, #60a5fa 7%), var(--bz-surface, #14171d));
+}
+
 /* حافة داخلية دقيقة تفصل سطح الكتابة عن الظلّ */
 .bz-board::after {
   content: "";

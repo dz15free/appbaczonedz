@@ -24,10 +24,17 @@ export type IconName =
   | "target" | "star" | "book" | "ai" | "timer" | "lock" | "search" | "share"
   | "copy" | "trash" | "check" | "close" | "download" | "expand" | "collapse"
   | "eye" | "exit" | "send" | "clip" | "grid" | "home" | "compass" | "warn"
-  | "graduation";
+  | "graduation" | "split" | "pause" | "play";
 
 /** مسارات الأيقونات — كلّها على شبكة 24×24 */
 const PATHS: Record<IconName, string[]> = {
+  // شاشتان جنباً إلى جنب — تقسيم مسرح الغرفة
+  split: ["M4.6 5.5h4.6a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H4.6a1.5 1.5 0 0 1-1.5-1.5V7a1.5 1.5 0 0 1 1.5-1.5z",
+          "M14.8 5.5h4.6A1.5 1.5 0 0 1 20.9 7v10a1.5 1.5 0 0 1-1.5 1.5h-4.6a1.5 1.5 0 0 1-1.5-1.5V7a1.5 1.5 0 0 1 1.5-1.5z"],
+  // إيقاف مؤقّت — توقيف زمن المحاكاة
+  pause: ["M9.3 5v14M14.7 5v14"],
+  // استئناف
+  play: ["M7.6 4.9 19 12 7.6 19.1z"],
   // تحذير: مثلّث بعلامة تعجّب — مفهوم عالمياً بلا نصّ
   warn: ["M12 4l9 16H3z", "M12 10v4", "M12 17h.01"],
   // مدوّر: ساقان من مفصل واحد + قوس مرسوم

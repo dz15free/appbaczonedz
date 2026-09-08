@@ -239,6 +239,10 @@
         "roomState": {
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
+        "stage": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+          ".validate": "!newData.exists() || (newData.hasChild('b') && newData.child('b').isString() && newData.child('b').val().matches(/^(welcome|video|whiteboard|files|notes)$/) && (!newData.hasChild('ratio') || (newData.child('ratio').isNumber() && newData.child('ratio').val() >= 0.25 && newData.child('ratio').val() <= 0.75)))"
+        },
         "videoState": {
           ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid"
         },

@@ -154,6 +154,15 @@ export interface RoomControlBarProps {
   roomState?: string;
   roomStates?: { id: string; label: string }[];
   onRoomState?: (id: string) => void;
+  /* ── الشاشة الثانية ── مالك الغرفة وحده يقسم شاشة الصفّ */
+  second?: RoomTool | null;
+  onOpenSecond?: (t: RoomTool) => void;
+  onCloseSecond?: () => void;
+  /* ── توقيف المحاكاة ── الوقت يتجمّد للصفّ كلّه ثمّ يُستأنف من حيث وقف */
+  examRunning?: boolean;
+  examPaused?: boolean;
+  onPauseExam?: (hidePaper: boolean) => void;
+  onResumeExam?: () => void;
 }
 
 /* ترتيب الأسطح: السبورة أوّلاً لأنّها سطح التدريس الفعليّ، و«مرحباً»
@@ -170,7 +179,11 @@ const TOOL_META: { id: RoomTool; label: string; icon: IconName }[] = [
 
 export function RoomControlBar(p: RoomControlBarProps) {
   const [allOpen, setAllOpen] = useState(false);
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
   const close = () => setAllOpen(false);
+  const canSplit = p.isOwner && !!p.onOpenSecond;
+  const splitOn = !!p.second;
 
   /* ── الأسطح ── قرار الأستاذ يُبثّ للصفّ */
   const surfaces: CtlAction[] = TOOL_META.map((t) => ({
@@ -197,6 +210,40 @@ export function RoomControlBar(p: RoomControlBarProps) {
           : []),
       ]
     : [];
+
+  /* ── المسرح ── تقسيم الشاشة وتوقيف الوقت
+     الاثنان فعلٌ واحد في جوهره: أن يشرح الأستاذ **بجانب** ما يعرضه
+     لا بدلاً منه. ولذلك يقفان معاً، وأولويّتهما في الشريط الضيّق
+     عالية: «أوقف الوقت» أوّل زرّ يُبحث عنه حين يسأل تلميذ سؤالاً
+     في وسط الامتحان. */
+  const stageActions: CtlAction[] = [];
+  if (canSplit) {
+    stageActions.push({
+      id: "split",
+      icon: "split",
+      label: splitOn ? "شاشة واحدة" : "شاشة ثانية",
+      active: splitOn,
+      primary: true,
+      rank: 4,
+      hint: splitOn ? "أغلق الشاشة الثانية وارجع إلى شاشة واحدة" : "افتح سطحاً ثانياً بجانب المعروض",
+      onClick: () => { if (splitOn) p.onCloseSecond?.(); else setSplitOpen(true); },
+    });
+  }
+  if (p.isOwner && p.examRunning) {
+    stageActions.push(
+      p.examPaused
+        ? {
+            id: "exam-resume", icon: "play", label: "استئناف", tone: "green",
+            primary: true, rank: 0, hint: "يكمل الوقت من حيث توقّف",
+            onClick: () => p.onResumeExam?.(),
+          }
+        : {
+            id: "exam-pause", icon: "pause", label: "أوقف الوقت", tone: "amber",
+            primary: true, rank: 0, hint: "يتجمّد الوقت عند كل تلميذ حتّى تستأنف",
+            onClick: () => setPauseOpen(true),
+          },
+    );
+  }
 
   /* ── أدوات التلميذ ── خاصّة به لا تُبثّ لأحد */
   const studentTools: CtlAction[] = !p.isOwner
@@ -240,7 +287,7 @@ export function RoomControlBar(p: RoomControlBarProps) {
      🐛 قبله كانت ثلاث مجموعات ثابتة، فعلى هاتف 390px كانت مجموعة
      الطرف تأكل العرض وتُقصّ أزرار التلميذ (ملفّات وملاحظات) خلفها. */
   const all: CtlAction[] = p.isOwner
-    ? [...surfaces, ...activities.filter((a) => a.primary), ...people.filter((a) => a.primary)]
+    ? [...surfaces, ...stageActions, ...activities.filter((a) => a.primary), ...people.filter((a) => a.primary)]
     : [...studentTools.filter((a) => a.primary), ...people.filter((a) => a.primary)];
 
   /* ── كم زرّاً يبقى في الشريط ──
@@ -298,6 +345,12 @@ export function RoomControlBar(p: RoomControlBarProps) {
           {p.isOwner && (
             <Section title="ما يراه الصفّ" hint="اختيارك يُعرض على شاشة كل تلميذ">
               {surfaces.map((a) => <SheetRow key={a.id} a={a} onDone={close} />)}
+            </Section>
+          )}
+
+          {stageActions.length > 0 && (
+            <Section title="المسرح" hint="اشرح بجانب ما تعرضه بدل أن تستبدله">
+              {stageActions.map((a) => <SheetRow key={a.id} a={a} onDone={close} />)}
             </Section>
           )}
 
@@ -361,6 +414,67 @@ export function RoomControlBar(p: RoomControlBarProps) {
               ))}
             </Section>
           )}
+        </div>
+      </BottomSheet>
+
+      {/* ══ اختيار سطح الشاشة الثانية ══
+          السطح المعروض الآن لا يُعرض هنا: شاشتان بالسطح نفسه لا معنى
+          لهما، وإظهاره معطّلاً يُربك أكثر ممّا يوضّح. */}
+      <BottomSheet open={splitOpen} onClose={() => setSplitOpen(false)} title="افتح شاشة ثانية" maxHeight="70dvh">
+        <div className="mx-auto w-full max-w-3xl space-y-4 pb-2">
+          <p className="px-1 text-[11.5px] leading-relaxed text-text-muted">
+            يبقى المعروض الآن في مكانه ويعمل — الفيديو لا يعود إلى بدايته، والسبورة تحتفظ بما رُسم عليها.
+            اسحب الفاصل بينهما لتغيير الحجم، وانقر عليه نقرتين للمناصفة.
+          </p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+            {TOOL_META.filter((t) => t.id !== p.tool).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => { p.onOpenSecond?.(t.id); setSplitOpen(false); }}
+                className={`flex min-h-[80px] flex-col items-center justify-center gap-1.5 rounded-2xl border p-2.5 text-center transition active:scale-[0.98] sm:min-h-[74px] ${
+                  p.second === t.id ? TONE.primary : TONE.default
+                }`}
+              >
+                <Icon name={t.icon} size={20} />
+                <span className="text-[11.5px] font-extrabold leading-tight">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* ══ توقيف وقت المحاكاة ══
+          الاختيار صريح لأنّ الأثر مختلف: إخفاء الموضوع يمنع من يقرأ
+          بينما تشرح، وإبقاؤه يفيد حين يكون الشرح **عن** الموضوع نفسه. */}
+      <BottomSheet open={pauseOpen} onClose={() => setPauseOpen(false)} title="أوقف وقت الامتحان" maxHeight="60dvh">
+        <div className="mx-auto w-full max-w-lg space-y-2.5 pb-2">
+          <p className="px-1 text-[11.5px] leading-relaxed text-text-muted">
+            يتجمّد الوقت عند كل تلميذ، ويتوقّف رصد الخروج من الصفحة، وتبقى ورقة الإجابة كما كتبها.
+            عند الاستئناف يكمل الوقت من حيث توقّف تماماً.
+          </p>
+          <button
+            type="button"
+            onClick={() => { p.onPauseExam?.(true); setPauseOpen(false); }}
+            className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-start transition active:scale-[0.99] ${TONE.amber}`}
+          >
+            <Icon name="eye" size={20} />
+            <span className="min-w-0">
+              <span className="block text-[12.5px] font-extrabold">أوقف وأخفِ الموضوع</span>
+              <span className="block text-[10.5px] opacity-80">لا أحد يتقدّم في القراءة بينما تشرح</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { p.onPauseExam?.(false); setPauseOpen(false); }}
+            className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-start transition active:scale-[0.99] ${TONE.default}`}
+          >
+            <Icon name="pause" size={20} />
+            <span className="min-w-0">
+              <span className="block text-[12.5px] font-extrabold">أوقف والموضوع ظاهر</span>
+              <span className="block text-[10.5px] text-text-muted">حين يكون شرحك عن الموضوع نفسه</span>
+            </span>
+          </button>
         </div>
       </BottomSheet>
     </>

@@ -54,6 +54,19 @@ export interface ExamSession {
   allowLate: boolean;
   /** يُفتح للطلبة بعد أن يقرّر الأستاذ */
   solutionReleased?: boolean;
+  /* ── الإيقاف المؤقّت ──
+     لحظة الإيقاف. الوقت يتجمّد عندها، ويُستأنف بدفع `endsAt` بمقدار
+     ما مضى — فتبقى `endsAt` المصدر الوحيد للحقيقة ولا تنشأ حسابات
+     موازية تتناقض بين الأجهزة.
+
+     ⚠️ ولماذا لا `status: "paused"`؟
+     قاعدة القاعدة المنشورة تفرض
+     `status.matches(/^(running|ended)$/)` — فقيمةٌ ثالثة تُرفض على
+     الخادم وتتراجع عند العميل. الحقل الإضافي تقبله `hasChildren`
+     بلا تعديل قاعدة واحدة. */
+  pausedAt?: number | null;
+  /** يُحجب الموضوع أثناء الإيقاف فلا يُستغَلّ الوقت في القراءة */
+  pausedHide?: boolean;
   createdBy: string;
   endedAt?: number;
 }
@@ -143,6 +156,38 @@ export async function startExam(roomId: string, input: StartExamInput) {
 /** إنهاء وقت الامتحان — الأوراق والعلامات تبقى */
 export async function endExam(roomId: string) {
   await update(ref(rtdb, examPath(roomId)), { status: "ended", endedAt: Date.now() });
+}
+
+/* ══════════ الإيقاف المؤقّت والاستئناف ══════════
+   السيناريو: الأستاذ يوقف الوقت ليشرح نقطة (بالميكروفون أو على
+   السبورة في الشاشة الثانية) ثم يستأنف. بلا هذا كان الوقت يمضي وهو
+   يشرح، فيُعاقب الطلبة على شرحه.
+
+   `pausedHide`: أثناء الإيقاف يُحجب الموضوع عن الطلبة، وإلّا صار
+   الإيقاف وقتاً إضافياً للقراءة لمن انتبه له. */
+export async function pauseExam(roomId: string, hidePaper = true) {
+  const snap = await get(ref(rtdb, examPath(roomId)));
+  const s = snap.val() as ExamSession | null;
+  if (!s || s.status !== "running" || s.pausedAt) return;
+  await update(ref(rtdb, examPath(roomId)), { pausedAt: Date.now(), pausedHide: hidePaper });
+}
+
+export async function resumeExam(roomId: string) {
+  const snap = await get(ref(rtdb, examPath(roomId)));
+  const s = snap.val() as ExamSession | null;
+  if (!s || !s.pausedAt) return;
+  /* ما مضى في الإيقاف يُضاف إلى لحظة الانتهاء: يكمل الوقت من حيث
+     توقّف بالثانية، لا من حيث كان يجب أن يكون. */
+  const frozen = Math.max(0, Date.now() - s.pausedAt);
+  await update(ref(rtdb, examPath(roomId)), {
+    endsAt: s.endsAt + frozen,
+    pausedAt: null,
+  });
+}
+
+/** هل الوقت متجمّد الآن؟ */
+export function isExamPaused(session: ExamSession | null): boolean {
+  return Boolean(session && session.status === "running" && session.pausedAt);
 }
 
 /** تمديد الوقت بدقائق (موجب أو سالب) */
@@ -318,7 +363,11 @@ export async function releaseAllGrades(
 /** الثواني المتبقية — من اللحظة المطلقة، فتصمد أمام التحديث */
 export function secondsLeft(session: ExamSession | null): number {
   if (!session) return 0;
-  return Math.max(0, Math.floor((session.endsAt - Date.now()) / 1000));
+  /* أثناء الإيقاف يُحسب المتبقّي من **لحظة الإيقاف** لا من الآن:
+     العدّاد يتجمّد على كل الأجهزة بالرقم نفسه بلا أن نخزّن رقماً
+     ثانياً يمكن أن يتناقض. */
+  const at = session.pausedAt && session.status === "running" ? session.pausedAt : Date.now();
+  return Math.max(0, Math.floor((session.endsAt - at) / 1000));
 }
 
 export function formatClock(totalSeconds: number): string {
