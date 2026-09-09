@@ -102,11 +102,63 @@ export function onFullscreenChange(fn: () => void): () => void {
    وهذا يُبقي واجهة الوحدة كما هي فلا يحتاج أيّ نداء إلى تعديل.
    ════════════════════════════════════════════════════════════ */
 let pseudoGuard: MutationObserver | null = null;
+/** الأسلاف الذين رُفعوا لأجل البديل — تُعاد حالتهم عند الخروج */
+let raisedAncestors: HTMLElement[] = [];
+
+/* ════════════════════════════════════════════════════════════
+   لماذا لا يكفي `position: fixed` وحده — سبب بقاء iPhone معطوباً
+
+   ملء الشاشة الحقيقي يرفع العنصر إلى **الطبقة العليا** (top layer):
+   طبقة خارج شجرة التكديس كلّها، لا يعلوها شيء بحكم المواصفة. ولهذا
+   «يعمل على Android» بلا أن يحتاج أحدٌ إلى التفكير في `z-index`.
+
+   والبديل بالتنسيق **لا طبقة عليا له**. فالعنصر يصير `position: fixed`
+   بمقاس الشاشة فعلاً — لكنّه يبقى محبوساً في شجرة التكديس حيث هو.
+   وفي هذه الغرفة تحديداً:
+
+       main.bz-room
+         └ section#bz-room-stage
+             └ div.bz-stage            (شبكة)
+                 └ div.bz-pane         ← zIndex: 2 ⇒ **سياق تكديس**
+                     └ div.bz-room-exam-stage.bz-fullscreen  z-index: 9999
+
+   الـ9999 لا قيمة لها خارج سياقها: العنصر كلّه يُرسم عند المستوى 2
+   من منظور إخوة اللوحة. وشريط التحكّم `z-index: var(--z-chrome)`
+   وشريط الغرفة العلوي إخوةٌ **أعلى** في الشجرة — فيُرسمان فوق قاعة
+   الامتحان «الممتلئة». والنتيجة عند المستخدم: ضغطة تبدو بلا أثر.
+
+   وهذا هو نفس صنف الخطأ الذي دفن كونسول السبورة خلف مبدّل الشاشتين.
+   السياقات المتداخلة تُبطل الأرقام الكبيرة بصمت.
+
+   فنصنع للبديل طبقةً عليا يدوياً: نرفع كل سلف بين العنصر و`body`.
+   و`transform`/`filter`/`contain` تُلغى معها لأنّها — إن وُجدت على
+   أيّ سلف — تجعل `position: fixed` نسبةً إلى ذلك السلف لا إلى
+   الشاشة، فيمتلئ العنصر لوحته بدل شاشته.
+
+   (`z-index` يعمل على عناصر الشبكة والـflex بلا `position` — وكل ما
+   في هذا المسار عنصر شبكة أو flex، فلا نحتاج إلى المساس بتموضعها.)
+   ════════════════════════════════════════════════════════════ */
+const ANCESTOR_CLASS = "bz-fs-ancestor";
+
+function raiseAncestors(el: HTMLElement) {
+  let node = el.parentElement;
+  while (node && node !== document.body && node !== document.documentElement) {
+    node.classList.add(ANCESTOR_CLASS);
+    raisedAncestors.push(node);
+    node = node.parentElement;
+  }
+}
+
+function restoreAncestors() {
+  raisedAncestors.forEach((n) => n.classList.remove(ANCESTOR_CLASS));
+  raisedAncestors = [];
+}
 
 function applyPseudo(el: HTMLElement) {
   pseudoEl = el;
   el.classList.add(PSEUDO_CLASS);
   document.body.classList.add(BODY_CLASS);
+  raiseAncestors(el);
 
   pseudoGuard?.disconnect();
   if (typeof MutationObserver === "undefined") return;
@@ -125,6 +177,7 @@ function applyPseudo(el: HTMLElement) {
 function clearPseudo() {
   pseudoGuard?.disconnect();
   pseudoGuard = null;
+  restoreAncestors();
   if (!pseudoEl) return;
   pseudoEl.classList.remove(PSEUDO_CLASS);
   document.body.classList.remove(BODY_CLASS);

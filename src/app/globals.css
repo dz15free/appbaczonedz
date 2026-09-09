@@ -289,7 +289,9 @@ html.bz-room-open body {
    شريط الـ home الأسود **فوق تسميات الأزرار** كما في اللقطات.
    الآن يحترم المنطقة الآمنة فعلاً، وأدنى حشوة 8px حيث لا منطقة. */
 .bz-ctlbar {
-  padding-top: 6px;
+  /* 10px لا 6px: شارة العدد على «الصفّ» تخرج 6px فوق حدّ الزرّ عمداً
+     (`-top-1.5`)، فكانت تلامس حدّ الشريط وتبدو مبتورة على الحاسوب. */
+  padding-top: 10px;
   padding-bottom: max(8px, calc(4px + env(safe-area-inset-bottom, 0px)));
   z-index: var(--z-chrome);
 }
@@ -372,7 +374,43 @@ html.bz-room-open body {
 
 /* التوسيط الآمن: يوسّط ما دام المحتوى يتّسع، ويعود إلى البداية حين
    يفيض — فلا تُقصّ أوّل أداة في الكونسول ولا آخرها. */
-.bz-console-wrap { justify-content: center; justify-content: safe center; }
+.bz-console-wrap {
+  justify-content: center;
+  justify-content: safe center;
+  /* الالتقاط في `bz-hscroll` لأجل أشرطة ذات أبناء كثيرين تبدأ من
+     الطرف الخطأ في RTL. والكونسول ابنٌ واحد عريض: الالتقاط على
+     بدايته يمنع الوصول إلى آخر أداة فيه. */
+  scroll-snap-type: none;
+}
+
+/* ــ مسطرة تمرير مرئية لأدوات السبورة على الحاسوب ــ
+
+   🐛 التمرير كان يعمل لكن **بلا أيّ دليل عليه**: `bz-hscroll` تُخفي
+   المسطرة لأنّها الصواب في شريط يُسحب بالإصبع. أمّا على الفأرة فلا
+   إصبع ولا سحب: من يرى شريطاً مقصوصاً بلا مسطرة يستنتج أنّ الأدوات
+   الباقية غير موجودة، لا أنّها خلف تمرير.
+
+   وهذا يظهر تحديداً حين تكون السبورة شاشةً ثانية على الحاسوب: اللوحة
+   نصف العرض، والأدوات كما هي.
+
+   على اللمس تبقى مخفيّة — هناك السحب نفسه هو الدليل. */
+@media (pointer: fine) {
+  .bz-console-wrap {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bz-line, #d8dde7) transparent;
+    padding-bottom: 7px;
+  }
+  .bz-console-wrap::-webkit-scrollbar {
+    display: block;
+    height: 7px;
+  }
+  .bz-console-wrap::-webkit-scrollbar-track { background: transparent; }
+  .bz-console-wrap::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--bz-line, #d8dde7);
+  }
+  .bz-console-wrap:hover::-webkit-scrollbar-thumb { background: var(--bz-ink-3, #8b93a7); }
+}
 
 /* صفّ مبدّل الشاشتين: سطحٌ خفيف يفصله عن اللوحة فوقه، ويحترم
    المنطقة الآمنة حين يكون آخر ما في الشاشة. */
@@ -403,6 +441,32 @@ html.bz-room-open body {
 .bz-room:-webkit-full-screen,
 .bz-wbroot:-webkit-full-screen,
 .bz-room-exam-stage:-webkit-full-screen { background: var(--bz-bg); }
+
+/* ــ الطبقة العليا اليدوية لملء الشاشة البديل ــ
+   يُطبَّق على كل سلف بين العنصر و`body` (انظر `lib/fullscreen.ts`).
+   الغرض شيئان لا ثالث لهما:
+
+   ١) `z-index` عالٍ: ملء الشاشة الحقيقي يرفع عنصره إلى طبقة خارج
+      شجرة التكديس، والبديل لا طبقة له — فيبقى محبوساً داخل أوّل
+      سلف له سياق تكديس (`.bz-pane` هنا بـ`zIndex: 2`) ويُرسم فوقه
+      شريط التحكّم والشريط العلوي. فنصنع له الطبقة يدوياً.
+
+   ٢) إلغاء ما يصنع كتلة احتواء: `transform` و`filter` و`contain`
+      و`perspective` تجعل `position: fixed` نسبةً إلى السلف لا إلى
+      الشاشة — فيمتلئ العنصر لوحته بدل شاشته. ولا نلمس `overflow`:
+      العنصر `fixed` أصلاً فلا يقصّه أحد، وتغييره يُفلت محتوىً آخر.
+
+   مؤقّت بحياة ملء الشاشة، ويُزال بالكامل عند الخروج. */
+.bz-fs-ancestor {
+  z-index: 2147483600 !important;
+  transform: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+  will-change: auto !important;
+}
 
 .bz-fullscreen {
   position: fixed !important;

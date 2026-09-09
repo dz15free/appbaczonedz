@@ -124,13 +124,17 @@ export function FloatingConsole({ children, idleDim }: { children: ReactNode; id
          واحدة منه. المطلوب: «إذا أصبحت الأدوات أكثر من المساحة
          المتاحة يجب أن يظهر scrolling حتى يمكن الوصول إلى جميع
          الأدوات» — ويعمل على الحاسوب كما على الهاتف، لأنّ نافذةً
-         ضيّقة على الحاسوب تضيق بالأدوات تماماً كهاتف.
+         ضيّقة على الحاسوب (أو السبورة شاشةً ثانية) تضيق بالأدوات
+         تماماً كهاتف.
 
-         و`justify-content: safe center` في `bz-console-wrap`: التوسيط
-         العادي في حاوية منزلقة يقصّ **الطرفين** حين يفيض المحتوى،
-         فتضيع أوّل أداة وآخرها. `safe` تعني: وسّط ما دام يتّسع،
-         وارجع إلى البداية حين يفيض. */
-      className="bz-console-wrap bz-hscroll pointer-events-none absolute inset-x-2 bottom-3 z-20 flex"
+         ⚠️ الغلاف بعرض محتواه (`left-1/2` + `max-w`) لا بعرض اللوحة
+         (`inset-x-2`). والفرق ليس تجميلياً: المسطرة على الحاسوب
+         مسطرة **هذا الغلاف**، فلو كان `pointer-events-none` لما
+         أمكن سحبها بالفأرة أصلاً — مسطرة تُرى ولا تُمسك. ولو مُدّ
+         بعرض اللوحة مع `pointer-events-auto` لابتلع النقر على
+         الشريط الفارغ يمين الأدوات ويسارها، فتعطّل الرسم قرب أسفل
+         اللوح. فالعرض بقدر المحتوى: تُمسك المسطرة، ولا يُبتلع شيء. */
+      className="bz-console-wrap bz-hscroll pointer-events-auto absolute bottom-3 left-1/2 z-20 flex max-w-[calc(100%-1rem)] -translate-x-1/2"
     >
       <Console idleDim={idleDim}>{children}</Console>
     </div>

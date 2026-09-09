@@ -383,11 +383,17 @@ export function RoomControlBar(p: RoomControlBarProps) {
             يمنع الفيض من أصله. */}
         <div className="shrink-0">{p.voiceSlot}</div>
 
-        {/* لا `overflow-x-auto` بعد اليوم: ما يُقاس أنّه لا يتّسع لا
-            يُعرض أصلاً بدل أن يُدفن خلف تمرير خفيّ. */}
+        {/* 🐛 كان `overflow-hidden` هنا يقصّ **شارة العدد** على زرّ
+            «الصفّ»: الشارة عند `-top-1.5` أي خارج حدود الزرّ عمداً،
+            وأيّ قصٍّ على الحاوية يبترها.
+
+            ولم يعد للقصّ داعٍ أصلاً: القياس أعلاه لا يُدخل في الشريط
+            إلّا ما يتّسع، فلا فائض يُخفى. `overflow-visible` صريحة
+            لأنّ الشارة تحتاج أن تخرج، والحشوة العلوية في `.bz-ctlbar`
+            تعطيها مكاناً بدل أن تلامس حدّ الشريط. */}
         <div
           ref={railRef}
-          className="flex min-w-0 flex-1 items-center justify-start gap-1.5 overflow-hidden lg:justify-center"
+          className="flex min-w-0 flex-1 items-center justify-start gap-1.5 overflow-visible lg:justify-center"
         >
           {scroller.map((a) => <CtlButton key={a.id} a={a} compact />)}
         </div>

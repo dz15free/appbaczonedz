@@ -71,7 +71,14 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   useEffect(() => {
     const unsub = onValue(ref(rtdb, statePath), (snap) => {
       const raw = snap.val() as any;
-      if (!raw) return;
+      /* 🐛 حالة محذوفة كانت تُهمَل: يوقف المالك ويُزيل الفيديو فيبقى
+         عند المنضمّ يعمل إلى الأبد. الإزالة أمرٌ أيضاً — وأصرحها. */
+      if (!raw) {
+        stateRef.current = null;
+        try { ytPlayerRef.current?.pauseVideo?.(); } catch { /* ignore */ }
+        try { mp4Ref.current?.pause(); } catch { /* ignore */ }
+        return;
+      }
       if (!raw.sourceType) raw.sourceType = raw.videoId ? "youtube" : "direct";
       const s = raw as VideoState;
       const prev = stateRef.current;
@@ -86,19 +93,44 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   function syncToPlayer(s: VideoState, prev: VideoState | null) {
     if (s.sourceType === "youtube") {
       const p = ytPlayerRef.current;
+      /* 🐛 هنا كان يضيع الأمر. المشغّل غير جاهز ⇒ خروج صامت، والمستمع
+         لا يُطلق إلّا عند **تغيّر** الحالة — فلا فرصة ثانية. لكنّ
+         `stateRef.current` مُحدَّثة دائماً (تُضبط قبل النداء)،
+         و`onReady` يُعيد تطبيقها عبر هذه الدالة نفسها. */
       if (!p || !ytReady.current) return;
       applyingRemote.current = true;
       if (!prev || prev.videoId !== s.videoId) {
         // الطلاب: ابدأ مكتوماً ليسمح iOS بالتشغيل التلقائي
         if (!isOwner) { try { p.mute?.(); } catch { /* ignore */ } }
-        p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
-        setTimeout(() => {
-          if (s.isPlaying) {
+
+        /* 🐛 **سبب «المالك يوقف الفيديو ولا يتوقف عند المنضمّ».**
+
+           كان هذا الفرع ينادي `loadVideoById` دائماً — و`loadVideoById`
+           **يشغّل الفيديو فوراً** بحكم تعريفها في واجهة YouTube، مهما
+           كانت `isPlaying`. ثمّ لا يُطفئه شيء: الشرط بعده
+           `if (s.isPlaying) playVideo()` يعالج التشغيل ولا يعالج
+           التوقّف إطلاقاً.
+
+           ومتى يقع هذا الفرع عند المنضمّ؟ كلّما كان `prev` فارغاً —
+           أي عند أوّل حالة تصله. وهو ما يحدث بالضبط حين يصل أمر
+           الإيقاف قبل أن يجهز مشغّله (فيُهمَل الأمر في السطر أعلاه)،
+           ثمّ يجهز فيطبّق `onReady` آخر حالة معروفة: إيقاف. فتُحمّل
+           و**تُشغَّل**. النتيجة: الأستاذ موقف والطالب يشاهد.
+
+           `cueVideoById` تُحمّل بلا تشغيل — وهي الصحيحة حين تكون
+           الحالة موقوفة. ونؤكّد التوقّف بعد التحميل لأنّ المشغّل قد
+           يكون بدأ قبل أن تصل التهيئة. */
+        if (s.isPlaying) {
+          p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
+          setTimeout(() => {
             p.playVideo?.();
             // للطلاب: نعرض زر فك الكتم (التشغيل نجح مكتوماً)
             if (!isOwner) setTimeout(() => setNeedsTap(true), 1200);
-          }
-        }, 1200);
+          }, 1200);
+        } else {
+          p.cueVideoById?.({ videoId: s.videoId, startSeconds: s.currentTime });
+          setTimeout(() => { try { p.pauseVideo?.(); } catch { /* ignore */ } }, 400);
+        }
       } else {
         const local = p.getCurrentTime?.() ?? 0;
         if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
@@ -106,7 +138,10 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       }
       // تطبيق الكتم: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الطالب الصوت بعد
       applyMute(s.muted ?? false);
-      setTimeout(() => { applyingRemote.current = false; }, 700);
+      /* المهلة تغطّي أطول مسار أعلاه (1200ms + هامش)، وإلّا رُفع
+         الحارس قبل أن ينتهي التطبيق فحُسبت أحداث المشغّل الناتجة عن
+         الأمر البعيد كأنّها فعلُ مستخدم — فيُعيد المالك بثّها. */
+      setTimeout(() => { applyingRemote.current = false; }, 1600);
     } else if (s.sourceType === "direct") {
       const v = mp4Ref.current;
       if (!v) return;
@@ -167,17 +202,18 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             const s = stateRef.current;
             // الطلاب: نبدأ مكتومين ليسمح iOS بالتشغيل التلقائي، ثم زر لفك الكتم
             if (!isOwner) {
-              try { ytPlayerRef.current?.mute?.(); } catch { /* ignore */ }
+              try { ytPlayerRef.current?.mute?.(); } catch { /* ignore */ } 
             }
             if (!s?.videoId) return;
-            ytPlayerRef.current?.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
-            if (s.isPlaying) {
-              setTimeout(() => {
-                ytPlayerRef.current?.playVideo?.();
-                // للطلاب: إن نجح التشغيل (مكتوماً) نعرض زر فك الكتم
-                if (!isOwner) setTimeout(() => setNeedsTap(true), 1200);
-              }, 800);
-            }
+            /* 🐛 كان هذا يُكرّر منطق التحميل بيده — ويُكرّر معه الخطأ
+               نفسه: `loadVideoById` تُشغّل دائماً، والشرط بعدها يعالج
+               التشغيل لا التوقّف. فمن جهز مشغّله بعد وصول أمر الإيقاف
+               كان يبدأ المشاهدة بينما الأستاذ موقف.
+
+               الآن يمرّ من `syncToPlayer` كأيّ حالة قادمة: مسار واحد
+               للتطبيق، فلا يفترق نسخةٌ عن أخرى مع الوقت. و`prev = null`
+               صادقة هنا: هذا أوّل تطبيق فعليّ على هذا المشغّل. */
+            syncToPlayer(s, null);
           },
           onStateChange: (e: any) => {
             if (!isOwner || applyingRemote.current || destroyed) return;
