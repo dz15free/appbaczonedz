@@ -457,6 +457,16 @@ html.bz-room-open body {
       العنصر `fixed` أصلاً فلا يقصّه أحد، وتغييره يُفلت محتوىً آخر.
 
    مؤقّت بحياة ملء الشاشة، ويُزال بالكامل عند الخروج. */
+/* سطحٌ داخل الغرفة يملأ الشاشة ⇒ أشرطة الغرفة تختفي، لا تُغطّى وحسب.
+   التغطية بـ`z-index` تكفي للرسم ولا تكفي للّمس: شريط التحكّم يبقى
+   يلتقط الضغطات عند حافّته السفلى فيخرج الطالب من ورقته بلا قصد.
+   (لا يُطبَّق حين تكون الغرفة نفسها هي الممتلئة — هناك الأشرطة جزء
+   من التجربة، ووضع التركيز يتكفّل بها.) */
+body.bz-fullscreen-inner .bz-topbar,
+body.bz-fullscreen-inner .bz-rail-wrap,
+body.bz-fullscreen-inner .bz-ctlbar,
+body.bz-fullscreen-inner .bz-stage-switch { display: none !important; }
+
 .bz-fs-ancestor {
   z-index: 2147483600 !important;
   transform: none !important;

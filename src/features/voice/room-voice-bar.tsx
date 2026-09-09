@@ -14,11 +14,27 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { VoiceManager, monitorLevel, type VoiceParticipant } from "@/features/voice/voice-manager";
 
-function AudioSink({ stream }: { stream: MediaStream }) {
+/* ════════════════════════════════════════════════════════════
+   تشغيل صوت الآخرين
+
+   🐛 `autoPlay` وحدها لا تكفي على iOS. عنصر `<audio>` يُركَّب لحظة
+   وصول مسار المتحدّث — أي **خارج أيّ إيماءة مستخدم**، وiOS يرفض
+   التشغيل التلقائي هناك بصمت. فينضمّ الطالب، ويرى الجميع في القائمة،
+   ولا يسمع أحداً — بلا رسالة خطأ ولا سبب ظاهر. وهذه بعينها «تجربة
+   الصوت سيّئة».
+
+   العلاج نداء `play()` صريح ورصد فشله: الإذن مُنح فعلاً عند الضغط
+   على «انضمّ صوتياً»، لكنّ المتصفّح يحتاج النداء ليربط بينهما. وإن
+   فشل رغم ذلك نُبلغ الأعلى ليطلب لمسةً واحدة بدل صمتٍ لا يُفسَّر.
+   ════════════════════════════════════════════════════════════ */
+function AudioSink({ stream, onBlocked }: { stream: MediaStream; onBlocked?: () => void }) {
   const ref = useRef<HTMLAudioElement>(null);
   useEffect(() => {
-    if (ref.current) ref.current.srcObject = stream;
-  }, [stream]);
+    const el = ref.current;
+    if (!el) return;
+    el.srcObject = stream;
+    el.play().catch(() => onBlocked?.());
+  }, [stream, onBlocked]);
   return <audio ref={ref} autoPlay playsInline />;
 }
 
@@ -33,7 +49,13 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
   const monitors = useRef<Record<string, () => void>>({});
   const [joined, setJoined] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  /* `muted` = إذن المعلّم (من RTDB) · `selfOff` = قرار صاحب الجهاز.
+     الفصل بينهما هو ما يُخرج الطالب من مصيدة «أغلقتُ ميكروفوني فلم
+     أستطع فتحه» — انظر `voice-manager.ts`. */
   const [muted, setMuted] = useState(false);
+  const [selfOff, setSelfOff] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const [connLost, setConnLost] = useState(false);
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [speaking, setSpeaking] = useState<Record<string, boolean>>({});
   const [streams, setStreams] = useState<Record<string, MediaStream>>({});
@@ -45,6 +67,7 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
     const m = new VoiceManager(roomId, user.uid, user.displayName || "طالب", isOwner);
     m.onParticipants = setParticipants;
     m.onMyMuteChange = (mt) => setMuted(mt);
+    m.onConnectionLost = () => setConnLost(true);
     m.onRemoteStream = (uid, stream) => {
       setStreams((s) => ({ ...s, [uid]: stream }));
       monitors.current[uid]?.();
@@ -81,6 +104,9 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
     setStreams({});
     setSpeaking({});
     setMuted(false);
+    setSelfOff(false);
+    setAudioBlocked(false);
+    setConnLost(false);
     setExpanded(false);
   }
 
@@ -88,10 +114,13 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
     if (!user) return;
     if (isOwner) {
       managerRef.current?.ownerToggleMute(user.uid, !muted);
-    } else if (!muted) {
-      // الطالب يغلق ميكروفونه فقط (الفتح بيد المعلّم)
-      managerRef.current?.selfMute();
+      return;
     }
+    /* بلا إذن المعلّم لا شيء يُفعل — الزرّ معطّل أصلاً في هذه الحالة */
+    if (muted) return;
+    const next = !selfOff;
+    setSelfOff(next);
+    managerRef.current?.setSelfOff(next);
   }
 
   useEffect(() => {
@@ -137,8 +166,37 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
   return (
    <div ref={barRef} className={embedded ? "flex items-center" : "bz-voicebar border-t border-border bg-surface"}>
       {Object.entries(streams).map(([uid, stream]) => (
-        <AudioSink key={uid} stream={stream} />
+        <AudioSink key={uid} stream={stream} onBlocked={() => setAudioBlocked(true)} />
       ))}
+
+      {/* الصوت محجوب ⇒ لمسة واحدة تفكّه. الصمت بلا تفسير أسوأ من
+          زرٍّ إضافي. */}
+      {/* اتصال الصوت سقط: يُقال صراحةً بدل صمتٍ يُفسَّر خطأً */}
+      {connLost && joined && (
+        <button
+          onClick={() => { leave(); void join(); }}
+          className="fixed z-[10046] rounded-full bg-danger px-3 py-2 text-[11px] font-extrabold text-white shadow-lg"
+          style={{ insetInlineStart: "12px", bottom: "calc(env(safe-area-inset-bottom, 0px) + 122px)" }}
+        >
+          انقطع الصوت — أعد الاتصال
+        </button>
+      )}
+
+      {audioBlocked && joined && (
+        <button
+          onClick={() => {
+            document.querySelectorAll("audio").forEach((a) => { void a.play().catch(() => {}); });
+            setAudioBlocked(false);
+          }}
+          className="fixed z-[10046] rounded-full bg-[var(--bz-blue)] px-3 py-2 text-[11px] font-extrabold text-white shadow-lg"
+          style={{
+            insetInlineStart: "12px",
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 78px)",
+          }}
+        >
+          🔊 اضغط لسماع الغرفة
+        </button>
+      )}
 
       {speaker && !expanded && (
         <div
@@ -174,51 +232,78 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
         </div>
       )}
 
-      {/* اللوحة الموسّعة (المشاركون + أدوات المالك) */}
+      {/* ════════════════════════════════════════════════════════════
+          لوحة المشاركين — وأين كانت مفقودة
+
+          🐛 **المالك لم يكن يملك أيّ وسيلة لفتح ميكروفون منضمّ.**
+          والقدرة موجودة في `VoiceManager.ownerToggleMute` منذ البداية،
+          لكنّ زرّها كان محبوساً خلف شرطين لا يتحقّقان:
+
+            الزرّ الذي يفتح اللوحة:  `${embedded ? "hidden" : "flex"}`
+            اللوحة نفسها:           `{joined && expanded && !embedded}`
+
+          ومنذ أن صار شريط الصوت يعيش **داخل** شريط التحكّم (أي
+          `embedded` دائماً) صار الشرطان كاذبين دائماً. فاختفت اللوحة
+          من الواجهة كلّها بلا أن يحذفها أحد.
+
+          والنتيجة أنّ المنضمّين يدخلون مكتومين افتراضياً (`initialMuted
+          = !isOwner`) ولا سبيل إلى فتحهم — إلّا لمن رفع يده، ولأوّل
+          رافعٍ فقط، من زرٍّ في رفّ الصفّ. أي أنّ **الصوت الجماعي كان
+          معطّلاً عملياً**.
+
+          اللوحة الآن تعمل في الوضعين: ورقةً سفلية فوق المحتوى حين
+          يكون الشريط مُدمَجاً، وكما كانت حين لا يكون.
+          ════════════════════════════════════════════════════════════ */}
+      {joined && expanded && embedded && (
+        <div
+          className="fixed inset-0 z-[10045]"
+          onClick={() => setExpanded(false)}
+        >
+          <div className="absolute inset-0 bg-black/30" />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-x-0 bottom-0 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t border-border bg-surface p-4"
+            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[13px] font-extrabold text-[var(--bz-ink)]">
+                الصوت — {participants.length} مشارك
+              </span>
+              <button
+                onClick={() => setExpanded(false)}
+                className="rounded-lg px-2 py-1 text-[11px] font-extrabold text-[var(--bz-ink-3)]"
+              >
+                إغلاق
+              </button>
+            </div>
+            {isOwner && (
+              <p className="mb-3 text-[11px] leading-relaxed text-[var(--bz-ink-3)]">
+                المنضمّون يدخلون بميكروفون مغلق. افتح ميكروفون من تريد
+                سماعه من الأزرار تحت اسمه.
+              </p>
+            )}
+            <VoiceRoster
+              participants={participants}
+              speaking={speaking}
+              isOwner={isOwner}
+              myUid={user?.uid}
+              onToggleMute={(uid, next) => managerRef.current?.ownerToggleMute(uid, next)}
+              onKick={(uid) => managerRef.current?.ownerKick(uid)}
+            />
+          </div>
+        </div>
+      )}
+
       {joined && expanded && !embedded && (
         <div className="max-h-48 overflow-y-auto p-3" style={{ borderBottom: "1px solid var(--bz-border)" }}>
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
-            {participants.map((p) => {
-              const isMe = p.uid === user?.uid;
-              const isMuted = !!p.muted;
-              const isSpeaking = speaking[p.uid] && !isMuted;
-              return (
-                <div key={p.uid} className="flex flex-col items-center text-center">
-                  <div className={`relative rounded-full ${isSpeaking ? "ring-2 ring-emerald-400" : ""}`}>
-                    <LiveAvatar uid={p.uid} name={p.name || "ط"} size="md" className="h-12 w-12" />
-                    {isMuted && (
-                      <span className="absolute -bottom-1 -left-1 grid h-5 w-5 place-items-center rounded-full bg-[#13151f]">
-                        <FontAwesomeIcon icon={faMicrophoneSlash} className="h-2.5 w-2.5 text-danger" />
-                      </span>
-                    )}
-                  </div>
-                  <span className="mt-1.5 max-w-[4rem] truncate text-[10px] font-medium" style={{ color: "var(--bz-text-muted)" }}>
-                    {p.name}
-                    {isMe && " (أنت)"}
-                  </span>
-                  {isOwner && !isMe && (
-                    <div className="mt-1 flex gap-1">
-                      <button
-                        onClick={() => managerRef.current?.ownerToggleMute(p.uid, !isMuted)}
-                        className={`grid h-6 w-6 place-items-center rounded-md transition ${!isMuted ? "bg-secondary/15 text-secondary" : "text-text-muted hover:bg-primary/10"}`}
-                        aria-label={isMuted ? "فتح الميكروفون" : "كتم"}
-                        title={isMuted ? "فتح الميكروفون" : "كتم"}
-                      >
-                        <FontAwesomeIcon icon={isMuted ? faMicrophone : faMicrophoneSlash} className="h-2.5 w-2.5" />
-                      </button>
-                      <button
-                        onClick={() => managerRef.current?.ownerKick(p.uid)}
-                        className="grid h-6 w-6 place-items-center rounded-md text-text-muted transition hover:bg-danger/10 hover:text-danger"
-                        aria-label="طرد"
-                      >
-                        <FontAwesomeIcon icon={faUserSlash} className="h-2.5 w-2.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <VoiceRoster
+            participants={participants}
+            speaking={speaking}
+            isOwner={isOwner}
+            myUid={user?.uid}
+            onToggleMute={(uid, next) => managerRef.current?.ownerToggleMute(uid, next)}
+            onKick={(uid) => managerRef.current?.ownerKick(uid)}
+          />
         </div>
       )}
 
@@ -248,14 +333,21 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
           <>
             <button
               onClick={() => setExpanded((e) => !e)}
-              className={`items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-text-muted transition hover:bg-primary/10 ${embedded ? "hidden" : "flex"}`}
+              aria-label={`المشاركون في الصوت (${participants.length})`}
+              title="المشاركون والميكروفونات"
+              /* 🐛 كان `hidden` في الوضع المُدمَج — وهو الوضع الوحيد
+                 المستعمل اليوم. فاختفى الطريق الوحيد إلى أدوات
+                 الميكروفون. مضغوطٌ الآن لا مخفيّ. */
+              className={`flex items-center gap-1.5 rounded-lg font-semibold text-text-muted transition hover:bg-primary/10 ${
+                embedded ? "h-9 px-2 text-[11px]" : "px-2 py-1.5 text-sm"
+              }`}
             >
               <FontAwesomeIcon
                 icon={faChevronUp}
                 className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
               />
               <span className="bz-live-dot" />
-              المشاركون ({participants.length})
+              {embedded ? participants.length : `المشاركون (${participants.length})`}
             </button>
             <div className="flex items-center gap-2">
               {!isOwner && muted && (
@@ -293,6 +385,86 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   قائمة المشاركين وأدوات الميكروفون
+
+   استُخرجت من داخل اللوحة إلى مكوّن واحد لأنّها تُعرض الآن في
+   موضعين (ورقة سفلية في الوضع المُدمَج، ولوحة داخلية في غيره).
+   ونسختان من أزرار الصلاحيات تفترقان مع أوّل تعديل — وهذا نوع من
+   الازدواج تحديداً لا يُحتمل: زرٌّ يفتح ميكروفوناً في مكان ولا يفتحه
+   في آخر.
+   ════════════════════════════════════════════════════════════ */
+function VoiceRoster({
+  participants, speaking, isOwner, myUid, onToggleMute, onKick,
+}: {
+  participants: VoiceParticipant[];
+  speaking: Record<string, boolean>;
+  isOwner: boolean;
+  myUid?: string;
+  onToggleMute: (uid: string, next: boolean) => void;
+  onKick: (uid: string) => void;
+}) {
+  if (participants.length === 0) {
+    return (
+      <p className="py-4 text-center text-[11px] font-bold text-[var(--bz-ink-3)]">
+        لا أحد في الصوت بعد.
+      </p>
+    );
+  }
+  return (
+    <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
+      {participants.map((p) => {
+        const isMe = p.uid === myUid;
+        const isMuted = !!p.muted;
+        const isSpeaking = speaking[p.uid] && !isMuted;
+        return (
+          <div key={p.uid} className="flex flex-col items-center text-center">
+            <div className={`relative rounded-full ${isSpeaking ? "ring-2 ring-emerald-400" : ""}`}>
+              <LiveAvatar uid={p.uid} name={p.name || "ط"} size="md" className="h-12 w-12" />
+              {isMuted && (
+                <span className="absolute -bottom-1 -left-1 grid h-5 w-5 place-items-center rounded-full bg-[#13151f]">
+                  <FontAwesomeIcon icon={faMicrophoneSlash} className="h-2.5 w-2.5 text-danger" />
+                </span>
+              )}
+            </div>
+            <span className="mt-1.5 max-w-[4.5rem] truncate text-[10px] font-medium" style={{ color: "var(--bz-text-muted)" }}>
+              {p.name}{isMe && " (أنت)"}
+            </span>
+            {isOwner && !isMe && (
+              <div className="mt-1 flex gap-1">
+                <button
+                  onClick={() => onToggleMute(p.uid, !isMuted)}
+                  /* 44px هدف لمس: هذا الزرّ هو الطريق الوحيد إلى
+                     مشاركة الطالب بصوته، وزرٌّ 24px يصعب إصابته يعني
+                     ميزةً مفقودة عملياً. */
+                  className={`grid h-11 w-11 place-items-center rounded-lg transition ${
+                    isMuted
+                      ? "bg-[var(--bz-blue)] text-white"
+                      : "bg-secondary/15 text-secondary"
+                  }`}
+                  aria-label={isMuted ? `فتح ميكروفون ${p.name}` : `كتم ${p.name}`}
+                  title={isMuted ? "فتح الميكروفون" : "كتم"}
+                >
+                  <FontAwesomeIcon icon={isMuted ? faMicrophone : faMicrophoneSlash} className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onKick(p.uid)}
+                  className="grid h-11 w-11 place-items-center rounded-lg text-text-muted transition hover:bg-danger/10 hover:text-danger"
+                  aria-label={`إخراج ${p.name} من الصوت`}
+                  title="إخراج من الصوت"
+                >
+                  <FontAwesomeIcon icon={faUserSlash} className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

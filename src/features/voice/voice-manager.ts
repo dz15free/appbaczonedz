@@ -20,7 +20,11 @@ export class VoiceManager {
   private pc: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
   private sessionId = "";
-  private subscribed = new Set<string>();
+  /* 🐛 كان `Set<string>` من الـuid وحده. ومن غادر ثمّ عاد يحمل
+     **sessionId جديداً** بينما uid ما زال في المجموعة — فلا يُشترك
+     فيه أحد ثانيةً و**لا يسمعه أحد إلى نهاية الحصّة**. المفتاح الآن
+     هو الجلسة لا الشخص، فالعودة اشتراكٌ جديد كما يجب. */
+  private subscribed = new Map<string, string>(); // uid → sessionId
   private midToUid = new Map<string, string>();
   private remoteStreams = new Map<string, MediaStream>();
   private chain: Promise<void> = Promise.resolve();
@@ -30,6 +34,7 @@ export class VoiceManager {
   onParticipants?: (list: VoiceParticipant[]) => void;
   onMyMuteChange?: (muted: boolean) => void;
   onLeave?: () => void;
+  onConnectionLost?: (state: string) => void;
 
   constructor(
     private roomId: string,
@@ -47,6 +52,16 @@ export class VoiceManager {
     this.sessionId = await newSession();
 
     this.pc = new RTCPeerConnection(STUN);
+    /* 🐛 لم يكن أحد يراقب حالة الاتصال. فإن سقط ICE — وهو شائع على
+       شبكات الجوّال الجزائرية خلف NAT — يموت الصوت بلا أيّ أثر:
+       الأسماء باقية في القائمة والمؤشّرات ساكنة، والمستخدم يحسب أنّ
+       الجميع صامتون. الآن يُبلَّغ الأعلى فيقرّر ما يعرضه. */
+    this.pc.onconnectionstatechange = () => {
+      const st = this.pc?.connectionState;
+      if (st === "failed" || st === "disconnected") {
+        this.onConnectionLost?.(st);
+      }
+    };
     this.pc.ontrack = (e) => {
       const mid = e.transceiver?.mid ?? "";
       const uid = this.midToUid.get(mid);
@@ -72,14 +87,18 @@ export class VoiceManager {
     });
     await this.pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
 
-    // افتراضياً: مايك المالك مفتوح، والمنضمّون مكتومون
+    // افتراضياً: مايك المالك مفتوح، والمنضمّون بلا إذن حتى يمنحه
     const initialMuted = !this.isOwner;
-    this.localStream.getAudioTracks().forEach((t) => (t.enabled = !initialMuted));
+    this.ownerMuted = initialMuted;
+    this.applyMicState();
 
     // أعلن وجودي في RTDB + حذف تلقائي عند قطع الاتصال
     const myRef = ref(rtdb, `${this.voicePath()}/${this.uid}`);
+    /* التسجيل قبل الإعلان لا بعده: بينهما نافذة إن انقطع فيها الاتصال
+       بقي المستخدم معروضاً في الغرفة إلى الأبد — «شبحٌ» يظنّه الأستاذ
+       حاضراً وينتظر صوته. */
+    await onDisconnect(myRef).remove();
     await set(myRef, { name: this.name, sessionId: this.sessionId, trackName, muted: initialMuted });
-    onDisconnect(myRef).remove();
 
     // راقب المشاركين واشترك في الجدد
     this.unsub = onValue(ref(rtdb, this.voicePath()), (snap) => {
@@ -94,16 +113,23 @@ export class VoiceManager {
       }
       // حالة الكتم يتحكّم بها المالك (وتُطبَّق فوراً على ميكروفوني)
       if (me) {
-        const muted = !!me.muted;
-        this.localStream?.getAudioTracks().forEach((t) => (t.enabled = !muted));
-        this.onMyMuteChange?.(muted);
+        this.ownerMuted = !!me.muted;
+        this.applyMicState();
+        this.onMyMuteChange?.(this.ownerMuted);
       }
 
       for (const p of list) {
-        if (p.uid !== this.uid && p.sessionId && p.trackName && !this.subscribed.has(p.uid)) {
-          this.subscribed.add(p.uid);
-          this.subscribeTo(p);
-        }
+        if (p.uid === this.uid || !p.sessionId || !p.trackName) continue;
+        if (this.subscribed.get(p.uid) === p.sessionId) continue;
+        this.subscribed.set(p.uid, p.sessionId);
+        this.remoteStreams.delete(p.uid);  // الجلسة الجديدة مسارٌ جديد
+        this.subscribeTo(p);
+      }
+
+      /* من غادر يُنسى، فلا يمنع اسمُه اشتراكاً لاحقاً */
+      const present = new Set(list.map((p) => p.uid));
+      for (const uid of Array.from(this.subscribed.keys())) {
+        if (!present.has(uid)) this.subscribed.delete(uid);
       }
     });
   }
@@ -142,9 +168,33 @@ export class VoiceManager {
     update(ref(rtdb, `${this.voicePath()}/${uid}`), { kicked: true });
   }
 
-  // الطالب يستطيع إغلاق ميكروفونه بنفسه فقط (الفتح بيد المالك)
-  selfMute() {
-    update(ref(rtdb, `${this.voicePath()}/${this.uid}`), { muted: true });
+  /* ════════════════════════════════════════════════════════
+     الكتم الذاتي — ولماذا لم يعد يُكتب في RTDB
+
+     🐛 مصيدة كاملة: `selfMute` كانت تكتب `muted: true` في العقدة
+     نفسها التي يتحكّم بها المالك. والواجهة تُعطّل زرّ الطالب حين
+     `muted` (لأنّ الفتح بيد المعلّم). فمن أغلق ميكروفونه لحظةً
+     **لم يستطع فتحه أبداً** — ولا المعلّم يدري أنّه يحتاج إذناً،
+     لأنّه أعطاه الإذن أصلاً.
+
+     الآن حقلان لا حقل: `muted` في RTDB هو **الإذن** ويملكه المالك
+     وحده، و`selfOff` محلّي في الجهاز يملكه صاحبه. والميكروفون يعمل
+     إذا اجتمع الاثنان. فيغلق الطالب ميكروفونه ويفتحه متى شاء ما دام
+     الإذن قائماً، ويبقى الإذن بيد المعلّم كما صُمّم.
+     ════════════════════════════════════════════════════════ */
+  private selfOff = false;
+  private ownerMuted = false;
+
+  /** يغلق الطالب ميكروفونه أو يفتحه — محلّياً، بلا مساس بإذن المعلّم */
+  setSelfOff(off: boolean) {
+    this.selfOff = off;
+    this.applyMicState();
+  }
+  isSelfOff() { return this.selfOff; }
+
+  private applyMicState() {
+    const on = !this.ownerMuted && !this.selfOff;
+    this.localStream?.getAudioTracks().forEach((t) => (t.enabled = on));
   }
 
   async leave() {
@@ -162,11 +212,51 @@ export class VoiceManager {
   }
 }
 
-// مراقب مستوى الصوت (مؤشّر "يتكلّم الآن")
-export function monitorLevel(stream: MediaStream, cb: (speaking: boolean) => void): () => void {
+/* ════════════════════════════════════════════════════════════
+   مراقب مستوى الصوت — سياق صوتيّ واحد للصفحة كلّها
+
+   🐛 عطبان في النسخة السابقة:
+
+   ١) `new AudioContext()` لكل متحدّث. وSafari يحدّ عدد السياقات
+      المتزامنة (أربعة تقريباً) ثمّ **يرمي**. فمع خمسة مشاركين ينهار
+      المؤشّر — وقد يُسقط معه الانضمام كلّه لأنّ النداء داخل `join`.
+
+   ٢) السياق يُنشأ في حالة `suspended` على iOS حتى تُستأنف داخل
+      إيماءة مستخدم. ولم تكن `resume()` تُنادى إطلاقاً، فما عمل
+      مؤشّر «يتحدّث الآن» على iPhone يوماً: أسماء ساكنة بلا أيّ دليل
+      على أنّ الصوت حيّ.
+
+   سياق واحد مشترك، يُستأنف عند أوّل استعمال (والانضمام إيماءة
+   مستخدم فينجح)، ولا يُغلق ما دام أحدٌ يستعمله.
+   ════════════════════════════════════════════════════════════ */
+let sharedCtx: AudioContext | null = null;
+let ctxUsers = 0;
+
+function getSharedCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
   const AC = window.AudioContext || (window as any).webkitAudioContext;
-  const ctx = new AC();
-  const src = ctx.createMediaStreamSource(stream);
+  if (!AC) return null;
+  if (!sharedCtx || sharedCtx.state === "closed") sharedCtx = new AC();
+  /* الاستئناف لا يضرّ إن كان يعمل، ويُنقذ iOS إن كان معلّقاً */
+  if (sharedCtx.state === "suspended") void sharedCtx.resume().catch(() => {});
+  return sharedCtx;
+}
+
+export function monitorLevel(stream: MediaStream, cb: (speaking: boolean) => void): () => void {
+  const ctx = getSharedCtx();
+  if (!ctx) return () => {};
+  ctxUsers++;
+
+  let src: MediaStreamAudioSourceNode;
+  try {
+    src = ctx.createMediaStreamSource(stream);
+  } catch {
+    /* مسار بلا صوت أو سياق معطوب: المؤشّر زينة، وسقوطه لا يجوز أن
+       يُسقط الانضمام. */
+    ctxUsers--;
+    return () => {};
+  }
+
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
   src.connect(analyser);
@@ -175,8 +265,9 @@ export function monitorLevel(stream: MediaStream, cb: (speaking: boolean) => voi
   let last = false;
   const tick = () => {
     analyser.getByteFrequencyData(data);
-    const avg = data.reduce((a, b) => a + b, 0) / data.length;
-    const speaking = avg > 12;
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) sum += data[i];
+    const speaking = sum / data.length > 12;
     if (speaking !== last) {
       last = speaking;
       cb(speaking);
@@ -184,8 +275,17 @@ export function monitorLevel(stream: MediaStream, cb: (speaking: boolean) => voi
     raf = requestAnimationFrame(tick);
   };
   tick();
+
   return () => {
     cancelAnimationFrame(raf);
-    ctx.close().catch(() => {});
+    try { src.disconnect(); analyser.disconnect(); } catch { /* ignore */ }
+    ctxUsers--;
+    /* لا نُغلق ما دام غيرنا يستعمله — والإغلاق المبكّر كان يُصمت
+       بقيّة المؤشّرات في الصفحة. */
+    if (ctxUsers <= 0) {
+      ctxUsers = 0;
+      sharedCtx?.close().catch(() => {});
+      sharedCtx = null;
+    }
   };
 }

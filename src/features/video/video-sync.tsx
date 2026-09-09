@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -84,6 +84,34 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       const prev = stateRef.current;
       stateRef.current = s;
       setState(s);
+
+      /* ════════════════════════════════════════════════════════
+         🐛 المالك كان يعطّل نفسه كل خمس ثوانٍ.
+
+         الدفع الدوري (كل 5000ms) يكتب في RTDB، فيعود الصدى إلى
+         المالك نفسه، فيمرّ من `syncToPlayer` التي ترفع
+         `applyingRemote` لمدّة 1600ms. وفي تلك النافذة يتجاهل
+         `onStateChange` كل شيء:
+
+             if (!isOwner || applyingRemote.current || destroyed) return;
+
+         أي أنّ **الأستاذ لو أوقف الفيديو خلالها لم يُبثّ إيقافه
+         إطلاقاً**. نافذة 1.6 ثانية من كل 5 ⇒ نحو ثلث الأوامر يضيع
+         عشوائياً. وهذا بالضبط شكل «أحياناً يتوقّف عندهم وأحياناً لا».
+
+         والمالك مصدر الحقيقة أصلاً: مشغّله هو الذي وَلَّد هذه الحالة،
+         فإعادة تطبيقها عليه لا تضيف شيئاً وتُحدث الضرر وحده. يبقى
+         عليه تطبيق ما قد يأتي من غير مشغّله — الفيديو الجديد والكتم
+         العامّ — ولا شيء غيره.
+         ════════════════════════════════════════════════════════ */
+      const sameMedia =
+        prev && prev.sourceType === s.sourceType &&
+        prev.videoId === s.videoId && prev.videoUrl === s.videoUrl;
+      if (isOwner && sameMedia) {
+        if ((prev?.muted ?? false) !== (s.muted ?? false)) applyMute(s.muted ?? false);
+        return;
+      }
+
       syncToPlayer(s, prev);
     });
     return () => { if (typeof unsub === "function") unsub(); };
@@ -133,7 +161,14 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         }
       } else {
         const local = p.getCurrentTime?.() ?? 0;
-        if (Math.abs(local - s.currentTime) > 2) p.seekTo(s.currentTime, true);
+        /* 🐛 كان يُقارَن بوقت المالك **لحظة الكتابة**، فيبقى الطالب
+           متأخّراً بقدر زمن الشبكة دائماً — ويقفز كلّما لامس الفرقُ
+           الحدَّ فيتقطّع العرض بلا سبب مفهوم.
+           `updatedAt` موجودة في الحالة أصلاً ولم تكن تُستعمل: الفارق
+           الزمني منذ الكتابة يُضاف إلى الهدف حين يكون الفيديو يعمل. */
+        const drift = s.isPlaying ? (Date.now() - (s.updatedAt ?? Date.now())) / 1000 : 0;
+        const target = s.currentTime + Math.min(drift, 10);
+        if (Math.abs(local - target) > 2.5) p.seekTo(target, true);
         if (s.isPlaying) p.playVideo?.(); else p.pauseVideo?.();
       }
       // تطبيق الكتم: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الطالب الصوت بعد
@@ -282,7 +317,11 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   function toggleMuteForAll() {
     const s = stateRef.current;
     if (!s) return;
-    set(ref(rtdb, statePath), { ...s, muted: !s.muted, updatedAt: Date.now() });
+    /* 🐛 كانت `set({ ...s, muted })` — أي إعادة كتابة `currentTime`
+       المحفوظة من آخر دفعة. فكتمُ الصوت كان **يُرجع الصفّ كلّه إلى
+       الوراء** إلى تلك اللحظة. الكتم لا علاقة له بموضع التشغيل،
+       فيُحدَّث وحده. */
+    update(ref(rtdb, statePath), { muted: !s.muted, updatedAt: Date.now() });
   }
 
   /* دفع دوري لتصحيح انحراف الوقت */
@@ -366,7 +405,30 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         <div
           ref={stableWrapRef}
           className="absolute inset-0 h-full w-full"
-          style={{ display: showYT ? "block" : "none" }}
+          style={{
+            display: showYT ? "block" : "none",
+            /* ════════════════════════════════════════════════
+               🐛 **أيّ منضمّ على iPhone كان يوقف الفيديو للجميع.**
+
+               كان فوق الإطار حاجبٌ شفّاف بـ`z-10` — وهو يكفي على
+               الحاسوب ولا يكفي على iOS: اللمس على محتوى `iframe`
+               يصل إليه بمعزل عن ترتيب الطبقات في كثير من الحالات،
+               ومشغّل YouTube يفهم اللمسة على الصورة أمرَ إيقاف حتى
+               مع `controls: 0` — «اضغط على الصورة لتوقف» إيماءة
+               أصيلة فيه لا تُلغيها إخفاءُ الأزرار.
+
+               فيضغط الطالب ظنّاً أنّه يكبّر اللوحة فيتوقّف عرضه. وهو
+               توقّفٌ **داخل الإطار** لا يمرّ بـRTDB: لا الأستاذ يعلم،
+               ولا بقيّة الصفّ يتأثّرون — يبقى وحده أمام صورة ساكنة
+               يحسب الاتصال انقطع.
+
+               `pointer-events: none` على الحاوية نفسها يقطع الطريق من
+               أصله: لا لمسة تصل الإطار إطلاقاً. وهو يوافق نموذج
+               الصلاحيات لا يناقضه — التشغيل يُدار من RTDB، والمالك
+               وحده يكتب فيها. والمالك يبقى بلا قيد.
+               ════════════════════════════════════════════════ */
+            pointerEvents: isOwner ? "auto" : "none",
+          }}
         />
 
         {showGD && (
@@ -375,6 +437,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             className="absolute inset-0 h-full w-full border-0"
             allow="autoplay"
             title="Google Drive Video"
+            style={{ pointerEvents: isOwner ? "auto" : "none" }}
           />
         )}
 

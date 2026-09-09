@@ -36,6 +36,8 @@ type FsDoc = Document & {
 
 const PSEUDO_CLASS = "bz-fullscreen";
 const BODY_CLASS = "bz-fullscreen-active";
+/** يُضاف حين يكون الممتلئ سطحاً **داخل** الغرفة لا الغرفة نفسها */
+const BODY_CLASS_INNER = "bz-fullscreen-inner";
 
 /** العنصر الموضوع في ملء الشاشة البديل — واحد على الأكثر في الصفحة */
 let pseudoEl: HTMLElement | null = null;
@@ -158,6 +160,15 @@ function applyPseudo(el: HTMLElement) {
   pseudoEl = el;
   el.classList.add(PSEUDO_CLASS);
   document.body.classList.add(BODY_CLASS);
+  /* سطحٌ داخل الغرفة (قاعة الامتحان، السبورة) لا الغرفة نفسها ⇒
+     أخفِ أشرطة الغرفة. رفع الأسلاف يجعل السطح يعلوها في الرسم، لكنّ
+     «يعلوها» ليس «يحلّ محلّها»: يبقى شريط التحكّم يلتقط اللمس عند
+     حافّته، ويبقى الشريط العلوي مرئياً على الأجهزة التي تُخفق فيها
+     مقارنة `z-index` عبر سياقات متداخلة. الإخفاء الصريح لا يعتمد على
+     ترتيب رسمٍ يُخطئ. */
+  if (!el.classList.contains("bz-room")) {
+    document.body.classList.add(BODY_CLASS_INNER);
+  }
   raiseAncestors(el);
 
   pseudoGuard?.disconnect();
@@ -178,6 +189,7 @@ function clearPseudo() {
   pseudoGuard?.disconnect();
   pseudoGuard = null;
   restoreAncestors();
+  document.body.classList.remove(BODY_CLASS_INNER);
   if (!pseudoEl) return;
   pseudoEl.classList.remove(PSEUDO_CLASS);
   document.body.classList.remove(BODY_CLASS);
@@ -270,4 +282,64 @@ export function useFullscreenState(): boolean {
     return onFullscreenChange(sync);
   }, []);
   return on;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   الحقيقة عن ملء الشاشة على iPhone — وحدود ما يمكن وعده
+
+   بعد ثلاث محاولات إصلاح يجب أن يُقال صريحاً: **لا توجد وسيلة تجعل
+   Safari على iPhone يُخفي شريط العنوان وشريط التنقّل.** ليست مسألة
+   شيفرة أفضل:
+
+     • `Element.requestFullscreen` غير موجود على iPhone إطلاقاً.
+     • `webkitRequestFullscreen` غير موجود على العناصر — يوجد
+       `webkitEnterFullscreen` على `<video>` وحده، ولا يقبل غيره.
+     • ولا واجهة أخرى تمسّ واجهة المتصفّح.
+
+   وهذا هو الفرق الحقيقي عن Android: هناك يُخفي `requestFullscreen`
+   واجهة Chrome كاملةً؛ هنا لا شيء يفعلها. فالبديل بالتنسيق يُعطي كل
+   ما يمكن إعطاؤه — الصفحة تملأ **مساحتها** كلّها وتختفي أشرطة
+   التطبيق — لكنّ شريطي Safari يبقيان.
+
+   والطريق الوحيد إلى ملء شاشة حقيقي على iPhone هو تثبيت التطبيق على
+   الشاشة الرئيسية: في الوضع المستقلّ (standalone) لا واجهة متصفّح
+   أصلاً، فتكون الشاشة كاملةً للامتحان.
+
+   ولذلك نكشف الحالة بدل أن ندّعي النجاح: الواجهة تعرض للطالب على
+   iPhone سطراً واحداً يشرح الحدّ ويدلّه على التثبيت، بدل زرٍّ يُضغط
+   فلا يبدو أنّه فعل شيئاً — وهذا أسوأ ما في التجربة: لا العطب، بل
+   الوعد الذي لا يُوفَّى.
+   ════════════════════════════════════════════════════════════ */
+
+/** التطبيق مُثبَّت ويعمل بلا واجهة متصفّح؟ */
+export function isStandalone(): boolean {
+  if (typeof window === "undefined") return false;
+  const iosStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone;
+  return Boolean(
+    iosStandalone === true ||
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.matchMedia?.("(display-mode: fullscreen)").matches,
+  );
+}
+
+/** iPhone/iPad داخل Safari (لا كتطبيق مثبَّت) */
+export function isIosBrowser(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isIos =
+    /iPad|iPhone|iPod/.test(ua) ||
+    // iPadOS 13+ يتنكّر في هيئة Mac — تمييزه باللمس
+    (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
+  return isIos && !isStandalone();
+}
+
+/**
+ * هل يستطيع هذا المتصفّح إخفاء واجهته فعلاً؟
+ *
+ * تُستعمل لتقرير ما يُقال للمستخدم، لا لتعطيل شيء: البديل يعمل في
+ * الحالتين، لكنّ الوعد يختلف.
+ */
+export function canHideBrowserChrome(): boolean {
+  return isStandalone() || nativeFullscreenSupported();
 }

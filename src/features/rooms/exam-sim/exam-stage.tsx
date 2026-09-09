@@ -20,7 +20,7 @@ import {
 import {
   useExamGuard, integrityReport, bellStart, bellEnd, primeAudio,
 } from "@/features/rooms/exam-sim/exam-guard";
-import { toggleFullscreen, useFullscreenState } from "@/lib/fullscreen";
+import { toggleFullscreen, useFullscreenState, isIosBrowser } from "@/lib/fullscreen";
 import { ExamPapersPanel } from "@/features/rooms/exam-sim/exam-papers";
 
 /* ════════════════════════════════════════════════════════════
@@ -132,15 +132,45 @@ function FullscreenBtn({ stageRef }: { stageRef?: React.RefObject<HTMLElement | 
      وإشعار الوحدة للبديل. */
   const on = useFullscreenState();
 
+  /* على iPhone داخل Safari لا يمكن إخفاء شريطي المتصفّح بأيّ وسيلة
+     (لا توجد `requestFullscreen` على العناصر). فبدل زرٍّ يبدو أنّه
+     لم يفعل شيئاً، نقول ما يحدث فعلاً ونشير إلى الطريق الوحيد. */
+  const [hint, setHint] = useState(false);
+  const iosLimited = typeof window !== "undefined" && isIosBrowser();
+
   return (
-    <button
-      onClick={() => void toggleFullscreen(stageRef?.current ?? null)}
-      aria-label={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-      title={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:border-primary hover:text-primary"
-    >
-      <FontAwesomeIcon icon={on ? faCompress : faExpand} className="h-3.5 w-3.5" />
-    </button>
+    <>
+      <button
+        onClick={() => {
+          void toggleFullscreen(stageRef?.current ?? null);
+          if (iosLimited) setHint(true);
+        }}
+        aria-label={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+        title={on ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-text-muted transition hover:border-primary hover:text-primary"
+      >
+        <FontAwesomeIcon icon={on ? faCompress : faExpand} className="h-3.5 w-3.5" />
+      </button>
+
+      {hint && (
+        <div
+          role="status"
+          className="fixed inset-x-3 z-[10050] rounded-xl border border-border bg-surface px-3 py-2 text-[11px] font-bold leading-relaxed text-text-primary shadow-lg"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
+        >
+          وسّعنا القاعة إلى أقصى ما تسمح به الصفحة. شريطا Safari لا
+          يمكن لأيّ موقع إخفاؤهما على iPhone — للحصول على شاشة كاملة
+          فعلاً: زرّ المشاركة ← «أضِف إلى الشاشة الرئيسية»، ثمّ افتح
+          BacZone من الأيقونة.
+          <button
+            onClick={() => setHint(false)}
+            className="mt-1.5 block text-[11px] font-extrabold text-primary"
+          >
+            فهمت
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 
