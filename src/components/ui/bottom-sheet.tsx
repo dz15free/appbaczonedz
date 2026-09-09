@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { getFullscreenHost, useFullscreenState } from "@/lib/fullscreen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -39,6 +40,9 @@ export function BottomSheet({
   maxHeight?: string;
 }) {
   const [mounted, setMounted] = useState(false);
+  /* الاشتراك في حالة ملء الشاشة يُعيد الرسم عند تغيّرها، فيُعاد حساب
+     `portalRoot` أدناه وينتقل الدرج إلى الطبقة الصحيحة. */
+  useFullscreenState();
   const [viewportHeight, setViewportHeight] = useState(0);
   const [dragY, setDragY] = useState(0);
   const startY = useRef<number | null>(null);
@@ -122,9 +126,14 @@ export function BottomSheet({
 
   const viewport = viewportHeight || readViewportHeight() || 760;
   const maxHeightPx = Math.max(260, Math.min(viewport - 12, Math.round(viewport * readHeightRatio(maxHeight))));
-  // يجب أن يعيش الدرج على body لا داخل مسرح الغرفة؛ المسرح يملك overflow-hidden،
-  // وSafari iPhone يقصّ fixed descendants داخله حتى لو كان z-index مرتفعاً.
-  const portalRoot = document.body;
+  /* 🐛 كان `document.body` ثابتاً. وهو صحيح خارج ملء الشاشة وخاطئ
+     تماماً داخله: العنصر الممتلئ يعيش في الطبقة العليا، وكل ما ليس
+     داخله **لا يُرسم** — فكانت «كل الأدوات» و«الدردشة» و«الصفّ»
+     تُفتح ولا تظهر. الشرح الكامل في `lib/fullscreen.ts`.
+
+     `fsOn` في التبعيات لا زينة: الدرج قد يكون مفتوحاً حين يدخل
+     المستخدم ملء الشاشة أو يخرج منه، فيجب أن ينتقل معه. */
+  const portalRoot = getFullscreenHost();
 
   return createPortal(
     <div

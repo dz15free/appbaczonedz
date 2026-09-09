@@ -536,8 +536,25 @@ export default function RoomPage() {
   function toggleHand() {
     if (!user) return;
     const r = ref(rtdb, `roomLive/${roomId}/hands/${user.uid}`);
-    if (myHand) remove(r);
-    else set(r, { name: user.displayName || "طالب", at: Date.now() });
+    if (myHand) { remove(r); return; }
+    set(r, { name: user.displayName || "طالب", at: Date.now() });
+
+    /* ⚠️ الحدّ الذي لا يتجاوزه أيّ كود: لا يستطيع موقعٌ تشغيل ميكروفون
+       مستخدمٍ لم يمنح متصفّحه الإذن. فلو انتظرنا لحظة منح الأستاذ
+       الكلمة لظهر للطالب سؤالُ إذنٍ مباغت وهو تحت الأضواء — أو لم
+       يُفتح شيء أصلاً.
+
+       ورفع اليد هو اللحظة الصحيحة: الطالب فيها متطوّع للكلام،
+       فسؤال الإذن متوقّع ومفهوم. وبعدها يصير فتح الميكروفون فورياً
+       حين يأذن الأستاذ.
+
+       والطلب هنا **تمهيديّ لا أكثر**: نُغلق المسار فوراً ولا نبثّ
+       شيئاً. ورفضه لا يمنع رفع اليد — الطالب قد يريد أن يكتب لا أن
+       يتكلّم. */
+    void navigator.mediaDevices
+      ?.getUserMedia({ audio: true })
+      .then((st) => st.getTracks().forEach((t) => t.stop()))
+      .catch(() => { /* رفض الإذن ليس خطأً — رفع اليد قائم */ });
   }
 
   function lowerHand(uid: string) {
@@ -545,11 +562,25 @@ export default function RoomPage() {
   }
 
   // إعطاء الإذن بالتحدّث: يخفض اليد ويفتح ميكروفون الطالب
+  /* منح الكلمة: إذنٌ يُكتب، ويُخفض به الطالبُ يدَه.
+     ولا نفتح ميكروفونه من هنا — لا يستطيع أيّ موقع تشغيل ميكروفون
+     شخصٍ لم يمنح متصفّحه الإذن. الطالب يرى «لك الكلمة» ويفتحه
+     بضغطة، وتكون فوريةً لمن سبق أن سمح للموقع (وهو حال الأغلبية بعد
+     أوّل استعمال). */
   function grantMic(uid: string) {
     remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
-    // فتح الميكروفون عبر إزالة الكتم في عقدة الصوت
-    update(ref(rtdb, `roomLive/${roomId}/voice/${uid}`), { muted: false });
+    update(ref(rtdb, `roomLive/${roomId}/voice/${uid}`), { allowed: true });
   }
+
+  /* «اسمح للجميع بالكلام» — حالة الغرفة لا حالة شخص */
+  const [voiceOpen, setVoiceOpenState] = useState(false);
+  useEffect(() => {
+    if (!roomId) return;
+    const unsub = onValue(ref(rtdb, `roomLive/${roomId}/voiceOpen`), (snap) => {
+      setVoiceOpenState(snap.val() === true);
+    });
+    return () => { if (typeof unsub === "function") unsub(); };
+  }, [roomId]);
 
   // حفظ سريع لبطاقة مراجعة من داخل الغرفة (تكامل الدفتر الحيّ)
   function quickSaveCard() {
@@ -805,6 +836,7 @@ export default function RoomPage() {
                 isOwner={isOwner}
                 onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
                 onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+                ownerStatus={ownerStatus}
                 onGrantMic={isOwner ? grantMic : undefined}
               />
             }
@@ -859,7 +891,8 @@ export default function RoomPage() {
           ownerId={room?.ownerId ?? ""}
           myUid={user?.uid}
           isOwner={isOwner}
-          onGrantMic={isOwner ? grantMic : undefined}
+          ownerStatus={ownerStatus}
+                onGrantMic={isOwner ? grantMic : undefined}
           onLowerHand={isOwner ? lowerHand : undefined}
           onOpenClass={() => { setDockTab("class"); if (!hasSideDock || focusMode) setParticipantsOpen(true); }}
         />
@@ -1047,6 +1080,7 @@ export default function RoomPage() {
                   isOwner={isOwner}
                   onPromote={isOwner ? (uid) => (mods.has(uid) ? demoteMod(roomId, uid) : promoteToMod(roomId, uid)) : undefined}
                   onKick={isPrivileged ? (uid) => kickUser(roomId, uid) : undefined}
+                  ownerStatus={ownerStatus}
                   onGrantMic={isOwner ? grantMic : undefined}
                 />
               }
@@ -1067,7 +1101,16 @@ export default function RoomPage() {
           isPrivileged={isPrivileged}
           tool={tool}
           onPickTool={pickTool}
-          voiceSlot={<RoomVoiceBar roomId={roomId} isOwner={isOwner} embedded />}
+          voiceSlot={
+            <RoomVoiceBar
+              roomId={roomId}
+              isOwner={isOwner}
+              ownerId={room?.ownerId}
+              voiceOpen={voiceOpen}
+              onToggleVoiceOpen={isOwner ? (open) => set(ref(rtdb, `roomLive/${roomId}/voiceOpen`), open) : undefined}
+              embedded
+            />
+          }
           memberCount={members.length}
           handsCount={handsQueue.length}
           myHand={myHand}

@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+/* 🐛 كان `document.body` ثابتاً — وهو غير مرئي داخل ملء الشاشة
+   الحقيقي: العنصر الممتلئ في الطبقة العليا، وكل ما ليس داخله لا
+   يُرسم. `getFullscreenHost` تُعيد الطبقة الصحيحة في الحالتين. */
+import { getFullscreenHost } from "@/lib/fullscreen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark, faMagnifyingGlassPlus, faMagnifyingGlassMinus } from "@fortawesome/free-solid-svg-icons";
 
@@ -137,6 +141,6 @@ export function ImageZoom({ src, alt = "", onClose }: Props) {
         }}
       />
     </div>,
-    document.body
+    getFullscreenHost()
   );
 }

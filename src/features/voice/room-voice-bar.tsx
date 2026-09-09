@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { getFullscreenHost, useFullscreenState } from "@/lib/fullscreen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import {
   faMicrophone,
   faMicrophoneSlash,
   faPhone,
-  faPhoneSlash,
   faUserSlash,
-  faChevronUp,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
+import { ref, remove } from "firebase/database";
+import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
 import { VoiceManager, monitorLevel, type VoiceParticipant } from "@/features/voice/voice-manager";
 
@@ -43,92 +46,114 @@ function AudioSink({ stream, onBlocked }: { stream: MediaStream; onBlocked?: () 
    وحشوته وعن لوحته الموسّعة (الحاضرون صاروا في رفّ الصفّ والرصيف)،
    ويبقى ما يهمّ: الانضمام والكتم والمغادرة — فلا يغيب الميكروفون
    عن اليد في أيّ وضع، ولا تحتاجه الصفحة بنقرة على عنصر DOM. */
-export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; isOwner: boolean; embedded?: boolean }) {
+export function RoomVoiceBar({
+  roomId, isOwner, embedded, ownerId, voiceOpen, onToggleVoiceOpen,
+}: {
+  roomId: string;
+  isOwner: boolean;
+  embedded?: boolean;
+  /** يُسمع دائماً ولو لم يكن له سجلّ إذن */
+  ownerId?: string;
+  /** «اسمح للجميع بالكلام» — مفتاح في يد المالك */
+  voiceOpen?: boolean;
+  onToggleVoiceOpen?: (open: boolean) => void;
+}) {
   const { user } = useAuth();
   const managerRef = useRef<VoiceManager | null>(null);
   const monitors = useRef<Record<string, () => void>>({});
-  const [joined, setJoined] = useState(false);
+  /* `listening` لا `joined`: الدخول إلى الصوت لم يعد فعلاً يقرّره
+     المستخدم، بل حالةً تبدأ من نفسها عند دخول الغرفة. */
+  const [listening, setListening] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  /* `muted` = إذن المعلّم (من RTDB) · `selfOff` = قرار صاحب الجهاز.
-     الفصل بينهما هو ما يُخرج الطالب من مصيدة «أغلقتُ ميكروفوني فلم
-     أستطع فتحه» — انظر `voice-manager.ts`. */
-  const [muted, setMuted] = useState(false);
-  const [selfOff, setSelfOff] = useState(false);
+  const [allowed, setAllowed] = useState(isOwner);
+  const [micOn, setMicOn] = useState(false);
+  const [micDenied, setMicDenied] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [connLost, setConnLost] = useState(false);
+  /* إعادة الرسم عند تغيّر ملء الشاشة، فتنتقل الطبقات العائمة معه */
+  useFullscreenState();
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
   const [speaking, setSpeaking] = useState<Record<string, boolean>>({});
   const [streams, setStreams] = useState<Record<string, MediaStream>>({});
   const [expanded, setExpanded] = useState(false);
 
-  async function join() {
+  /* ════════════════════════════════════════════════════════
+     الاستماع يبدأ من نفسه
+
+     🐛 كان على كل طالب أن يضغط «انضمّ صوتياً» ليسمع الدرس — وهو زرٌّ
+     ينادي `getUserMedia`، أي **يطلب إذن الميكروفون ممّن يريد أن
+     يسمع فقط**. ومن رفض الإذن، أو كان في مكان عامّ، لم يسمع الدرس
+     إطلاقاً. ومن دخل والأستاذ يتكلّم لم يسمع شيئاً حتى يكتشف زرّاً
+     لا يعرف أنّ عليه ضغطه.
+
+     الاستماع الآن يبدأ مع دخول الغرفة بلا زرّ ولا إذن — انظر
+     `voice-manager.ts`. ولا يبقى للمستخدم إلّا قرار **التحدّث**.
+     ════════════════════════════════════════════════════════ */
+  useEffect(() => {
     if (!user) return;
-    setConnecting(true);
+    let cancelled = false;
     const m = new VoiceManager(roomId, user.uid, user.displayName || "طالب", isOwner);
+    m.ownerUid = ownerId ?? "";
     m.onParticipants = setParticipants;
-    m.onMyMuteChange = (mt) => setMuted(mt);
+    m.onPermissionChange = setAllowed;
+    m.onMicChange = setMicOn;
     m.onConnectionLost = () => setConnLost(true);
     m.onRemoteStream = (uid, stream) => {
       setStreams((s) => ({ ...s, [uid]: stream }));
       monitors.current[uid]?.();
       monitors.current[uid] = monitorLevel(stream, (sp) =>
-        setSpeaking((p) => ({ ...p, [uid]: sp }))
+        setSpeaking((p) => ({ ...p, [uid]: sp })),
       );
     };
-    try {
-      await m.join();
-      managerRef.current = m;
-      setJoined(true);
+
+    setConnecting(true);
+    m.join()
+      .then(() => {
+        if (cancelled) { void m.leave(); return; }
+        managerRef.current = m;
+        setListening(true);
+      })
+      .catch((e) => console.error("[BacZone voice] تعذّر الاستماع:", e))
+      .finally(() => { if (!cancelled) setConnecting(false); });
+
+    return () => {
+      cancelled = true;
+      void m.leave();
+      managerRef.current = null;
+      Object.values(monitors.current).forEach((stop) => stop());
+      monitors.current = {};
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, user?.uid, isOwner]);
+
+  /* «اسمح للجميع بالكلام» يصل من الأعلى ويُطبَّق فوراً */
+  useEffect(() => {
+    managerRef.current?.setVoiceOpen(!!voiceOpen);
+    if (voiceOpen) setAllowed(true);
+  }, [voiceOpen]);
+
+  /* ── التحدّث ── */
+  async function toggleMic() {
+    const m = managerRef.current;
+    if (!m) return;
+    if (micOn) { await m.disableMic(); return; }
+    const res = await m.enableMic();
+    if (res === "denied") setMicDenied(true);
+    else setMicDenied(false);
+
+    /* فتح الميكروفون جوابٌ عن رفع اليد، فتُخفض من نفسها. وإبقاؤها
+       مرفوعة بعد أن أُعطيت الكلمة يجعل الطابور يكذب على الأستاذ. */
+    if (res === "ok" && user) {
+      void remove(ref(rtdb, `roomLive/${roomId}/hands/${user.uid}`));
       const ls = m.getLocalStream();
       if (ls) {
         monitors.current[user.uid]?.();
         monitors.current[user.uid] = monitorLevel(ls, (sp) =>
-          setSpeaking((p) => ({ ...p, [user.uid]: sp }))
+          setSpeaking((p) => ({ ...p, [user.uid]: sp })),
         );
       }
-    } catch (e) {
-      console.error("[BacZone voice] فشل الانضمام:", e);
-      alert("تعذّر الوصول للميكروفون. تأكّد من السماح به في المتصفح.");
-    } finally {
-      setConnecting(false);
     }
   }
-
-  function leave() {
-    managerRef.current?.leave();
-    managerRef.current = null;
-    Object.values(monitors.current).forEach((s) => s());
-    monitors.current = {};
-    setJoined(false);
-    setParticipants([]);
-    setStreams({});
-    setSpeaking({});
-    setMuted(false);
-    setSelfOff(false);
-    setAudioBlocked(false);
-    setConnLost(false);
-    setExpanded(false);
-  }
-
-  function toggleMute() {
-    if (!user) return;
-    if (isOwner) {
-      managerRef.current?.ownerToggleMute(user.uid, !muted);
-      return;
-    }
-    /* بلا إذن المعلّم لا شيء يُفعل — الزرّ معطّل أصلاً في هذه الحالة */
-    if (muted) return;
-    const next = !selfOff;
-    setSelfOff(next);
-    managerRef.current?.setSelfOff(next);
-  }
-
-  useEffect(() => {
-    return () => {
-      managerRef.current?.leave();
-      Object.values(monitors.current).forEach((s) => s());
-    };
-  }, []);
 
   /* ── بطاقة الصوت العائمة (PIP) ──
      من الصورة المرجعية: بطاقة صغيرة تطفو فوق المحتوى تُظهر من يتحدّث
@@ -158,8 +183,8 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
     };
   }, [embedded]);
 
-  const speakerUid = joined
-    ? participants.find((p) => speaking[p.uid] && !p.muted)?.uid ?? null
+  const speakerUid = listening
+    ? participants.find((p) => speaking[p.uid] && p.micOn)?.uid ?? null
     : null;
   const speaker = speakerUid ? participants.find((p) => p.uid === speakerUid) ?? null : null;
 
@@ -172,9 +197,9 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
       {/* الصوت محجوب ⇒ لمسة واحدة تفكّه. الصمت بلا تفسير أسوأ من
           زرٍّ إضافي. */}
       {/* اتصال الصوت سقط: يُقال صراحةً بدل صمتٍ يُفسَّر خطأً */}
-      {connLost && joined && (
+      {connLost && listening && (
         <button
-          onClick={() => { leave(); void join(); }}
+          onClick={() => window.location.reload()}
           className="fixed z-[10046] rounded-full bg-danger px-3 py-2 text-[11px] font-extrabold text-white shadow-lg"
           style={{ insetInlineStart: "12px", bottom: "calc(env(safe-area-inset-bottom, 0px) + 122px)" }}
         >
@@ -182,7 +207,7 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
         </button>
       )}
 
-      {audioBlocked && joined && (
+      {audioBlocked && listening && (
         <button
           onClick={() => {
             document.querySelectorAll("audio").forEach((a) => { void a.play().catch(() => {}); });
@@ -236,7 +261,7 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
           لوحة المشاركين — وأين كانت مفقودة
 
           🐛 **المالك لم يكن يملك أيّ وسيلة لفتح ميكروفون منضمّ.**
-          والقدرة موجودة في `VoiceManager.ownerToggleMute` منذ البداية،
+          والقدرة موجودة في مدير الصوت منذ البداية،
           لكنّ زرّها كان محبوساً خلف شرطين لا يتحقّقان:
 
             الزرّ الذي يفتح اللوحة:  `${embedded ? "hidden" : "flex"}`
@@ -254,9 +279,9 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
           اللوحة الآن تعمل في الوضعين: ورقةً سفلية فوق المحتوى حين
           يكون الشريط مُدمَجاً، وكما كانت حين لا يكون.
           ════════════════════════════════════════════════════════════ */}
-      {joined && expanded && embedded && (
+      {listening && expanded && embedded && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[10045]"
+          className="fixed inset-0 z-[2147483601]"
           onClick={() => setExpanded(false)}
         >
           <div className="absolute inset-0 bg-black/30" />
@@ -278,8 +303,9 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
             </div>
             {isOwner && (
               <p className="mb-3 text-[11px] leading-relaxed text-[var(--bz-ink-3)]">
-                المنضمّون يدخلون بميكروفون مغلق. افتح ميكروفون من تريد
-                سماعه من الأزرار تحت اسمه.
+                الجميع يسمعونك الآن. ومن يريد الكلام يحتاج إذنك — أعطِه
+                من الزرّ تحت اسمه، أو افتح الكلام للجميع من زرّ المجموعة
+                في الشريط.
               </p>
             )}
             <VoiceRoster
@@ -287,104 +313,139 @@ export function RoomVoiceBar({ roomId, isOwner, embedded }: { roomId: string; is
               speaking={speaking}
               isOwner={isOwner}
               myUid={user?.uid}
-              onToggleMute={(uid, next) => managerRef.current?.ownerToggleMute(uid, next)}
+              onToggleMute={(uid, next) => managerRef.current?.setAllowed(uid, next)}
               onKick={(uid) => managerRef.current?.ownerKick(uid)}
             />
           </div>
-        </div>
+        </div>,
+        /* 🐛 كانت تُرسم في مكانها داخل شريط التحكّم — أي داخل الغرفة.
+           وفي ملء الشاشة الحقيقي لا يُرسم إلّا ما بداخل العنصر
+           الممتلئ، فتختفي لوحة الميكروفونات في وضع التركيز تحديداً:
+           الوضع الذي يشرح فيه الأستاذ ويحتاج أن يُعطي الكلمة. */
+        getFullscreenHost(),
       )}
 
-      {joined && expanded && !embedded && (
+      {listening && expanded && !embedded && (
         <div className="max-h-48 overflow-y-auto p-3" style={{ borderBottom: "1px solid var(--bz-border)" }}>
           <VoiceRoster
             participants={participants}
             speaking={speaking}
             isOwner={isOwner}
             myUid={user?.uid}
-            onToggleMute={(uid, next) => managerRef.current?.ownerToggleMute(uid, next)}
+            onToggleMute={(uid, next) => managerRef.current?.setAllowed(uid, next)}
             onKick={(uid) => managerRef.current?.ownerKick(uid)}
           />
         </div>
       )}
 
-      {/* الشريط المضغوط الدائم */}
+      {/* ════════════════════════════════════════════════════════
+          الشريط المضغوط
+
+          🐛 كان أوّل ما فيه زرّ «انضمّ صوتياً» — وهو خلطٌ بين فعلين:
+          يطلب إذن الميكروفون ممّن يريد أن يسمع فقط، ويجعل الاستماع
+          قراراً بدل أن يكون الحالة الطبيعية.
+
+          الآن: مؤشّرٌ يقول إنّك تسمع (لا زرّ — لا شيء لتفعله)، وزرّ
+          ميكروفون واحد هو القرار الوحيد الباقي للمستخدم.
+          ════════════════════════════════════════════════════════ */}
       <div className={embedded ? "flex items-center gap-1.5" : "flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4"}>
-        {!joined ? (
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          aria-label={`من في الصوت (${participants.length})`}
+          title="من في الصوت والميكروفونات"
+          className={`flex items-center gap-1.5 rounded-lg font-semibold text-text-muted transition hover:bg-primary/10 ${
+            embedded ? "h-9 px-2 text-[11px]" : "px-2 py-1.5 text-sm"
+          }`}
+        >
+          {connecting ? (
+            <FontAwesomeIcon icon={faPhone} className="h-3 w-3 animate-pulse" />
+          ) : (
+            <span className="bz-live-dot" />
+          )}
+          {embedded
+            ? participants.length
+            : connecting
+              ? "جارٍ الاتصال بالصوت..."
+              : `في الصوت (${participants.length})`}
+        </button>
+
+        <div className="flex items-center gap-2">
+          {/* الحدّ الذي لا يتجاوزه كود: لا يُفتح ميكروفون بلا إذن من
+              المتصفّح نفسه. فحين يأذن الأستاذ لمن لم يسبق أن سمح،
+              نطلب منه ضغطةً واحدة بدل صمتٍ لا يُفسَّر. */}
+          {!isOwner && allowed && !micOn && (
+            <span className="hidden text-[11px] font-bold text-[var(--bz-green)] sm:inline">
+              لك الكلمة — افتح ميكروفونك
+            </span>
+          )}
+          {!isOwner && !allowed && (
+            <span className="hidden text-[11px] sm:inline" style={{ color: "var(--bz-text-muted)" }}>
+              ارفع يدك لتطلب الكلمة
+            </span>
+          )}
+
           <button
-            id="bz-voice-join"
-            onClick={join}
-            disabled={connecting}
-            className={`shadow-glow flex items-center gap-2 rounded-xl bg-[var(--bz-blue)] font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60 ${
-              embedded ? "px-3 py-2 text-[12px]" : "px-4 py-2.5 text-sm"
+            onClick={() => void toggleMic()}
+            disabled={!listening || (!isOwner && !allowed)}
+            className={`grid place-items-center rounded-full transition active:scale-95 ${
+              embedded ? "h-10 w-10" : "h-11 w-11"
+            } ${
+              micOn
+                ? "bg-[var(--bz-green)] text-white"
+                : allowed || isOwner
+                  ? "bg-secondary/15 text-secondary"
+                  : "bg-[var(--bz-canvas)] text-[var(--bz-ink-3)] opacity-70"
             }`}
+            aria-label={micOn ? "أغلق ميكروفوني" : "افتح ميكروفوني"}
+            title={
+              !isOwner && !allowed
+                ? "المعلّم يمنح الكلمة — ارفع يدك"
+                : micOn
+                  ? "أغلق ميكروفوني"
+                  : "افتح ميكروفوني"
+            }
           >
-            <FontAwesomeIcon icon={faPhone} className={embedded ? "h-3.5 w-3.5" : "h-4 w-4"} />
-            {connecting ? (
-              embedded ? <span className="hidden sm:inline">جارٍ الاتصال...</span> : "جارٍ الاتصال..."
-            ) : embedded ? (
-              /* على هاتف ضيّق تكفي الأيقونة: النصّ كان يأكل عرض
-                 الشريط فتُقصّ أزرار التلميذ خلفه. */
-              <span className="hidden sm:inline">انضمّ صوتياً</span>
-            ) : (
-              "انضمام صوتي"
-            )}
+            <FontAwesomeIcon icon={micOn ? faMicrophone : faMicrophoneSlash} className="h-4 w-4" />
           </button>
-        ) : (
-          <>
+
+          {/* مفتاح الغرفة كلّها — للمالك وحده.
+              الافتراض «لا أحد يتكلّم إلّا بإذن» يناسب صفّاً من ثلاثين،
+              ولا يناسب مراجعةً بين أربعة. فالقرار لصاحب الغرفة لا
+              لنا: مفتاحٌ واحد يقلب القاعدة. */}
+          {isOwner && onToggleVoiceOpen && (
             <button
-              onClick={() => setExpanded((e) => !e)}
-              aria-label={`المشاركون في الصوت (${participants.length})`}
-              title="المشاركون والميكروفونات"
-              /* 🐛 كان `hidden` في الوضع المُدمَج — وهو الوضع الوحيد
-                 المستعمل اليوم. فاختفى الطريق الوحيد إلى أدوات
-                 الميكروفون. مضغوطٌ الآن لا مخفيّ. */
-              className={`flex items-center gap-1.5 rounded-lg font-semibold text-text-muted transition hover:bg-primary/10 ${
-                embedded ? "h-9 px-2 text-[11px]" : "px-2 py-1.5 text-sm"
-              }`}
+              onClick={() => onToggleVoiceOpen(!voiceOpen)}
+              className={`grid place-items-center rounded-full transition active:scale-95 ${
+                embedded ? "h-10 w-10" : "h-11 w-11"
+              } ${voiceOpen ? "bg-[var(--bz-amber)] text-white" : "bg-[var(--bz-canvas)] text-[var(--bz-ink-3)]"}`}
+              aria-label={voiceOpen ? "أوقف الكلام الحرّ" : "اسمح للجميع بالكلام"}
+              title={
+                voiceOpen
+                  ? "الكلام مفتوح للجميع — اضغط للعودة إلى الإذن"
+                  : "اسمح للجميع بالكلام بلا إذن"
+              }
             >
-              <FontAwesomeIcon
-                icon={faChevronUp}
-                className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
-              />
-              <span className="bz-live-dot" />
-              {embedded ? participants.length : `المشاركون (${participants.length})`}
+              <FontAwesomeIcon icon={faUsers} className="h-4 w-4" />
             </button>
-            <div className="flex items-center gap-2">
-              {!isOwner && muted && (
-                <span className="text-[11px] hidden sm:inline" style={{ color: "var(--bz-text-muted)" }}>
-                  المعلّم يفتح الميكروفون
-                </span>
-              )}
-              <button
-                onClick={toggleMute}
-                disabled={!isOwner && muted}
-                className={`grid place-items-center rounded-full transition ${embedded ? "h-9 w-9" : "h-10 w-10"} ${
-                  muted ? "bg-danger/10 text-danger" : "bg-secondary/15 text-secondary"
-                } ${!isOwner && muted ? "opacity-70" : ""}`}
-                aria-label={muted ? "مكتوم" : "إغلاق الميكروفون"}
-                title={
-                  isOwner
-                    ? muted
-                      ? "فتح الميكروفون"
-                      : "كتم"
-                    : muted
-                      ? "المعلّم يفتح الميكروفون"
-                      : "إغلاق ميكروفوني"
-                }
-              >
-                <FontAwesomeIcon icon={muted ? faMicrophoneSlash : faMicrophone} className="h-4 w-4" />
-              </button>
-              <button
-                onClick={leave}
-                className={`grid place-items-center rounded-full bg-danger text-white transition active:scale-95 ${embedded ? "h-9 w-9" : "h-10 w-10"}`}
-                aria-label="مغادرة الصوت"
-              >
-                <FontAwesomeIcon icon={faPhoneSlash} className="h-4 w-4" />
-              </button>
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* رفض المتصفّح الميكروفون: يُقال أين يُصلَح، لا «حدث خطأ» */}
+      {micDenied && (
+        <div
+          role="alert"
+          className="fixed inset-x-3 z-[2147483602] rounded-xl border border-danger/40 bg-surface px-3 py-2 text-[11px] font-bold leading-relaxed text-text-primary shadow-lg"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" }}
+        >
+          المتصفّح منع الميكروفون. افتح إعدادات الموقع (أيقونة القفل بجانب
+          العنوان) واسمح بالميكروفون، ثمّ حاول ثانيةً. الاستماع يعمل في
+          كل الأحوال.
+          <button onClick={() => setMicDenied(false)} className="mt-1.5 block text-[11px] font-extrabold text-primary">
+            حسناً
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -420,17 +481,28 @@ function VoiceRoster({
     <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
       {participants.map((p) => {
         const isMe = p.uid === myUid;
-        const isMuted = !!p.muted;
-        const isSpeaking = speaking[p.uid] && !isMuted;
+        const isAllowed = !!p.allowed;
+        const isLive = !!p.micOn;
+        const isSpeaking = speaking[p.uid] && isLive;
         return (
           <div key={p.uid} className="flex flex-col items-center text-center">
             <div className={`relative rounded-full ${isSpeaking ? "ring-2 ring-emerald-400" : ""}`}>
               <LiveAvatar uid={p.uid} name={p.name || "ط"} size="md" className="h-12 w-12" />
-              {isMuted && (
-                <span className="absolute -bottom-1 -left-1 grid h-5 w-5 place-items-center rounded-full bg-[#13151f]">
-                  <FontAwesomeIcon icon={faMicrophoneSlash} className="h-2.5 w-2.5 text-danger" />
-                </span>
-              )}
+              {/* ثلاث حالات لا اثنتان: يتكلّم الآن · له الإذن ولم يفتح ·
+                  لا إذن له. دمجُها في «مكتوم/غير مكتوم» كان يُخفي عن
+                  الأستاذ من ينتظر إذنه ومن أُذن له ولم يتكلّم بعد. */}
+              <span
+                className={`absolute -bottom-1 -left-1 grid h-5 w-5 place-items-center rounded-full ring-2 ring-[var(--bz-surface)] ${
+                  isLive
+                    ? "bg-[var(--bz-green)] text-white"
+                    : isAllowed
+                      ? "bg-[var(--bz-blue)] text-white"
+                      : "bg-[#13151f] text-danger"
+                }`}
+                title={isLive ? "يتكلّم الآن" : isAllowed ? "له الإذن — لم يفتح ميكروفونه" : "لا إذن له"}
+              >
+                <FontAwesomeIcon icon={isLive || isAllowed ? faMicrophone : faMicrophoneSlash} className="h-2.5 w-2.5" />
+              </span>
             </div>
             <span className="mt-1.5 max-w-[4.5rem] truncate text-[10px] font-medium" style={{ color: "var(--bz-text-muted)" }}>
               {p.name}{isMe && " (أنت)"}
@@ -438,19 +510,17 @@ function VoiceRoster({
             {isOwner && !isMe && (
               <div className="mt-1 flex gap-1">
                 <button
-                  onClick={() => onToggleMute(p.uid, !isMuted)}
+                  onClick={() => onToggleMute(p.uid, !isAllowed)}
                   /* 44px هدف لمس: هذا الزرّ هو الطريق الوحيد إلى
                      مشاركة الطالب بصوته، وزرٌّ 24px يصعب إصابته يعني
                      ميزةً مفقودة عملياً. */
                   className={`grid h-11 w-11 place-items-center rounded-lg transition ${
-                    isMuted
-                      ? "bg-[var(--bz-blue)] text-white"
-                      : "bg-secondary/15 text-secondary"
+                    isAllowed ? "bg-secondary/15 text-secondary" : "bg-[var(--bz-blue)] text-white"
                   }`}
-                  aria-label={isMuted ? `فتح ميكروفون ${p.name}` : `كتم ${p.name}`}
-                  title={isMuted ? "فتح الميكروفون" : "كتم"}
+                  aria-label={isAllowed ? `اسحب الإذن من ${p.name}` : `أعطِ الكلمة لـ${p.name}`}
+                  title={isAllowed ? "اسحب الإذن" : "أعطِ الكلمة"}
                 >
-                  <FontAwesomeIcon icon={isMuted ? faMicrophone : faMicrophoneSlash} className="h-3.5 w-3.5" />
+                  <FontAwesomeIcon icon={isAllowed ? faMicrophoneSlash : faMicrophone} className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => onKick(p.uid)}

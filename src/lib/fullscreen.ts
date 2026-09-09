@@ -343,3 +343,33 @@ export function isIosBrowser(): boolean {
 export function canHideBrowserChrome(): boolean {
   return isStandalone() || nativeFullscreenSupported();
 }
+
+
+/* ════════════════════════════════════════════════════════════
+   أين تُسقَط الطبقات العائمة أثناء ملء الشاشة
+
+   🐛 **«كل الأدوات» و«الدردشة» و«الصفّ» لا تفتح في وضع الشاشة
+   الكاملة.** والسبب ليس في الأوراق نفسها بل في مكان إسقاطها:
+
+       const portalRoot = document.body;   // في bottom-sheet.tsx
+
+   وملء الشاشة الحقيقي يضع عنصره في **الطبقة العليا** (top layer).
+   وقاعدة هذه الطبقة قاطعة: كل ما ليس داخل العنصر الممتلئ **لا
+   يُعرض إطلاقاً** — لا يُغطّى بل يُستبعد من الرسم، ولا ينفع معه
+   `z-index` مهما بلغ. فورقةٌ في `body` بينما الغرفة ممتلئة ورقةٌ
+   موجودة في الـDOM لا يراها أحد. تُفتح فعلاً ولا تظهر.
+
+   ولهذا لم يظهر العطب على الـiPhone: هناك البديل بالتنسيق لا طبقة
+   عليا فيه، فالورقة تُرى. عطبٌ يخصّ **الأجهزة التي يعمل عليها ملء
+   الشاشة الحقيقي** — أي عكس ما اعتدناه في هذا المشروع.
+
+   القاعدة: الطبقة العائمة تُسقَط داخل ما هو ممتلئ الآن. و`overflow`
+   عليه لا يقصّها لأنّها `position: fixed`، و`fixed` داخل عنصر ممتلئ
+   يقيس من حدوده — وهي الشاشة نفسها.
+   ════════════════════════════════════════════════════════════ */
+export function getFullscreenHost(): HTMLElement {
+  if (typeof document === "undefined") return null as unknown as HTMLElement;
+  const d = document as FsDoc;
+  const native = (d.fullscreenElement ?? d.webkitFullscreenElement) as HTMLElement | null;
+  return native ?? pseudoEl ?? document.body;
+}

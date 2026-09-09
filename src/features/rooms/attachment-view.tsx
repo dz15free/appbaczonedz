@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+/* 🐛 كان `document.body` ثابتاً — وهو غير مرئي داخل ملء الشاشة
+   الحقيقي: العنصر الممتلئ في الطبقة العليا، وكل ما ليس داخله لا
+   يُرسم. `getFullscreenHost` تُعيد الطبقة الصحيحة في الحالتين. */
+import { getFullscreenHost } from "@/lib/fullscreen";
 import { Icon } from "@/components/ui/icon";
 import type { ChallengeAttachment } from "@/features/rooms/challenge";
 
@@ -81,7 +85,7 @@ export function AttachmentView({
             فتح الأصل
           </a>
         </div>,
-        document.body,
+        getFullscreenHost(),
       )}
     </>
   );

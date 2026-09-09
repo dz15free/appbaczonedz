@@ -3,6 +3,33 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGraduationCap, faVideo, faChalkboard, faBookOpen, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 
+/* ════════════════════════════════════════════════════════════
+   حالة المضيف — لماذا لم تكن تظهر لأحد
+
+   🐛 الخيار موجود في القائمة («متفرّغ / مشغول / سأعود»)، والاختيار
+   يُكتب في `roomLive/$roomId/ownerStatus`، والصفحة تستمع إليه
+   وتُمرّره: page → RoomStage → WaitingScreen…
+
+   ثمّ **يُفكَّك في التوقيعة ولا يُستعمل في أيّ سطر بعدها.**
+
+   فالمسار كامل من طرفه إلى طرفه إلّا آخر خطوة. ولذلك لم يبدُ للمالك
+   أنّ شيئاً معطوب — القائمة تعمل والاختيار «يُحفظ» — بينما لا يرى
+   المنضمّون شيئاً إطلاقاً. والوعد الذي تحته («تظهر إلى جانب اسمك في
+   الغرفة») لم يكن يتحقّق في أيّ مكان.
+
+   والحالة تُعرض الآن في موضعين لأنّ لكلٍّ منهما سؤالاً مختلفاً:
+   شاشة الانتظار تجيب «لماذا لم تبدأ الحصّة؟»، ورفّ الصفّ يجيب «هل
+   الأستاذ معنا الآن؟» أثناء الحصّة نفسها.
+   ════════════════════════════════════════════════════════════ */
+export const OWNER_STATUS_META: Record<
+  "available" | "busy" | "brb",
+  { label: string; short: string; color: string; dot: string }
+> = {
+  available: { label: "المعلّم متفرّغ", short: "متفرّغ", color: "var(--bz-green)", dot: "#16a34a" },
+  busy: { label: "المعلّم مشغول الآن", short: "مشغول", color: "#b45309", dot: "#f59e0b" },
+  brb: { label: "المعلّم سيعود بعد قليل", short: "سأعود", color: "var(--bz-blue-700)", dot: "#2563eb" },
+};
+
 /**
  * شاشة انتظار أنيقة تظهر للطلاب قبل أن يبدأ الأستاذ بعرض محتوى.
  * فيها حركات لطيفة + نصائح + حالة الانتظار.
@@ -77,6 +104,27 @@ export function WaitingScreen({
               </span>
               <span className="text-sm font-semibold text-text-muted">في انتظار أن يبدأ المعلّم...</span>
             </div>
+            {/* حالة المضيف: تُعرض للمنضمّ لأنّها جوابٌ عن سؤاله
+                الوحيد في هذه الشاشة — «هل نسيَنا؟». وتُخفى حين تكون
+                «متفرّغ» لأنّها الحالة الطبيعية، وإعلان الطبيعيّ ضجيج. */}
+            {ownerStatus && ownerStatus !== "available" && (
+              <div
+                className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-2"
+                style={{
+                  borderColor: OWNER_STATUS_META[ownerStatus].dot,
+                  color: OWNER_STATUS_META[ownerStatus].color,
+                }}
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: OWNER_STATUS_META[ownerStatus].dot }}
+                />
+                <span className="text-[12px] font-extrabold">
+                  {OWNER_STATUS_META[ownerStatus].label}
+                </span>
+              </div>
+            )}
+
             <p className="mt-5 text-sm leading-relaxed text-text-muted">
               الصوت والدردشة متاحان الآن. يمكنك رفع يدك ✋ متى أردت المشاركة.
             </p>

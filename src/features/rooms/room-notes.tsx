@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getFullscreenHost } from "@/lib/fullscreen";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFilePdf, faNoteSticky, faBold, faItalic, faUnderline, faStrikethrough,
@@ -833,7 +834,7 @@ export function RoomNotes({
   /* «غير منشور» = المسودّة تختلف عن المنشور فعلاً. المقارنة على النصّ
      المُسلسَل نفسه، فلا تُطلق شارةً لأنّ المتصفّح أعاد ترتيب سمة. */
   const unpublished = editable && !(blank(html) && blank(published)) && html !== (published ?? "");
-  const roomOverlayRoot = typeof document !== "undefined" ? (getRoomOverlayRoot() ?? document.body) : null;
+  const roomOverlayRoot = typeof document !== "undefined" ? (getRoomOverlayRoot() ?? getFullscreenHost()) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -914,7 +915,7 @@ export function RoomNotes({
           </span>
           <button type="button" onClick={() => setPdfNotice(null)} aria-label="إغلاق إشعار الملف" title="إغلاق"><FontAwesomeIcon icon={faXmark} /></button>
         </div>,
-        roomOverlayRoot ?? document.body,
+        roomOverlayRoot ?? getFullscreenHost(),
       )}
 
       {/* ── شريط الأدوات ──
@@ -1339,7 +1340,7 @@ function Pop({
     >
       {children}
     </div>,
-    getRoomOverlayRoot() ?? document.body,
+    getRoomOverlayRoot() ?? getFullscreenHost(),
   );
 }
 

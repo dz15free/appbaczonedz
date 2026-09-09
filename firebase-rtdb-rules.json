@@ -330,10 +330,28 @@
         "whiteboard": {
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
         },
+        // ══ الصوت: الإذن ملك المالك، والمفتاح ملك صاحب الجهاز ══
+        // `.write` يسمح للاثنين بالكتابة في العقدة — ولذلك وحده لا يكفي:
+        // بدونه كان أيّ طالب يكتب `allowed: true` لنفسه فيتكلّم بلا إذن.
+        // `.validate` على `allowed` يحصر تغييره في المالك والمشرفين.
+        // وبقيّة الحقول يكتبها صاحبها: `micOn` قراره، والاسم اسمه،
+        // و`sessionId`/`trackName` مساره هو.
         "voice": {
           "$uid": {
-            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())"
+            ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())",
+            "allowed": {
+              ".validate": "root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists()"
+            },
+            "kicked": {
+              ".validate": "root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists()"
+            }
           }
+        },
+        // ══ «اسمح للجميع بالكلام» ══
+        // حالة الغرفة لا حالة شخص، فيكتبها صاحب الغرفة وحده.
+        "voiceOpen": {
+          ".write": "auth != null && root.child('rooms').child($roomId).child('ownerId').val() === auth.uid",
+          ".validate": "newData.isBoolean() || !newData.exists()"
         },
         "hands": {
           "$uid": {

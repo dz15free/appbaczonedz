@@ -8,31 +8,71 @@ import { newSession, pushTracks, renegotiate } from "@/lib/realtime/client";
 export interface VoiceParticipant {
   uid: string;
   name: string;
+  /** يُنشران فقط حين يبدأ فعلاً بالبثّ — المستمع بلا مسار */
   sessionId?: string;
   trackName?: string;
-  muted?: boolean;
+  /** الإذن — يملكه صاحب الغرفة وحده */
+  allowed?: boolean;
+  /** المفتاح — يملكه صاحب الجهاز: هل يبثّ الآن فعلاً */
+  micOn?: boolean;
   kicked?: boolean;
 }
 
 const STUN = { iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }] };
 
+/* ════════════════════════════════════════════════════════════
+   الصوت — الاستماع فعلٌ، والتحدّث فعلٌ آخر
+
+   🐛 كان الفعلان زرّاً واحداً: `join()` تنادي `getUserMedia` فوراً،
+   ثمّ تنشر مساراً وتكتمه. والنتائج كلّها سيّئة:
+
+     • من أراد أن **يسمع** الدرس طُلب منه إذن الميكروفون.
+     • من رفض الإذن — أو كان في مكان عامّ — لم يسمع الدرس إطلاقاً.
+     • من دخل والأستاذ يتكلّم لم يسمع شيئاً حتى يضغط زرّاً لا يعرف
+       أنّ عليه ضغطه.
+     • وكل مستمع يدفع ثمن اتصال ثنائي الاتجاه بلا أن يبثّ حرفاً.
+
+   الفصل الآن قاطع:
+
+     join()        استماع فقط. لا `getUserMedia`، ولا مسار منشور،
+                   ولا إذن من المتصفّح. يسمع فور دخوله.
+
+     enableMic()   التحدّث. هنا وحده يُطلب إذن الميكروفون، وهنا
+                   وحده يُنشر مسار.
+
+   والصلاحية حالتان مستقلّتان، والميكروفون يعمل باجتماعهما:
+
+     allowed   الإذن  — يملكه صاحب الغرفة   (RTDB)
+     micOn     المفتاح — يملكه صاحب الجهاز  (قراره)
+
+   وهذا ما يجعل «الطالب يفتح ويغلق ميكروفونه» و«المالك يتحكّم في
+   ميكروفونات المنضمّين» مطلبين متوافقين لا متناقضين: لكلٍّ حالته،
+   ولا يكتب أحدهما فوق الآخر.
+   ════════════════════════════════════════════════════════════ */
+
 export class VoiceManager {
   private pc: RTCPeerConnection | null = null;
   private localStream: MediaStream | null = null;
+  private sender: RTCRtpSender | null = null;
   private sessionId = "";
-  /* 🐛 كان `Set<string>` من الـuid وحده. ومن غادر ثمّ عاد يحمل
-     **sessionId جديداً** بينما uid ما زال في المجموعة — فلا يُشترك
-     فيه أحد ثانيةً و**لا يسمعه أحد إلى نهاية الحصّة**. المفتاح الآن
-     هو الجلسة لا الشخص، فالعودة اشتراكٌ جديد كما يجب. */
+  private trackName = "";
+  private published = false;
   private subscribed = new Map<string, string>(); // uid → sessionId
   private midToUid = new Map<string, string>();
   private remoteStreams = new Map<string, MediaStream>();
+  /* كل تفاوض يمرّ من هنا. التفاوضان المتزامنان (نشر الميكروفون بينما
+     يشترك في وافد جديد) يُنتجان حالة «glare» تُسقط الاتصال كلّه. */
   private chain: Promise<void> = Promise.resolve();
   private unsub?: () => void;
 
+  private allowed = false;   // إذن المالك
+  private micOn = false;     // مفتاح صاحب الجهاز
+  private voiceOpen = false; // «اسمح للجميع بالكلام»
+
   onRemoteStream?: (uid: string, stream: MediaStream) => void;
   onParticipants?: (list: VoiceParticipant[]) => void;
-  onMyMuteChange?: (muted: boolean) => void;
+  onPermissionChange?: (allowed: boolean) => void;
+  onMicChange?: (on: boolean) => void;
   onLeave?: () => void;
   onConnectionLost?: (state: string) => void;
 
@@ -43,25 +83,29 @@ export class VoiceManager {
     private isOwner: boolean
   ) {}
 
-  private voicePath() {
-    return `roomLive/${this.roomId}/voice`;
-  }
+  private voicePath() { return `roomLive/${this.roomId}/voice`; }
+  private myPath() { return `${this.voicePath()}/${this.uid}`; }
 
+  /** هل يجوز لهذا الشخص أن يتكلّم الآن؟ */
+  canSpeak() { return this.isOwner || this.allowed || this.voiceOpen; }
+  isMicOn() { return this.micOn; }
+
+  /* ════════════════════════════════════════════════════════
+     الدخول — استماعٌ فقط
+
+     لا `getUserMedia` هنا إطلاقاً. الطالب يصير مستمعاً في جلسة
+     SFU يسحب مسارات الآخرين ولا يدفع مساراً. فيسمع الأستاذ في
+     الثانية التي يدخل فيها، بلا زرّ ولا إذن ولا سؤال.
+     ════════════════════════════════════════════════════════ */
   async join() {
-    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     this.sessionId = await newSession();
-
     this.pc = new RTCPeerConnection(STUN);
-    /* 🐛 لم يكن أحد يراقب حالة الاتصال. فإن سقط ICE — وهو شائع على
-       شبكات الجوّال الجزائرية خلف NAT — يموت الصوت بلا أيّ أثر:
-       الأسماء باقية في القائمة والمؤشّرات ساكنة، والمستخدم يحسب أنّ
-       الجميع صامتون. الآن يُبلَّغ الأعلى فيقرّر ما يعرضه. */
+
     this.pc.onconnectionstatechange = () => {
       const st = this.pc?.connectionState;
-      if (st === "failed" || st === "disconnected") {
-        this.onConnectionLost?.(st);
-      }
+      if (st === "failed" || st === "disconnected") this.onConnectionLost?.(st);
     };
+
     this.pc.ontrack = (e) => {
       const mid = e.transceiver?.mid ?? "";
       const uid = this.midToUid.get(mid);
@@ -75,64 +119,152 @@ export class VoiceManager {
       this.onRemoteStream?.(uid, stream);
     };
 
-    // نشر الميكروفون (sendonly)
-    const track = this.localStream.getAudioTracks()[0];
-    const tr = this.pc.addTransceiver(track, { direction: "sendonly" });
-    const offer = await this.pc.createOffer();
-    await this.pc.setLocalDescription(offer);
-    const trackName = `mic-${this.uid}`;
-    const res = await pushTracks(this.sessionId, {
-      sessionDescription: { type: "offer", sdp: offer.sdp },
-      tracks: [{ location: "local", mid: tr.mid, trackName }],
-    });
-    await this.pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
-
-    // افتراضياً: مايك المالك مفتوح، والمنضمّون بلا إذن حتى يمنحه
-    const initialMuted = !this.isOwner;
-    this.ownerMuted = initialMuted;
-    this.applyMicState();
-
-    // أعلن وجودي في RTDB + حذف تلقائي عند قطع الاتصال
-    const myRef = ref(rtdb, `${this.voicePath()}/${this.uid}`);
-    /* التسجيل قبل الإعلان لا بعده: بينهما نافذة إن انقطع فيها الاتصال
-       بقي المستخدم معروضاً في الغرفة إلى الأبد — «شبحٌ» يظنّه الأستاذ
-       حاضراً وينتظر صوته. */
+    const myRef = ref(rtdb, this.myPath());
+    /* التسجيل قبل الإعلان: بينهما نافذة إن انقطع فيها الاتصال بقي
+       المستخدم «شبحاً» في القائمة إلى الأبد. */
     await onDisconnect(myRef).remove();
-    await set(myRef, { name: this.name, sessionId: this.sessionId, trackName, muted: initialMuted });
+    /* المالك يدخل بإذنٍ لنفسه — لا معنى لأن يستأذن نفسه.
+       والمنضمّ يدخل مستمعاً: بلا `sessionId` ولا `trackName`، وهو ما
+       يميّز المستمع من المتحدّث في العقدة نفسها. */
+    await set(myRef, { name: this.name, allowed: this.isOwner, micOn: false });
 
-    // راقب المشاركين واشترك في الجدد
     this.unsub = onValue(ref(rtdb, this.voicePath()), (snap) => {
       const val = (snap.val() as Record<string, VoiceParticipant>) ?? {};
       const list = Object.entries(val).map(([id, v]) => ({ ...v, uid: id }));
       this.onParticipants?.(list);
 
       const me = val[this.uid];
-      if (me?.kicked) {
-        this.leave();
-        return;
-      }
-      // حالة الكتم يتحكّم بها المالك (وتُطبَّق فوراً على ميكروفوني)
-      if (me) {
-        this.ownerMuted = !!me.muted;
-        this.applyMicState();
-        this.onMyMuteChange?.(this.ownerMuted);
+      if (me?.kicked) { void this.leave(); return; }
+
+      /* سحب الإذن يُغلق الميكروفون فوراً — ولا ينتظر موافقة صاحبه.
+         وهذا هو معنى «المالك يتحكّم»: قراره نافذ لا اقتراح. */
+      const nowAllowed = this.isOwner || !!me?.allowed;
+      if (nowAllowed !== this.allowed) {
+        this.allowed = nowAllowed;
+        this.onPermissionChange?.(nowAllowed);
+        if (!nowAllowed && this.micOn) void this.disableMic();
       }
 
       for (const p of list) {
-        if (p.uid === this.uid || !p.sessionId || !p.trackName) continue;
+        if (p.uid === this.uid) continue;
+        /* المستمعون بلا مسار — ولا نشترك في صامت. ولا نشترك فيمن لا
+           إذن له: العميل يطبّق الصلاحية عند الاستقبال أيضاً، فلا
+           يكفي عميلاً معدَّلاً أن يبثّ ليُسمَع. */
+        if (!p.sessionId || !p.trackName) continue;
+        if (!(p.allowed || this.voiceOpen || p.uid === this.ownerUid)) continue;
         if (this.subscribed.get(p.uid) === p.sessionId) continue;
         this.subscribed.set(p.uid, p.sessionId);
-        this.remoteStreams.delete(p.uid);  // الجلسة الجديدة مسارٌ جديد
+        this.remoteStreams.delete(p.uid);   // جلسة جديدة ⇒ مسار جديد
         this.subscribeTo(p);
       }
 
-      /* من غادر يُنسى، فلا يمنع اسمُه اشتراكاً لاحقاً */
       const present = new Set(list.map((p) => p.uid));
       for (const uid of Array.from(this.subscribed.keys())) {
         if (!present.has(uid)) this.subscribed.delete(uid);
       }
     });
   }
+
+  /** uid صاحب الغرفة — يُضبط من الأعلى ليُسمع دائماً */
+  ownerUid = "";
+
+  /** «اسمح للجميع بالكلام» — يُمرَّر من الأعلى عند تغيّره */
+  setVoiceOpen(open: boolean) {
+    const was = this.canSpeak();
+    this.voiceOpen = open;
+    if (was !== this.canSpeak()) this.onPermissionChange?.(this.canSpeak());
+    if (!this.canSpeak() && this.micOn) void this.disableMic();
+  }
+
+  /* ════════════════════════════════════════════════════════
+     فتح الميكروفون — هنا وحده يُطلب إذن المتصفّح
+
+     ⚠️ حدٌّ لا يتجاوزه أيّ كود: **لا يستطيع موقعٌ تشغيل ميكروفون
+     مستخدمٍ لم يمنح متصفّحه الإذن.** فحين يمنح الأستاذ الكلمة لطالب
+     لم يسبق أن سمح للموقع، لا يُفتح شيء من نفسه — تلزم ضغطة واحدة
+     منه. ولذلك تُطلب الأذونات عند **رفع اليد**: الطالب حينها متطوّع
+     للكلام فالطلب متوقّع، ويصير الفتح فورياً حين يأذن الأستاذ.
+     ════════════════════════════════════════════════════════ */
+  async enableMic(): Promise<"ok" | "denied" | "forbidden"> {
+    if (!this.canSpeak()) return "forbidden";
+    if (!this.pc) return "forbidden";
+
+    try {
+      if (!this.localStream || this.localStream.getAudioTracks().length === 0) {
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          video: false,
+        });
+      }
+    } catch {
+      return "denied";
+    }
+
+    const track = this.localStream.getAudioTracks()[0];
+    if (!track) return "denied";
+    track.enabled = true;
+
+    if (this.published && this.sender) {
+      /* المسار منشور من قبل: استبدالٌ بلا تفاوض. التفاوض في كل مرّة
+         يُحدث انقطاعاً مسموعاً عند الجميع لأجل ضغطة زرّ. */
+      await this.sender.replaceTrack(track);
+    } else {
+      await this.negotiatePublish(track);
+    }
+
+    this.micOn = true;
+    this.onMicChange?.(true);
+    await update(ref(rtdb, this.myPath()), {
+      micOn: true,
+      sessionId: this.sessionId,
+      trackName: this.trackName,
+    });
+    return "ok";
+  }
+
+  private negotiatePublish(track: MediaStreamTrack) {
+    this.chain = this.chain.then(async () => {
+      if (!this.pc) return;
+      const tr = this.pc.addTransceiver(track, { direction: "sendonly" });
+      this.sender = tr.sender;
+      const offer = await this.pc.createOffer();
+      await this.pc.setLocalDescription(offer);
+      this.trackName = `mic-${this.uid}-${Date.now()}`;
+      const res = await pushTracks(this.sessionId, {
+        sessionDescription: { type: "offer", sdp: offer.sdp },
+        tracks: [{ location: "local", mid: tr.mid, trackName: this.trackName }],
+      });
+      await this.pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
+      this.published = true;
+    }).catch((e) => console.error("[BacZone voice] فشل نشر الميكروفون:", e));
+    return this.chain;
+  }
+
+  /** يغلق الطالب ميكروفونه — ويُطفئ مؤشّر النظام معه */
+  async disableMic() {
+    this.micOn = false;
+    this.onMicChange?.(false);
+    try { await this.sender?.replaceTrack(null); } catch { /* ignore */ }
+    /* إيقاف المسار لا تعطيله: `enabled = false` يُبقي ضوء الميكروفون
+       مضاءً في شريط النظام، فيظنّ الطالب أنّنا نسمعه ونحن لا نسمع.
+       الثقة أهمّ من تفادي `getUserMedia` ثانيةً. */
+    this.localStream?.getTracks().forEach((t) => t.stop());
+    this.localStream = null;
+    await update(ref(rtdb, this.myPath()), { micOn: false });
+  }
+
+  // ── أوامر المالك ──
+  /** يمنح الإذن أو يسحبه. السحب يُغلق ميكروفون صاحبه فوراً عنده. */
+  setAllowed(uid: string, allowed: boolean) {
+    if (!this.isOwner) return;
+    update(ref(rtdb, `${this.voicePath()}/${uid}`), allowed ? { allowed: true } : { allowed: false, micOn: false });
+  }
+  ownerKick(uid: string) {
+    if (!this.isOwner) return;
+    update(ref(rtdb, `${this.voicePath()}/${uid}`), { kicked: true });
+  }
+
+  getLocalStream() { return this.localStream; }
 
   private subscribeTo(p: VoiceParticipant) {
     this.chain = this.chain
@@ -154,60 +286,19 @@ export class VoiceManager {
       .catch((e) => console.error("[BacZone voice] خطأ الاشتراك:", e));
   }
 
-  getLocalStream() {
-    return this.localStream;
-  }
-
-  // أوامر المالك
-  ownerToggleMute(uid: string, muted: boolean) {
-    if (!this.isOwner) return;
-    update(ref(rtdb, `${this.voicePath()}/${uid}`), { muted });
-  }
-  ownerKick(uid: string) {
-    if (!this.isOwner) return;
-    update(ref(rtdb, `${this.voicePath()}/${uid}`), { kicked: true });
-  }
-
-  /* ════════════════════════════════════════════════════════
-     الكتم الذاتي — ولماذا لم يعد يُكتب في RTDB
-
-     🐛 مصيدة كاملة: `selfMute` كانت تكتب `muted: true` في العقدة
-     نفسها التي يتحكّم بها المالك. والواجهة تُعطّل زرّ الطالب حين
-     `muted` (لأنّ الفتح بيد المعلّم). فمن أغلق ميكروفونه لحظةً
-     **لم يستطع فتحه أبداً** — ولا المعلّم يدري أنّه يحتاج إذناً،
-     لأنّه أعطاه الإذن أصلاً.
-
-     الآن حقلان لا حقل: `muted` في RTDB هو **الإذن** ويملكه المالك
-     وحده، و`selfOff` محلّي في الجهاز يملكه صاحبه. والميكروفون يعمل
-     إذا اجتمع الاثنان. فيغلق الطالب ميكروفونه ويفتحه متى شاء ما دام
-     الإذن قائماً، ويبقى الإذن بيد المعلّم كما صُمّم.
-     ════════════════════════════════════════════════════════ */
-  private selfOff = false;
-  private ownerMuted = false;
-
-  /** يغلق الطالب ميكروفونه أو يفتحه — محلّياً، بلا مساس بإذن المعلّم */
-  setSelfOff(off: boolean) {
-    this.selfOff = off;
-    this.applyMicState();
-  }
-  isSelfOff() { return this.selfOff; }
-
-  private applyMicState() {
-    const on = !this.ownerMuted && !this.selfOff;
-    this.localStream?.getAudioTracks().forEach((t) => (t.enabled = on));
-  }
-
   async leave() {
     this.unsub?.();
-    try {
-      await remove(ref(rtdb, `${this.voicePath()}/${this.uid}`));
-    } catch {}
+    try { await remove(ref(rtdb, this.myPath())); } catch { /* ignore */ }
     this.localStream?.getTracks().forEach((t) => t.stop());
     this.pc?.close();
     this.pc = null;
     this.localStream = null;
+    this.sender = null;
+    this.published = false;
+    this.micOn = false;
     this.remoteStreams.clear();
     this.subscribed.clear();
+    this.midToUid.clear();
     this.onLeave?.();
   }
 }

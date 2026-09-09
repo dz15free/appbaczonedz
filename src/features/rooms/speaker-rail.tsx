@@ -8,7 +8,8 @@ import { useMediaQuery } from "@/lib/use-media";
 import { useInlineStartScroll } from "@/lib/rtl-scroll";
 import { Icon } from "@/components/ui/icon";
 import type { PresenceMember } from "@/features/rooms/use-presence";
-import type { RaisedHand } from "@/features/rooms/rooms";
+import type { RaisedHand, OwnerStatus } from "@/features/rooms/rooms";
+import { OWNER_STATUS_META } from "@/features/rooms/waiting-screen";
 
 /* ════════════════════════════════════════════════════════════
    رفّ الصفّ — الحضور ظاهر بلا كاميرا
@@ -57,7 +58,7 @@ function useShownCount() {
 }
 
 export function SpeakerRail({
-  roomId, members, hands, mods, ownerId, myUid, isOwner,
+  roomId, members, hands, mods, ownerId, myUid, isOwner, ownerStatus,
   onGrantMic, onLowerHand, onOpenClass,
 }: {
   roomId: string;
@@ -67,6 +68,8 @@ export function SpeakerRail({
   ownerId: string;
   myUid?: string;
   isOwner: boolean;
+  /** حالة المضيف — تُعرض لكل من في الغرفة على بطاقته */
+  ownerStatus?: OwnerStatus;
   onGrantMic?: (uid: string) => void;
   onLowerHand?: (uid: string) => void;
   onOpenClass: () => void;
@@ -94,7 +97,7 @@ export function SpeakerRail({
     const rank = (m: PresenceMember) => {
       if (m.uid === ownerId) return 0;
       if (handOrder.has(m.uid)) return 1;
-      if (voice[m.uid] && !voice[m.uid]?.muted) return 2;
+      if (voice[m.uid]?.micOn) return 2;
       if (voice[m.uid]) return 3;
       if (mods.has(m.uid)) return 4;
       return 5;
@@ -129,7 +132,10 @@ export function SpeakerRail({
       {shown.map((m) => {
         const order = handOrder.get(m.uid);
         const v = voice[m.uid];
-        const live = v && !v.muted;
+        /* «حيّ» = يبثّ الآن فعلاً (`micOn`)، لا «غير مكتوم».
+           الفرق جوهري بعد فصل الإذن عن المفتاح: من له الإذن ولم
+           يفتح ميكروفونه ليس متحدّثاً. */
+        const live = !!v?.micOn;
         return (
           <button
             key={m.uid}
@@ -150,7 +156,7 @@ export function SpeakerRail({
                 <span className="absolute -bottom-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--bz-amber)] px-0.5 text-[9px] font-extrabold text-white ring-2 ring-[var(--bz-surface)]">
                   {order}
                 </span>
-              ) : v ? (
+              ) : v?.sessionId ? (
                 <span
                   className={`absolute -bottom-1 -left-1 grid h-4 w-4 place-items-center rounded-full ring-2 ring-[var(--bz-surface)] ${
                     live ? "bg-[var(--bz-green)] text-white" : "bg-border text-text-muted"
@@ -159,6 +165,15 @@ export function SpeakerRail({
                   <Icon name={live ? "mic" : "micOff"} size={9} />
                 </span>
               ) : null}
+              {/* نقطة الحالة على صورة المضيف — تُرى حتى على الهاتف
+                  حيث يختفي عمود الاسم كلّه. */}
+              {m.uid === ownerId && ownerStatus && ownerStatus !== "available" && !order && (
+                <span
+                  title={OWNER_STATUS_META[ownerStatus].label}
+                  className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--bz-surface)]"
+                  style={{ background: OWNER_STATUS_META[ownerStatus].dot }}
+                />
+              )}
               {m.visible === false && !order && (
                 <span
                   title="تبويبه غير مفتوح"
@@ -171,7 +186,15 @@ export function SpeakerRail({
                 {m.uid === myUid ? "أنت" : m.name}
               </span>
               <span className="block text-[9.5px] leading-tight text-[var(--bz-ink-3)]">
-                {order ? `رفع يده · ${order}` : roleOf(m)}
+                {/* 🐛 حالة المضيف كانت تُكتب في RTDB ويستمع إليها الجميع
+                    ولا تُعرض في أيّ مكان. هنا موضعها أثناء الحصّة:
+                    بطاقته في رفّ الصفّ، تحت اسمه تماماً كما وعدت
+                    القائمة («تظهر إلى جانب اسمك في الغرفة»). */}
+                {order
+                  ? `رفع يده · ${order}`
+                  : m.uid === ownerId && ownerStatus && ownerStatus !== "available"
+                    ? OWNER_STATUS_META[ownerStatus].short
+                    : roleOf(m)}
               </span>
             </span>
           </button>

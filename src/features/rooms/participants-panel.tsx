@@ -6,7 +6,8 @@ import { faHand, faUserShield, faUserSlash, faCrown, faMicrophone, faSatelliteDi
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import type { PresenceMember } from "@/features/rooms/use-presence";
-import type { RaisedHand } from "@/features/rooms/rooms";
+import type { RaisedHand, OwnerStatus } from "@/features/rooms/rooms";
+import { OWNER_STATUS_META } from "@/features/rooms/waiting-screen";
 
 interface Props {
   members: PresenceMember[];
@@ -15,6 +16,8 @@ interface Props {
   ownerId: string;
   myUid?: string;
   isOwner: boolean;
+  /** حالة المضيف — تُعرض بجانب شارة «المضيف» */
+  ownerStatus?: OwnerStatus;
   speakingUid?: string | null;
   onPromote?: (uid: string) => void;
   onKick?: (uid: string) => void;
@@ -22,7 +25,7 @@ interface Props {
 }
 
 export function ParticipantsPanel({
-  members, hands, mods, ownerId, myUid, isOwner, speakingUid, onPromote, onKick, onGrantMic,
+  members, hands, mods, ownerId, myUid, isOwner, ownerStatus, speakingUid, onPromote, onKick, onGrantMic,
 }: Props) {
   const [radarOpen, setRadarOpen] = useState(false);
   const handMap = new Map(hands.map((h, i) => [h.uid, i + 1]));
@@ -140,9 +143,29 @@ export function ParticipantsPanel({
                 </div>
                 <div className="flex items-center gap-1">
                   {isRoomOwner ? (
-                    <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-1.5 py-0.5 text-[9px] font-bold text-warning">
-                      المضيف
-                    </span>
+                    <>
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-1.5 py-0.5 text-[9px] font-bold text-warning">
+                        المضيف
+                      </span>
+                      {/* الحالة التي اختارها المضيف — «تظهر إلى جانب
+                          اسمك في الغرفة» كما وعدت قائمتها. وهنا
+                          بالضبط يبحث عنها المنضمّ حين يتساءل عن غيابه. */}
+                      {ownerStatus && ownerStatus !== "available" && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+                          style={{
+                            background: `color-mix(in srgb, ${OWNER_STATUS_META[ownerStatus].dot} 14%, transparent)`,
+                            color: OWNER_STATUS_META[ownerStatus].color,
+                          }}
+                        >
+                          <span
+                            className="h-1.5 w-1.5 rounded-full"
+                            style={{ background: OWNER_STATUS_META[ownerStatus].dot }}
+                          />
+                          {OWNER_STATUS_META[ownerStatus].short}
+                        </span>
+                      )}
+                    </>
                   ) : isMod ? (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
                       <FontAwesomeIcon icon={faUserShield} className="h-2.5 w-2.5" /> مشرف
