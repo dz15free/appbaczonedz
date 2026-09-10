@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { LESSONS, STREAMS, OFFICIAL_STREAMS, inStream } from "@/features/study/curriculum";
+import { LESSONS, STREAMS, OFFICIAL_STREAMS, inStream, subjectsOf } from "@/features/study/curriculum";
 import {
   listenCustomLessons, mergeLessons, addLesson, addLessonsBulk,
   deleteLesson, listenHiddenSubjects, isSubjectHidden, setSubjectHidden,
@@ -56,12 +56,13 @@ export function CurriculumEditor() {
 
   /* تقرير التغطية: يُظهر أين النقص فعلاً بدل التخمين */
   const coverage = useMemo(() => {
+    /* التغطية تُحسب من الشعبة لا من الدرس: الدرس صار ينتمي إلى
+       نسخة منهج قد ترتبط بعدّة شعب، فعدّه مرّة واحدة تحت «شعبته»
+       كان سيُظهر تسع شعب فارغة والعاشرة فيها كل شيء. */
     const map = new Map<string, { subjects: Set<string>; count: number }>();
-    for (const l of all) {
-      const e = map.get(l.stream) ?? { subjects: new Set<string>(), count: 0 };
-      e.subjects.add(l.subject);
-      e.count++;
-      map.set(l.stream, e);
+    for (const st of OFFICIAL_STREAMS) {
+      const rows = all.filter((l) => inStream(l, st));
+      map.set(st, { subjects: new Set(subjectsOf(st)), count: rows.length });
     }
     return [...map.entries()].map(([s, e]) => ({
       stream: s, subjects: e.subjects.size, count: e.count,
@@ -301,7 +302,7 @@ export function CurriculumEditor() {
           الدروس المُضافة يدوياً فقط — الثابتة في الشيفرة تُخفى ولا تُحذف.
         </p>
         <div className="space-y-1">
-          {[...new Set(mergeLessons(custom).filter((l) => inStream(l, stream)).map((l) => l.subject))]
+          {[...new Set([...subjectsOf(stream), ...custom.filter((l) => l.stream === stream).map((l) => l.subject)])]
             .map((sub) => {
               const off = isSubjectHidden(hidden, stream, sub);
               const own = custom.filter((l) => l.stream === stream && l.subject === sub).length;

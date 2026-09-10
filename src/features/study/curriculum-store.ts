@@ -2,7 +2,7 @@
 
 import { ref, onValue, push, set, remove, update } from "firebase/database";
 import { isFirebaseConfigured, rtdb } from "@/lib/firebase/config";
-import { LESSONS, type Lesson } from "@/features/study/curriculum";
+import { LESSONS, type Lesson, type CurriculumTrack } from "@/features/study/curriculum";
 
 /* ════════════════════════════════════════════════════════════
    مخزن المنهج — الثابت + المُضاف يدوياً
@@ -22,7 +22,19 @@ import { LESSONS, type Lesson } from "@/features/study/curriculum";
 
 const PATH = "curriculum/lessons";
 
-export interface CustomLesson extends Lesson {
+/* ⚠️ شكل درس الأدمن يبقى (شعبة + مادة) عمداً ولا يتبع النموذج
+   الجديد: الأدمن يفكّر بالشعبة والمادة لا بـ«نسخة منهج»، ومطالبته
+   بإنشاء نسخة قبل إضافة درس تعقيد بلا مقابل. الجسر في
+   `mergeLessons` أدناه — وهو أيضاً يحفظ سجلّات قاعدة البيانات
+   القائمة كما هي بلا ترحيل. */
+export interface CustomLesson {
+  id: string;
+  title: string;
+  unit: string;
+  subject: string;
+  stream: string;
+  order: number;
+  trimester: number;
   /** مفتاح السجلّ في قاعدة البيانات — للتعديل والحذف */
   key?: string;
 }
@@ -48,29 +60,52 @@ export function listenCustomLessons(cb: (rows: CustomLesson[]) => void) {
  * المنهج الكامل = الثابت + المُضاف.
  * المُضاف يفوز عند تطابق `id` حتى يمكن تصحيح خطأ في الملفّ الثابت.
  */
+/* دروس الأدمن تُكتب بـ(شعبة + مادة) لأنّه يضيفها لشعبة بعينها،
+   بينما المنهج الأساسي صار يربط الدروس بـ«نسخة منهج». فنولّد لكل
+   (شعبة، مادة) نسخةً ضمنية معرّفها `custom:الشعبة:المادة`.
+
+   والمعرّف مشتقّ من القيمتين لا عشوائي: فدرسان يضيفهما الأدمن
+   للشعبة والمادة نفسيهما يقعان في النسخة نفسها تلقائياً، بلا أن
+   يضطرّ إلى إنشاء شيء أو معرفة وجود النسخ أصلاً. */
+export function customTrackId(stream: string, subject: string): string {
+  return `custom:${stream}:${subject}`;
+}
+
+/** النسخ الضمنية الناتجة عن دروس الأدمن — تُضاف إلى نسخ المنهج */
+export function customTracks(custom: CustomLesson[]): CurriculumTrack[] {
+  const seen = new Map<string, CurriculumTrack>();
+  for (const l of custom) {
+    const id = customTrackId(l.stream, l.subject);
+    if (!seen.has(id)) seen.set(id, { id, subject: l.subject, streams: [l.stream] });
+  }
+  return [...seen.values()];
+}
+
 export function mergeLessons(custom: CustomLesson[]): Lesson[] {
   const byId = new Map<string, Lesson>();
   for (const l of LESSONS) byId.set(l.id, l);
-  for (const l of custom) byId.set(l.id, l);
+  for (const l of custom) {
+    byId.set(l.id, {
+      id: l.id, title: l.title, unit: l.unit,
+      track: customTrackId(l.stream, l.subject),
+      order: l.order, trimester: l.trimester,
+    });
+  }
   return [...byId.values()].sort(
-    (a, b) =>
-      a.stream.localeCompare(b.stream, "ar") ||
-      a.subject.localeCompare(b.subject, "ar") ||
-      a.trimester - b.trimester ||
-      a.order - b.order,
+    (a, b) => a.track.localeCompare(b.track, "ar") || a.trimester - b.trimester || a.order - b.order,
   );
 }
 
 /** يُنشئ معرّفاً مستقرّاً حين لا يكتبه الأدمن — لا يعتمد على الوقت
     وحده كي لا يتغيّر مع كل حفظ ويكسر الربط بتقدّم الطالب. */
-function makeId(l: Omit<Lesson, "id">): string {
+function makeId(l: Omit<CustomLesson, "id" | "key">): string {
   const slug = (t: string) =>
     t.trim().replace(/\s+/g, "_").replace(/[^\p{L}\p{N}_]/gu, "").slice(0, 24);
   return `CUS_${slug(l.stream)}_${slug(l.subject)}_${l.trimester}_${l.order}`;
 }
 
-export async function addLesson(l: Omit<Lesson, "id"> & { id?: string }) {
-  const row: Lesson = {
+export async function addLesson(l: Omit<CustomLesson, "id" | "key"> & { id?: string }) {
+  const row: Omit<CustomLesson, "key"> = {
     id: l.id?.trim() || makeId(l),
     title: l.title.trim(),
     unit: l.unit.trim(),

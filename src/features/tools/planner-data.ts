@@ -43,7 +43,7 @@ export const PLAN_BRANCHES: PlanBranch[] = [
     "name": "تقني رياضي",
     "color": "#D08217",
     "subjects": [
-      "مادة التخصص (هندسة)",
+      "مادة التخصص",
       "رياضيات",
       "فيزياء"
     ],

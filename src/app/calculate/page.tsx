@@ -82,7 +82,7 @@ export default function CalculateHub() {
                   اختر شعبتك، أدخل علاماتك مادةً مادة، ثم افهم أثر المعاملات على نتيجتك. كل حاسبة مستقلة بموادها، وتعمل مباشرة من الهاتف والحاسوب بلا تسجيل.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-2.5" aria-label="خصائص الحاسبة">
-                  <span><b>7</b> شعب</span><span><b>0–20</b> نطاق العلامات</span><span><b>بلا تسجيل</b> وبدون حفظ</span>
+                  <span><b>{BRANCHES.length}</b> شعب</span><span><b>0–20</b> نطاق العلامات</span><span><b>بلا تسجيل</b> وبدون حفظ</span>
                 </div>
               </div>
               <div className="bz-calc-directory-orbit" aria-hidden="true">
