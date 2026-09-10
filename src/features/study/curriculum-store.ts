@@ -43,7 +43,7 @@ export interface CustomLesson {
 export function listenCustomLessons(cb: (rows: CustomLesson[]) => void) {
   if (!isFirebaseConfigured) { cb([]); return () => {}; }
   return onValue(ref(rtdb, PATH), (snap) => {
-    const val = (snap.val() as Record<string, Lesson> | null) ?? {};
+    const val = (snap.val() as Record<string, Omit<CustomLesson, "key">> | null) ?? {};
     const rows = Object.entries(val).map(([key, l]) => ({ ...l, key }));
     rows.sort(
       (a, b) =>
@@ -119,7 +119,7 @@ export async function addLesson(l: Omit<CustomLesson, "id" | "key"> & { id?: str
   return row;
 }
 
-export async function updateLesson(key: string, patch: Partial<Lesson>) {
+export async function updateLesson(key: string, patch: Partial<CustomLesson>) {
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(patch)) if (v !== undefined) clean[k] = v;
   await update(ref(rtdb, `${PATH}/${key}`), clean);
@@ -130,7 +130,7 @@ export async function deleteLesson(key: string) {
 }
 
 /** إضافة دفعة واحدة — للصق ملفّ JSON كامل بدل إدخال درس درس */
-export async function addLessonsBulk(rows: (Omit<Lesson, "id"> & { id?: string })[]) {
+export async function addLessonsBulk(rows: (Omit<CustomLesson, "id" | "key"> & { id?: string })[]) {
   let ok = 0;
   for (const r of rows) {
     if (!r.title?.trim() || !r.subject?.trim() || !r.stream?.trim()) continue;
