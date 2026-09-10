@@ -90,9 +90,19 @@ export default function TrackerPage() {
   }, [user]);
 
   const all = useMemo(() => mergeLessons(custom), [custom]);
+  /* 🐛 كانت المواد تُشتقّ من **الدروس**: مادّة بلا درس واحد لا تظهر
+     إطلاقاً. فطالب تقني رياضي كان يرى أربع مواد من تسع، وطالب آداب
+     ستّاً من سبع — والمواد الغائبة معتمدة في شعبته فعلاً، وغيابها
+     يوحي بأنّها ليست من برنامجه.
+
+     المصدر الآن `subjectsOf(stream)` — أي جدول المواد نفسه — ثمّ
+     تُضاف مواد الأدمن. فتظهر كل مادّة معتمدة، ومن لا دروس لها بعد
+     تُعرض فارغة بسطر يشرح، لا مخفيّة بلا أثر. */
   const subjects = useMemo(
-    () => [...new Set(all.filter((l) => inStream(l, stream)).map(subjectOfLesson))]
-      .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub)),
+    () => [...new Set([
+      ...subjectsOf(stream),
+      ...all.filter((l) => inStream(l, stream)).map(subjectOfLesson),
+    ])].filter((sub) => sub && !isSubjectHidden(hiddenSubs, stream, sub)),
     [all, stream, hiddenSubs],
   );
 
@@ -216,6 +226,15 @@ export default function TrackerPage() {
                 </span>
                 <span className="ms-auto text-[11px] text-text-muted">{subjectRows.length} درساً</span>
               </div>
+
+              {/* مادّة معتمدة بلا دروس: تُقال حالتها بدل أن تبدو معطوبة */}
+              {subjectRows.length === 0 && (
+                <p className="rounded-xl border border-dashed border-border p-4 text-center text-[12px] leading-relaxed text-text-muted">
+                  هذه المادّة معتمدة في شعبتك، ودروسها لم تُدخَل بعد.
+                  <br />
+                  تُضاف من لوحة الإدارة فور توفّر تدرّجها السنوي.
+                </p>
+              )}
 
               {/* الوحدات — المنهج مبنيّ على وحدات لا دروس مسطّحة */}
               <div className="space-y-3">
