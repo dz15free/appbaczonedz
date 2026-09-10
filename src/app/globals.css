@@ -4907,9 +4907,24 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 .bz-weighted-pro-domain-head p { margin: 0 0 3px; color: var(--bz-ink-3); font-size: 10px; font-weight: 800; }
 .bz-weighted-pro-domain-head h2 { margin: 0; color: var(--bz-ink); font-size: 19px; font-weight: 900; }
 .bz-weighted-pro-domain-head > span { margin-inline-start: auto; border-radius: 999px; background: var(--bz-canvas); padding: 6px 9px; color: var(--bz-ink-3); font-size: 10px; font-weight: 800; }
-.bz-weighted-pro-domains { display: flex; gap: 7px; padding: 0 18px 14px; overflow-x: auto; scrollbar-width: none; }
-.bz-weighted-pro-domains::-webkit-scrollbar { display: none; }
-.bz-weighted-pro-domains button { flex: 0 0 auto; border: 1px solid var(--bz-line); border-radius: 12px; background: var(--bz-canvas); padding: 9px 11px; color: var(--bz-ink-2); font-size: 11px; font-weight: 800; transition: transform .2s, border-color .2s, background .2s; }
+/* ــ اختيار الميدان ــ
+   🐛 كان صفّاً واحداً `overflow-x: auto` مع `scrollbar-width: none`:
+   الميادين تُقصّ عند حافّة البطاقة بلا أيّ دليل على وجود غيرها. وعلى
+   الفأرة لا سحب بالإصبع يكشف السرّ، فمن يرى «الطب» و«الهندسة» يحسب
+   أنّهما كل الخيارات ولا يبحث عن ميدانه.
+   وأسوأ منه في RTL: التمرير يبدأ من الطرف الخطأ في بعض المحرّكات
+   فيُقصّ **أوّل ميدان** (انظر `lib/rtl-scroll.ts`).
+
+   الحلّ ليس مسطرةً أجمل بل إلغاء الحاجة إليها: شبكة تلتفّ في أسطر،
+   فتظهر الميادين كلّها دفعةً واحدة. عددها ثابت وصغير — لا داعي
+   لإخفاء أيّ منها خلف تمرير. */
+.bz-weighted-pro-domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0 18px 14px;
+}
+.bz-weighted-pro-domains button { flex: 1 1 auto; min-width: max-content; border: 1px solid var(--bz-line); border-radius: 12px; background: var(--bz-canvas); padding: 9px 11px; color: var(--bz-ink-2); font-size: 11px; font-weight: 800; transition: transform .2s, border-color .2s, background .2s; }
 .bz-weighted-pro-domains button.is-selected { box-shadow: 0 7px 16px rgba(20,43,91,.07); transform: translateY(-1px); }
 .bz-weighted-pro-formula { display: grid; gap: 5px; margin: 0 18px 15px; border: 1px solid; border-radius: 16px; background: var(--bz-canvas); padding: 12px 13px; }
 .bz-weighted-pro-formula strong { color: var(--bz-ink); font-size: 12px; }

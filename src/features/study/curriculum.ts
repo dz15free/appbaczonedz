@@ -1,6 +1,14 @@
 /* ════════════════════════════════════════════════════════════
    برنامج السنة الثالثة ثانوي — الدروس الرسمية
 
+   «التاريخ والجغرافيا» مادّة امتحان واحدة بمعامل واحد، ودروسها هنا
+   موحّدة تحت هذا الاسم. وكانت مفصولة إلى «التاريخ» و«الجغرافيا»،
+   ثمّ اقتصرت على «التاريخ» وحده في تعديل جويلية.
+
+   والدمج لا يمسّ تقدّم أحد: التقدّم مخزَّن بمعرّف الدرس
+   (`studyProgress/$uid/lessons/$lessonId`) لا بالمادّة، فمعرّفات
+   الدروس كما هي ولا يضيع درسٌ واحد — يتغيّر التجميع في العرض فقط.
+
    مصدره ملفّ المناهج الذي أرسلتَه، منقولاً حرفياً بلا أي تأليف:
    لم أُضف درساً واحداً من عندي، لأنّ خطأً في المنهج يجعل الطالب يبني
    تقدّمه على برنامج غير صحيح — وهو أسوأ من غياب الميزة.
@@ -16,6 +24,20 @@ export interface Lesson {
   title: string;
   unit: string;
   subject: string;
+  /**
+   * اسم الشعبة، أو `"*"` للمواد المشتركة بين كل الشعب.
+   *
+   * 🐛 كانت كل مادة مربوطة بشعبة واحدة، والمواد المشتركة مسجّلة تحت
+   * «علوم تجريبية» وحدها لأنّها أوّل شعبة أُدخلت. والنتيجة أنّ
+   * التصفية `l.stream === stream` كانت تُخفيها عن الجميع سواها:
+   *
+   *   طالب رياضيات      يرى 5 دروس   (بلا تاريخ ولا إسلامية ولا لغات)
+   *   طالب تسيير واقتصاد يرى 22 درساً (بلا عربية ولا رياضيات ولا لغات)
+   *   طالب آداب          يرى 26 درساً
+   *
+   * الدروس موجودة كلّها — كانت محبوسة. و`"*"` تفكّها بلا تكرارها ستّ
+   * مرات، وبلا تغيير أيّ `id` — فلا يضيع تقدّم أحد.
+   */
   stream: string;
   order: number;
   trimester: number;
@@ -75,22 +97,24 @@ export const LESSONS: Lesson[] = [
   { id: "MATH_MATH_U1_L3", title: "الأعداد الأولية ومبرهنتا بيزو وغوص", unit: "الحساب في مجموعة الأعداد الصحيحة", subject: "الرياضيات", stream: "رياضيات", order: 3, trimester: 1 },
   { id: "MATH_PHY_U7_L19", title: "الاهتزازات الميكانيكية", unit: "الاهتزازات", subject: "العلوم الفيزيائية", stream: "رياضيات", order: 19, trimester: 3 },
   { id: "MATH_PHY_U7_L20", title: "الاهتزازات الكهربائية", unit: "الاهتزازات", subject: "العلوم الفيزيائية", stream: "رياضيات", order: 20, trimester: 3 },
-  { id: "SCI_HIS_U1_L1", title: "بروز الصراع وتشكل العالم", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ", stream: "علوم تجريبية", order: 1, trimester: 1 },
-  { id: "SCI_HIS_U1_L2", title: "مساعي الانفراج الدولي", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ", stream: "علوم تجريبية", order: 2, trimester: 1 },
-  { id: "SCI_HIS_U1_L3", title: "من الثنائية إلى الأحادية القطبية", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ", stream: "علوم تجريبية", order: 3, trimester: 1 },
-  { id: "SCI_HIS_U2_L4", title: "من تبلور الوعي الوطني إلى الثورة التحريرية", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ", stream: "علوم تجريبية", order: 4, trimester: 2 },
-  { id: "SCI_HIS_U2_L5", title: "العمل المسلح ورد فعل الاستعمار", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ", stream: "علوم تجريبية", order: 5, trimester: 2 },
-  { id: "SCI_HIS_U2_L6", title: "استعادة السيادة الوطنية وبناء الدولة الجزائرية", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ", stream: "علوم تجريبية", order: 6, trimester: 2 },
-  { id: "SCI_HIS_U2_L7", title: "تأثير الجزائر وإسهامها في حركات التحرر", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ", stream: "علوم تجريبية", order: 7, trimester: 3 },
-  { id: "SCI_HIS_U3_L8", title: "العالم الثالث بين تراجع الاستعمار التقليدي واستمرارية حركات التحرر", unit: "التطورات في العالم الثالث (1945-1989)", subject: "التاريخ", stream: "علوم تجريبية", order: 8, trimester: 3 },
-  { id: "SCI_HIS_U3_L9", title: "فلسطين من تصفية الاستعمار التقليدي إلى الهيمنة الأحادية", unit: "التطورات في العالم الثالث (1945-1989)", subject: "التاريخ", stream: "علوم تجريبية", order: 9, trimester: 3 },
-  { id: "SCI_GEO_U1_L1", title: "إشكالية التقدم والتخلف", unit: "واقع الاقتصاد العالمي", subject: "الجغرافيا", stream: "علوم تجريبية", order: 1, trimester: 1 },
-  { id: "SCI_GEO_U1_L2", title: "المبادلات والتنقلات في العالم", unit: "واقع الاقتصاد العالمي", subject: "الجغرافيا", stream: "علوم تجريبية", order: 2, trimester: 1 },
-  { id: "SCI_GEO_U2_L3", title: "مصادر القوة الاقتصادية للولايات المتحدة الأمريكية", unit: "القوى الاقتصادية الكبرى في العالم", subject: "الجغرافيا", stream: "علوم تجريبية", order: 3, trimester: 2 },
-  { id: "SCI_GEO_U2_L4", title: "ظاهرة التكتل وأثرها في قوة الاتحاد الأوروبي", unit: "القوى الاقتصادية الكبرى في العالم", subject: "الجغرافيا", stream: "علوم تجريبية", order: 4, trimester: 2 },
-  { id: "SCI_GEO_U2_L5", title: "العلاقة بين السكان والتنمية في شرق وجنوب شرق آسيا", unit: "القوى الاقتصادية الكبرى في العالم", subject: "الجغرافيا", stream: "علوم تجريبية", order: 5, trimester: 2 },
-  { id: "SCI_GEO_U3_L6", title: "الاقتصاد الجزائري في العالم", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "الجغرافيا", stream: "علوم تجريبية", order: 6, trimester: 3 },
-  { id: "SCI_GEO_U3_L7", title: "الجزائر في حوض البحر الأبيض المتوسط", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "الجغرافيا", stream: "علوم تجريبية", order: 7, trimester: 3 },
+  { id: "SCI_HIS_U1_L1", title: "بروز الصراع وتشكل العالم", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ والجغرافيا", stream: "*", order: 1, trimester: 1 },
+  { id: "SCI_HIS_U1_L2", title: "مساعي الانفراج الدولي", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ والجغرافيا", stream: "*", order: 2, trimester: 1 },
+  { id: "SCI_HIS_U1_L3", title: "من الثنائية إلى الأحادية القطبية", unit: "تطور العالم في ظل الثنائية القطبية (1945-1989)", subject: "التاريخ والجغرافيا", stream: "*", order: 3, trimester: 1 },
+  { id: "SCI_HIS_U2_L4", title: "من تبلور الوعي الوطني إلى الثورة التحريرية", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ والجغرافيا", stream: "*", order: 4, trimester: 2 },
+  { id: "SCI_HIS_U2_L5", title: "العمل المسلح ورد فعل الاستعمار", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ والجغرافيا", stream: "*", order: 5, trimester: 2 },
+  { id: "SCI_HIS_U2_L6", title: "استعادة السيادة الوطنية وبناء الدولة الجزائرية", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ والجغرافيا", stream: "*", order: 6, trimester: 2 },
+  { id: "SCI_HIS_U2_L7", title: "تأثير الجزائر وإسهامها في حركات التحرر", unit: "الجزائر بين 1945 و 1989", subject: "التاريخ والجغرافيا", stream: "*", order: 7, trimester: 3 },
+  { id: "SCI_HIS_U3_L8", title: "العالم الثالث بين تراجع الاستعمار التقليدي واستمرارية حركات التحرر", unit: "التطورات في العالم الثالث (1945-1989)", subject: "التاريخ والجغرافيا", stream: "*", order: 8, trimester: 3 },
+  { id: "SCI_HIS_U3_L9", title: "فلسطين من تصفية الاستعمار التقليدي إلى الهيمنة الأحادية", unit: "التطورات في العالم الثالث (1945-1989)", subject: "التاريخ والجغرافيا", stream: "*", order: 9, trimester: 3 },
+  { id: "SCI_GEO_U1_L1", title: "إشكالية التقدم والتخلف", unit: "واقع الاقتصاد العالمي", subject: "التاريخ والجغرافيا", stream: "*", order: 1, trimester: 1 },
+  { id: "SCI_GEO_U1_L2", title: "المبادلات والتنقلات في العالم", unit: "واقع الاقتصاد العالمي", subject: "التاريخ والجغرافيا", stream: "*", order: 2, trimester: 1 },
+  { id: "SCI_GEO_U2_L3", title: "مصادر القوة الاقتصادية للولايات المتحدة الأمريكية", unit: "القوى الاقتصادية الكبرى في العالم", subject: "التاريخ والجغرافيا", stream: "*", order: 3, trimester: 2 },
+  { id: "SCI_GEO_U2_L4", title: "ظاهرة التكتل وأثرها في قوة الاتحاد الأوروبي", unit: "القوى الاقتصادية الكبرى في العالم", subject: "التاريخ والجغرافيا", stream: "*", order: 4, trimester: 2 },
+  { id: "SCI_GEO_U2_L5", title: "العلاقة بين السكان والتنمية في شرق وجنوب شرق آسيا", unit: "القوى الاقتصادية الكبرى في العالم", subject: "التاريخ والجغرافيا", stream: "*", order: 5, trimester: 2 },
+  { id: "SCI_GEO_U3_L6", title: "الاقتصاد الجزائري في العالم", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "التاريخ والجغرافيا", stream: "*", order: 6, trimester: 3 },
+  { id: "SCI_GEO_U3_L7", title: "الجزائر في حوض البحر الأبيض المتوسط", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "التاريخ والجغرافيا", stream: "*", order: 7, trimester: 3 },
+  { id: "SCI_GEO_U3_L8", title: "السكان والتنمية في الهند", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "التاريخ والجغرافيا", stream: "*", order: 8, trimester: 3 },
+  { id: "SCI_GEO_U3_L9", title: "السكان والتنمية في البرازيل", unit: "الاقتصاد والتنمية في دول الجنوب", subject: "التاريخ والجغرافيا", stream: "*", order: 9, trimester: 3 },
   { id: "SCI_MATH_U1_L1", title: "النهايات", unit: "الدوال العددية", subject: "الرياضيات", stream: "علوم تجريبية", order: 1, trimester: 1 },
   { id: "SCI_MATH_U1_L2", title: "الاستمرارية ومبرهنة القيم المتوسطة", unit: "الدوال العددية", subject: "الرياضيات", stream: "علوم تجريبية", order: 2, trimester: 1 },
   { id: "SCI_MATH_U1_L3", title: "الاشتقاقية وتطبيقاتها", unit: "الدوال العددية", subject: "الرياضيات", stream: "علوم تجريبية", order: 3, trimester: 1 },
@@ -107,24 +131,24 @@ export const LESSONS: Lesson[] = [
   { id: "SCI_MATH_U6_L14", title: "المتغير العشوائي وقانون الاحتمال", unit: "الاحتمالات", subject: "الرياضيات", stream: "علوم تجريبية", order: 14, trimester: 3 },
   { id: "SCI_MATH_U7_L15", title: "الجداء السلمي في الفضاء وتطبيقاته", unit: "الهندسة في الفضاء", subject: "الرياضيات", stream: "علوم تجريبية", order: 15, trimester: 3 },
   { id: "SCI_MATH_U7_L16", title: "المستقيمات والمستويات في الفضاء", unit: "الهندسة في الفضاء", subject: "الرياضيات", stream: "علوم تجريبية", order: 16, trimester: 3 },
-  { id: "SCI_ISL_U1_L1", title: "العقيدة الإسلامية وأثرها على الفرد والمجتمع", unit: "العقيدة الإسلامية", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 1, trimester: 1 },
-  { id: "SCI_ISL_U1_L2", title: "وسائل القرآن الكريم في تثبيت العقيدة الإسلامية", unit: "العقيدة الإسلامية", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 2, trimester: 1 },
-  { id: "SCI_ISL_U2_L3", title: "الإسلام والرسالات السماوية", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 3, trimester: 1 },
-  { id: "SCI_ISL_U2_L4", title: "العقل في القرآن الكريم", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 4, trimester: 1 },
-  { id: "SCI_ISL_U3_L5", title: "مقاصد الشريعة الإسلامية", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 5, trimester: 1 },
-  { id: "SCI_ISL_U3_L6", title: "منهج الإسلام في محاربة الانحراف والجريمة", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 6, trimester: 1 },
-  { id: "SCI_ISL_U3_L7", title: "المساواة أمام أحكام الشريعة الإسلامية في العقوبات", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 7, trimester: 2 },
-  { id: "SCI_ISL_U4_L8", title: "الصحة النفسية والجسمية في القرآن الكريم", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 8, trimester: 2 },
-  { id: "SCI_ISL_U2_L9", title: "من مصادر التشريع الإسلامي (الإجماع، القياس، المصلحة المرسلة)", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 9, trimester: 2 },
-  { id: "SCI_ISL_U4_L10", title: "القيم في القرآن الكريم", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 10, trimester: 2 },
-  { id: "SCI_ISL_U5_L11", title: "الوقف في الإسلام", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 11, trimester: 2 },
-  { id: "SCI_ISL_U6_L12", title: "من أحكام الأسرة في الإسلام: مدخل إلى علم الميراث", unit: "أحكام الأسرة", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 12, trimester: 2 },
-  { id: "SCI_ISL_U5_L13", title: "الربا وأحكامه", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 13, trimester: 3 },
-  { id: "SCI_ISL_U5_L14", title: "من المعاملات المالية الجائزة", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 14, trimester: 3 },
-  { id: "SCI_ISL_U4_L15", title: "الحرية الشخصية ومدى ارتباطها بحقوق الآخرين", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 15, trimester: 3 },
-  { id: "SCI_ISL_U6_L16", title: "من أحكام الأسرة في الإسلام: النسب، التبني، والكفالة", unit: "أحكام الأسرة", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 16, trimester: 3 },
-  { id: "SCI_ISL_U7_L17", title: "العلاقات الاجتماعية بين المسلمين وغيرهم", unit: "السيرة النبوية", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 17, trimester: 3 },
-  { id: "SCI_ISL_U7_L18", title: "خطبة الرسول صلى الله عليه وسلم في حجة الوداع", unit: "السيرة النبوية", subject: "العلوم الإسلامية", stream: "علوم تجريبية", order: 18, trimester: 3 },
+  { id: "SCI_ISL_U1_L1", title: "العقيدة الإسلامية وأثرها على الفرد والمجتمع", unit: "العقيدة الإسلامية", subject: "العلوم الإسلامية", stream: "*", order: 1, trimester: 1 },
+  { id: "SCI_ISL_U1_L2", title: "وسائل القرآن الكريم في تثبيت العقيدة الإسلامية", unit: "العقيدة الإسلامية", subject: "العلوم الإسلامية", stream: "*", order: 2, trimester: 1 },
+  { id: "SCI_ISL_U2_L3", title: "الإسلام والرسالات السماوية", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "*", order: 3, trimester: 1 },
+  { id: "SCI_ISL_U2_L4", title: "العقل في القرآن الكريم", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "*", order: 4, trimester: 1 },
+  { id: "SCI_ISL_U3_L5", title: "مقاصد الشريعة الإسلامية", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "*", order: 5, trimester: 1 },
+  { id: "SCI_ISL_U3_L6", title: "منهج الإسلام في محاربة الانحراف والجريمة", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "*", order: 6, trimester: 1 },
+  { id: "SCI_ISL_U3_L7", title: "المساواة أمام أحكام الشريعة الإسلامية في العقوبات", unit: "مقاصد الشريعة", subject: "العلوم الإسلامية", stream: "*", order: 7, trimester: 2 },
+  { id: "SCI_ISL_U4_L8", title: "الصحة النفسية والجسمية في القرآن الكريم", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "*", order: 8, trimester: 2 },
+  { id: "SCI_ISL_U2_L9", title: "من مصادر التشريع الإسلامي (الإجماع، القياس، المصلحة المرسلة)", unit: "القرآن ومصادر التشريع", subject: "العلوم الإسلامية", stream: "*", order: 9, trimester: 2 },
+  { id: "SCI_ISL_U4_L10", title: "القيم في القرآن الكريم", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "*", order: 10, trimester: 2 },
+  { id: "SCI_ISL_U5_L11", title: "الوقف في الإسلام", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "*", order: 11, trimester: 2 },
+  { id: "SCI_ISL_U6_L12", title: "من أحكام الأسرة في الإسلام: مدخل إلى علم الميراث", unit: "أحكام الأسرة", subject: "العلوم الإسلامية", stream: "*", order: 12, trimester: 2 },
+  { id: "SCI_ISL_U5_L13", title: "الربا وأحكامه", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "*", order: 13, trimester: 3 },
+  { id: "SCI_ISL_U5_L14", title: "من المعاملات المالية الجائزة", unit: "الاقتصاد والمعاملات", subject: "العلوم الإسلامية", stream: "*", order: 14, trimester: 3 },
+  { id: "SCI_ISL_U4_L15", title: "الحرية الشخصية ومدى ارتباطها بحقوق الآخرين", unit: "القيم والأخلاق", subject: "العلوم الإسلامية", stream: "*", order: 15, trimester: 3 },
+  { id: "SCI_ISL_U6_L16", title: "من أحكام الأسرة في الإسلام: النسب، التبني، والكفالة", unit: "أحكام الأسرة", subject: "العلوم الإسلامية", stream: "*", order: 16, trimester: 3 },
+  { id: "SCI_ISL_U7_L17", title: "العلاقات الاجتماعية بين المسلمين وغيرهم", unit: "السيرة النبوية", subject: "العلوم الإسلامية", stream: "*", order: 17, trimester: 3 },
+  { id: "SCI_ISL_U7_L18", title: "خطبة الرسول صلى الله عليه وسلم في حجة الوداع", unit: "السيرة النبوية", subject: "العلوم الإسلامية", stream: "*", order: 18, trimester: 3 },
   { id: "SCI_PHY_U1_L1", title: "طرق المتابعة الزمنية (المعايرة، الناقلية، الضغط، الحجم)", unit: "المتابعة الزمنية لتحول كيميائي", subject: "العلوم الفيزيائية", stream: "علوم تجريبية", order: 1, trimester: 1 },
   { id: "SCI_PHY_U1_L2", title: "سرعة التفاعل وزمن نصف التفاعل", unit: "المتابعة الزمنية لتحول كيميائي", subject: "العلوم الفيزيائية", stream: "علوم تجريبية", order: 2, trimester: 1 },
   { id: "SCI_PHY_U1_L3", title: "العوامل الحركية", unit: "المتابعة الزمنية لتحول كيميائي", subject: "العلوم الفيزيائية", stream: "علوم تجريبية", order: 3, trimester: 1 },
@@ -179,16 +203,16 @@ export const LESSONS: Lesson[] = [
   { id: "LANG_ESP_U3_L6", title: "Gramática: El imperativo (afirmativo y negativo) / La obligación", unit: "Unidad 3: Medio ambiente", subject: "اللغة الإسبانية", stream: "لغات أجنبية", order: 6, trimester: 2 },
   { id: "LANG_ESP_U4_L7", title: "La solidaridad y la convivencia", unit: "Unidad 4: Solidaridad", subject: "اللغة الإسبانية", stream: "لغات أجنبية", order: 7, trimester: 2 },
   { id: "LANG_ESP_U5_L8", title: "La guerra y la paz (Derechos humanos)", unit: "Unidad 5: Paz y guerra", subject: "اللغة الإسبانية", stream: "لغات أجنبية", order: 8, trimester: 3 },
-  { id: "LANG_ENG_U1_L1", title: "Exploring the Past (Ancient Civilizations)", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 1, trimester: 1 },
-  { id: "LANG_ENG_U1_L2", title: "The rise and fall of civilizations (Sumerians, Egyptians, Greeks...)", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 2, trimester: 1 },
-  { id: "LANG_ENG_U1_L3", title: "Grammar: Used to / Had to / Past Perfect / Past Simple", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 3, trimester: 1 },
-  { id: "LANG_ENG_U2_L4", title: "Ethics in Business", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 4, trimester: 1 },
-  { id: "LANG_ENG_U2_L5", title: "Fraud, corruption, money laundering and counterfeiting", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 5, trimester: 1 },
-  { id: "LANG_ENG_U2_L6", title: "Grammar: Conditionals (Provided that, as long as) / Expressing wish / It's high time", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 6, trimester: 1 },
-  { id: "LANG_ENG_U3_L7", title: "Education in the World (Comparing educational systems)", unit: "Unit 3: Schools: Different and Alike", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 7, trimester: 2 },
-  { id: "LANG_ENG_U3_L8", title: "Grammar: Expressing similarities and differences (like, whereas, unlike)", unit: "Unit 3: Schools: Different and Alike", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 8, trimester: 2 },
-  { id: "LANG_ENG_U4_L9", title: "Emotions and feelings (Humour, Anger, Love)", unit: "Unit 4: Feelings and Emotions", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 9, trimester: 3 },
-  { id: "LANG_ENG_U4_L10", title: "Grammar: Articles / Quantifiers / Modals", unit: "Unit 4: Feelings and Emotions", subject: "اللغة الإنجليزية", stream: "لغات أجنبية", order: 10, trimester: 3 },
+  { id: "LANG_ENG_U1_L1", title: "Exploring the Past (Ancient Civilizations)", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "*", order: 1, trimester: 1 },
+  { id: "LANG_ENG_U1_L2", title: "The rise and fall of civilizations (Sumerians, Egyptians, Greeks...)", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "*", order: 2, trimester: 1 },
+  { id: "LANG_ENG_U1_L3", title: "Grammar: Used to / Had to / Past Perfect / Past Simple", unit: "Unit 1: Exploring the Past", subject: "اللغة الإنجليزية", stream: "*", order: 3, trimester: 1 },
+  { id: "LANG_ENG_U2_L4", title: "Ethics in Business", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "*", order: 4, trimester: 1 },
+  { id: "LANG_ENG_U2_L5", title: "Fraud, corruption, money laundering and counterfeiting", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "*", order: 5, trimester: 1 },
+  { id: "LANG_ENG_U2_L6", title: "Grammar: Conditionals (Provided that, as long as) / Expressing wish / It's high time", unit: "Unit 2: Ill-Gotten Gains Never Prosper", subject: "اللغة الإنجليزية", stream: "*", order: 6, trimester: 1 },
+  { id: "LANG_ENG_U3_L7", title: "Education in the World (Comparing educational systems)", unit: "Unit 3: Schools: Different and Alike", subject: "اللغة الإنجليزية", stream: "*", order: 7, trimester: 2 },
+  { id: "LANG_ENG_U3_L8", title: "Grammar: Expressing similarities and differences (like, whereas, unlike)", unit: "Unit 3: Schools: Different and Alike", subject: "اللغة الإنجليزية", stream: "*", order: 8, trimester: 2 },
+  { id: "LANG_ENG_U4_L9", title: "Emotions and feelings (Humour, Anger, Love)", unit: "Unit 4: Feelings and Emotions", subject: "اللغة الإنجليزية", stream: "*", order: 9, trimester: 3 },
+  { id: "LANG_ENG_U4_L10", title: "Grammar: Articles / Quantifiers / Modals", unit: "Unit 4: Feelings and Emotions", subject: "اللغة الإنجليزية", stream: "*", order: 10, trimester: 3 },
   { id: "LANG_ITA_U1_L1", title: "La famiglia italiana oggi e ieri", unit: "Unità 1: La società", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 1, trimester: 1 },
   { id: "LANG_ITA_U1_L2", title: "Grammatica: Il passato prossimo e l'imperfetto", unit: "Unità 1: La società", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 2, trimester: 1 },
   { id: "LANG_ITA_U2_L3", title: "Il mondo del lavoro in Italia", unit: "Unità 2: Il lavoro", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 3, trimester: 1 },
@@ -197,15 +221,15 @@ export const LESSONS: Lesson[] = [
   { id: "LANG_ITA_U3_L6", title: "Grammatica: Il condizionale semplice e composto", unit: "Unità 3: L'ambiente", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 6, trimester: 2 },
   { id: "LANG_ITA_U4_L7", title: "I mass-media e la comunicazione", unit: "Unità 4: I mass-media", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 7, trimester: 3 },
   { id: "LANG_ITA_U4_L8", title: "Grammatica: Il congiuntivo (Presente e passato)", unit: "Unità 4: I mass-media", subject: "اللغة الإيطالية", stream: "لغات أجنبية", order: 8, trimester: 3 },
-  { id: "LANG_FRE_U1_L1", title: "Le texte historique (Rapporter un fait d'histoire)", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 1, trimester: 1 },
-  { id: "LANG_FRE_U1_L2", title: "L'objectivité et la subjectivité de l'auteur (Les modalisateurs)", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 2, trimester: 1 },
-  { id: "LANG_FRE_U1_L3", title: "Le témoignage dans le récit historique", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 3, trimester: 1 },
-  { id: "LANG_FRE_U2_L4", title: "Le débat d'idées (L'argumentation)", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 4, trimester: 2 },
-  { id: "LANG_FRE_U2_L5", title: "Concéder et réfuter une thèse", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 5, trimester: 2 },
-  { id: "LANG_FRE_U2_L6", title: "L'articulation du discours (Les articulateurs logiques)", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 6, trimester: 2 },
-  { id: "LANG_FRE_U3_L7", title: "L'appel (L'exhortation)", unit: "Projet 3: L'appel", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 7, trimester: 3 },
-  { id: "LANG_FRE_U3_L8", title: "Les verbes performatifs et la syntaxe de l'appel", unit: "Projet 3: L'appel", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 8, trimester: 3 },
-  { id: "LANG_FRE_U4_L9", title: "La nouvelle fantastique (Optionnel/Fin d'année)", unit: "Projet 4: La nouvelle", subject: "اللغة الفرنسية", stream: "لغات أجنبية", order: 9, trimester: 3 }
+  { id: "LANG_FRE_U1_L1", title: "Le texte historique (Rapporter un fait d'histoire)", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "*", order: 1, trimester: 1 },
+  { id: "LANG_FRE_U1_L2", title: "L'objectivité et la subjectivité de l'auteur (Les modalisateurs)", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "*", order: 2, trimester: 1 },
+  { id: "LANG_FRE_U1_L3", title: "Le témoignage dans le récit historique", unit: "Projet 1: Le texte d'histoire", subject: "اللغة الفرنسية", stream: "*", order: 3, trimester: 1 },
+  { id: "LANG_FRE_U2_L4", title: "Le débat d'idées (L'argumentation)", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "*", order: 4, trimester: 2 },
+  { id: "LANG_FRE_U2_L5", title: "Concéder et réfuter une thèse", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "*", order: 5, trimester: 2 },
+  { id: "LANG_FRE_U2_L6", title: "L'articulation du discours (Les articulateurs logiques)", unit: "Projet 2: Le débat d'idées", subject: "اللغة الفرنسية", stream: "*", order: 6, trimester: 2 },
+  { id: "LANG_FRE_U3_L7", title: "L'appel (L'exhortation)", unit: "Projet 3: L'appel", subject: "اللغة الفرنسية", stream: "*", order: 7, trimester: 3 },
+  { id: "LANG_FRE_U3_L8", title: "Les verbes performatifs et la syntaxe de l'appel", unit: "Projet 3: L'appel", subject: "اللغة الفرنسية", stream: "*", order: 8, trimester: 3 },
+  { id: "LANG_FRE_U4_L9", title: "La nouvelle fantastique (Optionnel/Fin d'année)", unit: "Projet 4: La nouvelle", subject: "اللغة الفرنسية", stream: "*", order: 9, trimester: 3 }
 ];
 
 /* شعب البكالوريا الرسمية — تُعرض كلّها حتى لو لم تصلنا دروسها بعد،
@@ -214,23 +238,31 @@ export const LESSONS: Lesson[] = [
 export const OFFICIAL_STREAMS: string[] = [
   "علوم تجريبية",
   "رياضيات",
+  "تقني رياضي",
   "تسيير واقتصاد",
   "آداب وفلسفة",
   "لغات أجنبية",
 ];
 
-export const STREAMS: string[] = ["آداب وفلسفة", "تسيير واقتصاد", "رياضيات", "علوم تجريبية", "لغات أجنبية"];
+export const STREAMS: string[] = [
+  "آداب وفلسفة", "تسيير واقتصاد", "رياضيات", "تقني رياضي", "علوم تجريبية", "لغات أجنبية",
+];
+
+/** هل يخصّ هذا الدرس هذه الشعبة؟ — يشمل المواد المشتركة */
+export function inStream(lesson: Lesson, stream: string): boolean {
+  return lesson.stream === stream || lesson.stream === "*";
+}
 
 /** مواد شعبة معيّنة، بالترتيب الذي تظهر به في المنهج */
 export function subjectsOf(stream: string): string[] {
   const seen = new Set<string>();
-  for (const l of LESSONS) if (l.stream === stream) seen.add(l.subject);
+  for (const l of LESSONS) if (inStream(l, stream)) seen.add(l.subject);
   return [...seen];
 }
 
 /** دروس مادّة داخل شعبة، مرتّبة بالفصل ثم الترتيب */
 export function lessonsOf(stream: string, subject: string): Lesson[] {
-  return LESSONS.filter((l) => l.stream === stream && l.subject === subject)
+  return LESSONS.filter((l) => inStream(l, stream) && l.subject === subject)
     .sort((a, b) => a.trimester - b.trimester || a.order - b.order);
 }
 
@@ -248,11 +280,12 @@ export function unitsOf(stream: string, subject: string): { unit: string; lesson
 /* ⚠️ اكتمال التغطية — يُقرأ قبل عرض شعبة للطالب.
    عرض شعبة ناقصة كأنّها كاملة يجعل الطالب يظنّ أنّه أنهى برنامجه. */
 export const STREAM_COVERAGE: Record<string, "full" | "partial"> = {
-  "آداب وفلسفة": "partial",
-  "تسيير واقتصاد": "partial",
-  "رياضيات": "partial",
+  "آداب وفلسفة": "partial",   // ينقص: برنامج الفلسفة والعربية خاصّ بها موجود، وتنقص الرياضيات
+  "تسيير واقتصاد": "partial", // ينقص: العربية والفلسفة والرياضيات
+  "رياضيات": "partial",       // ينقص: أغلب الرياضيات والفيزياء والعربية والفلسفة
+  "تقني رياضي": "partial",    // ينقص: التكنولوجيا بتخصّصاتها الأربعة والرياضيات والفيزياء
   "علوم تجريبية": "full",
-  "لغات أجنبية": "partial"
+  "لغات أجنبية": "partial"    // ينقص: العربية والفلسفة والرياضيات
 };
 
 export function isStreamReady(stream: string): boolean {

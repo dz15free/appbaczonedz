@@ -52,7 +52,6 @@ export const GROUP_SUBJECTS = [
   { id: "economics", name: "تسيير واقتصاد" },
   { id: "literature", name: "آداب وفلسفة" },
   { id: "languages", name: "لغات أجنبية" },
-  { id: "arts", name: "فنون" },
 ];
 
 export const SUBJECT_COLOR: Record<string, string> = {
@@ -63,7 +62,6 @@ export const SUBJECT_COLOR: Record<string, string> = {
   economics: "bg-warning/20 text-warning",
   literature: "bg-primary/20 text-primary",
   languages: "bg-secondary/20 text-secondary",
-  arts: "bg-rose-500/10 text-rose-500",
 };
 
 /* ───────── عمليات المجموعات ───────── */

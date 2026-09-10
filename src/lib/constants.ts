@@ -13,8 +13,23 @@ export const TRACKS: Track[] = [
   { id: "economics", name: "تسيير واقتصاد" },
   { id: "literature", name: "آداب وفلسفة" },
   { id: "languages", name: "لغات أجنبية" },
-  { id: "arts", name: "فنون" },
 ];
+
+/* شُعب لم تعد معتمدة — تبقى معرّفاتها هنا لتمييز الملفّات القديمة.
+   الحذف من `TRACKS` وحده يترك من كان مسجّلاً بها أمام شاشات فارغة:
+   `subjectsForTrack` ترجع لا شيء، ويفقد المنهج والمكتبة والغرف
+   فلترها بلا رسالة خطأ. `isRetiredTrack` تسمح للواجهة بأن تطلب منه
+   اختياراً جديداً بدل أن تصمت. */
+export const RETIRED_TRACKS: string[] = ["arts"];
+
+export function isRetiredTrack(trackId?: string | null): boolean {
+  return !!trackId && RETIRED_TRACKS.includes(trackId);
+}
+
+/** شعبة معروفة ومعتمدة؟ — يُستعمل قبل عرض أي محتوى مرتبط بالشعبة */
+export function isKnownTrack(trackId?: string | null): boolean {
+  return !!trackId && TRACKS.some((t) => t.id === trackId);
+}
 
 // المواد لكل شعبة (مفاتيح موحّدة تُستخدم في الغرف والمكتبة والاختبارات)
 export interface Subject {
@@ -44,7 +59,6 @@ export const ALL_SUBJECTS: Subject[] = [
   { id: "mech-eng", name: "الهندسة الميكانيكية" },
   { id: "process-eng", name: "هندسة الطرائق" },
   { id: "civil-eng", name: "الهندسة المدنية" },
-  { id: "art-major", name: "مادة التخصص الفني" },
 ];
 
 // مواد كل شعبة (بالمعرّفات)
@@ -55,7 +69,6 @@ export const TRACK_SUBJECTS: Record<string, string[]> = {
   economics: ["arabic", "islamic", "law", "math", "accounting", "economics", "philosophy", "history-geo", "french", "english", "amazigh"],
   literature: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
   languages: ["arabic", "islamic", "philosophy", "history-geo", "math", "french", "english", "spanish", "german", "italian", "amazigh"],
-  arts: ["arabic", "islamic", "philosophy", "history-geo", "french", "english", "art-major"],
 };
 
 // مساعد: إرجاع مواد شعبة معيّنة ككائنات {id, name}

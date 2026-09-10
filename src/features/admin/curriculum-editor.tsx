@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { LESSONS, STREAMS, OFFICIAL_STREAMS } from "@/features/study/curriculum";
+import { LESSONS, STREAMS, OFFICIAL_STREAMS, inStream } from "@/features/study/curriculum";
 import {
   listenCustomLessons, mergeLessons, addLesson, addLessonsBulk,
   deleteLesson, listenHiddenSubjects, isSubjectHidden, setSubjectHidden,
@@ -301,7 +301,7 @@ export function CurriculumEditor() {
           الدروس المُضافة يدوياً فقط — الثابتة في الشيفرة تُخفى ولا تُحذف.
         </p>
         <div className="space-y-1">
-          {[...new Set(mergeLessons(custom).filter((l) => l.stream === stream).map((l) => l.subject))]
+          {[...new Set(mergeLessons(custom).filter((l) => inStream(l, stream)).map((l) => l.subject))]
             .map((sub) => {
               const off = isSubjectHidden(hidden, stream, sub);
               const own = custom.filter((l) => l.stream === stream && l.subject === sub).length;

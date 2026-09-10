@@ -9,7 +9,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/ui/icon";
-import { OFFICIAL_STREAMS, STREAMS, subjectsOf, unitsOf, type Lesson } from "@/features/study/curriculum";
+import { OFFICIAL_STREAMS, STREAMS, subjectsOf, unitsOf, type Lesson, inStream } from "@/features/study/curriculum";
 import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, listenStreamMeta, isStreamHidden, type CustomLesson } from "@/features/study/curriculum-store";
 
 /* ════════════════════════════════════════════════════════════
@@ -91,7 +91,7 @@ export default function TrackerPage() {
 
   const all = useMemo(() => mergeLessons(custom), [custom]);
   const subjects = useMemo(
-    () => [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))]
+    () => [...new Set(all.filter((l) => inStream(l, stream)).map((l) => l.subject))]
       .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub)),
     [all, stream, hiddenSubs],
   );
@@ -102,7 +102,7 @@ export default function TrackerPage() {
   }, [subjects, subject]);
 
   const units = useMemo(() => {
-    const rows = all.filter((l) => l.stream === stream && l.subject === subject);
+    const rows = all.filter((l) => inStream(l, stream) && l.subject === subject);
     const map = new Map<string, Lesson[]>();
     for (const l of rows.sort((a, b) => a.trimester - b.trimester || a.order - b.order)) {
       const arr = map.get(l.unit) ?? [];
@@ -125,10 +125,10 @@ export default function TrackerPage() {
   }
 
   const subjectRows = useMemo(
-    () => all.filter((l) => l.stream === stream && l.subject === subject),
+    () => all.filter((l) => inStream(l, stream) && l.subject === subject),
     [all, stream, subject],
   );
-  const streamRows = useMemo(() => all.filter((l) => l.stream === stream), [all, stream]);
+  const streamRows = useMemo(() => all.filter((l) => inStream(l, stream)), [all, stream]);
 
   function cycle(id: string) {
     if (!user) return;
@@ -159,7 +159,7 @@ export default function TrackerPage() {
 
         {/* الشعبة */}
         <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
-          {[...new Set([...OFFICIAL_STREAMS, ...all.map((l) => l.stream)])]
+          {[...new Set([...OFFICIAL_STREAMS, ...all.map((l) => l.stream).filter((x) => x !== "*")])]
             .filter((s) => !isStreamHidden(streamMeta.hidden, s))
             .map((s) => (
             <button key={s} onClick={() => pickStream(s)}
@@ -195,7 +195,7 @@ export default function TrackerPage() {
           <>
             <div className="bz-hide-scrollbar flex gap-1.5 overflow-x-auto">
               {subjects.map((s) => {
-                const rows = all.filter((l) => l.stream === stream && l.subject === s);
+                const rows = all.filter((l) => inStream(l, stream) && l.subject === s);
                 return (
                   <button key={s} onClick={() => setSubject(s)}
                     className={`shrink-0 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${

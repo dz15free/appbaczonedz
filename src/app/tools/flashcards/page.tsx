@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ref, push, remove, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { useAuth } from "@/features/auth/auth-provider";
-import { STREAMS } from "@/features/study/curriculum";
+import { STREAMS, inStream } from "@/features/study/curriculum";
 import { listenCustomLessons, mergeLessons, listenHiddenSubjects, isSubjectHidden, type CustomLesson } from "@/features/study/curriculum-store";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import { AppShell } from "@/components/app-shell";
@@ -127,7 +127,7 @@ export default function FlashcardsPage() {
        الطالب · وكل مادّة لها بطاقات فعلاً. الأخيرة تضمن ألّا تختفي
        بطاقة بسبب تغيير في القوائم. */
     const fromSite = siteSubjects.map((x) => x.name);
-    const fromCurriculum = [...new Set(all.filter((l) => l.stream === stream).map((l) => l.subject))]
+    const fromCurriculum = [...new Set(all.filter((l) => inStream(l, stream)).map((l) => l.subject))]
       .filter((sub) => !isSubjectHidden(hiddenSubs, stream, sub));
     const fromCards = [...new Set(cards.map((c) => c.subject).filter(Boolean))];
     const names = [...new Set([...fromSite, ...fromCurriculum, ...fromCards])];

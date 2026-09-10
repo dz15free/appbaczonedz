@@ -40,11 +40,10 @@ export const EDITABLE_PAGES: { key: string; label: string; path: string }[] = [
   { key: "calculate", label: "حساب المعدل — الصفحة الرئيسية", path: "/calculate" },
   { key: "calculate-sciences", label: "حساب المعدل — علوم تجريبية", path: "/calculate/sciences" },
   { key: "calculate-math", label: "حساب المعدل — رياضيات", path: "/calculate/math" },
-  { key: "calculate-engineering", label: "حساب المعدل — تقني رياضي (الهندسة)", path: "/calculate/engineering" },
+  { key: "calculate-engineering", label: "حساب المعدل — تقني رياضي", path: "/calculate/engineering" },
   { key: "calculate-economy", label: "حساب المعدل — تسيير واقتصاد", path: "/calculate/economy" },
   { key: "calculate-letters", label: "حساب المعدل — آداب وفلسفة", path: "/calculate/letters" },
   { key: "calculate-languages", label: "حساب المعدل — لغات أجنبية", path: "/calculate/languages" },
-  { key: "calculate-arts", label: "حساب المعدل — فنون", path: "/calculate/arts" },
   { key: "specialties", label: "دليل التخصّصات — الصفحة الرئيسية", path: "/specialties" },
 ];
 
