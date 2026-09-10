@@ -339,8 +339,18 @@
         "voice": {
           "$uid": {
             ".write": "auth != null && (auth.uid === $uid || root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists())",
+            // ملاحظة مدفوعة الثمن: `.validate` تعمل على أيّ حقل **موجود
+            // في الكتابة**، و`false` قيمةٌ موجودة لا غياب. فحين كان كل
+            // منضمّ يكتب `allowed: false` عند دخوله، كانت كتابته كلّها
+            // تُرفض — فينهار الصوت في الاتجاهين من حقلٍ واحد.
+            //
+            // العميل لم يعد يكتبه (انظر `voice-manager.ts`)، والشرط
+            // هنا صار يسمح بكتابةٍ **لا تُغيّر القيمة**: من يُعيد ما هو
+            // موجود لا يمنح نفسه شيئاً، ورفضه يُسقط ميزةً كاملة لأجل
+            // حقل لا أثر له. الحماية تبقى تامّة: تغيير القيمة فعلاً
+            // ما زال محصوراً في المالك والمشرفين.
             "allowed": {
-              ".validate": "root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists()"
+              ".validate": "root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists() || newData.val() === data.val() || (!data.exists() && newData.val() === false)"
             },
             "kicked": {
               ".validate": "root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('roomLive').child($roomId).child('mods').child(auth.uid).exists()"

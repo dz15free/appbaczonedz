@@ -70,6 +70,7 @@ export function RoomVoiceBar({
   const [micDenied, setMicDenied] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [connLost, setConnLost] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   /* إعادة الرسم عند تغيّر ملء الشاشة، فتنتقل الطبقات العائمة معه */
   useFullscreenState();
   const [participants, setParticipants] = useState<VoiceParticipant[]>([]);
@@ -113,7 +114,19 @@ export function RoomVoiceBar({
         managerRef.current = m;
         setListening(true);
       })
-      .catch((e) => console.error("[BacZone voice] تعذّر الاستماع:", e))
+      .catch((e) => {
+        /* 🐛 كان `console.error` وحده. فحين رفضت قاعدة Firebase كتابة
+           الحضور، تعطّل الصوت كلّه في الاتجاهين ولم يظهر للمستخدم أيّ
+           شيء — لا رسالة ولا أثر. عطلٌ كامل بلا أعراض هو أسوأ ما
+           يُسلَّم. الآن يُقال، ويُذكر السبب الأرجح. */
+        console.error("[BacZone voice] تعذّر الاستماع:", e);
+        const msg = String((e as { message?: string })?.message ?? e);
+        setJoinError(
+          /permission|denied/i.test(msg)
+            ? "تعذّر الاتصال بالصوت: صلاحيات قاعدة البيانات. تأكّد من نشر firebase-rtdb-rules.json."
+            : "تعذّر الاتصال بالصوت. أعد تحميل الصفحة.",
+        );
+      })
       .finally(() => { if (!cancelled) setConnecting(false); });
 
     return () => {
@@ -125,6 +138,14 @@ export function RoomVoiceBar({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, user?.uid, isOwner]);
+
+  /* 🐛 `ownerId` يصل من `room?.ownerId`، و`room` تُقرأ من الشبكة —
+     فهي `undefined` في أوّل رسمة. ومؤثّر الدخول لا يعتمد عليها (وحقٌّ
+     له: إعادة الاتصال بالصوت كلّما تحدّثت بيانات الغرفة عبث). فتُضبط
+     على المدير حين تصل، بلا إعادة اتصال. */
+  useEffect(() => {
+    if (managerRef.current && ownerId) managerRef.current.ownerUid = ownerId;
+  }, [ownerId, listening]);
 
   /* «اسمح للجميع بالكلام» يصل من الأعلى ويُطبَّق فوراً */
   useEffect(() => {
@@ -196,6 +217,20 @@ export function RoomVoiceBar({
 
       {/* الصوت محجوب ⇒ لمسة واحدة تفكّه. الصمت بلا تفسير أسوأ من
           زرٍّ إضافي. */}
+      {/* فشل الدخول إلى الصوت — يُعرض بدل صمتٍ لا يُفسَّر */}
+      {joinError && (
+        <div
+          role="alert"
+          className="fixed inset-x-3 z-[2147483602] rounded-xl border border-danger/40 bg-surface px-3 py-2 text-[11px] font-bold leading-relaxed text-text-primary shadow-lg"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 90px)" }}
+        >
+          {joinError}
+          <button onClick={() => setJoinError(null)} className="mt-1.5 block text-[11px] font-extrabold text-primary">
+            إخفاء
+          </button>
+        </div>
+      )}
+
       {/* اتصال الصوت سقط: يُقال صراحةً بدل صمتٍ يُفسَّر خطأً */}
       {connLost && listening && (
         <button
@@ -373,6 +408,15 @@ export function RoomVoiceBar({
           {/* الحدّ الذي لا يتجاوزه كود: لا يُفتح ميكروفون بلا إذن من
               المتصفّح نفسه. فحين يأذن الأستاذ لمن لم يسبق أن سمح،
               نطلب منه ضغطةً واحدة بدل صمتٍ لا يُفسَّر. */}
+          {/* ⚠️ المالك أيضاً يحتاج ضغطة: بعد فصل الاستماع عن التحدّث
+              لم يعد الدخول يفتح ميكروفوناً لأحد — ولا حتى للمضيف.
+              وبلا هذا السطر يشرح الأستاذ دقيقةً كاملة قبل أن يكتشف
+              أنّ أحداً لا يسمعه. */}
+          {isOwner && !micOn && (
+            <span className="hidden text-[11px] font-bold text-[var(--bz-amber)] sm:inline">
+              افتح ميكروفونك لتبدأ
+            </span>
+          )}
           {!isOwner && allowed && !micOn && (
             <span className="hidden text-[11px] font-bold text-[var(--bz-green)] sm:inline">
               لك الكلمة — افتح ميكروفونك

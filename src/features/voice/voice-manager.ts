@@ -75,6 +75,11 @@ export class VoiceManager {
   onMicChange?: (on: boolean) => void;
   onLeave?: () => void;
   onConnectionLost?: (state: string) => void;
+  /* 🐛 كان فشل `join()` يُبتلع في `console.error` وحده. فحين رفضت
+     القاعدة الكتابة، رأى المستخدمون «صوتاً لا يعمل» بلا أيّ إشارة
+     إلى السبب — لا في الواجهة ولا في سلوك ظاهر. الفشل الصامت هو ما
+     حوّل خطأ حقلٍ واحد إلى عطلٍ كامل مجهول السبب. */
+  onJoinError?: (message: string) => void;
 
   constructor(
     private roomId: string,
@@ -123,10 +128,31 @@ export class VoiceManager {
     /* التسجيل قبل الإعلان: بينهما نافذة إن انقطع فيها الاتصال بقي
        المستخدم «شبحاً» في القائمة إلى الأبد. */
     await onDisconnect(myRef).remove();
-    /* المالك يدخل بإذنٍ لنفسه — لا معنى لأن يستأذن نفسه.
-       والمنضمّ يدخل مستمعاً: بلا `sessionId` ولا `trackName`، وهو ما
-       يميّز المستمع من المتحدّث في العقدة نفسها. */
-    await set(myRef, { name: this.name, allowed: this.isOwner, micOn: false });
+    /* ════════════════════════════════════════════════════════
+       🐛 **هنا تعطّل الصوت بالكامل في الاتجاهين.**
+
+       كان السطر:
+
+           await set(myRef, { name, allowed: this.isOwner, micOn: false });
+
+       والقاعدة التي أضفتها لحماية `allowed` تحصر كتابته في المالك
+       والمشرفين. وقاعدة `.validate` في RTDB تعمل على أيّ حقل
+       **موجود في الكتابة** — و`allowed: false` قيمةٌ موجودة، لا
+       غياب. فكل منضمّ كان يكتب حقلاً ممنوعاً عليه، فتُرفض الكتابة
+       **كلّها**.
+
+       والأثر متسلسل: `set` يرمي ⇒ `join()` تتوقّف **قبل** تركيب
+       مستمع المشاركين ⇒ الطالب لا يشترك في أحد فلا يسمع، ولا يُسجَّل
+       في العقدة فلا يراه أحد ولا يسمعه. عطبٌ كامل في الاتجاهين من
+       حقلٍ واحد قيمته `false`.
+
+       القاعدة: **لا يكتب أحدٌ حقلاً لا يملكه، ولو بقيمته الافتراضية.**
+       غياب `allowed` يعني «لا إذن» تماماً كما تعنيه `false`، فلا
+       حاجة إلى كتابته أصلاً.
+       ════════════════════════════════════════════════════════ */
+    const presence: Record<string, unknown> = { name: this.name, micOn: false };
+    if (this.isOwner) presence.allowed = true;  // ولا معنى لأن يستأذن نفسه
+    await set(myRef, presence);
 
     this.unsub = onValue(ref(rtdb, this.voicePath()), (snap) => {
       const val = (snap.val() as Record<string, VoiceParticipant>) ?? {};
