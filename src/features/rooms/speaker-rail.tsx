@@ -39,7 +39,19 @@ import { OWNER_STATUS_META } from "@/features/rooms/waiting-screen";
    أوّلاً دائماً.
    ════════════════════════════════════════════════════════════ */
 
-interface VoiceEntry { name?: string; muted?: boolean }
+/* ⚠️ يجب أن يبقى مطابقاً لـ`VoiceParticipant` في `voice-manager.ts`.
+   كان `{ muted }` من النموذج القديم، ولم يعد يُكتب في العقدة أصلاً
+   بعد فصل الإذن عن المفتاح:
+
+     allowed    الإذن   — يملكه صاحب الغرفة
+     micOn      المفتاح — يملكه صاحب الجهاز
+     sessionId  يوجد فقط لمن يبثّ — المستمع بلا مسار */
+interface VoiceEntry {
+  name?: string;
+  allowed?: boolean;
+  micOn?: boolean;
+  sessionId?: string;
+}
 
 /* كم بطاقة تظهر قبل «+N».
    ليس رقماً واحداً: البطاقة على الهاتف صورة رمزية وحدها (≈48px)،
