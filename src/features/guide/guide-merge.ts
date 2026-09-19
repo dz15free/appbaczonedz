@@ -302,6 +302,23 @@ const REVIEWED_BY_SLUG = new Map<string, Partial<SpecContent>>(
       patch.pros = "";
       patch.cons = "";
     }
+
+    /* ── `sections`: تُفرَغ وجوباً ──
+       🐛 `spec-article` يفحصها أولاً: إن وُجدت عُرضت **بدل أقسام
+       المخطّط كلّها** لا إلى جانبها. فكلّ ما نكتبه — المقدّمة
+       والدراسة والقبول والخلاصة — يختفي خلف أقسام المصدر القديمة.
+       وكلّ التخصّصات الأربعة والأربعين ورثتها من `p17`. */
+    patch.sections = [];
+
+    /* ── `excerpt`: يُشتقّ من المقدّمة الجديدة ──
+       🐛 المُصيِّر يكتب: `spec.excerpt || spec.intro`. أي أنّ
+       `excerpt` **يسبق** `intro` لا يكمّله — فما دام القديم موجوداً
+       لا يُقرأ ما كتبناه إطلاقاً. وهذا هو النصّ الذي ظلّ يظهر تحت
+       «ما هو هذا التخصّص؟» رغم كل ما سبق.
+       نشتقّه من المقدّمة نفسها: سطر واحد نظيف للسيو ولبطاقة الفهرس. */
+    const lead = String(patch.intro ?? "").replace(/\*\*/gu, "").split("\n")[0].trim();
+    if (lead) patch.excerpt = lead.length > 180 ? `${lead.slice(0, 177)}…` : lead;
+
     return [slug, patch] as const;
   }),
 );

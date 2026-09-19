@@ -80,6 +80,13 @@ for (const slug of reviewed) {
   if (extra.length) fail(`${slug}: حقول خارج المخطّط → ${extra.join(", ")}`);
   if (!x.intro?.trim() || !x.verdict?.trim()) fail(`${slug}: ينقصه intro أو verdict`);
   if ((x.pros || x.cons) && x.prosCons) fail(`${slug}: pros/cons القديمة باقية مع prosCons`);
+  /* المقدّمة تُعرَّف بالتخصّص لا بمدّته: سطرها الأوّل هو ما يظهر تحت
+     «ما هو هذا التخصّص؟» وفي وصف السيو وبطاقة الفهرس. ومقدّمة تبدأ
+     بـ«ستّ سنوات…» تجيب عن سؤال لم يُطرح. */
+  const lead = (x.intro || "").replace(/\*\*/gu, "").split("\n")[0].trim();
+  if (/^(ستّ|ست|سبع|خمس|ثلاث|أربع|سنتان|\d)/u.test(lead))
+    fail(`${slug}: المقدّمة تبدأ بالمدّة لا بالتعريف → «${lead.slice(0, 50)}…»`);
+  if (lead.length < 40) fail(`${slug}: السطر الأوّل من المقدّمة قصير جداً (${lead.length} حرفاً)`);
 }
 
 console.log(errors
