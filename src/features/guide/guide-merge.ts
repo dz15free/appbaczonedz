@@ -17,6 +17,8 @@
    ════════════════════════════════════════════════════════════ */
 
 import { SPEC_INDEX, type SpecLite } from "@/features/guide/spec-index";
+import { SPECIALITIES } from "@/features/guide/specialities";
+import { REVIEWED_SLUGS } from "@/features/guide/reviewed-specialities";
 import { SEED_CONTENT } from "@/features/guide/seed-content";
 import { SOURCE_HEALTH_SPECIALTIES } from "@/features/guide/source-health-specialties";
 import { P13_ENRICHED_CONTENT, P13_KEEP_NOINDEX_SLUGS } from "@/features/guide/p13-fusha-content";
@@ -267,10 +269,64 @@ function personalizeEditorialText(slug: string, content: SpecContent, fallbackTi
   return personalized;
 }
 
+/* ════════════════════════════════════════════════════════════
+   التخصّصات المُراجَعة — الطبقة التي تفوز
+
+   `specialities.ts` هو الملفّ الذي تُكتب فيه المراجعات التحريرية
+   بالعربية الفصحى وبالحقول الدلالية الصحيحة (`where` للجامعات،
+   `modules` للغة التدريس، `numbers` للمعدّلات…).
+
+   ولا يُعدّ التخصّص مُراجَعاً بمجرّد وجوده في الملفّ ولا بوجود
+   `intro` و`verdict` فيه: جُرّب هذا الشرط فمرّر 147 تخصّصاً بدل 44،
+   و74 منها ما تزال بالدارجة — أي أنّه كان سيرفعها إلى الواجهة بدل
+   أن يزيلها.
+
+   فالشرط قائمة صريحة في `reviewed-specialities.ts`، لا يدخلها
+   السلَق إلّا بعد نجاح `npm run audit:specialities`.
+
+   ⚠️ وتُحذف معها `pros` و`cons` القديمة: المراجعة تستعمل `prosCons`
+   موحّداً، ولو بقيت القديمتان لعُرضت الدارجة والفصحى في صفحة واحدة
+   تحت عنوانين متجاورين.
+════════════════════════════════════════════════════════════ */
+const REVIEWED = new Set<string>(REVIEWED_SLUGS);
+
+const REVIEWED_BY_SLUG = new Map<string, Partial<SpecContent>>(
+  SPECIALITIES.filter((x) => REVIEWED.has(x.slug)).map((x) => {
+    const { slug, ar, alt: _alt, prosCons, ...rest } = x;
+    const patch: Partial<SpecContent> = { ...(rest as unknown as Partial<SpecContent>) };
+    if (ar) patch.title = ar;
+    if (prosCons) {
+      /* القديمتان تُفرَغان صراحةً لا تُترَكان: الدمج لا يحذف مفتاحاً
+         غائباً من الطبقة الفائزة. */
+      patch.prosCons = prosCons;
+      patch.pros = "";
+      patch.cons = "";
+    }
+    return [slug, patch] as const;
+  }),
+);
+
 /** يدمج الفهرس الثابت مع ما كتبتَه */
 export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
   const allSpecIndex: SpecLite[] = SPEC_INDEX;
   return allSpecIndex.map((s) => {
+    /* ════════════════════════════════════════════════════════
+       النسخة المُراجَعة تفوز على كل الطبقات
+
+       🐛 كانت `specialities.ts` **خارج سلسلة الدمج كلّها**. الصفحة
+       تُبنى من خمس طبقات — `SOURCE_HEALTH` ثمّ `seed` ثمّ لوحة
+       الإدارة ثمّ `p13` ثمّ `p17` — ولا واحدة منها هي الملفّ الذي
+       يحمل الحقول كاملةً ويُعدَّل يدوياً.
+
+       والنتيجة أنّ كل مراجعة تحريرية كُتبت فيه لم تظهر للزائر قطّ:
+       يقرأ نصّ `p17` العامّ تحت عنوان «ما هو هذا التخصّص؟» بينما
+       النصّ المكتوب خصّيصاً للتخصّص موجود ولا يصل.
+
+       فتُضاف في آخر السلسلة — لأنّها المصدر الذي نُراجعه ونملكه.
+       والدمج حقلاً حقلاً كما هو: من لم يُراجَع بعد يبقى على نصّه
+       القديم، فلا تنكسر 216 صفحة لم نصل إليها.
+       ════════════════════════════════════════════════════════ */
+    const reviewed = REVIEWED_BY_SLUG.get(s.slug);
     /* البذرة أساس، وما كتبتَه في لوحة الإدارة يفوز عليها حقلاً حقلاً —
        فتستطيع تعديل قسم واحد دون إعادة كتابة الباقي. */
     const baseSeed = SEED_CONTENT[s.slug] ?? SEED_BY_PLAIN_SLUG.get(plainSlug(s.slug));
@@ -282,6 +338,8 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
       ...(P13_CONTENT[s.slug] ?? {}),
       ...(P17_CONTENT[s.slug] ?? {}),
       ...(P17_CONTENT[s.slug] ? { draft: false } : {}),
+      ...(reviewed ?? {}),
+      ...(reviewed ? { draft: false } : {}),
     }), s.ar, s.field);
     const published = Boolean(c.intro?.trim()) && c.draft !== true;
     const quality = editorialQuality(c);
