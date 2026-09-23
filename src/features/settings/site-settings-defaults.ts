@@ -119,6 +119,9 @@ export const DEFAULTS: SiteSettings = {
   averageCalcUrl: "https://www.baczonedz.com/p/blog-page_14.html",
   pastExamsUrl: "https://www.baczonedz.com/p/blog-page_9.html",
   weightedCalcUrl: "https://www.baczonedz.com/p/2026.html",
+  /* وجهة داخلية: المحاكاة موجودة في الموقع، فلا يُخرَج الزائر منه.
+     يبقى الحقل قابلاً للتحرير من لوحة الإدارة. */
+  bacSimUrl: "/tools/exam-simulator",
   adsEmail: "saidaouina22@gmail.com",
   adsWhatsapp: "+213657498876",
 };

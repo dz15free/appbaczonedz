@@ -95,8 +95,8 @@ export function FeatureCards() {
       </a>
 
       {/* محاكاة البكالوريا */}
-      <a href={settings.bacSimUrl || "https://www.baczonedz.com/p/blog-page_81.html"}
-        target="_blank" rel="noopener noreferrer"
+      <a href={settings.bacSimUrl || "/tools/exam-simulator"}
+        {...(/^https?:\/\//i.test(settings.bacSimUrl || "") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-1 hover:border-rose-400/40 hover:shadow-glass">
         <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition group-hover:scale-150" />
         <div className="relative flex items-center gap-4">

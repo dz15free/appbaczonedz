@@ -291,7 +291,7 @@ export default function HomePage() {
 
             {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
             <div className="bz-res-grid is-stack">
-                            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+                            <Link href="/tools/study-planner" className="bz-res-card is-green">
                 <span className="bz-res-bg" aria-hidden />
                 <span className="bz-res-in">
                   <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -301,7 +301,7 @@ export default function HomePage() {
                   </span>
                   <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
                 </span>
-              </a>
+              </Link>
 
               <Link href="/tools/planner" className="bz-res-card is-amber">
                 <span className="bz-res-bg" aria-hidden />
@@ -390,7 +390,7 @@ export default function HomePage() {
 
           {/* التخصّصات: أهمّ مصدر خارج المذاكرة — يقرّر مستقبله لا درجته */}
           <div className="bz-res-grid is-stack">
-            <a href="https://www.baczonedz.com/p/blog-page_5.html" target="_blank" rel="noreferrer" className="bz-res-card is-green">
+            <Link href="/tools/study-planner" className="bz-res-card is-green">
               <span className="bz-res-bg" aria-hidden />
               <span className="bz-res-in">
                 <span className="bz-res-icon"><FontAwesomeIcon icon={faCalendarCheck} className="h-5 w-5" /></span>
@@ -400,7 +400,7 @@ export default function HomePage() {
                 </span>
                 <span className="bz-res-cta">ابدأ<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
               </span>
-            </a>
+            </Link>
 
             <Link href="/tools/planner" className="bz-res-card is-amber">
               <span className="bz-res-bg" aria-hidden />

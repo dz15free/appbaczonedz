@@ -231,6 +231,7 @@ export default function AdminPage() {
   const [pastExamsUrl, setPastExamsUrl] = useState("");
   const [paymentUrl, setPaymentUrl] = useState("");
   const [weightedCalcUrl, setWeightedCalcUrl] = useState("");
+  const [adsDraft, setAdsDraft] = useState<Record<string, AdSlotConfig>>({});
   const [adsEmail, setAdsEmail] = useState("");
   const [adsWhatsapp, setAdsWhatsapp] = useState("");
   const [advertiseEnabled, setAdvertiseEnabled] = useState(true);
@@ -238,7 +239,6 @@ export default function AdminPage() {
   const [sidebarArticlesMode, setSidebarArticlesMode] = useState<"latest" | "label">("latest");
   const [sidebarArticlesLabel, setSidebarArticlesLabel] = useState("");
   const [sidebarArticlesLimit, setSidebarArticlesLimit] = useState("4");
-  const [adsDraft, setAdsDraft] = useState<Record<string, AdSlotConfig>>({});
   const [commissionPct, setCommissionPct] = useState("10");
   const [allowReg, setAllowReg] = useState(true);
   // Posts
@@ -280,6 +280,7 @@ export default function AdminPage() {
     setPastExamsUrl(settings.pastExamsUrl ?? "");
     setPaymentUrl(settings.paymentUrl ?? "");
     setWeightedCalcUrl(settings.weightedCalcUrl ?? "");
+    setAdsDraft(settings.ads ?? {});
     setAdsEmail(settings.adsEmail ?? "");
     setAdsWhatsapp(settings.adsWhatsapp ?? "");
     setAdvertiseEnabled(settings.advertiseEnabled !== false);
@@ -287,7 +288,6 @@ export default function AdminPage() {
     setSidebarArticlesMode(settings.sidebarArticles?.mode === "label" ? "label" : "latest");
     setSidebarArticlesLabel(settings.sidebarArticles?.label ?? "");
     setSidebarArticlesLimit(String(settings.sidebarArticles?.limit ?? 4));
-    setAdsDraft(settings.ads ?? {});
     setAllowReg(settings.allowRegistration !== false);
   }, [settings]);
 

@@ -36,14 +36,20 @@ function DrawerFacebookIcon({ className = "" }: { className?: string }) {
 
 /* `wide`: يظهر من `2xl` (١٥٣٦px) فصاعداً فقط.
    ستّة روابط + قائمتان + الشعار + أزرار الحساب لا تتّسع حتى في
-   ١٢٨٠px فتتراكب. «المكتبة» و«الترتيب» موجودان في الوصول السريع
-   وفي الدرج أيضاً، فتأخيرهما إلى الشاشات الأعرض لا يُفقد شيئاً. */
+   ١٢٨٠px فتتراكب، فلا بدّ أن يتأخّر أحدها إلى الشاشات الأعرض.
+
+   و«المكتبة» صارت دائمة و«الترتيب» هو المتأخّر: المكتبة قسم محتوى
+   يُقصد لذاته، أمّا الترتيب فشاشة تُزار من حين إلى آخر — وكلاهما
+   باقٍ في الوصول السريع وفي الدرج، فلا يضيع شيء.
+
+   وموضع المكتبة **قبل المجتمع** لا بعده: الترتيب هنا يتبع تدرّج
+   الحاجة — تعلَّم، ثمّ ادرس مع غيرك، ثمّ شارك. */
 const NAV = [
   { href: "/home", label: "الرئيسية", icon: faHouse, wide: false },
   { href: "/courses", label: "الدورات", icon: faGraduationCap, wide: false },
   { href: "/rooms", label: "الغرف", icon: faUsers, wide: false },
+  { href: "/library", label: "المكتبة", icon: faBookOpen, wide: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, wide: false },
-  { href: "/library", label: "المكتبة", icon: faBookOpen, wide: true },
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, wide: true },
 ];
 
@@ -509,6 +515,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Link>
               </>
             )}
+            <AdSlot placement="header" className="mx-auto mb-3 max-w-5xl px-4 pt-3" />
           </div>
         </div>
       </header>
@@ -651,9 +658,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
                 </button>
               </div>
-            )}
-            <AdSlot placement="header" className="mx-auto mb-3 max-w-5xl px-4 pt-3" />
-            {children}
+            )}{children}
           </>
         )}
       </div>

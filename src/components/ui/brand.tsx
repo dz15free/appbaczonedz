@@ -33,7 +33,10 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 export function Brand({
   size = "md",
   href = "/home",
-  beta = true,
+  /* ⚠️ الافتراض `false`: المنصّة خرجت من مرحلة التجربة، وشارة
+     «beta» بجانب الشعار تُوحي بعدم الاكتمال لمن يراها أوّل مرّة.
+     تبقى الخاصّية للاستعمال عند إطلاق نسخة تجريبية جديدة. */
+  beta = false,
   className = "",
 }: {
   /** `sm` للهاتف · `md` للحاسوب */

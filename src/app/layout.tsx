@@ -130,12 +130,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
-        <Script
-          async
-          strategy="afterInteractive"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9915600428717387"
-          crossOrigin="anonymous"
-        />
       </head>
       <body className="min-h-screen font-sans">
         {/* بيانات منظّمة على مستوى الموقع: تُعرّف المنصّة لمحرّكات
