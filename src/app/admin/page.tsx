@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { SiteEditor } from "@/features/admin/site-editor";
 import { listenExcluded, setLeaderboardExcluded, deleteUserData } from "@/features/admin/moderation";
 import { GuideEditor } from "@/features/admin/guide-editor";
@@ -208,6 +208,10 @@ export default function AdminPage() {
   }, []);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [userSearch, setUserSearch] = useState("");
+  const [userFilter, setUserFilter] = useState<"all" | "admin" | "teacher" | "student" | "banned">("all");
+  /* عرض تدريجي: `slice(0, 50)` وحده كان يقطع ٩٧ مستخدماً من ١٤٧ بلا
+     أيّ إشارة — فيظنّ الأدمن أنّ القائمة كاملة ويبحث عمّن لا يجده. */
+  const [userLimit, setUserLimit] = useState(50);
 
   // Identity
   const [logoUrl, setLogoUrl] = useState("");
@@ -486,9 +490,41 @@ export default function AdminPage() {
     await remove(ref(rtdb, `library/${id}`));
   }
 
+  /* ════════════════════════════════════════════════════════════
+     قائمة المستخدمين — تصنيف وفرز
+
+     البحث وحده لا يكفي على ١٤٧ مستخدماً: الأدمن يبحث عادةً عن **فئة**
+     لا عن شخص («من هم الأساتذة؟»، «من المحظور؟»)، والبحث بالاسم
+     يفترض أنّه يعرف الاسم سلفاً.
+
+     والفرز الافتراضي بالدور لا بالتسجيل: الأدمن أوّلاً ثمّ الأساتذة
+     ثمّ الطلبة — لأنّ الفئتين الأوليين قليلتان وعليهما أغلب العمل
+     الإداري، فإبقاؤهما في الأعلى يوفّر تمريراً طويلاً. */
+  const roleOf = (u: AppUser): "admin" | "teacher" | "student" =>
+    u.role === "admin" ? "admin" : u.role === "teacher" ? "teacher" : "student";
+
+  useEffect(() => { setUserLimit(50); }, [userSearch, userFilter]);
+
+  const userCounts = useMemo(() => {
+    const c = { all: appUsers.length, admin: 0, teacher: 0, student: 0, banned: 0 };
+    for (const u of appUsers) {
+      c[roleOf(u)]++;
+      if (u.banned) c.banned++;
+    }
+    return c;
+  }, [appUsers]);
+
   const filteredUsers = appUsers.filter((u) =>
+    (userFilter === "all"
+      || (userFilter === "banned" ? !!u.banned : roleOf(u) === userFilter))
+  ).filter((u) =>
     !userSearch || u.name?.includes(userSearch) || u.email?.includes(userSearch) || u.uid.includes(userSearch)
-  );
+  ).sort((a, b) => {
+    const rank = { admin: 0, teacher: 1, student: 2 } as const;
+    return rank[roleOf(a)] - rank[roleOf(b)]
+      || (b.points ?? 0) - (a.points ?? 0)
+      || (a.name ?? "").localeCompare(b.name ?? "", "ar");
+  });
 
   const statCards = [
     { label: "مستخدم", val: stats.users, icon: faUsers, c: "text-primary bg-primary/10" },
@@ -988,17 +1024,51 @@ export default function AdminPage() {
         {/* ════ المستخدمون ════ */}
         {tab === "users" && (
           <div className="space-y-3">
-            <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="بحث بالاسم أو البريد..."
+            <input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="بحث بالاسم أو البريد أو المعرّف..."
               className="h-10 w-full rounded-xl border border-border bg-surface px-4 text-sm outline-none focus:border-primary" />
-            <p className="text-xs text-text-muted">{filteredUsers.length} مستخدم</p>
-            {filteredUsers.slice(0, 50).map((u) => (
-              <div key={u.uid} className={`rounded-xl border p-3 ${u.banned ? "border-danger/30 bg-danger/5" : "border-border bg-surface"}`}>
+
+            {/* تبويبات الفئات — الأدمن يبحث عن فئة أكثر ممّا يبحث عن شخص */}
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { id: "all",     label: "الكلّ",    n: userCounts.all,     cls: "border-border text-text-muted" },
+                { id: "admin",   label: "المشرفون", n: userCounts.admin,   cls: "border-primary/30 text-primary" },
+                { id: "teacher", label: "الأساتذة", n: userCounts.teacher, cls: "border-secondary/30 text-secondary" },
+                { id: "student", label: "الطلبة",   n: userCounts.student, cls: "border-border text-text-muted" },
+                { id: "banned",  label: "المحظورون", n: userCounts.banned,  cls: "border-danger/30 text-danger" },
+              ] as const).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setUserFilter(t.id)}
+                  className={`rounded-xl border px-3 py-1.5 text-[12px] font-extrabold transition ${
+                    userFilter === t.id ? "border-primary bg-primary/10 text-primary" : `${t.cls} hover:bg-border/40`
+                  }`}
+                >
+                  {t.label} <span className="opacity-70">({t.n})</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-xs text-text-muted">
+              {filteredUsers.length === userCounts.all
+                ? `${filteredUsers.length} مستخدم`
+                : `${filteredUsers.length} من ${userCounts.all} مستخدم`}
+              {filteredUsers.length > userLimit && ` · معروض ${userLimit}`}
+            </p>
+            {filteredUsers.slice(0, userLimit).map((u) => (
+              /* شريط جانبي ملوّن بالدور: يُميّز الفئة بنظرة واحدة أثناء
+                 التمرير، بلا الاعتماد على قراءة الشارة في كل بطاقة. */
+              <div key={u.uid} className={`rounded-xl border border-s-[3px] p-3 ${
+                u.banned ? "border-danger/30 border-s-danger bg-danger/5"
+                : u.role === "admin" ? "border-border border-s-primary bg-surface"
+                : u.role === "teacher" ? "border-border border-s-secondary bg-surface"
+                : "border-border border-s-border bg-surface"}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="font-bold text-sm">{u.name ?? "بدون اسم"}</span>
                       {u.role === "admin" && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">أدمن</span>}
                       {u.role === "teacher" && <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-bold text-secondary">👨‍🏫 أستاذ</span>}
+                      {u.role !== "admin" && u.role !== "teacher" && <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-bold text-text-muted">طالب</span>}
                       {u.banned && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">محظور</span>}
                     </div>
                     {u.email && <p className="text-xs text-text-muted">{u.email}</p>}
@@ -1053,6 +1123,21 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+
+            {filteredUsers.length === 0 && (
+              <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-text-muted">
+                لا مستخدم في هذه الفئة.
+              </p>
+            )}
+
+            {filteredUsers.length > userLimit && (
+              <button
+                onClick={() => setUserLimit((n) => n + 50)}
+                className="w-full rounded-xl border border-border bg-surface py-2.5 text-sm font-extrabold text-primary hover:bg-primary/5"
+              >
+                عرض ٥٠ إضافية ({filteredUsers.length - userLimit} متبقّياً)
+              </button>
+            )}
           </div>
         )}
 

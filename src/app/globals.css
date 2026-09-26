@@ -4060,13 +4060,35 @@ body.bz-fullscreen-active .bz-voicebar {
 }
 .bz-pubmenu-toggle:hover { background: rgb(var(--bz-primary) / .09); color: rgb(var(--bz-primary)); }
 .bz-pubmenu-toggle:active { transform: scale(.96); }
-.bz-pubheader.is-landing .bz-pubmenu-toggle { border-color: rgb(255 255 255 / .24); background: rgb(255 255 255 / .08); color: #fff; }
+/* زرّ فتح القائمة — أبيض في الوضع الداكن وحده.
+   الترويسة الترويجية شفّافة فوق صورة داكنة في أعلى الصفحة، لكنّ
+   خلفيتها `--bz-surface` — أي بيضاء في الوضع الفاتح فور أن تُمرّر
+   الصفحة أو تُفتح القائمة. فالأبيض المفروض يختفي فيها. */
+.dark .bz-pubheader.is-landing .bz-pubmenu-toggle { border-color: rgb(255 255 255 / .24); background: rgb(255 255 255 / .08); color: #fff; }
 .bz-pubmenu {
   border-top: 1px solid color-mix(in srgb, var(--bz-border) 70%, transparent);
   background: color-mix(in srgb, var(--bz-surface) 96%, transparent);
   box-shadow: 0 16px 32px -22px rgb(15 23 42 / .48);
 }
-.bz-pubheader.is-landing .bz-pubmenu { border-top-color: rgb(255 255 255 / .12); background: rgb(7 8 15 / .96); }
+/* ════════════════════════════════════════════════════════════
+   درج الصفحة الترويجية على الهاتف
+
+   🐛 **زرّ «تسجيل الدخول» كان يختفي في الوضع الفاتح**: أبيض على أبيض.
+
+   والسبب أنّ قواعد `is-landing` كُتبت لترويسة شفّافة فوق صورة داكنة،
+   فأخذت الألوان صريحةً (`#fff` و`rgb(7 8 15)`) لا من متغيّرات الثيمة.
+   وهي صحيحة على الترويسة نفسها — لكنّ الدرج يقع **داخل** `<header>`
+   فورثها، بينما هو لوح مصمت يفتح تحت الترويسة ويتبع خلفية الصفحة.
+
+   فالنتيجة في الوضع الفاتح: لوح أبيض ونصّ أبيض. وفي الداكن يعمل
+   بالمصادفة لأنّ اللونين المفروضين يوافقانه.
+
+   القاعدة الآن مقصورة على الوضع الداكن، والفاتح يتبع متغيّرات الثيمة
+   كبقيّة الصفحات. */
+.dark .bz-pubheader.is-landing .bz-pubmenu {
+  border-top-color: rgb(255 255 255 / .12);
+  background: rgb(7 8 15 / .96);
+}
 .bz-pubmenu-link {
   display: flex;
   align-items: center;
@@ -4081,9 +4103,12 @@ body.bz-fullscreen-active .bz-voicebar {
 }
 .bz-pubmenu-link:hover,
 .bz-pubmenu-link.is-active { background: rgb(var(--bz-primary) / .1); color: rgb(var(--bz-primary)); }
-.bz-pubheader.is-landing .bz-pubmenu-link { color: rgb(255 255 255 / .82); }
-.bz-pubheader.is-landing .bz-pubmenu-link:hover,
-.bz-pubheader.is-landing .bz-pubmenu-link.is-active { background: rgb(255 255 255 / .1); color: #fff; }
+/* روابط الدرج — نفس علّة اللوح والزرّ: لون أبيض مفروض داخل لوح
+   يتبع الثيمة. وهي تعمل في الوضع الفاتح بالمصادفة وحدها لأنّ الرابط
+   النشط يأخذ خلفية زرقاء تحمل الأبيض؛ أمّا غير النشط فيبهت. */
+.dark .bz-pubheader.is-landing .bz-pubmenu-link { color: rgb(255 255 255 / .82); }
+.dark .bz-pubheader.is-landing .bz-pubmenu-link:hover,
+.dark .bz-pubheader.is-landing .bz-pubmenu-link.is-active { background: rgb(255 255 255 / .1); color: #fff; }
 @media (max-width: 767px) {
   .bz-pubmenu-toggle { display: grid; }
 }
@@ -4179,7 +4204,15 @@ body.bz-fullscreen-active .bz-voicebar {
 .bz-pubmenu-auth-secondary:hover { filter: brightness(1.04); }
 .bz-pubmenu-auth-primary:active,
 .bz-pubmenu-auth-secondary:active { transform: scale(.98); }
-.bz-pubheader.is-landing .bz-pubmenu-auth-secondary {
+/* زرّ «تسجيل الدخول» — نفس العلّة ونفس العلاج.
+   وخارج الدرج (في شريط الترويسة نفسه فوق الصورة الداكنة) يبقى
+   أبيض في الوضعين، لأنّ خلفيته هناك الصورةُ لا سطح الصفحة. */
+.dark .bz-pubheader.is-landing .bz-pubmenu-auth-secondary {
+  border-color: rgb(255 255 255 / .24);
+  background: rgb(255 255 255 / .08);
+  color: #fff;
+}
+.bz-pubheader.is-landing .bz-pub-actions .bz-pubmenu-auth-secondary {
   border-color: rgb(255 255 255 / .24);
   background: rgb(255 255 255 / .08);
   color: #fff;
@@ -4256,6 +4289,15 @@ body { font-weight: 450; text-rendering: optimizeLegibility; }
 .bz-pubheader.is-landing.is-scrolled .bz-pubmenu-link { color: var(--bz-text-muted); }
 .bz-pubheader.is-landing.is-scrolled .bz-pubmenu-link:hover,
 .bz-pubheader.is-landing.is-scrolled .bz-pubmenu-link.is-active { background: rgb(var(--bz-primary) / .1); color: rgb(var(--bz-primary)); }
+/* 🐛 زرّ «تسجيل الدخول» كان **الوحيد** الغائب عن قائمة حالة التمرير:
+   أخذه الشعارُ والروابط وزرّ القائمة واللوح، ونُسي هو. فبقي أبيض على
+   سطح أبيض في الوضع الفاتح — أي زرٌّ موجود ويُضغط ولا يُرى.
+   (سطره في `is-landing` صار مقصوراً على الوضع الداكن، وهذا يكمله.) */
+.bz-pubheader.is-landing.is-scrolled .bz-pubmenu-auth-secondary {
+  border-color: var(--bz-border);
+  background: var(--bz-surface);
+  color: var(--bz-text);
+}
 
 .bz-exam-tool,
 .bz-study-planner-tool {
