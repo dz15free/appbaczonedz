@@ -52,7 +52,7 @@ export default function GroupsPage() {
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
 
-  const me = { uid: user.uid, name: profile?.name || user.displayName || "طالب" };
+  const me = { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" };
 
   async function create() {
     if (!form.name.trim()) { setErr("اسم المجموعة مطلوب."); return; }

@@ -99,9 +99,9 @@ export function CourseCard({
   course, track, progress, subjectLabel,
 }: {
   course: Course;
-  /** شعبة الطالب — لإظهار شارة «مناسب لشعبتك» */
+  /** شعبة التلميذ — لإظهار شارة «مناسب لشعبتك» */
   track?: string | null;
-  /** نسبة التقدّم إن كان الطالب مسجّلاً */
+  /** نسبة التقدّم إن كان التلميذ مسجّلاً */
   progress?: number;
   subjectLabel?: string;
 }) {
@@ -292,7 +292,7 @@ export function CoursePurchaseSheet({
   );
 }
 
-/* زرّ الدعوة الرئيسي — نصّه يقول للطالب أين هو بالضبط */
+/* زرّ الدعوة الرئيسي — نصّه يقول للتلميذ أين هو بالضبط */
 export function CourseCta({
   course, hasAccess, onGet, onStart, busy, href,
 }: {

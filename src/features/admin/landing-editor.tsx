@@ -165,7 +165,7 @@ export function LandingEditor() {
         </div>
         <div className="mt-3">
           <CardListEditor<LandingCard>
-            title="البطاقات (للطالب / للأستاذ)"
+            title="البطاقات (للتلميذ / للأستاذ)"
             items={draft.audience ?? []}
             onChange={(items) => set("audience", items)}
             fields={[
@@ -244,7 +244,7 @@ export function LandingEditor() {
         <h3 className="mb-3 font-display text-lg font-bold">🧭 بنية Landing الجديدة</h3>
         <p className="mb-4 text-sm leading-relaxed text-text-muted">عدّل النصوص والصورة من هنا. الروابط والأدوات والمقالات والأدلة تُقرأ من صفحات BacZone الفعلية.</p>
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="رابط صورة الطالب في Hero" value={draft.landingHeroImageUrl ?? ""} onChange={(v) => set("landingHeroImageUrl", v)} placeholder="/landing/baczone-student-hero.png" />
+          <Field label="رابط صورة التلميذ في Hero" value={draft.landingHeroImageUrl ?? ""} onChange={(v) => set("landingHeroImageUrl", v)} placeholder="/landing/baczone-student-hero.png" />
           <Field label="وصف الصورة" value={draft.landingHeroImageAlt ?? ""} onChange={(v) => set("landingHeroImageAlt", v)} />
           <Field label="عنوان قسم البداية" value={draft.landingOverviewTitle ?? ""} onChange={(v) => set("landingOverviewTitle", v)} />
           <Field label="وصف قسم البداية" value={draft.landingOverviewSubtitle ?? ""} onChange={(v) => set("landingOverviewSubtitle", v)} textarea />

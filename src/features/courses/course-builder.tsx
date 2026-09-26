@@ -303,7 +303,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
       {/* ══ الخطوة ١ — المعلومات ══ */}
       {step === 1 && (
-        <Panel title="المعلومات الأساسية" hint="ما يراه الطالب أوّلاً في بطاقة الدورة.">
+        <Panel title="المعلومات الأساسية" hint="ما يراه التلميذ أوّلاً في بطاقة الدورة.">
           <Field label="اسم الدورة" error={errors.title} required>
             <input value={draft.title} onChange={(e) => set("title", e.target.value)}
               maxLength={160} placeholder="مثال: الدوال العددية — من الصفر إلى البكالوريا"
@@ -365,7 +365,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
             </div>
           </Field>
 
-          <Field label="ماذا سيتعلّم الطالب؟" hint="نقاط قصيرة تظهر في صفحة الدورة (حتى ١٠).">
+          <Field label="ماذا سيتعلّم التلميذ؟" hint="نقاط قصيرة تظهر في صفحة الدورة (حتى ١٠).">
             <OutcomesEditor value={draft.outcomes ?? []} onChange={(v) => set("outcomes", v)} />
           </Field>
 
@@ -395,8 +395,8 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
                 </p>
                 <p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
                   {t === "free"
-                    ? "يسجّل الطالب فوراً ويبدأ التعلّم. مناسبة لبناء ثقة الطلبة بك."
-                    : "يدفع الطالب إلكترونياً أو عبر الإدارة، وتصلك حصّتك بعد خصم عمولة المنصّة."}
+                    ? "يسجّل التلميذ فوراً ويبدأ التعلّم. مناسبة لبناء ثقة الطلبة بك."
+                    : "يدفع التلميذ إلكترونياً أو عبر الإدارة، وتصلك حصّتك بعد خصم عمولة المنصّة."}
                 </p>
               </button>
             ))}
@@ -428,7 +428,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
       {/* ══ الخطوة ٣ — المحتوى ══ */}
       {step === 3 && (
-        <Panel title="محتوى الدورة" hint="أقسام، وداخل كل قسم دروس. رتّبها كما يتعلّمها الطالب.">
+        <Panel title="محتوى الدورة" hint="أقسام، وداخل كل قسم دروس. رتّبها كما يتعلّمها التلميذ.">
           {errors.lessons && <Alert text={errors.lessons} />}
           {errors.sections && <Alert text={errors.sections} />}
 
@@ -486,15 +486,15 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
           <div className="mt-3 rounded-2xl border border-border bg-background p-3.5 text-[11.5px] leading-relaxed text-text-muted">
             <FontAwesomeIcon icon={faCircleInfo} className="me-1.5 h-3 w-3 text-primary" />
             <b className="text-text-primary">تنبيه مهمّ للروابط:</b> إن استعملت Google Drive فاجعل صلاحية
-            الملفّ «أي شخص لديه الرابط — مُشاهِد»، وإلّا رأى الطالب صفحة طلب إذن بدل الدرس.
-            المنصّة تعرض المحتوى داخلها ولا تُظهر الرابط للطالب.
+            الملفّ «أي شخص لديه الرابط — مُشاهِد»، وإلّا رأى التلميذ صفحة طلب إذن بدل الدرس.
+            المنصّة تعرض المحتوى داخلها ولا تُظهر الرابط للتلميذ.
           </div>
         </Panel>
       )}
 
       {/* ══ الخطوة ٤ — المعاينة ══ */}
       {step === 4 && (
-        <Panel title="هكذا سيراها الطالب" hint="معاينة مطابقة لصفحة الدورة الحقيقية.">
+        <Panel title="هكذا سيراها التلميذ" hint="معاينة مطابقة لصفحة الدورة الحقيقية.">
           <div className="overflow-hidden rounded-3xl border border-border bg-surface">
             <CourseCover course={{ title: draft.title, coverUrl: draft.coverUrl, subject: draft.subject }}
               className="aspect-[16/7] object-cover" rounded="" />

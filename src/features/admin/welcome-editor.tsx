@@ -51,7 +51,7 @@ export function WelcomeEditor() {
     <div className="space-y-4">
       <section className="rounded-xl border border-border bg-surface p-4">
         <h3 className="mb-3 font-display text-lg font-bold">👋 قسم الترحيب (بعد الدخول)</h3>
-        <p className="mb-4 text-xs text-text-muted">يظهر هذا القسم للطلاب في صفحتهم الرئيسية بعد تسجيل الدخول.</p>
+        <p className="mb-4 text-xs text-text-muted">يظهر هذا القسم للتلاميذ في صفحتهم الرئيسية بعد تسجيل الدخول.</p>
         <div className="space-y-3">
           <label className="block">
             <span className="mb-1 block text-sm font-semibold">عنوان الترحيب الصغير</span>

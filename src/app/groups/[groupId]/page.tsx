@@ -100,7 +100,7 @@ export default function GroupPage() {
     </AppShell>
   );
 
-  const me = { uid: user.uid, name: profile?.name || user.displayName || "طالب" };
+  const me = { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" };
   const isMember = myIds.has(groupId);
   const isOwner = group.ownerId === user.uid;
   const subj = GROUP_SUBJECTS.find((s) => s.id === group.subject);

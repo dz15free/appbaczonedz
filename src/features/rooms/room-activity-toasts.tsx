@@ -54,7 +54,7 @@ export function RoomActivityToasts({ members, hands, mods, activePoll, isOwner, 
     const prev = prevMembers.current!;
     for (const m of members) {
       if (!prev.has(m.uid) && m.uid !== myUid) {
-        push({ icon: faUserPlus, text: `${m.name || "طالب"} انضمّ إلى الغرفة`, accent: "emerald" });
+        push({ icon: faUserPlus, text: `${m.name || "تلميذ"} انضمّ إلى الغرفة`, accent: "emerald" });
       }
     }
     prevMembers.current = ids;

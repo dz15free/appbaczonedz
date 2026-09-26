@@ -84,7 +84,7 @@ export default function OnboardingPage() {
             : "اختر شعبتك وولايتك لنخصّص لك المحتوى المناسب."}
         </p>
 
-        {/* الأستاذ: المادة | الطالب: الشعبة */}
+        {/* الأستاذ: المادة | التلميذ: الشعبة */}
         {isTeacher ? (
           <div className="mt-6">
             <span className="mb-2 block text-sm font-semibold">المادة التي تدرّسها</span>

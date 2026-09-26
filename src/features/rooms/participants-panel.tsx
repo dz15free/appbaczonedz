@@ -98,7 +98,7 @@ export function ParticipantsPanel({
                 </>
               )}
               <p className="pt-1.5 text-[10px] leading-relaxed text-text-muted">
-                مؤشّر تقريبي فقط — قد يكون الطالب منتبهاً دون أن يلمس شاشته.
+                مؤشّر تقريبي فقط — قد يكون التلميذ منتبهاً دون أن يلمس شاشته.
               </p>
             </div>
           )}

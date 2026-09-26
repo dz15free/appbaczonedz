@@ -23,7 +23,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const TYPES: { id: RoomType; label: string; description: string; icon: typeof faGlobe }[] = [
-  { id: "public", label: "عامة", description: "تظهر للطلاب المتصلين", icon: faGlobe },
+  { id: "public", label: "عامة", description: "تظهر للتلاميذ المتصلين", icon: faGlobe },
   { id: "private", label: "خاصة", description: "بالاسم أو الرابط فقط", icon: faLock },
   { id: "teacher", label: "أستاذ", description: "مساحة يقودها أستاذ", icon: faGraduationCap },
 ];
@@ -73,7 +73,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
         type,
         subject: subject || undefined,
         ownerId: user.uid,
-        ownerName: user.displayName || profile?.name || "طالب",
+        ownerName: user.displayName || profile?.name || "تلميذ",
         ownerRole: profile?.role === "teacher" || profile?.role === "admin" ? "teacher" : undefined,
         isPaid: isPaid && isTeacher,
         price: isPaid && isTeacher ? priceNum : undefined,
@@ -107,7 +107,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               إنشاء غرفة دراسة
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-text-muted sm:text-sm">
-              جهّز مساحة مناسبة للمراجعة وابدأ مباشرة مع الطلاب.
+              جهّز مساحة مناسبة للمراجعة وابدأ مباشرة مع التلاميذ.
             </p>
           </div>
           <button
@@ -126,7 +126,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-extrabold text-text-primary">بيانات الغرفة</h3>
-                  <p className="mt-0.5 text-[11px] text-text-muted">اختر اسماً واضحاً يساعد الطلاب على العثور عليها.</p>
+                  <p className="mt-0.5 text-[11px] text-text-muted">اختر اسماً واضحاً يساعد التلاميذ على العثور عليها.</p>
                 </div>
                 <span className="text-[10px] font-bold text-text-muted">الخطوة 1</span>
               </div>
@@ -143,7 +143,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-extrabold text-text-primary">نوع الغرفة</h3>
-                  <p className="mt-0.5 text-[11px] text-text-muted">يمكنك تغيير طريقة وصول الطلاب إلى المساحة.</p>
+                  <p className="mt-0.5 text-[11px] text-text-muted">يمكنك تغيير طريقة وصول التلاميذ إلى المساحة.</p>
                 </div>
                 <span className="text-[10px] font-bold text-text-muted">الخطوة 2</span>
               </div>
@@ -242,7 +242,7 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
                           min="1"
                           className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                         />
-                        <p className="mt-2 text-[11px] leading-relaxed text-text-muted">سيتواصل الطلاب مع الإدارة للدفع والحصول على كود الدخول.</p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-text-muted">سيتواصل التلاميذ مع الإدارة للدفع والحصول على كود الدخول.</p>
                       </div>
                     )}
                   </div>

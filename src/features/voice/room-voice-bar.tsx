@@ -22,7 +22,7 @@ import { VoiceManager, monitorLevel, type VoiceParticipant } from "@/features/vo
 
    🐛 `autoPlay` وحدها لا تكفي على iOS. عنصر `<audio>` يُركَّب لحظة
    وصول مسار المتحدّث — أي **خارج أيّ إيماءة مستخدم**، وiOS يرفض
-   التشغيل التلقائي هناك بصمت. فينضمّ الطالب، ويرى الجميع في القائمة،
+   التشغيل التلقائي هناك بصمت. فينضمّ التلميذ، ويرى الجميع في القائمة،
    ولا يسمع أحداً — بلا رسالة خطأ ولا سبب ظاهر. وهذه بعينها «تجربة
    الصوت سيّئة».
 
@@ -81,7 +81,7 @@ export function RoomVoiceBar({
   /* ════════════════════════════════════════════════════════
      الاستماع يبدأ من نفسه
 
-     🐛 كان على كل طالب أن يضغط «انضمّ صوتياً» ليسمع الدرس — وهو زرٌّ
+     🐛 كان على كل تلميذ أن يضغط «انضمّ صوتياً» ليسمع الدرس — وهو زرٌّ
      ينادي `getUserMedia`، أي **يطلب إذن الميكروفون ممّن يريد أن
      يسمع فقط**. ومن رفض الإذن، أو كان في مكان عامّ، لم يسمع الدرس
      إطلاقاً. ومن دخل والأستاذ يتكلّم لم يسمع شيئاً حتى يكتشف زرّاً
@@ -93,7 +93,7 @@ export function RoomVoiceBar({
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    const m = new VoiceManager(roomId, user.uid, user.displayName || "طالب", isOwner);
+    const m = new VoiceManager(roomId, user.uid, user.displayName || "تلميذ", isOwner);
     m.ownerUid = ownerId ?? "";
     m.onParticipants = setParticipants;
     m.onPermissionChange = setAllowed;
@@ -180,7 +180,7 @@ export function RoomVoiceBar({
      من الصورة المرجعية: بطاقة صغيرة تطفو فوق المحتوى تُظهر من يتحدّث
      الآن. بُنيت **هنا** عمداً لا كمكوّن منفصل: حالة الصوت (المشاركون،
      من يتحدّث، الاتصال) تعيش في هذا المكوّن، ومكوّن مستقلّ كان سيحتاج
-     VoiceManager ثانياً — أي اتصال WebRTC ثانياً لكل طالب.
+     VoiceManager ثانياً — أي اتصال WebRTC ثانياً لكل تلميذ.
 
      تظهر فقط حين: انضممنا فعلاً + هناك متحدّث + اللوحة الموسّعة مغلقة
      (وإلّا كرّرنا المعلومة نفسها مرّتين على الشاشة). */
@@ -556,7 +556,7 @@ function VoiceRoster({
                 <button
                   onClick={() => onToggleMute(p.uid, !isAllowed)}
                   /* 44px هدف لمس: هذا الزرّ هو الطريق الوحيد إلى
-                     مشاركة الطالب بصوته، وزرٌّ 24px يصعب إصابته يعني
+                     مشاركة التلميذ بصوته، وزرٌّ 24px يصعب إصابته يعني
                      ميزةً مفقودة عملياً. */
                   className={`grid h-11 w-11 place-items-center rounded-lg transition ${
                     isAllowed ? "bg-secondary/15 text-secondary" : "bg-[var(--bz-blue)] text-white"

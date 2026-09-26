@@ -19,7 +19,7 @@ import { TAGS, tagInfo, type MarkTag } from "@/features/whiteboard/marks";
 
    قرار مقصود: البطاقة تُحفظ **نصاً** لا صورة، كما اتفقنا.
    عنصر النص يملأ وجه البطاقة تلقائياً، أما الرسم فلا نصّ له
-   فيكتبه الطالب بنفسه — وهذا ما ستحلّه مرحلة OCR لاحقاً.
+   فيكتبه التلميذ بنفسه — وهذا ما ستحلّه مرحلة OCR لاحقاً.
    لم أزيّف الأمر بحفظ صورة، لأن بطاقة صورة لا تُراجَع ولا تُبحث.
 ════════════════════════════════════════════════════════════ */
 
@@ -113,7 +113,7 @@ export function ShapeActionsSheet({
           {canMark && onMark && (
             <div className="rounded-2xl border border-border p-2.5">
               <p className="mb-2 px-1 text-[11px] font-bold text-text-muted">
-                تعليم العنصر — تنتقل العلامة إلى بطاقات الطلاب
+                تعليم العنصر — تنتقل العلامة إلى بطاقات التلاميذ
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {TAGS.map((t) => {

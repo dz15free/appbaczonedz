@@ -10,7 +10,7 @@ import { absUrl } from "@/lib/site-url";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 const TITLE = "مدونة BacZone";
-const DESC = "أفكار وأدلة عملية تساعد طالب البكالوريا في الجزائر على تنظيم المراجعة، فهم الأدوات، والتقدّم بثقة.";
+const DESC = "أفكار وأدلة عملية تساعد تلميذ البكالوريا في الجزائر على تنظيم المراجعة، فهم الأدوات، والتقدّم بثقة.";
 
 export const revalidate = 600;
 export async function generateMetadata(): Promise<Metadata> {
@@ -57,7 +57,7 @@ export default async function BlogIndex({ searchParams }: { searchParams: Promis
         <div className="bz-blog-editorial-grid mx-auto w-full max-w-6xl px-5 py-9 sm:px-6 sm:py-14">
           <div>
             <nav aria-label="مسار التنقّل" className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><span className="font-bold text-white">المدونة</span></nav>
-            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-extrabold text-white/85"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> مساحة قراءة للطالب</span>
+            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-extrabold text-white/85"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> مساحة قراءة للتلميذ</span>
             <h1 className="mt-4 font-display text-[30px] font-extrabold leading-[1.2] text-white sm:text-[52px]">اقرأ ما يساعدك<br /><span className="text-sky-200">على التقدّم.</span></h1>
             <p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/75 sm:text-[16px]">{DESC}</p>
           </div>

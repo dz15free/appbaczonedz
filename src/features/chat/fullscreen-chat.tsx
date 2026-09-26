@@ -98,7 +98,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
     inputRef.current?.blur(); // إخفاء لوحة المفاتيح بعد الإرسال
     await sendMessage(roomId, {
       userId: user.uid,
-      userName: user.displayName || "طالب",
+      userName: user.displayName || "تلميذ",
       text: t,
     });
   }
@@ -121,7 +121,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
       const prepared = await prepareFile(file);
       await sendAttachment(roomId, {
         userId: user.uid,
-        userName: user.displayName || "طالب",
+        userName: user.displayName || "تلميذ",
         kind: prepared.kind,
         dataUrl: prepared.dataUrl,
         fileName: prepared.name,

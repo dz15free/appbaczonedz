@@ -556,14 +556,14 @@ export function listenRoomTimer(roomId: string, cb: (t: RoomTimer | null) => voi
    كان ما يكتبه الأستاذ يصل الطلبة **حرفاً بحرف** لحظة كتابته: يرون
    الأخطاء المطبعية، والجملة نصفها، والفكرة تُكتب ثمّ تُحذف. الآن:
 
-     `notesDraft/$roomId`     — مسودّة الأستاذ والمشرفين، لا يقرأها الطالب.
-     `roomLive/$roomId/notes` — النسخة المنشورة، وهي التي يقرأها الطالب.
+     `notesDraft/$roomId`     — مسودّة الأستاذ والمشرفين، لا يقرأها التلميذ.
+     `roomLive/$roomId/notes` — النسخة المنشورة، وهي التي يقرأها التلميذ.
 
    المسودّة عقدة **مستقلّة** لا تحت `roomLive`: ذلك المسار يمنح القراءة
    لكل مصادَق عليه، وقاعدة `.read` على عقدة ابنة لا تستطيع سحب صلاحية
    منحها الأب — فلو وضعناها تحته لكانت مقروءة للطلبة فعلياً.
 
-   والطالب لا يزال يقرأ نفس المسار القديم، فلا شيء يتعطّل، وكل ملاحظة
+   والتلميذ لا يزال يقرأ نفس المسار القديم، فلا شيء يتعطّل، وكل ملاحظة
    محفوظة سابقاً تبقى منشورة كما هي. */
 export async function saveRoomNotes(roomId: string, text: string) {
   await set(ref(rtdb, `roomLive/${roomId}/notes`), text);
@@ -649,7 +649,7 @@ export function listenActiveFile(roomId: string, cb: (fileId: string | null) => 
 }
 
 /* ══════════════════════════════════════════
-   حالة المضيف + رسالة الترحيب (تظهر للطلاب)
+   حالة المضيف + رسالة الترحيب (تظهر للتلاميذ)
 ══════════════════════════════════════════ */
 export type OwnerStatus = "available" | "busy" | "brb"; // متفرّغ / مشغول / سأعود
 
@@ -675,7 +675,7 @@ export function listenWelcomeMessage(roomId: string, cb: (msg: string) => void) 
 
 /* ══════════════════════════════════════════
    الأسئلة المجهولة (Anonymous Questions)
-   تصل للأستاذ دون إظهار اسم الطالب
+   تصل للأستاذ دون إظهار اسم التلميذ
    roomLive/{roomId}/anonQuestions/{qid} = { text, at, answered? }
 ══════════════════════════════════════════ */
 export interface AnonQuestion {

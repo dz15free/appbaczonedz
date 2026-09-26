@@ -58,9 +58,9 @@ export default function LeaderboardPage() {
     const unsub = onValue(q, (snap) => {
       const val = (snap.val() as Record<string, any>) ?? {};
       const list = Object.entries(val)
-        .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin") // الطلاب فقط
+        .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin") // التلاميذ فقط
         .map(([uid, u]: [string, any]) => ({
-          uid, name: u.name ?? "طالب", points: u.points ?? 0,
+          uid, name: u.name ?? "تلميذ", points: u.points ?? 0,
           level: u.level ?? 1, postCount: u.postCount, commentCount: u.commentCount, track: u.track,
         }))
         .sort((a, b) => b.points - a.points);
@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
             <FontAwesomeIcon icon={faTrophy} className="h-7 w-7" />
           </div>
           <h1 className="font-display text-2xl font-extrabold">لوحة الترتيب</h1>
-          <p className="mt-1 text-sm text-text-muted">أفضل الطلاب على المنصّة بالنقاط المكتسبة</p>
+          <p className="mt-1 text-sm text-text-muted">أفضل التلاميذ على المنصّة بالنقاط المكتسبة</p>
         </div>
 
         {/* ترتيبي */}

@@ -23,7 +23,7 @@ import {
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { notifMeta, notifLink, type NotifIcon, type NotifTone } from "@/features/notifications/registry";
 
-/* 🐛 كانت الأيقونة ثلاثة `if` وما بقي جرس عامّ — فلا يعرف الطالب صنف
+/* 🐛 كانت الأيقونة ثلاثة `if` وما بقي جرس عامّ — فلا يعرف التلميذ صنف
    الاشعار قبل قراءته. الآن كل نوع أيقونته ونبرته من السجلّ الموحّد.
    والترجمة إلى FontAwesome تبقى **هنا** فقط، فلا يجرّ السجلّ مكتبة
    أيقونات معه ويبقى صالحاً للخادم. */

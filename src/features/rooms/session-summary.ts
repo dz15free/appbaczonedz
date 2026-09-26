@@ -5,7 +5,7 @@
 // الاستفتاء، الأسئلة). صفر كتابات إضافية أثناء الحصة، وصفر تكلفة.
 //
 // يُحفظ في roomSummaries/{roomId}/{id} فيبقى بعد انتهاء الحصة،
-// ويستطيع الطالب فتحه لاحقاً ونسخ نقاطه إلى بطاقات المراجعة.
+// ويستطيع التلميذ فتحه لاحقاً ونسخ نقاطه إلى بطاقات المراجعة.
 
 import { ref, get, set, push, remove, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";

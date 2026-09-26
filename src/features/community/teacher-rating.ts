@@ -5,7 +5,7 @@
 //
 //   1) لا يقيّم إلا من حضر حصة فعلاً        → قاعدة تتحقّق من attendance
 //   2) لا يقيّم إلا بعد 10 دقائق من الحضور  → يمنع الدخول السريع للتقييم
-//   3) تقييم واحد لكل طالب، قابل للتعديل     → المسار مفتاحه uid الطالب
+//   3) تقييم واحد لكل تلميذ، قابل للتعديل     → المسار مفتاحه uid التلميذ
 //   4) لا يظهر المتوسّط قبل 5 تقييمات        → يمنع أثر تقييم أو اثنين
 //   5) أدوات للأدمن تكشف الأنماط المشبوهة    → تجمّع مفاجئ لتقييمات منخفضة
 //
@@ -36,7 +36,7 @@ export interface RatingStats {
 
 /* ═══════════ الحضور ═══════════ */
 
-/** يُستدعى مرة عند دخول الطالب غرفة أستاذ — أساس أهلية التقييم */
+/** يُستدعى مرة عند دخول التلميذ غرفة أستاذ — أساس أهلية التقييم */
 export async function markAttendance(teacherUid: string, studentUid: string) {
   if (!teacherUid || !studentUid || teacherUid === studentUid) return;
   const r = ref(rtdb, `attendance/${teacherUid}/${studentUid}`);
@@ -75,7 +75,7 @@ export async function rateTeacher(
   const existing = await get(ref(rtdb, `teacherRatings/${teacherUid}/${studentUid}`));
   const prev = existing.val() as TeacherRating | null;
   const data: Record<string, unknown> = {
-    studentName: studentName || "طالب",
+    studentName: studentName || "تلميذ",
     stars: s,
     at: prev?.at ?? Date.now(),
   };

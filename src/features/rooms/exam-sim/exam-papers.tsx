@@ -25,7 +25,7 @@ import {
    والتصحيح **لا يجب أن يقع الآن**: الأستاذ يُنهي المحاكاة وتعود الغرفة
    إلى طبيعتها، ثمّ يفتح هذه اللوحة لاحقاً من الغرفة نفسها ويصحّح على
    مهله. لذلك «الحفظ» و«الإطلاق» زرّان منفصلان: يصحّح عشر أوراق ثمّ
-   يُطلقها دفعة واحدة، فلا يرى أوّل طالب علامته قبل آخرهم.
+   يُطلقها دفعة واحدة، فلا يرى أوّل تلميذ علامته قبل آخرهم.
 ════════════════════════════════════════════════════════════ */
 
 export function ExamPapersPanel({
@@ -63,7 +63,7 @@ export function ExamPapersPanel({
           <FontAwesomeIcon icon={faInbox} className="h-10 w-10 text-text-muted opacity-25" />
           <p className="mt-3 text-[13px] font-extrabold text-text-primary">لم تصل أوراق بعد</p>
           <p className="mt-1 text-[11.5px] leading-relaxed text-text-muted">
-            تظهر ورقة كل طالب هنا فور تسليمها.
+            تظهر ورقة كل تلميذ هنا فور تسليمها.
           </p>
         </div>
       </div>
@@ -197,7 +197,7 @@ function PaperCard({
 
           {paper.text && (
             <div>
-              <p className="mb-1 text-[11.5px] font-extrabold text-text-primary">حلّ الطالب</p>
+              <p className="mb-1 text-[11.5px] font-extrabold text-text-primary">حلّ التلميذ</p>
               <p className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-3 text-[12.5px] leading-relaxed text-text-primary">
                 {paper.text}
               </p>
@@ -240,7 +240,7 @@ function PaperCard({
             </div>
 
             <label className="mt-2.5 block">
-              <span className="mb-1 block text-[10.5px] font-bold text-text-muted">ملاحظات للطالب</span>
+              <span className="mb-1 block text-[10.5px] font-bold text-text-muted">ملاحظات للتلميذ</span>
               <textarea
                 value={notes} onChange={(e) => setNotes(e.target.value)}
                 rows={3} maxLength={1500}
@@ -266,21 +266,21 @@ function PaperCard({
                 className="flex min-h-[42px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-primary text-[12px] font-extrabold text-white disabled:opacity-50"
               >
                 <FontAwesomeIcon icon={busy === "release" ? faSpinner : faPaperPlane} className={`h-3 w-3 ${busy === "release" ? "animate-spin" : ""}`} />
-                حفظ وإرسال للطالب
+                حفظ وإرسال للتلميذ
               </button>
             </div>
 
             {grade?.released && (
               <p className="mt-2 flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-600">
                 <FontAwesomeIcon icon={faCircleCheck} className="h-2.5 w-2.5" />
-                وصل الطالب إشعاراً بنتيجته — أي تعديل الآن يحتاج إرسالاً جديداً.
+                وصل التلميذ إشعاراً بنتيجته — أي تعديل الآن يحتاج إرسالاً جديداً.
               </p>
             )}
           </div>
 
           <Link href={`/messages/${paper.uid}`}
             className="block text-center text-[11px] font-bold text-primary hover:underline">
-            مراسلة الطالب مباشرة
+            مراسلة التلميذ مباشرة
           </Link>
         </div>
       )}
@@ -293,7 +293,7 @@ function PaperCard({
 
    الأستاذ لا يُلزَم بالتصحيح لحظة الامتحان. يُنهي المحاكاة فتعود
    الغرفة إلى طبيعتها، وتبقى الأوراق هنا يفتحها متى شاء — من الغرفة
-   نفسها — فيصحّح ويُرسل النتائج، ويصل الطالب إشعارٌ حتى لو غادر.
+   نفسها — فيصحّح ويُرسل النتائج، ويصل التلميذ إشعارٌ حتى لو غادر.
 ════════════════════════════════════════════════════════════ */
 export function ExamGradingSheet({
   roomId, roomName, grader, open, onClose,

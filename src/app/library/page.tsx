@@ -91,7 +91,7 @@ export default function LibraryPage() {
   async function addEntry() {
     if (!form.title.trim() || !form.fileUrl.trim()) { setFormErr("العنوان والرابط مطلوبان"); return; }
     const uid = user?.uid;
-    const uname = profile?.name || user?.displayName || "طالب";
+    const uname = profile?.name || user?.displayName || "تلميذ";
     if (!uid) return;
     const paid = form.isPaid && canSell;
     const priceNum = parseInt(form.price, 10);
@@ -143,7 +143,7 @@ export default function LibraryPage() {
           <div className="grid gap-3">
             {filtered.map((e) => (
               <LibEntryCard key={e.id} e={e} highlighted={e.id === sharedId} uid={user.uid} isAdmin={profile?.role === "admin"}
-                isTeacher={profile?.role === "teacher"} myUid={user.uid} myName={user.displayName || "طالب"}
+                isTeacher={profile?.role === "teacher"} myUid={user.uid} myName={user.displayName || "تلميذ"}
                 onDelete={() => confirm("حذف؟") && remove(ref(rtdb, `library/${e.id}`))} />
             ))}
           </div>
@@ -195,7 +195,7 @@ export default function LibraryPage() {
                         <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
                           placeholder="2000" min="1"
                           className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
-                        <p className="mt-1.5 text-[11px] text-text-muted">سيتواصل الطالب مع الأدمن للدفع والحصول على كود الوصول.</p>
+                        <p className="mt-1.5 text-[11px] text-text-muted">سيتواصل التلميذ مع الأدمن للدفع والحصول على كود الوصول.</p>
                       </div>
                     )}
                   </div>
@@ -460,14 +460,14 @@ function LibEntryCard({ e, uid, isAdmin, isTeacher, myUid, myName, highlighted, 
       {showGen && (
         <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-bold">🔑 توليد كود وصول لطالب</p>
+            <p className="text-xs font-bold">🔑 توليد كود وصول لتلميذ</p>
             <button onClick={() => { setShowGen(false); setGenCode(""); }} className="text-text-muted hover:text-danger">
               <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
             </button>
           </div>
           {genCode ? (
             <div>
-              <p className="text-[11px] text-text-muted">أعطِ هذا الكود للطالب بعد الدفع (يُستخدم مرّة واحدة):</p>
+              <p className="text-[11px] text-text-muted">أعطِ هذا الكود للتلميذ بعد الدفع (يُستخدم مرّة واحدة):</p>
               <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-surface p-2">
                 <code className="flex-1 text-center text-sm font-extrabold tracking-wider text-primary" dir="ltr">{genCode}</code>
                 <button onClick={() => navigator.clipboard?.writeText(genCode)} className="rounded bg-primary/10 px-2 py-1 text-[11px] font-bold text-primary">نسخ</button>

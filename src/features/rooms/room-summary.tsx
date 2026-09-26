@@ -19,7 +19,7 @@ import {
 
    الأستاذ: زر واحد يبني مسوّدة من الغرفة نفسها (الملاحظات، الملفات،
    التحديات، الاستفتاء، الأسئلة)، يراجعها ويضيف الواجب، ثم ينشرها.
-   الطالب: يقرأ الملخّص، وينقل أي نقطة إلى بطاقات المراجعة بضغطة.
+   التلميذ: يقرأ الملخّص، وينقل أي نقطة إلى بطاقات المراجعة بضغطة.
 ════════════════════════════════════════════════════════════ */
 
 export function useSummaries(roomId: string) {
@@ -158,7 +158,7 @@ export function TeacherSummarySheet({
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 text-sm font-bold text-white transition active:scale-95 disabled:opacity-60"
           >
             <FontAwesomeIcon icon={done ? faCheck : faPaperPlane} className="h-4 w-4" />
-            {done ? "نُشر للطلاب ✓" : busy ? "..." : "نشر الملخّص للطلاب"}
+            {done ? "نُشر للتلاميذ ✓" : busy ? "..." : "نشر الملخّص للتلاميذ"}
           </button>
 
           {/* ملخّصات سابقة */}
@@ -189,7 +189,7 @@ export function TeacherSummarySheet({
   );
 }
 
-/* ═══════════ عرض الملخّص للطالب ═══════════ */
+/* ═══════════ عرض الملخّص للتلميذ ═══════════ */
 export function SummaryViewerSheet({
   roomId, roomName, uid, subject, open, onClose,
 }: {

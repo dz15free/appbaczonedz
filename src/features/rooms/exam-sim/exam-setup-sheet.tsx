@@ -24,7 +24,7 @@ import { primeAudio } from "@/features/rooms/exam-sim/exam-guard";
 
    وما أُضيف للغرفة وحدها: المدّة قابلة للتعديل قبل البدء (الأصل مدّة
    المادّة الرسمية)، وخيار قبول التسليم المتأخّر — لأنّ الحصّة ليست
-   قاعة رسمية، وقد ينقطع إنترنت طالب.
+   قاعة رسمية، وقد ينقطع إنترنت تلميذ.
 ════════════════════════════════════════════════════════════ */
 
 type Step = "spec" | "subject" | "source" | "list" | "custom" | "review";
@@ -321,10 +321,10 @@ export function ExamSetupSheet({
             <div className="space-y-2 rounded-2xl border border-border bg-background p-3">
               <p className="text-[12px] font-extrabold text-text-primary">إعدادات قاعة الامتحان</p>
               <GuardToggle icon={faExpand} label="فرض ملء الشاشة"
-                hint="يُغلق كل ما حول الامتحان على جهاز الطالب"
+                hint="يُغلق كل ما حول الامتحان على جهاز التلميذ"
                 on={guard.fs} onToggle={() => setGuard((g) => ({ ...g, fs: !g.fs }))} />
               <GuardToggle icon={faShieldHalved} label="رصد مغادرة الشاشة"
-                hint="يُسجَّل عدد محاولات الخروج مع ورقة الطالب"
+                hint="يُسجَّل عدد محاولات الخروج مع ورقة التلميذ"
                 on={guard.ac} onToggle={() => setGuard((g) => ({ ...g, ac: !g.ac }))} />
               <GuardToggle icon={faVolumeHigh} label="أجواء القاعة الصوتية"
                 hint="جرس البداية وتكّة آخر خمس دقائق"

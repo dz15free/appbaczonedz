@@ -71,7 +71,7 @@ export default function DMPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
-  const [otherName, setOtherName] = useState("طالب");
+  const [otherName, setOtherName] = useState("تلميذ");
   const [messages, setMessages] = useState<DMMessage[]>([]);
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -119,7 +119,7 @@ export default function DMPage() {
 
   async function send() {
     if (!text.trim() || !user) return;
-    const me: Person = { uid: user.uid, name: profile?.name || user.displayName || "طالب" };
+    const me: Person = { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" };
     const other: Person = { uid: otherUid, name: otherName };
     setText("");
     if (isPayThread) {
@@ -136,7 +136,7 @@ export default function DMPage() {
     setUploading(true);
     try {
       const prepared = await prepareFile(file);
-      const me: Person = { uid: user.uid, name: profile?.name || user.displayName || "طالب" };
+      const me: Person = { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" };
       const other: Person = { uid: otherUid, name: otherName };
       await sendDMAttachment(me, other, { kind: prepared.kind, dataUrl: prepared.dataUrl, name: prepared.name });
     } catch (err) {

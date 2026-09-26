@@ -70,7 +70,7 @@ export function AdminStudyFeed({ adminUid }: { adminUid: string }) {
       <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
         <p className="text-xs font-bold text-text-primary">🎓 مساحة الدراسة</p>
         <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
-          محتوى تعليمي **يفعله** الطالب لا يقرؤه فقط: أسئلة، تحدّيات، بطاقات، أخطاء شائعة.
+          محتوى تعليمي **يفعله** التلميذ لا يقرؤه فقط: أسئلة، تحدّيات، بطاقات، أخطاء شائعة.
           يظهر في الرئيسية والمجتمع فوق المنشورات العادية، ويصل لمن استهدفتَه بشعبته ومادّته.
         </p>
       </div>
@@ -268,7 +268,7 @@ function FeedEditor({
         </div>
       )}
       {showModel && (
-        <Field label="نموذج الإجابة (يظهر بعد مشاركة الطالب)">
+        <Field label="نموذج الإجابة (يظهر بعد مشاركة التلميذ)">
           <textarea value={draft.modelAnswer ?? ""} onChange={(e) => set("modelAnswer", e.target.value)} rows={4} className={inp(true)} />
         </Field>
       )}
@@ -297,7 +297,7 @@ function FeedEditor({
         <Field label="النقاط عند الإنجاز (اختياري)">
           <input type="number" min={0} max={40} value={draft.xp ?? 0}
             onChange={(e) => set("xp", Number(e.target.value) || 0)} className={inp()} />
-          <p className="mt-1 text-[10.5px] font-semibold text-text-muted">0 = بلا نقاط، ولا تظهر شارة النقاط للطالب.</p>
+          <p className="mt-1 text-[10.5px] font-semibold text-text-muted">0 = بلا نقاط، ولا تظهر شارة النقاط للتلميذ.</p>
         </Field>
         <Field label="الأولوية (0–50)">
           <input type="number" min={0} max={50} value={draft.priority ?? 0}
@@ -431,7 +431,7 @@ function AttachmentsEditor({ draft, onChange }: { draft: Draft; onChange: (d: Dr
       </div>
 
       <p className="mt-1.5 text-[10.5px] leading-relaxed text-text-muted">
-        ألصق رابط الصورة أو الملفّ (Drive أو أي مستضيف). الصور تُعرض داخل البطاقة، والملفّات تظهر بطاقةَ تحميل للطالب.
+        ألصق رابط الصورة أو الملفّ (Drive أو أي مستضيف). الصور تُعرض داخل البطاقة، والملفّات تظهر بطاقةَ تحميل للتلميذ.
       </p>
 
       {list.length > 0 && (

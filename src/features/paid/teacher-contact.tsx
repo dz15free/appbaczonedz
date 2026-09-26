@@ -127,7 +127,7 @@ export function TeacherContactEditor({ uid }: { uid: string }) {
           <div className="grid gap-2 sm:grid-cols-3">
             {([
               { v: "admin", t: "الإدارة فقط", d: "للمتابعة والتسوية" },
-              { v: "students", t: "الطلاب", d: "للطلاب داخل المنصّة" },
+              { v: "students", t: "التلاميذ", d: "للتلاميذ داخل المنصّة" },
               { v: "all", t: "الجميع", d: "تظهر في صفحتك العامة" },
             ] as const).map((o) => (
               <button

@@ -222,7 +222,7 @@ export default function RoomPage() {
   const stateHidesChat = roomState === "exam" || roomState === "focus";
 
   /* «مراجعة ملفّ» تعرض الملفّات فعلاً بدل أن تكون تسمية بلا أثر.
-     للمالك وحده: الطالب يتبع ما يعرضه الأستاذ. */
+     للمالك وحده: التلميذ يتبع ما يعرضه الأستاذ. */
   useEffect(() => {
     if (roomState === "review" && isOwner && tool !== "files") setTool("files");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,7 +243,7 @@ export default function RoomPage() {
 
   // وضع تركيز الأستاذ: زر واحد يستبدل "شاشة كاملة" و"إخفاء اللوحات" السابقين
   const [fullscreen, setFullscreen] = useState(false);
-  // وضع التركيز للطالب + الأدراج الثانوية داخله
+  // وضع التركيز للتلميذ + الأدراج الثانوية داخله
   const [studentFocus, setStudentFocus] = useState(false);
   const [studentAskOpen, setStudentAskOpen] = useState(false);
   const [focusSheet, setFocusSheet] = useState<null | "files" | "notes" | "cards">(null);
@@ -388,7 +388,7 @@ export default function RoomPage() {
   // تقييم الغرفة المدفوعة (لمن اشترى)
   const [rateRoomOpen, setRateRoomOpen] = useState(false);
   const prevAnon = useRef(0);
-  /* مستمع واحد لجلسة المحاكاة يقرؤه الأستاذ والطالب معاً — لا تكرار،
+  /* مستمع واحد لجلسة المحاكاة يقرؤه الأستاذ والتلميذ معاً — لا تكرار،
      ولا يعمل إلّا ما دامت الصفحة مفتوحة. */
   useEffect(() => {
     if (!roomId || !canReadLive) return;
@@ -537,19 +537,19 @@ export default function RoomPage() {
     if (!user) return;
     const r = ref(rtdb, `roomLive/${roomId}/hands/${user.uid}`);
     if (myHand) { remove(r); return; }
-    set(r, { name: user.displayName || "طالب", at: Date.now() });
+    set(r, { name: user.displayName || "تلميذ", at: Date.now() });
 
     /* ⚠️ الحدّ الذي لا يتجاوزه أيّ كود: لا يستطيع موقعٌ تشغيل ميكروفون
        مستخدمٍ لم يمنح متصفّحه الإذن. فلو انتظرنا لحظة منح الأستاذ
-       الكلمة لظهر للطالب سؤالُ إذنٍ مباغت وهو تحت الأضواء — أو لم
+       الكلمة لظهر للتلميذ سؤالُ إذنٍ مباغت وهو تحت الأضواء — أو لم
        يُفتح شيء أصلاً.
 
-       ورفع اليد هو اللحظة الصحيحة: الطالب فيها متطوّع للكلام،
+       ورفع اليد هو اللحظة الصحيحة: التلميذ فيها متطوّع للكلام،
        فسؤال الإذن متوقّع ومفهوم. وبعدها يصير فتح الميكروفون فورياً
        حين يأذن الأستاذ.
 
        والطلب هنا **تمهيديّ لا أكثر**: نُغلق المسار فوراً ولا نبثّ
-       شيئاً. ورفضه لا يمنع رفع اليد — الطالب قد يريد أن يكتب لا أن
+       شيئاً. ورفضه لا يمنع رفع اليد — التلميذ قد يريد أن يكتب لا أن
        يتكلّم. */
     void navigator.mediaDevices
       ?.getUserMedia({ audio: true })
@@ -561,10 +561,10 @@ export default function RoomPage() {
     remove(ref(rtdb, `roomLive/${roomId}/hands/${uid}`));
   }
 
-  // إعطاء الإذن بالتحدّث: يخفض اليد ويفتح ميكروفون الطالب
-  /* منح الكلمة: إذنٌ يُكتب، ويُخفض به الطالبُ يدَه.
+  // إعطاء الإذن بالتحدّث: يخفض اليد ويفتح ميكروفون التلميذ
+  /* منح الكلمة: إذنٌ يُكتب، ويُخفض به التلميذُ يدَه.
      ولا نفتح ميكروفونه من هنا — لا يستطيع أيّ موقع تشغيل ميكروفون
-     شخصٍ لم يمنح متصفّحه الإذن. الطالب يرى «لك الكلمة» ويفتحه
+     شخصٍ لم يمنح متصفّحه الإذن. التلميذ يرى «لك الكلمة» ويفتحه
      بضغطة، وتكون فوريةً لمن سبق أن سمح للموقع (وهو حال الأغلبية بعد
      أوّل استعمال). */
   function grantMic(uid: string) {
@@ -598,7 +598,7 @@ export default function RoomPage() {
     return TOOLS.find((t) => t.id === tool)?.label ?? "ملاحظة";
   }
   // مشاركة رابط الغرفة — يستعمله الشريط العادي ووضع التركيز معاً
-  // يُسجَّل حضور الطالب مرة واحدة عند دخوله غرفة الأستاذ (أساس أهلية التقييم)
+  // يُسجَّل حضور التلميذ مرة واحدة عند دخوله غرفة الأستاذ (أساس أهلية التقييم)
   useEffect(() => {
     if (!user || !room?.ownerId || isOwner) return;
     markAttendance(room.ownerId, user.uid).catch(() => {});
@@ -618,7 +618,7 @@ export default function RoomPage() {
       itemType: "room", itemId: roomId, itemTitle: room.name,
       price: room.price ?? 0, ownerId: room.ownerId, ownerName: room.ownerName, createdBy: user.uid,
     });
-    prompt("كود الوصول (أعطِه للطالب بعد الدفع):", c);
+    prompt("كود الوصول (أعطِه للتلميذ بعد الدفع):", c);
   }
 
   function submitAnonQuestion(q: string) {
@@ -700,9 +700,9 @@ export default function RoomPage() {
 
         <LiveBadge />
 
-        {/* حالة الغرفة — وسط الشريط، المالك يقرّر والطالب يرى */}
+        {/* حالة الغرفة — وسط الشريط، المالك يقرّر والتلميذ يرى */}
         {/* حالات الغرفة قرار الأستاذ: تُغيّر ما يراه الجميع.
-            الطالب يرى **أثرها** في الشريط الأزرق أسفل، لا أزرارها
+            التلميذ يرى **أثرها** في الشريط الأزرق أسفل، لا أزرارها
             معطّلة — الزرّ الذي لا يعمل يُربك ولا يُفيد. */}
         {isOwner && (
           <div className="mx-auto hidden md:block">
@@ -734,7 +734,7 @@ export default function RoomPage() {
         {/* رفع اليد والدردشة ووظائف التلميذ انتقلت إلى شريط التحكّم:
             زرّ واحد لكل فعل، لا زرّ في الأعلى وآخر في الأسفل. */}
 
-        {/* أثناء المحاكاة يحتاج **الطالب** ملء الشاشة أيضاً — على iPhone
+        {/* أثناء المحاكاة يحتاج **التلميذ** ملء الشاشة أيضاً — على iPhone
             خصوصاً حيث لا يعمل ملء الشاشة الحقيقي، فيتكفّل البديل. */}
         {!isOwner && exam && (
           <BarButton
@@ -911,7 +911,7 @@ export default function RoomPage() {
           {/* منطقة المحتوى — في الشاشة الكاملة بالهاتف تأخذ الجزء العلوي فقط */}
           <div className="relative flex flex-1 flex-col overflow-hidden">
             {/* شريط يشرح الحالة غير الافتراضية.
-                الحالة تُغيّر ما يراه الطالب، فلا يجوز أن تتغيّر الشاشة
+                الحالة تُغيّر ما يراه التلميذ، فلا يجوز أن تتغيّر الشاشة
                 تحته دون تفسير — وإلّا بدت الغرفة معطوبة. */}
             {roomState !== "study" && (
               <div className="flex shrink-0 items-center gap-2 border-b border-[var(--bz-blue-100)] bg-[var(--bz-blue-050)] px-3 py-1.5">
@@ -966,7 +966,7 @@ export default function RoomPage() {
                     session={exam}
                     isOwner={isOwner}
                     uid={user.uid}
-                    userName={user.displayName || "طالب"}
+                    userName={user.displayName || "تلميذ"}
                     onLeaveRoom={() => router.push("/rooms")}
                   />
                 ) : undefined
@@ -974,7 +974,7 @@ export default function RoomPage() {
             />
 
             {/* ══ الاستفتاء يعلو المحتوى ولا يحلّ محلّه ══
-                كان يُزيل اللوح تماماً، فيفقد الطالب السياق الذي يُسأل
+                كان يُزيل اللوح تماماً، فيفقد التلميذ السياق الذي يُسأل
                 عنه — وهو أسوأ لحظة لإخفائه. الآن بطاقة تنزل من أعلى
                 المنصّة والمحتوى باقٍ خلفها ومقروء.
                 لا نُعتّم الخلفية كثيراً لأنّ السؤال غالباً عمّا عليها. */}
@@ -1014,12 +1014,12 @@ export default function RoomPage() {
                 </div>
               </div>
             )}
-            {/* تحدّي الحصة — مساحة حل خاصة بكل طالب */}
+            {/* تحدّي الحصة — مساحة حل خاصة بكل تلميذ */}
             {!isOwner && !exam && (
               <StudentChallengeLayer
                 roomId={roomId}
                 uid={user.uid}
-                name={user.displayName || "طالب"}
+                name={user.displayName || "تلميذ"}
                 subject={room?.subject}
                 roomName={room?.name}
               />
@@ -1093,7 +1093,7 @@ export default function RoomPage() {
       {/* ══ شريط التحكّم الواحد ══
           يجمع في مكان واحد ما كان موزّعاً على: شريط الصوت، ورفّ
           الأيقونات، وشريط أدوات الهاتف، والزرّ العائم، ودرج «إجراءات
-          الحصة»، ودرج «وظائف الطالب». نفسه للأستاذ وللتلميذ وعلى كل
+          الحصة»، ودرج «وظائف التلميذ». نفسه للأستاذ وللتلميذ وعلى كل
           المقاسات — والتلميذ لم يكن له تنقّل على الهاتف إطلاقاً. */}
       {(
         <RoomControlBar
@@ -1190,13 +1190,13 @@ export default function RoomPage() {
         </div>
       </BottomSheet>
 
-      {/* تقييم الأستاذ — للطالب وحده */}
+      {/* تقييم الأستاذ — للتلميذ وحده */}
       {!isOwner && room?.ownerId && (
         <RateTeacherSheet
           teacherUid={room.ownerId}
           teacherName={room.ownerName || "الأستاذ"}
           studentUid={user.uid}
-          studentName={user.displayName || "طالب"}
+          studentName={user.displayName || "تلميذ"}
           open={rateOpen}
           onClose={() => setRateOpen(false)}
         />
@@ -1208,7 +1208,7 @@ export default function RoomPage() {
           itemId={roomId}
           itemTitle={room.name || "الغرفة"}
           uid={user.uid}
-          name={user.displayName || "طالب"}
+          name={user.displayName || "تلميذ"}
           kind="room"
           open={rateRoomOpen}
           onClose={() => setRateRoomOpen(false)}
@@ -1250,7 +1250,7 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
   if (questions.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-text-muted">
-        لا أسئلة بعد. يمكن للطلاب إرسال أسئلتهم دون إظهار أسمائهم.
+        لا أسئلة بعد. يمكن للتلاميذ إرسال أسئلتهم دون إظهار أسمائهم.
       </p>
     );
   }
@@ -1285,7 +1285,7 @@ function AnonQuestionsList({ roomId, questions }: { roomId: string; questions: A
   );
 }
 
-/* نموذج السؤال المجهول — كان داخل وضع تركيز الطالب وحده، فصار
+/* نموذج السؤال المجهول — كان داخل وضع تركيز التلميذ وحده، فصار
    ورقةً مستقلّة يفتحها شريط التحكّم في كل الأوضاع. */
 function AnonAskForm({ onSend }: { onSend: (q: string) => void }) {
   const [q, setQ] = useState("");

@@ -25,7 +25,7 @@ export function RoomPollPanel({ roomId, poll, isOwner, myUid }: Props) {
   const totalVotes = voteCounts.reduce((a, b) => a + b, 0);
 
   /* صاحب الاستفتاء لا يصوّت فيه: صوته يشوّه النتيجة التي أنشأها
-     ليقيس بها فهم الطلاب، وهو أمر بديهي في كل أداة استفتاء. */
+     ليقيس بها فهم التلاميذ، وهو أمر بديهي في كل أداة استفتاء. */
   async function vote(idx: number) {
     if (isOwner) return;
     if (hasVoted || !poll.open) return;

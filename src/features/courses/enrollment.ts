@@ -16,7 +16,7 @@ import { flatLessons } from "@/features/courses/types";
    بلا سطر إضافي.
 
    والمجّانية تحتاج تسجيلاً لا شراءً، فلها عقدة `courseEnrollments`
-   يكتب فيها الطالب سطره وحده.
+   يكتب فيها التلميذ سطره وحده.
 
    التقدّم في قاعدة البيانات لا في المتصفّح: من يفتح الدورة من هاتفه
    بعد حاسوبه يجب أن يجدها حيث تركها.
@@ -39,7 +39,7 @@ export interface CourseProgress {
 export async function enrollFree(courseId: string, uid: string, name: string) {
   await set(ref(rtdb, `courseEnrollments/${courseId}/${uid}`), {
     at: Date.now(),
-    name: (name || "طالب").slice(0, 80),
+    name: (name || "تلميذ").slice(0, 80),
   });
   await set(ref(rtdb, `userCourses/${uid}/${courseId}`), Date.now());
 }
@@ -58,7 +58,7 @@ export function listenEnrollCount(courseId: string, cb: (n: number) => void) {
   return onValue(ref(rtdb, `courseEnrollments/${courseId}`), (s) => cb(s.size), () => cb(0));
 }
 
-/** معرّفات دورات الطالب (مجّانية ومدفوعة) */
+/** معرّفات دورات التلميذ (مجّانية ومدفوعة) */
 export function listenMyCourseIds(uid: string, cb: (ids: string[]) => void) {
   const free = ref(rtdb, `userCourses/${uid}`);
   const paid = ref(rtdb, `userAccess/${uid}/course`);
@@ -132,7 +132,7 @@ export function useProgress(uid?: string, courseId?: string) {
   return progress;
 }
 
-/** كل تقدّم الطالب دفعة واحدة — لصفحة «دوراتي» */
+/** كل تقدّم التلميذ دفعة واحدة — لصفحة «دوراتي» */
 export function listenAllProgress(uid: string, cb: (m: Record<string, CourseProgress>) => void) {
   return onValue(ref(rtdb, `courseProgress/${uid}`), (s) => {
     cb((s.val() as Record<string, CourseProgress> | null) ?? {});

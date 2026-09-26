@@ -206,7 +206,7 @@ function TeacherCourseCard({
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
             <span className="inline-flex items-center gap-1"><FontAwesomeIcon icon={faLayerGroup} className="h-3 w-3" /> {course.lessonCount ?? 0} درساً</span>
-            <span className="inline-flex items-center gap-1"><FontAwesomeIcon icon={faUsers} className="h-3 w-3" /> {students} طالباً</span>
+            <span className="inline-flex items-center gap-1"><FontAwesomeIcon icon={faUsers} className="h-3 w-3" /> {students} تلميذاً</span>
             <span className="inline-flex items-center gap-1">
               <FontAwesomeIcon icon={faStar} className="h-3 w-3 text-amber-500" />
               {count ? `${avg.toFixed(1)} (${count})` : "لا تقييم"}

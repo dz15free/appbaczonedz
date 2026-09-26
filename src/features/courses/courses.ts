@@ -74,7 +74,7 @@ export async function getCourse(courseId: string): Promise<Course | null> {
 /**
  * دورات أستاذ واحد — لوحته.
  * تقرأ الفهرس ثمّ كل دورة على حدة: `courses` ليست مقروءة كاملة إلّا
- * للأدمن، وهذا ما يمنع أي طالب من تصفّح مسوّدات الأساتذة.
+ * للأدمن، وهذا ما يمنع أي تلميذ من تصفّح مسوّدات الأساتذة.
  */
 export function listenTeacherCourses(uid: string, cb: (list: Course[]) => void) {
   const found = new Map<string, Course>();

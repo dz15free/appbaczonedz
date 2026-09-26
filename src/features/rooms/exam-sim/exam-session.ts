@@ -17,7 +17,7 @@ import type { ChallengeAttachment } from "@/features/rooms/challenge";
    الأوراق والعلامات خارج `roomLive` عمداً — بنفس السبب الذي أخرج
    `roomChallengeAnswers` منها: قراءة `roomLive` مفتوحة لكل عضو، ولا
    يمكن تضييقها للأبناء (صلاحيات Firebase تتوارث ولا تُلغى). ورقة
-   الطالب وعلامته يقرؤهما هو ومالك الغرفة لا غير.
+   التلميذ وعلامته يقرؤهما هو ومالك الغرفة لا غير.
 
    المؤقّت **لحظة انتهاء مطلقة** (`endsAt`) لا مدّة: المدّة تحتاج
    معرفة «متى بدأ» عند كل جهاز، وتحديث الصفحة يُصفّرها. اللحظة
@@ -92,7 +92,7 @@ export interface ExamGrade {
   gradedAt: number;
   gradedBy: string;
   gradedByName?: string;
-  /** لا يرى الطالب علامته قبل أن يُطلقها الأستاذ */
+  /** لا يرى التلميذ علامته قبل أن يُطلقها الأستاذ */
   released: boolean;
 }
 
@@ -219,7 +219,7 @@ export function listenExam(roomId: string, cb: (s: ExamSession | null) => void) 
   }, () => cb(null));
 }
 
-/* ══════════ الطالب: التسليم ══════════ */
+/* ══════════ التلميذ: التسليم ══════════ */
 
 export interface SubmitInput {
   uid: string;
@@ -255,7 +255,7 @@ export async function submitPaper(
   if (!text && atts.length === 0) return "اكتب حلّك أو أرفق صورة ورقتك قبل التسليم.";
 
   const paper: Record<string, unknown> = {
-    name: (input.name || "طالب").slice(0, 80),
+    name: (input.name || "تلميذ").slice(0, 80),
     submittedAt: Date.now(),
     violations: Math.max(0, Math.round(input.violations || 0)),
   };
@@ -268,7 +268,7 @@ export async function submitPaper(
   return null;
 }
 
-/** ورقة الطالب نفسه — يقرؤها هو والأستاذ */
+/** ورقة التلميذ نفسه — يقرؤها هو والأستاذ */
 export function listenMyPaper(roomId: string, uid: string, cb: (p: ExamPaper | null) => void) {
   return onValue(ref(rtdb, `${papersPath(roomId)}/${uid}`), (snap) => {
     const v = snap.val() as Omit<ExamPaper, "uid"> | null;
@@ -305,7 +305,7 @@ export function listenMyGrade(roomId: string, uid: string, cb: (g: ExamGrade | n
 /**
  * حفظ التقييم.
  * `released` منفصل عن الحفظ عمداً: الأستاذ قد يصحّح عشر أوراق ثمّ
- * يُطلقها دفعة واحدة، ولا يجوز أن يرى أوّل طالب علامته قبل آخرهم.
+ * يُطلقها دفعة واحدة، ولا يجوز أن يرى أوّل تلميذ علامته قبل آخرهم.
  */
 export async function saveGrade(
   roomId: string,
@@ -330,7 +330,7 @@ export async function saveGrade(
   await set(ref(rtdb, `${gradesPath(roomId)}/${studentUid}`), data);
 
   /* الإشعار عند الإطلاق فقط — نظام الإشعارات القائم نفسه.
-     إشعار عند كل حفظ يعني إزعاج الطالب بعلامة قد تتغيّر. */
+     إشعار عند كل حفظ يعني إزعاج التلميذ بعلامة قد تتغيّر. */
   if (grade.released) {
     await addNotification(studentUid, {
       type: "exam",

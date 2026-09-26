@@ -135,7 +135,7 @@ export function Segmented<T extends string>({
   items, value, onChange, disabled = false, compact = false,
 }: {
   items: SegmentedItem<T>[]; value: T; onChange?: (id: T) => void;
-  /** الطالب يرى الحالة ولا يغيّرها */
+  /** التلميذ يرى الحالة ولا يغيّرها */
   disabled?: boolean; compact?: boolean;
 }) {
   return (

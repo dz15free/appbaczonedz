@@ -13,12 +13,12 @@ import { rtdb } from "@/lib/firebase/config";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faShield, faFlag, faLayerGroup, faTrash, faChartBar,
-  faCircleExclamation, faCheckCircle, faGear, faCalendarDays,
+  faCircleExclamation, faCheckCircle, faCalendarDays,
   faFloppyDisk, faLock, faLockOpen, faBullhorn, faPaperPlane,
   faMessage, faImage, faLink, faFont, faPalette, faWrench,
   faPlus, faXmark, faToggleOn, faToggleOff, faUsers,
-  faDoorOpen, faBan, faUnlock, faEye, faBookOpen,
-  faGlobe, faUpRightFromSquare, faGraduationCap, faClipboardCheck, faFire,
+  faDoorOpen, faEye, faBookOpen,
+  faGlobe, faUpRightFromSquare, faGraduationCap, faFire,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -51,6 +51,12 @@ interface AppUser {
   uid: string; name: string; email?: string;
   role?: string; points?: number; level?: number;
   banned?: boolean; createdAt?: number;
+}
+
+/* دور المستخدم — دالّة خالصة خارج المكوّن: لا تعتمد على حالة، ولا
+   يجوز أن تقع بين الـhooks وبين استعمالها فيها. */
+function roleOf(u: AppUser): "admin" | "teacher" | "student" {
+  return u.role === "admin" ? "admin" : u.role === "teacher" ? "teacher" : "student";
 }
 
 interface ActiveRoom {
@@ -111,7 +117,7 @@ function SupportAccountCard() {
   );
 }
 
-/* تقييمات الطلاب لا تُعرض في لوحة الإدارة. تبقى البيانات ومكوّن الأستاذ
+/* تقييمات التلاميذ لا تُعرض في لوحة الإدارة. تبقى البيانات ومكوّن الأستاذ
    محفوظين لعرض الملخّص داخل مساحة الأستاذ فقط. */
 
 const TABS = [
@@ -382,6 +388,21 @@ export default function AdminPage() {
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user, profile, tab]);
 
+  /* ⚠️ هذه الـhooks **قبل** الخروج المبكّر أدناه لا بعده.
+     قاعدة React: تُستدعى كلّها بالترتيب نفسه في كل رسمة. ووضعها بعد
+     `return` مشروط يجعلها تُستدعى في رسمة وتُهمَل في أخرى، فتنهار
+     مطابقة الترتيب — وهو ما أوقف البناء بـ`rules-of-hooks`. */
+  useEffect(() => { setUserLimit(50); }, [userSearch, userFilter]);
+
+  const userCounts = useMemo(() => {
+    const c = { all: appUsers.length, admin: 0, teacher: 0, student: 0, banned: 0 };
+    for (const u of appUsers) {
+      c[roleOf(u)]++;
+      if (u.banned) c.banned++;
+    }
+    return c;
+  }, [appUsers]);
+
   if (loading || !user || !profile) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   if (profile.role !== "admin") return null;
 
@@ -500,20 +521,6 @@ export default function AdminPage() {
      والفرز الافتراضي بالدور لا بالتسجيل: الأدمن أوّلاً ثمّ الأساتذة
      ثمّ الطلبة — لأنّ الفئتين الأوليين قليلتان وعليهما أغلب العمل
      الإداري، فإبقاؤهما في الأعلى يوفّر تمريراً طويلاً. */
-  const roleOf = (u: AppUser): "admin" | "teacher" | "student" =>
-    u.role === "admin" ? "admin" : u.role === "teacher" ? "teacher" : "student";
-
-  useEffect(() => { setUserLimit(50); }, [userSearch, userFilter]);
-
-  const userCounts = useMemo(() => {
-    const c = { all: appUsers.length, admin: 0, teacher: 0, student: 0, banned: 0 };
-    for (const u of appUsers) {
-      c[roleOf(u)]++;
-      if (u.banned) c.banned++;
-    }
-    return c;
-  }, [appUsers]);
-
   const filteredUsers = appUsers.filter((u) =>
     (userFilter === "all"
       || (userFilter === "banned" ? !!u.banned : roleOf(u) === userFilter))
@@ -914,7 +921,7 @@ export default function AdminPage() {
                                 <span className="truncate font-bold">{c.itemTitle}</span>
                                 <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{c.itemType === "library" ? "ملخّص" : c.itemType === "course" ? "دورة" : "غرفة"}</span>
                               </div>
-                              <p className="mt-1 text-text-muted">اشترى: <span className="font-semibold text-text-primary">{c.redeemedName || "طالب"}</span> · الأستاذ: {c.ownerName}</p>
+                              <p className="mt-1 text-text-muted">اشترى: <span className="font-semibold text-text-primary">{c.redeemedName || "تلميذ"}</span> · الأستاذ: {c.ownerName}</p>
                               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
                                 <span>السعر: <span className="font-bold">{c.price} دج</span></span>
                                 <span className="text-amber-600">عمولتك: <span className="font-bold">{sp.commission} دج</span></span>
@@ -1068,7 +1075,7 @@ export default function AdminPage() {
                       <span className="font-bold text-sm">{u.name ?? "بدون اسم"}</span>
                       {u.role === "admin" && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">أدمن</span>}
                       {u.role === "teacher" && <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-bold text-secondary">👨‍🏫 أستاذ</span>}
-                      {u.role !== "admin" && u.role !== "teacher" && <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-bold text-text-muted">طالب</span>}
+                      {u.role !== "admin" && u.role !== "teacher" && <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-bold text-text-muted">تلميذ</span>}
                       {u.banned && <span className="rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger">محظور</span>}
                     </div>
                     {u.email && <p className="text-xs text-text-muted">{u.email}</p>}

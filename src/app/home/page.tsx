@@ -140,7 +140,7 @@ function MiniLeaderboard() {
       const val = (snap.val() as Record<string, any>) ?? {};
       const list = Object.entries(val)
         .filter(([, u]: [string, any]) => u.role !== "teacher" && u.role !== "admin")
-        .map(([uid, u]: [string, any]) => ({ uid, name: u.name ?? "طالب", points: u.points ?? 0 }))
+        .map(([uid, u]: [string, any]) => ({ uid, name: u.name ?? "تلميذ", points: u.points ?? 0 }))
         .sort((a, b) => b.points - a.points)
         .slice(0, 5);
       setTop(list);
@@ -182,7 +182,7 @@ export default function HomePage() {
   const profile = useProfile(user?.uid);
 
   /* تذكير المراجعة — قيوده داخل الخطّاف نفسه (مرّة/يوم · 16–21 ·
-     للطالب · لا لمن درس اليوم · يتوقّف بعد 3 تجاهلات). */
+     للتلميذ · لا لمن درس اليوم · يتوقّف بعد 3 تجاهلات). */
   useStudyNudge(user?.uid, profile?.role);
 
   // نُسجّل نشاط اليوم: من يفتح المنصّة اليوم لا يُذكَّر مساءً
@@ -192,12 +192,12 @@ export default function HomePage() {
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
 
-  /* الواجهة تتبع الدور: الأستاذ لا يراجع للبكالوريا، فأدوات الطالب
+  /* الواجهة تتبع الدور: الأستاذ لا يراجع للبكالوريا، فأدوات التلميذ
      تملأ شاشته بما لا يستعمله. */
   const isTeacher = profile?.role === "teacher";
   const track = profile?.track ?? null;
 
-  // تذكير الجلسات المجدولة التي طلبها الطالب وحان وقتها
+  // تذكير الجلسات المجدولة التي طلبها التلميذ وحان وقتها
   useSessionReminders(isTeacher ? undefined : user?.uid);
 
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
@@ -208,7 +208,7 @@ export default function HomePage() {
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
-  const name = profile?.name || user.displayName || "طالب";
+  const name = profile?.name || user.displayName || "تلميذ";
 
   return (
     <AppShell>
@@ -222,7 +222,7 @@ export default function HomePage() {
           {/* الإشعارات — بارزة ليراها الجميع */}
           <NotificationToggle />
 
-          {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
+          {/* أدوات التدريس للأستاذ · مهمّة اليوم للتلميذ */}
           {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
 
           {/* الوصول السريع */}
@@ -231,7 +231,7 @@ export default function HomePage() {
             <QuickAccess isTeacher={isTeacher} />
           </div>
 
-          {/* مساحة الدراسة — محتوى يفعله الطالب لا يقرؤه فقط */}
+          {/* مساحة الدراسة — محتوى يفعله التلميذ لا يقرؤه فقط */}
           {!isTeacher && <StudyFeed uid={user.uid} track={track} limit={4} />}
 
           {/* من يراجع الآن؟ */}
@@ -242,7 +242,7 @@ export default function HomePage() {
 
           {/* «وجهات مهمّة» و«بطاقات المزايا» انتقلتا بالكامل إلى
               «الوصول السريع» أعلى الصفحة: كانتا قسمين منفصلين بتصميمين
-              مختلفين لشيء واحد، وفي موضع لا يصله الطالب بعد أن تكثر
+              مختلفين لشيء واحد، وفي موضع لا يصله التلميذ بعد أن تكثر
               المنشورات. */}
           <AdSlot placement="home" />
           <div>
@@ -266,7 +266,7 @@ export default function HomePage() {
           <MiniLeaderboard />
           <SocialLinks />
           {settings.advertiseEnabled !== false && <AdvertiseCard />}
-          {/* أدوات الباكلوريا — للطالب: مراجعته لا تدريس الأستاذ */}
+          {/* أدوات الباكلوريا — للتلميذ: مراجعته لا تدريس الأستاذ */}
           {!isTeacher && (
           <div>
             <h3 className="mb-3 font-display text-base font-extrabold">أدوات الباكلوريا</h3>
@@ -342,7 +342,7 @@ export default function HomePage() {
         {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}
         <NotificationToggle />
 
-        {/* أدوات التدريس للأستاذ · مهمّة اليوم للطالب */}
+        {/* أدوات التدريس للأستاذ · مهمّة اليوم للتلميذ */}
         {isTeacher ? <TeacherTools uid={user.uid} /> : <DailyPanel uid={user.uid} track={track} />}
 
         {/* الوصول السريع */}
@@ -436,7 +436,7 @@ export default function HomePage() {
           anchor
         />
 
-        {/* أدوات الباكلوريا — للطالب وحده (كما على الحاسوب) */}
+        {/* أدوات الباكلوريا — للتلميذ وحده (كما على الحاسوب) */}
         {!isTeacher && (
           <div id="bz-tools" className="bz-anchor">
             <h2 className="mb-3 font-display text-[17px] font-extrabold">أدوات الباكلوريا</h2>

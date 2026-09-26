@@ -2,7 +2,7 @@
 //
 // الخصوصية هي جوهر التصميم:
 //   roomLive/{roomId}/challenge        → السؤال (يقرأه الجميع، يكتبه المالك)
-//   roomChallengeAnswers/{roomId}/{uid} → حلّ الطالب (يقرأه صاحبه والمالك فقط)
+//   roomChallengeAnswers/{roomId}/{uid} → حلّ التلميذ (يقرأه صاحبه والمالك فقط)
 //   roomChallengeScores/{roomId}/{uid}  → التقييم (يكتبه المالك فقط)
 //
 // الحلول خارج roomLive عمداً: قاعدة القراءة هناك مفتوحة لكل عضو،
@@ -17,7 +17,7 @@ export interface ChallengeShowcase {
   text: string;
 }
 
-/** مرفق التمرين: صورة أو مستند يراه الطلاب مع السؤال */
+/** مرفق التمرين: صورة أو مستند يراه التلاميذ مع السؤال */
 export interface ChallengeAttachment {
   /** رابط العرض المباشر */
   url: string;
@@ -127,16 +127,16 @@ export function listenScores(roomId: string, cb: (scores: Record<string, number>
   });
 }
 
-/* ═══════════ الطالب ═══════════ */
+/* ═══════════ التلميذ ═══════════ */
 
 export async function submitAnswer(roomId: string, uid: string, name: string, text: string,
   attachment?: ChallengeAttachment) {
   const t = text.trim();
   /* الحلّ قد يكون **صورة بلا نصّ** — ورقة مصوّرة. رفضه لغياب النصّ كان
-     سيمنع أشيع طريقة يحلّ بها الطالب فعلاً. */
+     سيمنع أشيع طريقة يحلّ بها التلميذ فعلاً. */
   if (!t && !attachment?.url) return;
   const row: Record<string, unknown> = {
-    name: name || "طالب",
+    name: name || "تلميذ",
     text: t.slice(0, MAX_ANSWER),
     at: Date.now(),
   };

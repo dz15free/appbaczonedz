@@ -15,7 +15,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "النوم-والتغذية-اثناء-المراجعة": {
     cover: "/blog/covers/النوم-والتغذية-اثناء-المراجعة.webp",
-    coverAlt: "طالبة تراجع قرب الحاسوب مع مشروب في جلسة منزلية",
+    coverAlt: "تلميذة تراجع قرب الحاسوب مع مشروب في جلسة منزلية",
   },
   "طرق-المراجعة-الفعالة": {
     cover: "/blog/covers/طرق-المراجعة-الفعالة.webp",
@@ -23,7 +23,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "التعامل-مع-قلق-الامتحان": {
     cover: "/blog/covers/التعامل-مع-قلق-الامتحان.webp",
-    coverAlt: "طالب يشعر بضغط الامتحان داخل قاعة الدراسة",
+    coverAlt: "تلميذ يشعر بضغط الامتحان داخل قاعة الدراسة",
   },
   "حساب-معدل-البكالوريا-بنفسك": {
     cover: "/blog/covers/حساب-معدل-البكالوريا-بنفسك.webp",
@@ -31,7 +31,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "مراجعة-اللغات-الاجنبية": {
     cover: "/blog/covers/مراجعة-اللغات-الاجنبية.webp",
-    coverAlt: "طالبة تتعلم لغة وتدوّن ملاحظات من كتاب",
+    coverAlt: "تلميذة تتعلم لغة وتدوّن ملاحظات من كتاب",
   },
   "مراجعة-التاريخ-والجغرافيا": {
     cover: "/blog/covers/مراجعة-التاريخ-والجغرافيا.webp",
@@ -47,7 +47,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "مراجعة-العلوم-الطبيعية": {
     cover: "/blog/covers/مراجعة-العلوم-الطبيعية.webp",
-    coverAlt: "طلاب داخل مختبر علوم يجرون تجربة تعليمية",
+    coverAlt: "تلاميذ داخل مختبر علوم يجرون تجربة تعليمية",
   },
   "مراجعة-الفيزياء": {
     cover: "/blog/covers/مراجعة-الفيزياء.webp",
@@ -55,7 +55,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "استعمال-الحوليات-والمواضيع-السابقة": {
     cover: "/blog/covers/استعمال-الحوليات-والمواضيع-السابقة.webp",
-    coverAlt: "طالب يكتب إجابة في اختبار داخل قاعة",
+    coverAlt: "تلميذ يكتب إجابة في اختبار داخل قاعة",
   },
   "المقالة-الفلسفية": {
     cover: "/blog/covers/المقالة-الفلسفية.webp",
@@ -63,7 +63,7 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
   },
   "يوم-امتحان-البكالوريا": {
     cover: "/blog/covers/يوم-امتحان-البكالوريا.webp",
-    coverAlt: "طلاب يكتبون في قاعة امتحان",
+    coverAlt: "تلاميذ يكتبون في قاعة امتحان",
   },
 };
 

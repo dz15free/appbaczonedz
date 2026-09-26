@@ -94,7 +94,7 @@ export function trackName(id: string | undefined | null): string {
 export type UserRole = "student" | "teacher" | "admin";
 
 export const ROLE_LABELS: Record<string, string> = {
-  student: "طالب",
+  student: "تلميذ",
   teacher: "أستاذ",
   admin: "إدارة",
 };

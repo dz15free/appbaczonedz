@@ -303,7 +303,7 @@ function AdminCourseRow({
                 <p className="text-[11px] font-bold text-text-primary">منح وصول بعد دفع يدوي</p>
                 <div className="mt-1.5 flex gap-2">
                   <input value={grantUid} onChange={(e) => setGrantUid(e.target.value)}
-                    placeholder="ملاحظة/اسم الطالب (اختياري)" aria-label="ملاحظة"
+                    placeholder="ملاحظة/اسم التلميذ (اختياري)" aria-label="ملاحظة"
                     className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface px-2.5 text-[11.5px] outline-none focus:border-primary" />
                   <button onClick={generateCode} disabled={Boolean(busy)}
                     className="shrink-0 rounded-lg bg-gradient-primary px-3 text-[11.5px] font-extrabold text-white disabled:opacity-50">
@@ -318,7 +318,7 @@ function AdminCourseRow({
                   </div>
                 )}
                 <p className="mt-1 text-[10px] leading-relaxed text-text-muted">
-                  أعطِ الكود للطالب بعد تأكّدك من الدفع — يُستعمل مرّة واحدة ويُقفل على حسابه،
+                  أعطِ الكود للتلميذ بعد تأكّدك من الدفع — يُستعمل مرّة واحدة ويُقفل على حسابه،
                   ويُسجَّل في السجلّ المالي تلقائياً.
                 </p>
               </div>

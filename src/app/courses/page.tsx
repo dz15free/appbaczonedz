@@ -97,7 +97,7 @@ export default function CoursesPage() {
     if (branch !== "all") list = list.filter((c) => matchesTrack(c, branch));
     if (sort === "free") list = list.filter((c) => c.type === "free");
     /* 🐛 «مناسبة لشعبتك» كانت تُرتّب فقط، فتعرض **كل** الدورات تحت
-       عنوان يَعِد بالتصفية — ورأى طالب علوم تجريبية دورةَ رياضيات
+       عنوان يَعِد بالتصفية — ورأى تلميذ علوم تجريبية دورةَ رياضيات
        تحته. التبويب الآن يُصفّي فعلاً: دورات شعبته وما هو لكل الشعب. */
     if (sort === "relevant" && track) list = list.filter((c) => matchesTrack(c, track));
 

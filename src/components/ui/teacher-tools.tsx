@@ -15,7 +15,7 @@ import { LiveAvatar } from "@/components/ui/live-avatar";
    أدوات الأستاذ
 
    الأستاذ لا يراجع للبكالوريا: بطاقات المراجعة ومتتبّع الدروس وحاسبة
-   المعدّل أدوات **طالب**، وعرضها له يملأ شاشته بما لا يستعمله ويُخفي
+   المعدّل أدوات **تلميذ**، وعرضها له يملأ شاشته بما لا يستعمله ويُخفي
    ما يستعمله. فبدلها أدواتُ تدريس: ينشر، يُنشئ دورة، يفتح غرفة، يرى
    طلبته وأرباحه.
 
@@ -72,7 +72,7 @@ export function TeacherTools({ uid }: { uid?: string }) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   طلابي — من حضروا حصص الأستاذ فعلاً
+   تلاميذي — من حضروا حصص الأستاذ فعلاً
 
    المصدر عقدة `attendance/{teacherUid}` القائمة (التي يستعملها نظام
    تقييم الأساتذة). فلا عقدة جديدة ولا عدّ مصطنع: من دخل غرفتك يظهر
@@ -90,17 +90,17 @@ function MyStudents({ uid }: { uid: string }) {
       const ids = Object.keys(val).slice(0, 40);
       if (!ids.length) { if (alive) setRows([]); return; }
 
-      // اسم كل طالب ودوره من عقدته — قراءة واحدة لكل طالب ومحدودة بأربعين.
-      // الدور يُقرأ لأنّ **الأدمن ليس طالباً**: دخوله الغرفة للإشراف كان
+      // اسم كل تلميذ ودوره من عقدته — قراءة واحدة لكل تلميذ ومحدودة بأربعين.
+      // الدور يُقرأ لأنّ **الأدمن ليس تلميذاً**: دخوله الغرفة للإشراف كان
       // يُدرجه في «آخر من حضر»، وهو ليس من طلبة الأستاذ فيُستبعد هنا.
       const people = await Promise.all(
         ids.map((id) =>
           get(ref(rtdb, `users/${id}`))
             .then((s) => {
               const u = (s.val() as { name?: string; role?: string } | null) ?? null;
-              return { name: u?.name ?? "طالب", role: u?.role ?? "student" };
+              return { name: u?.name ?? "تلميذ", role: u?.role ?? "student" };
             })
-            .catch(() => ({ name: "طالب", role: "student" })),
+            .catch(() => ({ name: "تلميذ", role: "student" })),
         ),
       );
       if (!alive) return;
@@ -108,7 +108,7 @@ function MyStudents({ uid }: { uid: string }) {
         ids
           .map((id, i) => ({ uid: id, name: people[i].name, role: people[i].role, since: Number(val[id]?.at) || 0 }))
           .filter((r) => r.role !== "admin")
-          // الأحدث حضوراً أوّلاً: عقدة الحضور تُكتب مرّة واحدة لكل طالب،
+          // الأحدث حضوراً أوّلاً: عقدة الحضور تُكتب مرّة واحدة لكل تلميذ،
           // فلا عدد حصص فيها — وعرض رقم مُختلَق أسوأ من عدم عرضه.
           .sort((a, b) => b.since - a.since)
           .slice(0, 8),
@@ -124,7 +124,7 @@ function MyStudents({ uid }: { uid: string }) {
     <div className="mt-3.5 rounded-2xl border border-border bg-background p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-2 text-[13px] font-extrabold text-text-primary">
-          <FontAwesomeIcon icon={faUsers} className="h-3.5 w-3.5 text-primary" /> طلابي
+          <FontAwesomeIcon icon={faUsers} className="h-3.5 w-3.5 text-primary" /> تلاميذي
         </p>
         {rows.length > 0 && (
           <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600">

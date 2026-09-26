@@ -17,7 +17,7 @@ import { OWNER_STATUS_META } from "@/features/rooms/waiting-screen";
    ── لماذا يوجد ──
    لم يكن في الغرفة أيّ إحساس بأنّ هناك صفّاً: عدد مجرّد في الشريط
    («24 متصل»)، والأسماء مدفونة في تبويب أو ورقة سفلية. والأيدي
-   المرفوعة كانت خلف زرّ وورقة — فيرفع الطالب يده ولا يشعر الأستاذ
+   المرفوعة كانت خلف زرّ وورقة — فيرفع التلميذ يده ولا يشعر الأستاذ
    إلّا إن فتح الدرج.
 
    الرفّ يجعل الثلاثة مرئية دائماً في 56 بكسل: من في الصفّ، ومن
@@ -139,7 +139,7 @@ export function SpeakerRail({
        المالك. الشريط منزلق، والتمرير في RTL يبدأ من الطرف الخطأ في
        بعض المحرّكات — انظر الشرح الكامل في `lib/rtl-scroll.ts`.
        `useInlineStartScroll` تُعيده إلى بدايته الصحيحة أياً كانت
-       اتفاقيّة المتصفّح، وتُبقيه كذلك كلّما دخل طالبٌ جديد. */
+       اتفاقيّة المتصفّح، وتُبقيه كذلك كلّما دخل تلميذٌ جديد. */
     <div ref={railRef} className="bz-rail-wrap bz-rail bz-hscroll flex shrink-0 items-center gap-1.5 border-b border-border bg-surface py-1.5 sm:gap-2">
       {shown.map((m) => {
         const order = handOrder.get(m.uid);

@@ -56,7 +56,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             نسعى لنكون أكبر مجتمع دراسي
             <br />
             <span className="bg-gradient-to-l from-blue-400 via-sky-300 to-emerald-400 bg-clip-text text-transparent">
-              لطلاب البكالوريا
+              لتلاميذ البكالوريا
             </span>
           </h2>
 
@@ -68,7 +68,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {[
               "غرف دراسة مباشرة مع الأساتذة أو للمراجعة مع زملائك",
               "ملخصات وتمارين ومواضيع وحلول الباكلوريات السابقة",
-              "مجتمع طلابي نشط طوال السنة",
+              "مجتمع تلاميذي نشط طوال السنة",
               "والمزيد لتكتشفه..",
             ].map((item) => (
               <li

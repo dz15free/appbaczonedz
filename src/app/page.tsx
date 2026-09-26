@@ -32,14 +32,14 @@ import { PublicRootRedirect } from "@/components/ui/public-root-redirect";
 export const revalidate = 600;
 
 export const metadata: Metadata = {
-  title: "BacZone — منصة الدراسة التفاعلية لطلاب البكالوريا",
-  description: "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تفاعلية لطلاب البكالوريا في الجزائر.",
+  title: "BacZone — منصة الدراسة التفاعلية لتلاميذ البكالوريا",
+  description: "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تفاعلية لتلاميذ البكالوريا في الجزائر.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "ar_DZ",
     url: "/",
-    title: "BacZone — منصة الدراسة التفاعلية لطلاب البكالوريا",
+    title: "BacZone — منصة الدراسة التفاعلية لتلاميذ البكالوريا",
     description: "أدوات ومحتوى وغرف دراسة تساعدك على الاستعداد للبكالوريا بوضوح.",
     siteName: "BacZone",
   },
@@ -74,7 +74,7 @@ export default async function LandingPage() {
   const overviewCards = (s.features ?? []).slice(0, 6);
   const audienceCards = (s.audience ?? []).slice(0, 2);
   const heroImage = s.landingHeroImageUrl || "/landing/baczone-student-hero.png";
-  const footerDescription = s.landingFooterDescription || "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر. تجمع الأدوات والمحتوى والأدلة والغرف والمجتمع في تجربة واحدة.";
+  const footerDescription = s.landingFooterDescription || "منصة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر. تجمع الأدوات والمحتوى والأدلة والغرف والمجتمع في تجربة واحدة.";
   const heroTitleLine1 = s.heroTitleLine1 || "ادرس أذكى، راجع أسرع،";
   const heroTitleLine2 = s.heroTitleLine2 || "وأنجح في البكالوريا";
   const heroTitleReviewIndex = heroTitleLine1.indexOf("راجع");
@@ -98,12 +98,12 @@ export default async function LandingPage() {
         <PublicHeader variant="landing" />
 
         <section className="bz-landing-v2-hero relative isolate overflow-hidden bg-[#061735] text-white">
-          <img src={heroImage} alt={s.landingHeroImageAlt || "طالب جزائري يراجع دروسه على الحاسوب"} className="bz-landing-hero-image absolute inset-0 h-full w-full object-cover" />
+          <img src={heroImage} alt={s.landingHeroImageAlt || "تلميذ جزائري يراجع دروسه على الحاسوب"} className="bz-landing-hero-image absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-l from-[#061735]/15 via-[#061735]/58 to-[#061735]/96" />
           <div className="bz-landing-hero-overlay absolute inset-0 bg-[radial-gradient(circle_at_18%_25%,rgba(37,99,235,.22),transparent_34%),linear-gradient(180deg,rgba(3,13,35,.08),rgba(3,13,35,.7))]" />
           <div className="relative mx-auto flex min-h-[690px] max-w-7xl items-center px-5 pb-24 pt-28 sm:px-8 lg:min-h-[720px] lg:px-10 lg:pb-32 lg:pt-36" dir="ltr">
             <div className="bz-landing-hero-copy max-w-2xl text-left" dir="rtl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-bold text-blue-100 backdrop-blur-md"><FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5 text-blue-300" />{s.landingBadge || "منصة دراسة تفاعلية لطلاب البكالوريا في الجزائر"}</div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-bold text-blue-100 backdrop-blur-md"><FontAwesomeIcon icon={faFlag} className="h-3.5 w-3.5 text-blue-300" />{s.landingBadge || "منصة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر"}</div>
               <h1 className="bz-landing-hero-title max-w-2xl font-display font-black tracking-tight"><span className="bz-landing-hero-title-lead">{heroTitleLead}{heroTitleReview && <span className="bz-landing-hero-title-review">{heroTitleReview}</span>}</span><span className="bz-landing-hero-title-success bg-gradient-to-l from-blue-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">{heroTitleLine2}</span></h1>
               <p className="mt-6 max-w-xl text-base leading-[2] text-white/75 sm:text-lg">{s.heroSubtitle || "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تساعدك على الدراسة بوضوح."}</p>
               <div className="mt-8 flex flex-wrap gap-3">
@@ -122,7 +122,7 @@ export default async function LandingPage() {
         <PublicSidebarLayout placement="global" includeArticles={false}>
           <section className="px-5 pb-14 pt-10 sm:px-8 sm:pb-16 sm:pt-14"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker">مسارات BacZone</span><h2 className="bz-landing-section-title">{s.landingOverviewTitle || "كل ما تحتاجه في مكان واحد"}</h2><p className="bz-landing-section-subtitle">{s.landingOverviewSubtitle}</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{overviewCards.map((card) => <article key={card.id} className="bz-landing-info-card"><span className="bz-landing-icon-box"><DynamicIcon value={card.icon} className="h-5 w-5" emojiClass="text-xl" /></span><h3>{card.title}</h3><p>{card.desc}</p><Link href={overviewHref(card.title)}>اكتشف المزيد <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></Link></article>)}</div></div></section>
 
-          <section className="bg-[#071a3a] px-5 py-16 text-white sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker !bg-white/10 !text-blue-200">تعلم مع الآخرين</span><h2 className="bz-landing-section-title !text-white">{s.landingCommunityTitle || "مجتمع دراسي وغرف تفاعلية"}</h2><p className="bz-landing-section-subtitle !text-white/65">{s.landingCommunitySubtitle}</p></div><div className="grid gap-5 lg:grid-cols-2"><Link href="/community" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-200"><FontAwesomeIcon icon={faUsers} className="h-7 w-7" /></div><h3>المجتمع</h3><p>أسئلة ونقاشات وبطاقات وتحديات داخل مساحة دراسية لا تشبه التصفح العشوائي.</p><span>استكشف المجتمع <FontAwesomeIcon icon={faArrowLeft} /></span></Link><Link href="/rooms" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-200"><FontAwesomeIcon icon={faChalkboard} className="h-7 w-7" /></div><h3>غرف الدراسة</h3><p>لوح، ملفات، ملاحظات، صوت ومشاركة تساعد الطالب والأستاذ على الدراسة معًا.</p><span>استكشف الغرف <FontAwesomeIcon icon={faArrowLeft} /></span></Link></div></div></section>
+          <section className="bg-[#071a3a] px-5 py-16 text-white sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker !bg-white/10 !text-blue-200">تعلم مع الآخرين</span><h2 className="bz-landing-section-title !text-white">{s.landingCommunityTitle || "مجتمع دراسي وغرف تفاعلية"}</h2><p className="bz-landing-section-subtitle !text-white/65">{s.landingCommunitySubtitle}</p></div><div className="grid gap-5 lg:grid-cols-2"><Link href="/community" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-200"><FontAwesomeIcon icon={faUsers} className="h-7 w-7" /></div><h3>المجتمع</h3><p>أسئلة ونقاشات وبطاقات وتحديات داخل مساحة دراسية لا تشبه التصفح العشوائي.</p><span>استكشف المجتمع <FontAwesomeIcon icon={faArrowLeft} /></span></Link><Link href="/rooms" className="bz-landing-community-card"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-200"><FontAwesomeIcon icon={faChalkboard} className="h-7 w-7" /></div><h3>غرف الدراسة</h3><p>لوح، ملفات، ملاحظات، صوت ومشاركة تساعد التلميذ والأستاذ على الدراسة معًا.</p><span>استكشف الغرف <FontAwesomeIcon icon={faArrowLeft} /></span></Link></div></div></section>
 
           <section className="bg-[#eef4ff] px-5 py-16 sm:px-8 sm:py-20"><div className="mx-auto max-w-7xl"><div className="mb-8 text-center"><span className="bz-landing-kicker">تجربة المنتج</span><h2 className="bz-landing-section-title">شاهد BacZone وهي تعمل</h2><p className="bz-landing-section-subtitle">لقطة من واجهة BacZone الحالية، توضّح كيف تجتمع الدراسة والأدوات والمجتمع في مساحة واحدة.</p></div><div className="bz-landing-showcase-grid grid items-center gap-6 lg:grid-cols-[1.2fr_.8fr]" dir="ltr"><div className="bz-landing-platform-shot w-full min-w-0 overflow-hidden rounded-[28px] border border-white bg-white p-2 shadow-xl shadow-blue-950/10"><div className="w-full overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50"><img src="/landing/baczonedz-dashboard-reference-v2.png" alt="لقطة من واجهة منصة BacZone" className="block h-auto w-full max-w-full object-contain" /></div></div><div className="rounded-[28px] bg-[#071a3a] p-7 text-white sm:p-9" dir="rtl"><span className="bz-landing-kicker !bg-blue-400/15 !text-blue-200">داخل المنصة</span><h2 className="mt-4 font-display text-2xl font-black sm:text-3xl">تجربة دراسة لا تتوقف عند المقال</h2><p className="mt-4 text-sm leading-[2] text-white/75">تنتقل من فهم الدرس إلى المراجعة والتفاعل في مساحة مرتبة، مع وصول واضح إلى الأدوات والمحتوى والغرف.</p><Link href="/home" className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-blue-400">دخول المنصة <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link></div></div></div></section>
 

@@ -8,8 +8,8 @@ import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 
 const TITLE = "أدلّة البكالوريا والتوجيه الجامعي";
-const DESC = "أدلّة مرجعية لطالب البكالوريا في الجزائر: التوجيه بعد البكالوريا، ترتيب الرغبات، والمعدّل الموزون — مشروحة خطوة بخطوة.";
-export const metadata: Metadata = { title: TITLE, description: DESC, keywords: ["أدلة البكالوريا", "التوجيه الجامعي", "دليل الطالب", "بكالوريا 2027", "BacZone"], alternates: { canonical: "/guides" }, openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/guides"), title: TITLE, description: DESC, siteName: "BacZone" } };
+const DESC = "أدلّة مرجعية لتلميذ البكالوريا في الجزائر: التوجيه بعد البكالوريا، ترتيب الرغبات، والمعدّل الموزون — مشروحة خطوة بخطوة.";
+export const metadata: Metadata = { title: TITLE, description: DESC, keywords: ["أدلة البكالوريا", "التوجيه الجامعي", "دليل التلميذ", "بكالوريا 2027", "BacZone"], alternates: { canonical: "/guides" }, openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/guides"), title: TITLE, description: DESC, siteName: "BacZone" } };
 
 export default function GuidesIndex() {
   const sectionCount = GUIDES.reduce((total, guide) => total + guide.sections.length, 0);
@@ -22,7 +22,7 @@ export default function GuidesIndex() {
       <header className="bz-guides-editorial-hero">
         <div className="mx-auto w-full max-w-6xl px-5 py-9 sm:px-6 sm:py-14">
           <nav className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><span className="font-bold text-white">الأدلّة</span></nav>
-          <div className="bz-guides-editorial-grid mt-8"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faCompass} className="h-3 w-3" /> مرجع الطالب</span><h1 className="mt-4 max-w-3xl font-display text-[29px] font-extrabold leading-[1.25] text-white sm:text-[49px]">خذ قرارك الدراسي<br /><span className="text-sky-200">على معرفة.</span></h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/75 sm:text-[16px]">{DESC}</p></div><div className="bz-guides-hero-stats"><div><b>{GUIDES.length}</b><span>أدلّة</span></div><div><b>{sectionCount}</b><span>قسم مفصّل</span></div><div><b>{faqCount}</b><span>إجابة شائعة</span></div></div></div>
+          <div className="bz-guides-editorial-grid mt-8"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faCompass} className="h-3 w-3" /> مرجع التلميذ</span><h1 className="mt-4 max-w-3xl font-display text-[29px] font-extrabold leading-[1.25] text-white sm:text-[49px]">خذ قرارك الدراسي<br /><span className="text-sky-200">على معرفة.</span></h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/75 sm:text-[16px]">{DESC}</p></div><div className="bz-guides-hero-stats"><div><b>{GUIDES.length}</b><span>أدلّة</span></div><div><b>{sectionCount}</b><span>قسم مفصّل</span></div><div><b>{faqCount}</b><span>إجابة شائعة</span></div></div></div>
         </div>
       </header>
       <PublicSidebarLayout placement="guides">

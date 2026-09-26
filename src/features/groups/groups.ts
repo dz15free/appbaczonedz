@@ -129,7 +129,7 @@ export async function sendGroupMessage(
 
   /* إشعار المُشار إليهم. ولا نُشعر بكل رسالة في المجموعة — الإشارة
      وحدها هي ما يستدعي تنبيهاً، وإلّا صارت المجموعة النشطة مصنع
-     اشعارات يُطفئها الطالب فيخسر المهمّ معها. */
+     اشعارات يُطفئها التلميذ فيخسر المهمّ معها. */
   const targets = Object.keys(clean).filter((uid) => uid !== sender.uid);
   if (targets.length) {
     await Promise.allSettled(targets.map((uid) => addNotification(uid, {

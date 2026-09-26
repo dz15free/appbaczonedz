@@ -265,7 +265,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
 
         <div className="bz-tfocus-bottombar">
           <MobileBtn icon={faChalkboard} label="الأداة" onClick={() => setSheet("tools")} />
-          <MobileBtn icon={faUsers} label="الطلاب" badge={props.hands.length} onClick={() => setSheet("hands")} />
+          <MobileBtn icon={faUsers} label="التلاميذ" badge={props.hands.length} onClick={() => setSheet("hands")} />
           <MobileBtn icon={faComments} label="الدردشة" badge={props.unreadChat} onClick={() => setSheet("chat")} />
           <MobileBtn icon={faUserSecret} label="أسئلة" badge={props.unansweredCount} onClick={() => setSheet("questions")} />
           <MobileBtn icon={faEllipsis} label="المزيد" onClick={() => setSheet("more")} />
@@ -294,7 +294,7 @@ export function TeacherFocusMode(props: TeacherFocusProps) {
           <div className="h-[66vh]">{props.chatPanel}</div>
         </BottomSheet>
 
-        <BottomSheet open={sheet === "hands"} onClose={() => setSheet(null)} title="الطلاب ورفع اليد" maxHeight="80vh">
+        <BottomSheet open={sheet === "hands"} onClose={() => setSheet(null)} title="التلاميذ ورفع اليد" maxHeight="80vh">
           <HandsList hands={props.hands} onLower={props.onLowerHand} onGrantMic={props.onGrantMic} />
           <div className="mt-2 h-[46vh] border-t border-border pt-2">{props.participantsPanel}</div>
         </BottomSheet>

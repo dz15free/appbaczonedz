@@ -30,7 +30,7 @@ import { ExamPapersPanel } from "@/features/rooms/exam-sim/exam-papers";
    والصوت وكل ما حولها يبقى كما هو، فالخروج من المحاكاة لا يُعيد بناء
    شيء — تختفي هذه الطبقة فيعود ما تحتها حيّاً.
 
-   على الحاسوب: الموضوع يميناً وورقة الطالب يساراً — كما في القاعة،
+   على الحاسوب: الموضوع يميناً وورقة التلميذ يساراً — كما في القاعة،
    السؤال أمامك والورقة تحتك. وعلى الهاتف تبويبان، لأنّ عمودين على
    ٣٦٠ بكسل يعنيان عمودين لا يُقرأ أيّ منهما.
 
@@ -47,7 +47,7 @@ export function ExamStage({
   isOwner: boolean;
   uid: string;
   userName: string;
-  /** مغادرة الغرفة — الظرف الطارئ يقع، والطالب يجب أن يجد باباً */
+  /** مغادرة الغرفة — الظرف الطارئ يقع، والتلميذ يجب أن يجد باباً */
   onLeaveRoom?: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -67,7 +67,7 @@ export function ExamStage({
 
   return (
     <div ref={stageRef} className="bz-room-exam-stage flex h-full min-h-0 flex-col bg-background">
-      {/* شريط الإيقاف — يراه الأستاذ والطالب معاً فلا يظنّ أحد أنّ
+      {/* شريط الإيقاف — يراه الأستاذ والتلميذ معاً فلا يظنّ أحد أنّ
           العدّاد تعطّل. */}
       {paused && (
         <div className="flex shrink-0 items-center justify-center gap-2 border-b border-[var(--bz-amber)]/40 bg-[var(--bz-amber-050)] px-3 py-1.5 text-[11.5px] font-extrabold text-[var(--bz-amber)]">
@@ -121,7 +121,7 @@ function TimerPill({ left, timeUp, compact }: { left: number; timeUp: boolean; c
 /* ══════════════════════════════════════════════════════════
    زرّ ملء الشاشة — يعمل على iPhone بالبديل التنسيقي
 
-   موجود لكل من في القاعة لا للأستاذ وحده: الطالب هو من يحتاج شاشة
+   موجود لكل من في القاعة لا للأستاذ وحده: التلميذ هو من يحتاج شاشة
    خالية من كل شيء عدا موضوعه.
 ══════════════════════════════════════════════════════════ */
 function FullscreenBtn({ stageRef }: { stageRef?: React.RefObject<HTMLElement | null> }) {
@@ -206,7 +206,7 @@ function SubjectViewer({ session, onOpenExternal }: { session: ExamSession; onOp
 }
 
 /* ══════════════════════════════════════════════════════════
-   الطالب
+   التلميذ
 ══════════════════════════════════════════════════════════ */
 function StudentExamView({
   roomId, session, left, timeUp, uid, userName, stageRef, onLeaveRoom,
@@ -233,7 +233,7 @@ function StudentExamView({
   const [driveReady, setDriveReady] = useState(false);
 
   const submitted = Boolean(paper);
-  /* المراقبة تتوقّف أثناء إيقاف الأستاذ: الطالب حينها يسمع شرحاً،
+  /* المراقبة تتوقّف أثناء إيقاف الأستاذ: التلميذ حينها يسمع شرحاً،
      فتسجيل مخالفة عليه لأنّه نظر إلى نافذة أخرى ظلم وتشويش لتقرير
      النزاهة. */
   const paused = isExamPaused(session);
@@ -594,7 +594,7 @@ function TabBtn({
 }
 
 /* ══════════════════════════════════════════════════════════
-   الطالب بعد التسليم — الانتظار ثمّ النتيجة
+   التلميذ بعد التسليم — الانتظار ثمّ النتيجة
 ══════════════════════════════════════════════════════════ */
 function StudentResultView({
   session, paper, grade, violations,

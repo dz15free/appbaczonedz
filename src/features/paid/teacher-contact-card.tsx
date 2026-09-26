@@ -11,10 +11,10 @@ import { listenTeacherContact, type TeacherContact, type TeacherContactVisibilit
 
    **قواعد الظهور** — تُطبَّق في مكان واحد فلا تتناقض:
    • عامّة  → يراها كل من يفتح صفحته.
-   • خاصّة → **الإدارة وحدها**، ولا تظهر للطالب ولا للأستاذ الآخر.
+   • خاصّة → **الإدارة وحدها**، ولا تظهر للتلميذ ولا للأستاذ الآخر.
    • صاحب الحساب يرى بياناته دائماً (وإلّا ظنّ أنّها لم تُحفظ).
 
-   وكل شبكة بشعارها ولونها: الأيقونة تُقرأ قبل النصّ، والطالب يميّز
+   وكل شبكة بشعارها ولونها: الأيقونة تُقرأ قبل النصّ، والتلميذ يميّز
    فيسبوك من تيليغرام بلمحة.
 ════════════════════════════════════════════════════════════ */
 
@@ -131,7 +131,7 @@ export function TeacherContactCard({
           </div>
           {isOwner && (
             <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-              {visibility === "admin" ? "للإدارة" : visibility === "students" ? "للطلاب" : "للجميع"}
+              {visibility === "admin" ? "للإدارة" : visibility === "students" ? "للتلاميذ" : "للجميع"}
             </span>
           )}
         </div>

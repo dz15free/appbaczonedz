@@ -73,12 +73,12 @@ export default function CommunityPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const profile = useProfile(user?.uid);
-  const me: Person | null = user ? { uid: user.uid, name: profile?.name || user.displayName || "طالب" } : null;
+  const me: Person | null = user ? { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" } : null;
   const [tab, setTab] = useState<Tab>("feed");
 
   /* 🐛 **إشعار طلب الصداقة كان يهبط على تبويب المنشورات.** الصفحة تفتح
      على `feed` دائماً و**لا تقرأ `?tab=` إطلاقاً**، فكان الرابط «يعمل»
-     ولا يوصل: الطالب يرى الأخبار وواجهة القبول/الرفض في تبويب آخر لا
+     ولا يوصل: التلميذ يرى الأخبار وواجهة القبول/الرفض في تبويب آخر لا
      يعرف أنّ عليه فتحه.
 
      ويُقرأ من `window.location` لا بـ`useSearchParams`: الأخيرة تُلزم
@@ -464,7 +464,7 @@ function Feed({ me, isAdmin, myRole, track }: {
         <p className="py-8 text-center text-text-muted">لا منشورات بعد. كن أول من ينشر!</p>
       )}
 
-      {/* أوّل عنصر دراسي يتصدّر القائمة — ما يأتي الطالب لأجله */}
+      {/* أوّل عنصر دراسي يتصدّر القائمة — ما يأتي التلميذ لأجله */}
       {studyItems[0] && (
         <FeedCard
           item={studyItems[0]}
@@ -725,7 +725,7 @@ function People({ me }: { me: Person }) {
                   {p.name}
                 </Link>
                 {/* الإدارة لا تُضاف صديقاً — التواصل معها بالدعم. وكان
-                    الزرّ يظهر لها هنا فيُرسل الطالب طلباً لا يُقبل أبداً.
+                    الزرّ يظهر لها هنا فيُرسل التلميذ طلباً لا يُقبل أبداً.
                     وتُعرض شارة «الإدارة» فيُفهم غيابُ الزرّ ولا يُظنّ خللاً. */}
                 {p.role === "admin" ? (
                   <span className="rounded-md bg-violet-500/10 px-2 py-1 text-[11px] font-extrabold text-violet-600">الإدارة</span>
@@ -808,7 +808,7 @@ function Messages({ me }: { me: Person }) {
     ).then((pairs) => setNames(Object.fromEntries(pairs)));
   }, [threads]);
 
-  const displayName = (t: Thread) => names[t.uid] || t.name || "طالب";
+  const displayName = (t: Thread) => names[t.uid] || t.name || "تلميذ";
 
   if (threads.length === 0)
     return (

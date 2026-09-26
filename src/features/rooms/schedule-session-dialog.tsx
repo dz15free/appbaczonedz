@@ -50,7 +50,7 @@ export function ScheduleSessionDialog({ onClose }: Props) {
         name,
         subject: subject || undefined,
         ownerId: user.uid,
-        ownerName: user.displayName || profile?.name || "طالب",
+        ownerName: user.displayName || profile?.name || "تلميذ",
         scheduledAt: ts,
         ownerRole: isTeacher ? "teacher" : undefined,
         isPaid: isPaid && isTeacher,
@@ -74,7 +74,7 @@ export function ScheduleSessionDialog({ onClose }: Props) {
           <h2 className="font-display text-xl font-extrabold">جدولة جلسة دراسية</h2>
         </div>
         <p className="mt-2 text-sm text-text-muted">
-          ستُنشَأ غرفة جاهزة، وتظهر في «الجلسات القادمة» لكل الطلاب حتى موعدها.
+          ستُنشَأ غرفة جاهزة، وتظهر في «الجلسات القادمة» لكل التلاميذ حتى موعدها.
         </p>
 
         <div className="mt-5 space-y-4">
@@ -124,7 +124,7 @@ export function ScheduleSessionDialog({ onClose }: Props) {
                   <span className="mb-1 block text-xs font-semibold text-text-muted">السعر بالدينار الجزائري</span>
                   <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="2000" min="1"
                     className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-primary" />
-                  <p className="mt-1.5 text-[11px] text-text-muted">سيتواصل الطلاب مع الأدمن للدفع والحصول على كود الدخول.</p>
+                  <p className="mt-1.5 text-[11px] text-text-muted">سيتواصل التلاميذ مع الأدمن للدفع والحصول على كود الدخول.</p>
                 </div>
               )}
             </div>

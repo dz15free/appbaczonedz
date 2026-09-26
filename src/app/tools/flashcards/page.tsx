@@ -21,9 +21,9 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
    (`math` · `physics` …)، بينما البطاقة المحفوظة من السبورة تحمل
    **اسم المادّة العربي** من المنهج (`الرياضيات` · `العلوم الفيزيائية`).
    فلا يتطابقان أبداً: كل بطاقة تُحفظ من الغرفة تختفي من كل فلتر إلا
-   «الكل» — والطالب لا يعرف لماذا.
+   «الكل» — والتلميذ لا يعرف لماذا.
 
-   الآن المواد تُشتقّ من **شعبة الطالب** في المنهج، **مع ضمّ أي مادّة
+   الآن المواد تُشتقّ من **شعبة التلميذ** في المنهج، **مع ضمّ أي مادّة
    موجودة فعلاً في بطاقاته** — فلا تسقط بطاقة من مادّة قديمة أو من
    شعبة أخرى. */
 const STREAM_KEY = "bz-stream";
@@ -124,7 +124,7 @@ export default function FlashcardsPage() {
   const SUBJECTS = useMemo(() => {
     const all = mergeLessons(custom);
     /* ثلاثة مصادر: مواد الموقع التي يديرها الأدمن · مواد المنهج لشعبة
-       الطالب · وكل مادّة لها بطاقات فعلاً. الأخيرة تضمن ألّا تختفي
+       التلميذ · وكل مادّة لها بطاقات فعلاً. الأخيرة تضمن ألّا تختفي
        بطاقة بسبب تغيير في القوائم. */
     const fromSite = siteSubjects.map((x) => x.name);
     const fromCurriculum = [...new Set(all.filter((l) => inStream(l, stream)).map(subjectOfLesson))]
@@ -170,7 +170,7 @@ export default function FlashcardsPage() {
 
   /* حذف كلّي: مسح العقدة **مرّة واحدة** لا حلقة على كل بطاقة.
      مئة بطاقة = مئة طلب في الحلقة، وطلب واحد هنا — والفرق يظهر على
-     حصّة Firebase وعلى شبكة الطالب معاً. */
+     حصّة Firebase وعلى شبكة التلميذ معاً. */
   async function deleteAll() {
     if (!user || cards.length === 0) return;
     const n = subject === "all" ? cards.length : filtered.length;

@@ -65,7 +65,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   const applyingRemote = useRef(false);
   const stateRef = useRef<VideoState | null>(null);
   const mp4Ref = useRef<HTMLVideoElement>(null);
-  const studentUnmuted = useRef(false); // هل فعّل الطالب الصوت يدوياً؟
+  const studentUnmuted = useRef(false); // هل فعّل التلميذ الصوت يدوياً؟
 
   /* ── استمع لتغيّرات الحالة ── */
   useEffect(() => {
@@ -128,7 +128,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       if (!p || !ytReady.current) return;
       applyingRemote.current = true;
       if (!prev || prev.videoId !== s.videoId) {
-        // الطلاب: ابدأ مكتوماً ليسمح iOS بالتشغيل التلقائي
+        // التلاميذ: ابدأ مكتوماً ليسمح iOS بالتشغيل التلقائي
         if (!isOwner) { try { p.mute?.(); } catch { /* ignore */ } }
 
         /* 🐛 **سبب «المالك يوقف الفيديو ولا يتوقف عند المنضمّ».**
@@ -143,7 +143,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
            أي عند أوّل حالة تصله. وهو ما يحدث بالضبط حين يصل أمر
            الإيقاف قبل أن يجهز مشغّله (فيُهمَل الأمر في السطر أعلاه)،
            ثمّ يجهز فيطبّق `onReady` آخر حالة معروفة: إيقاف. فتُحمّل
-           و**تُشغَّل**. النتيجة: الأستاذ موقف والطالب يشاهد.
+           و**تُشغَّل**. النتيجة: الأستاذ موقف والتلميذ يشاهد.
 
            `cueVideoById` تُحمّل بلا تشغيل — وهي الصحيحة حين تكون
            الحالة موقوفة. ونؤكّد التوقّف بعد التحميل لأنّ المشغّل قد
@@ -152,7 +152,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
           p.loadVideoById({ videoId: s.videoId, startSeconds: s.currentTime });
           setTimeout(() => {
             p.playVideo?.();
-            // للطلاب: نعرض زر فك الكتم (التشغيل نجح مكتوماً)
+            // للتلاميذ: نعرض زر فك الكتم (التشغيل نجح مكتوماً)
             if (!isOwner) setTimeout(() => setNeedsTap(true), 1200);
           }, 1200);
         } else {
@@ -161,7 +161,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         }
       } else {
         const local = p.getCurrentTime?.() ?? 0;
-        /* 🐛 كان يُقارَن بوقت المالك **لحظة الكتابة**، فيبقى الطالب
+        /* 🐛 كان يُقارَن بوقت المالك **لحظة الكتابة**، فيبقى التلميذ
            متأخّراً بقدر زمن الشبكة دائماً — ويقفز كلّما لامس الفرقُ
            الحدَّ فيتقطّع العرض بلا سبب مفهوم.
            `updatedAt` موجودة في الحالة أصلاً ولم تكن تُستعمل: الفارق
@@ -171,7 +171,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         if (Math.abs(local - target) > 2.5) p.seekTo(target, true);
         if (s.isPlaying) p.playVideo?.(); else p.pauseVideo?.();
       }
-      // تطبيق الكتم: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الطالب الصوت بعد
+      // تطبيق الكتم: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل التلميذ الصوت بعد
       applyMute(s.muted ?? false);
       /* المهلة تغطّي أطول مسار أعلاه (1200ms + هامش)، وإلّا رُفع
          الحارس قبل أن ينتهي التطبيق فحُسبت أحداث المشغّل الناتجة عن
@@ -183,7 +183,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       if (!prev || prev.videoUrl !== s.videoUrl) v.src = s.videoUrl ?? "";
       // المالك مصدر الحقيقة — لا يُعيد تطبيق حالته على نفسه (يمنع التقطيع)
       if (isOwner) { v.muted = s.muted ?? false; return; }
-      // الطلاب: مكتوم إذا كتم المالك أو لم يفعّل الطالب الصوت
+      // التلاميذ: مكتوم إذا كتم المالك أو لم يفعّل التلميذ الصوت
       v.muted = (s.muted ?? false) || !studentUnmuted.current;
       const local = v.currentTime ?? 0;
       if (Math.abs(local - s.currentTime) > 3) v.currentTime = s.currentTime;
@@ -192,7 +192,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
     }
   }
 
-  // تطبيق حالة الكتم على مشغّل YouTube حسب الدور وحالة الطالب
+  // تطبيق حالة الكتم على مشغّل YouTube حسب الدور وحالة التلميذ
   function applyMute(ownerMuted: boolean) {
     const p = ytPlayerRef.current;
     if (!p) return;
@@ -200,7 +200,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
       if (isOwner) {
         if (ownerMuted) p.mute?.(); else p.unMute?.();
       } else {
-        // الطالب: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الصوت بعد
+        // التلميذ: مكتوم إذا كتم المالك للكل، أو إذا لم يفعّل الصوت بعد
         if (ownerMuted || !studentUnmuted.current) p.mute?.();
         else p.unMute?.();
       }
@@ -235,7 +235,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             if (destroyed) return;
             ytReady.current = true;
             const s = stateRef.current;
-            // الطلاب: نبدأ مكتومين ليسمح iOS بالتشغيل التلقائي، ثم زر لفك الكتم
+            // التلاميذ: نبدأ مكتومين ليسمح iOS بالتشغيل التلقائي، ثم زر لفك الكتم
             if (!isOwner) {
               try { ytPlayerRef.current?.mute?.(); } catch { /* ignore */ } 
             }
@@ -417,7 +417,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
                مع `controls: 0` — «اضغط على الصورة لتوقف» إيماءة
                أصيلة فيه لا تُلغيها إخفاءُ الأزرار.
 
-               فيضغط الطالب ظنّاً أنّه يكبّر اللوحة فيتوقّف عرضه. وهو
+               فيضغط التلميذ ظنّاً أنّه يكبّر اللوحة فيتوقّف عرضه. وهو
                توقّفٌ **داخل الإطار** لا يمرّ بـRTDB: لا الأستاذ يعلم،
                ولا بقيّة الصفّ يتأثّرون — يبقى وحده أمام صورة ساكنة
                يحسب الاتصال انقطع.
@@ -474,7 +474,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
           </div>
         )}
 
-        {/* حاجب تفاعل الطلاب — مع زر "اضغط لتفعيل الصوت" (الفيديو يعمل مكتوماً تلقائياً) */}
+        {/* حاجب تفاعل التلاميذ — مع زر "اضغط لتفعيل الصوت" (الفيديو يعمل مكتوماً تلقائياً) */}
         {!isOwner && (
           <div
             className="absolute inset-0 z-10"
@@ -482,7 +482,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             onClick={() => {
               // الفيديو يعمل مكتوماً تلقائياً — اللمسة تفعّل الصوت فقط
               if (needsTap) {
-                studentUnmuted.current = true; // الطالب فعّل الصوت يدوياً
+                studentUnmuted.current = true; // التلميذ فعّل الصوت يدوياً
                 const s = stateRef.current;
                 // لا نفكّ الكتم إذا كان المالك كاتماً للجميع
                 const ownerMuted = s?.muted ?? false;

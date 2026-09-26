@@ -16,7 +16,7 @@ export interface StudyTask {
 
 const path = (uid: string) => `studyTasks/${uid}`;
 
-/** استماع لمهام الطالب مرتّبة */
+/** استماع لمهام التلميذ مرتّبة */
 export function listenStudyTasks(uid: string, cb: (tasks: StudyTask[]) => void) {
   return onValue(ref(rtdb, path(uid)), (snap) => {
     const val = (snap.val() as Record<string, Omit<StudyTask, "id">>) ?? {};

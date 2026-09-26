@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const grantId = `chargily_${orderId}`;
     await dbSet(`purchases/${order.uid}/${order.itemType}/${order.itemId}`, grantId);
     /* ⚠️ المسار `userAccess` لا `access`: هذا ما تقرؤه الواجهة فعلاً
-       (`listenHasAccess`). كتابته في مسار آخر تعني أن يدفع الطالب
+       (`listenHasAccess`). كتابته في مسار آخر تعني أن يدفع التلميذ
        ولا يُفتح له شيء — وهو أسوأ عطب ممكن هنا. */
     await dbSet(`userAccess/${order.uid}/${order.itemType}/${order.itemId}`, grantId);
 
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     await dbUpdate(`chargilyOrders/${orderId}`, { status: "paid", paidAt: Date.now() });
 
-    /* إشعار الطالب — نظام الإشعارات القائم نفسه.
+    /* إشعار التلميذ — نظام الإشعارات القائم نفسه.
        من دفع يجب أن يجد إشعاراً يفتح ما دفع مقابله مباشرة، لا أن يبحث
        عنه في القائمة. */
     await dbPush(`notifications/${order.uid}`, {

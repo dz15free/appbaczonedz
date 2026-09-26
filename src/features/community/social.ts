@@ -485,7 +485,7 @@ export async function searchUsers(term: string, myUid: string): Promise<Person[]
   for (const snap of [sn, se]) {
     const val = (snap.val() as Record<string, any>) ?? {};
     for (const [uid, u] of Object.entries(val) as [string, any][]) {
-      if (uid !== myUid) out.set(uid, { uid, name: u.name ?? "طالب", role: u.role });
+      if (uid !== myUid) out.set(uid, { uid, name: u.name ?? "تلميذ", role: u.role });
     }
   }
   return [...out.values()];
@@ -576,14 +576,14 @@ export async function removeFriend(myUid: string, otherUid: string) {
 export function listenFriendRequests(myUid: string, cb: (list: Person[]) => void) {
   return onValue(ref(rtdb, `friendRequests/${myUid}`), (snap) => {
     const val = (snap.val() as Record<string, any>) ?? {};
-    cb(Object.entries(val).map(([uid, v]: [string, any]) => ({ uid, name: v.name ?? "طالب" })));
+    cb(Object.entries(val).map(([uid, v]: [string, any]) => ({ uid, name: v.name ?? "تلميذ" })));
   });
 }
 
 export function listenFriends(myUid: string, cb: (list: Person[]) => void) {
   return onValue(ref(rtdb, `friends/${myUid}`), (snap) => {
     const val = (snap.val() as Record<string, any>) ?? {};
-    cb(Object.entries(val).map(([uid, v]: [string, any]) => ({ uid, name: v.name ?? "طالب" })));
+    cb(Object.entries(val).map(([uid, v]: [string, any]) => ({ uid, name: v.name ?? "تلميذ" })));
   });
 }
 
@@ -685,7 +685,7 @@ export function listenThreads(myUid: string, cb: (threads: Thread[]) => void) {
     const val = (snap.val() as Record<string, any>) ?? {};
     const list = Object.entries(val).map(([uid, t]: [string, any]) => ({
       uid,
-      name: t.name ?? "طالب",
+      name: t.name ?? "تلميذ",
       lastText: t.lastText ?? "",
       lastAt: t.lastAt ?? 0,
     }));
@@ -696,7 +696,7 @@ export function listenThreads(myUid: string, cb: (threads: Thread[]) => void) {
 
 export async function getUserName(uid: string): Promise<string> {
   const snap = await get(ref(rtdb, `users/${uid}/name`));
-  return (snap.val() as string) ?? "طالب";
+  return (snap.val() as string) ?? "تلميذ";
 }
 
 /* ───────── الإشعارات ───────── */
@@ -777,7 +777,7 @@ export async function getFriendSuggestions(
     const val = (snap.val() as Record<string, any>) ?? {};
     return Object.entries(val)
       /* الإدارة تُستثنى من الاقتراحات: التواصل معها بالدعم لا بالصداقة،
-         فاقتراحُها يدفع الطالب إلى طلبٍ لا يُقبل أبداً. */
+         فاقتراحُها يدفع التلميذ إلى طلبٍ لا يُقبل أبداً. */
       .filter(([id, u]) => id !== uid && !excludeUids.has(id) && u.name && u.role !== "admin")
       .slice(0, limit)
       .map(([id, u]) => ({ uid: id, name: u.name, track: u.track }));

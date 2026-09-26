@@ -15,7 +15,7 @@ export type PaidItemType = "library" | "room" | "course";
 
 export interface AccessCode {
   id: string;
-  code: string;            // الكود الفريد (يُعطى للطالب)
+  code: string;            // الكود الفريد (يُعطى للتلميذ)
   itemType: PaidItemType;
   itemId: string;          // معرّف الملخّص أو الغرفة
   itemTitle: string;       // للعرض في السجلّ
@@ -26,7 +26,7 @@ export interface AccessCode {
   createdBy: string;       // من ولّد الكود (أستاذ أو أدمن)
   createdAt: number;
   // بعد الاستخدام:
-  redeemedBy?: string;     // uid الطالب الذي قفل الكود
+  redeemedBy?: string;     // uid التلميذ الذي قفل الكود
   redeemedName?: string;
   redeemedAt?: number;
   settled?: boolean;       // هل سوّى الأدمن حساب الأستاذ؟
@@ -127,9 +127,9 @@ export async function markSettled(codeId: string, settled: boolean) {
 }
 
 /**
- * استبدال الكود من طرف الطالب:
+ * استبدال الكود من طرف التلميذ:
  * - يتحقّق من وجوده وعدم استخدامه
- * - يقفله على حساب الطالب ويمنحه الوصول
+ * - يقفله على حساب التلميذ ويمنحه الوصول
  * يُرجع رسالة الخطأ أو null عند النجاح
  */
 export async function redeemCode(code: string, uid: string, name: string): Promise<string | null> {
@@ -155,7 +155,7 @@ export async function redeemCode(code: string, uid: string, name: string): Promi
     return "هذا الكود مُستخدَم مسبقاً من حساب آخر.";
   }
 
-  // اقفل الكود على هذا الطالب وامنحه الوصول (عمليتان)
+  // اقفل الكود على هذا التلميذ وامنحه الوصول (عمليتان)
   await update(ref(rtdb, `accessCodes/${codeId}`), {
     redeemedBy: uid, redeemedName: name, redeemedAt: Date.now(),
   });
@@ -167,8 +167,8 @@ export async function redeemCode(code: string, uid: string, name: string): Promi
 /**
  * إثبات شراء لا يمكن تزويره.
  * القيمة هي معرّف كود الوصول، وقاعدة Firebase تتحقّق أن هذا الكود
- * مُستهلَك فعلاً باسم هذا الطالب ولهذا العنصر بالذات — فلا ينفع اختلاقه.
- * (بخلاف userAccess الذي يستطيع الطالب الكتابة فيه بنفسه.)
+ * مُستهلَك فعلاً باسم هذا التلميذ ولهذا العنصر بالذات — فلا ينفع اختلاقه.
+ * (بخلاف userAccess الذي يستطيع التلميذ الكتابة فيه بنفسه.)
  */
 async function recordPurchase(uid: string, itemType: PaidItemType, itemId: string, codeId: string) {
   try {
@@ -176,7 +176,7 @@ async function recordPurchase(uid: string, itemType: PaidItemType, itemId: strin
   } catch { /* لا نُفشل عملية الاسترداد إن تعذّر التسجيل */ }
 }
 
-/** هل اشترى هذا الطالب العنصر فعلاً؟ (يُستعمل لأهلية التقييم) */
+/** هل اشترى هذا التلميذ العنصر فعلاً؟ (يُستعمل لأهلية التقييم) */
 export async function hasPurchased(uid: string, itemType: PaidItemType, itemId: string): Promise<boolean> {
   try {
     const snap = await get(ref(rtdb, `purchases/${uid}/${itemType}/${itemId}`));
@@ -188,7 +188,7 @@ export async function hasPurchased(uid: string, itemType: PaidItemType, itemId: 
  * منح الوصول لعنصر مدفوع.
  *
  * القيمة صارت معرّف كود الوصول بدل `true`، وقاعدة Firebase تتحقّق
- * أن هذا الكود مُستهلَك فعلاً باسم هذا الطالب ولهذا العنصر — فلا
+ * أن هذا الكود مُستهلَك فعلاً باسم هذا التلميذ ولهذا العنصر — فلا
  * يستطيع أحد منح نفسه وصولاً دون شراء.
  *
  * القيم القديمة (`true`) تبقى صالحة عند القراءة، فلا يفقد أحد
@@ -207,7 +207,7 @@ function isGranted(v: unknown): boolean {
   return v === true || (typeof v === "string" && v.length > 0);
 }
 
-/** هل لدى الطالب وصول لعنصر؟ (استماع حيّ) */
+/** هل لدى التلميذ وصول لعنصر؟ (استماع حيّ) */
 export function listenHasAccess(uid: string, itemType: PaidItemType, itemId: string, cb: (has: boolean) => void) {
   return onValue(ref(rtdb, `userAccess/${uid}/${itemType}/${itemId}`), (snap) => {
     cb(isGranted(snap.val()));

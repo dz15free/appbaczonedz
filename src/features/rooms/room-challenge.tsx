@@ -23,7 +23,7 @@ import {
 /* ════════════════════════════════════════════════════════════
    Live Problem — التحدّيات داخل الغرفة
 
-   الطالب: مساحة حل خاصة به وحده، يعدّلها ما دام التسليم مفتوحاً.
+   التلميذ: مساحة حل خاصة به وحده، يعدّلها ما دام التسليم مفتوحاً.
    الأستاذ: كل الحلول في لوحة واحدة، يقيّمها ويعرض أفضلها للجميع.
 ════════════════════════════════════════════════════════════ */
 
@@ -60,11 +60,11 @@ export function useChallenge(roomId: string) {
 }
 
 /* ═══════════════════════════════════════════
-   1) طبقة الطالب — شريط دعوة + مساحة الحل
+   1) طبقة التلميذ — شريط دعوة + مساحة الحل
 ═══════════════════════════════════════════ */
 /* عدّاد الوقت — يُحسب من اللحظة المطلقة، فيتّفق كل الأجهزة عليه مهما
    اختلفت ساعاتها. يتحوّل إلى أحمر في آخر دقيقة، ويقول «انتهى الوقت»
-   بدل أن يختفي: اختفاء العدّاد يترك الطالب لا يدري ماذا جرى. */
+   بدل أن يختفي: اختفاء العدّاد يترك التلميذ لا يدري ماذا جرى. */
 function ChallengeCountdown({ deadline }: { deadline: number }) {
   const [left, setLeft] = useState(() => Math.round((deadline - Date.now()) / 1000));
   useEffect(() => {
@@ -104,7 +104,7 @@ export function StudentChallengeLayer({
   const [driveReady, setDriveReady] = useState(false);
 
   /* التهيئة عند فتح مساحة الحلّ لا عند تركيب الغرفة — لا نُحمّل سكربت
-     Google لكل طالب لم يفتح التحدّي أصلاً. */
+     Google لكل تلميذ لم يفتح التحدّي أصلاً. */
   useEffect(() => {
     if (!open || !isDriveConfigured()) return;
     let alive = true;
@@ -127,7 +127,7 @@ export function StudentChallengeLayer({
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, uid]);
 
-  // فتح مساحة الحل يبدأ من آخر نسخة سلّمها الطالب
+  // فتح مساحة الحل يبدأ من آخر نسخة سلّمها التلميذ
   useEffect(() => { if (open) setDraft(myAnswer?.text ?? ""); }, [open, myAnswer?.text]);
 
   if (!challenge) return null;
@@ -193,7 +193,7 @@ export function StudentChallengeLayer({
         <span className="truncate">
           {submitted
             ? /* بعد ثوانٍ من التسليم تهدأ الرسالة إلى «حلّك مُسلَّم».
-                 «اضغط للتعديل» نداء إلى فعل، وإبقاؤه ساعةً يجعل الطالب
+                 «اضغط للتعديل» نداء إلى فعل، وإبقاؤه ساعةً يجعل التلميذ
                  يظنّ أنّ عليه فعل شيء لم يفعله. */
               justSent
                 ? "تمّ تسليم حلّك ✓"
@@ -258,7 +258,7 @@ export function StudentChallengeLayer({
                 ) : !isDriveConfigured() ? (
                   <p className="text-[11px] text-text-muted">رفع الملفّات غير مُفعّل.</p>
                 ) : !hasDriveToken() ? (
-                  /* 🐛 الطالب لم يكن له زرّ ربط إطلاقاً — فالرفع يفشل
+                  /* 🐛 التلميذ لم يكن له زرّ ربط إطلاقاً — فالرفع يفشل
                      دائماً «تعذّر الرفع، تأكّد من ربط Google» بلا أي
                      وسيلة للربط. النافذة تُفتح داخل النقرة فلا تُحجب. */
                   <button
@@ -417,7 +417,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
     <BottomSheet open={open} onClose={onClose} title="تحدٍّ جديد" maxHeight="80vh">
       <div className="pb-2">
         <p className="px-1 text-xs leading-relaxed text-text-muted">
-          اكتب التمرين. سيحصل كل طالب على مساحة حل خاصة، وتصلك كل الحلول في لوحة واحدة.
+          اكتب التمرين. سيحصل كل تلميذ على مساحة حل خاصة، وتصلك كل الحلول في لوحة واحدة.
         </p>
         <textarea
           ref={qRef}
@@ -470,7 +470,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
         {/* المؤقّت — مدمج مع التحدّي كما طلبت */}
         <div className="mt-3 rounded-xl border border-border p-3">
           <p className="mb-2 text-[11px] font-bold text-text-muted">
-            وقت الحلّ (اختياري) — يظهر عدّ تنازلي لكل الطلاب
+            وقت الحلّ (اختياري) — يظهر عدّ تنازلي لكل التلاميذ
           </p>
           <div className="flex flex-wrap gap-1.5">
             {[0, 5, 10, 15, 20, 30, 45].map((m) => (
@@ -487,7 +487,7 @@ export function CreateChallengeSheet({ roomId, open, onClose }: {
         </div>
         {q.includes("$") && (
           <div className="mt-2 rounded-xl border border-border bg-background p-3">
-            <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة كما سيراها الطلاب</p>
+            <p className="mb-1 text-[11px] font-bold text-text-muted">معاينة كما سيراها التلاميذ</p>
             <MathText text={q} className="text-sm leading-relaxed text-text-primary" />
           </div>
         )}
@@ -536,7 +536,7 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
   if (!challenge) {
     return (
       <p className="py-8 text-center text-sm text-text-muted">
-        لا يوجد تحدٍّ نشط. ابدأ واحداً ليحلّه الطلاب مباشرة.
+        لا يوجد تحدٍّ نشط. ابدأ واحداً ليحلّه التلاميذ مباشرة.
       </p>
     );
   }
@@ -616,7 +616,7 @@ export function TeacherChallengePanel({ roomId, memberCount }: {
                       <MathText text={a.text} className="mt-2.5 border-t border-border pt-2.5 text-sm leading-relaxed text-text-primary" />
                     )}
 
-                    {/* مرفق الطالب: الأستاذ يمرّ على عشرات الحلول، فالمعاينة
+                    {/* مرفق التلميذ: الأستاذ يمرّ على عشرات الحلول، فالمعاينة
                         مضغوطة ويكبّرها بضغطة عند الحاجة. */}
                     {a.attachment && (
                       <div className={a.text?.trim() ? "mt-2" : "mt-2.5 border-t border-border pt-2.5"}>

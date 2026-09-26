@@ -32,16 +32,16 @@ export type MissionKind =
   | "lessons"        // إنهاء دروس من المنهج
   | "roomJoin"       // حضور غرفة مراجعة
   | "posts"          // مشاركة في المجتمع
-  | "custom";        // فعل يُعلّمه الطالب بنفسه (لا نقاط تلقائية)
+  | "custom";        // فعل يُعلّمه التلميذ بنفسه (لا نقاط تلقائية)
 
 export const MISSION_KINDS: { id: MissionKind; label: string; unit: string; hint: string }[] = [
-  { id: "flashcards",    label: "بطاقات مراجعة",       unit: "بطاقة",  hint: "تُحتسب من بطاقات الطالب المحفوظة اليوم" },
+  { id: "flashcards",    label: "بطاقات مراجعة",       unit: "بطاقة",  hint: "تُحتسب من بطاقات التلميذ المحفوظة اليوم" },
   { id: "feedQuestions", label: "أسئلة التغذية",        unit: "سؤال",   hint: "تُحتسب من أسئلة الدراسة التي أجاب عنها اليوم" },
   { id: "feedQuiz",      label: "تحدّيات سريعة",        unit: "تحدٍّ",   hint: "تُحتسب من التحدّيات التي أتمّها اليوم" },
   { id: "lessons",       label: "دروس من المنهج",       unit: "درس",    hint: "تُحتسب من متتبّع التقدّم الدراسي" },
   { id: "roomJoin",      label: "حضور غرفة مراجعة",     unit: "غرفة",   hint: "تُحتسب من حضور الغرف" },
-  { id: "posts",         label: "مشاركة في المجتمع",    unit: "منشور",  hint: "تُحتسب من منشورات الطالب" },
-  { id: "custom",        label: "مهمّة يدوية",          unit: "خطوة",   hint: "يُعلّمها الطالب بنفسه — بلا نقاط تلقائية" },
+  { id: "posts",         label: "مشاركة في المجتمع",    unit: "منشور",  hint: "تُحتسب من منشورات التلميذ" },
+  { id: "custom",        label: "مهمّة يدوية",          unit: "خطوة",   hint: "يُعلّمها التلميذ بنفسه — بلا نقاط تلقائية" },
 ];
 
 export interface Mission extends Targeted {
@@ -87,7 +87,7 @@ export function useMissions() {
   return list;
 }
 
-/** مهامّ اليوم لطالب بعينه — الفعّالة، داخل نافذتها، وموجَّهة لشعبته */
+/** مهامّ اليوم لتلميذ بعينه — الفعّالة، داخل نافذتها، وموجَّهة لشعبته */
 export function missionsForStudent(all: Mission[], track?: string | null, now = Date.now()): Mission[] {
   return all
     .filter((m) => m.enabled !== false)
@@ -143,7 +143,7 @@ function cleanMission(input: Partial<Mission>, adminUid: string) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   القياس — من بيانات الطالب نفسها لا من ادّعائه
+   القياس — من بيانات التلميذ نفسها لا من ادّعائه
 ══════════════════════════════════════════════════════════ */
 
 export interface DailyCounters {
@@ -240,7 +240,7 @@ export function listenClaims(uid: string, day: string, cb: (m: Record<string, Mi
   }, () => cb({}));
 }
 
-/** علامة الطالب على مهمّة يدوية — لا تمنح نقاطاً بنفسها */
+/** علامة التلميذ على مهمّة يدوية — لا تمنح نقاطاً بنفسها */
 export async function setManualDone(uid: string, day: string, missionId: string, done: boolean) {
   const r = ref(rtdb, `missionManual/${uid}/${day}/${missionId}`);
   if (done) await set(r, Date.now());
@@ -267,7 +267,7 @@ export async function claimMission(
   const day = dayKey();
   const done = progressOf(mission, counters, manual) >= mission.target;
   if (!done) return 0;
-  // المهمّة اليدوية لا تُمنح نقاطاً: لا دليل عليها سوى قول الطالب
+  // المهمّة اليدوية لا تُمنح نقاطاً: لا دليل عليها سوى قول التلميذ
   if (mission.kind === "custom") return 0;
 
   const claimRef = ref(rtdb, `missionClaims/${uid}/${day}/${mission.id}`);

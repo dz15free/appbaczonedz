@@ -89,7 +89,7 @@ export default function PostPage() {
   }, [user]);
 
   const friendIds = new Set(friends.map((f) => f.uid));
-  const myName = profile?.name || user?.displayName || "طالب";
+  const myName = profile?.name || user?.displayName || "تلميذ";
 
   async function addFriend(uid: string) {
     if (!user) return;
@@ -140,7 +140,7 @@ export default function PostPage() {
     return (
       /* `id` مرساةٌ يقصدها رابط الاشعار (`#c-<id>`)، و`scroll-mt` تُبعد
          التعليق عن تحت الترويسة الثابتة — بلاها يقف الهدف مخفيّاً وراءها
-         فيظنّ الطالب أنّ الرابط لم يعمل. */
+         فيظنّ التلميذ أنّ الرابط لم يعمل. */
       <div
         id={`c-${c.id}`}
         className={`scroll-mt-24 rounded-lg border border-border bg-surface p-3 transition-colors ${isReply ? "ms-6 mt-2 border-r-2 border-r-primary/40" : ""} ${highlight === c.id ? "!border-primary bg-primary/5" : ""}`}
@@ -269,7 +269,7 @@ export default function PostPage() {
                   ) : (
                     <button
                       onClick={() => {
-                        reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "طالب" });
+                        reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" });
                         alert("تم الإبلاغ. شكراً.");
                       }}
                       aria-label="إبلاغ"

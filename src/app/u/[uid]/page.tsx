@@ -100,7 +100,7 @@ export default function UserProfilePage() {
   const isFriend = friends.some((f) => f.uid === uid);
   const isSent = sentSet.has(uid) || sentLocal;
   const trackName = TRACKS.find((t) => t.id === theirProfile?.track)?.name ?? "—";
-  const name = theirProfile?.name || nameParam || "طالب";
+  const name = theirProfile?.name || nameParam || "تلميذ";
 
   // الخصوصية: عام للجميع، أصدقاء للأصدقاء، خاص لصاحبه
   const visiblePosts = posts.filter(
@@ -109,7 +109,7 @@ export default function UserProfilePage() {
 
   async function addFriend() {
     if (!user) return;
-    await sendFriendRequest({ uid: user.uid, name: myProfile?.name || user.displayName || "طالب" }, uid);
+    await sendFriendRequest({ uid: user.uid, name: myProfile?.name || user.displayName || "تلميذ" }, uid);
     setSentLocal(true);
   }
   async function cancelReq() {
@@ -157,7 +157,7 @@ export default function UserProfilePage() {
             </span>
           </div>
 
-          {/* وسائل التواصل — الجزء الذي كان ناقصاً: تُعرض للطالب حين
+          {/* وسائل التواصل — الجزء الذي كان ناقصاً: تُعرض للتلميذ حين
               يجعلها الأستاذ عامّة، وللإدارة دائماً.
               ⚠️ صلاحية الزائر تُقرأ من `myProfile` لا من `isAdmin`:
               الأخيرة تعني «صاحب الصفحة أدمن»، ولو استعملناها لحُجبت
@@ -213,7 +213,7 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          {/* زرّ تقييم الأستاذ — لأي طالب زار بروفايله (الأساتذة فقط، لا الإدارة) */}
+          {/* زرّ تقييم الأستاذ — لأي تلميذ زار بروفايله (الأساتذة فقط، لا الإدارة) */}
           {isTeacher && !isAdmin && !isMe && user && (
             <button
               onClick={() => setRateOpen(true)}
@@ -239,7 +239,7 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {/* تقييم الطلاب — يظهر على بروفايل الأستاذ (لا الإدارة) */}
+        {/* تقييم التلاميذ — يظهر على بروفايل الأستاذ (لا الإدارة) */}
         {isTeacher && !isAdmin && (
           <div className="mt-4">
             <MyRatingSummary uid={uid} owner={false} />
@@ -252,7 +252,7 @@ export default function UserProfilePage() {
             teacherUid={uid}
             teacherName={name}
             studentUid={user.uid}
-            studentName={myProfile?.name || user.displayName || "طالب"}
+            studentName={myProfile?.name || user.displayName || "تلميذ"}
             open={rateOpen}
             onClose={() => setRateOpen(false)}
           />

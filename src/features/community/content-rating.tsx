@@ -13,7 +13,7 @@ import { hasPurchased } from "@/features/paid/paid-access";
    تقييم المحتوى المدفوع — للمشتري وحده
 
    الأهلية تُفرض في قواعد Firebase عبر عقدة purchases، وهي
-   إثبات لا يُزوَّر: قيمتها كود وصول مُستهلَك باسم الطالب لهذا
+   إثبات لا يُزوَّر: قيمتها كود وصول مُستهلَك باسم التلميذ لهذا
    العنصر بالذات، والقاعدة تتحقّق من ذلك عند كل كتابة.
 ════════════════════════════════════════════════════════════ */
 
@@ -43,7 +43,7 @@ export async function rateContent(
   itemId: string, uid: string, name: string, stars: number, comment: string, isUpdate: boolean, firstAt?: number
 ) {
   const s = Math.max(1, Math.min(5, Math.round(stars)));
-  const data: Record<string, unknown> = { name: name || "طالب", stars: s, at: firstAt ?? Date.now() };
+  const data: Record<string, unknown> = { name: name || "تلميذ", stars: s, at: firstAt ?? Date.now() };
   if (isUpdate) data.updatedAt = Date.now();
   const c = comment.trim();
   if (c) data.comment = c.slice(0, 500);

@@ -165,14 +165,14 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
-  // مزامنة الملف المعروض للطلاب: المالك يختار، الطلاب يتابعون
+  // مزامنة الملف المعروض للتلاميذ: المالك يختار، التلاميذ يتابعون
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   useEffect(() => {
     const unsub = listenActiveFile(roomId, setActiveFileId);
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId]);
 
-  // عند تغيّر الملف النشط أو قائمة الملفات، طابق العرض عند الطلاب
+  // عند تغيّر الملف النشط أو قائمة الملفات، طابق العرض عند التلاميذ
   useEffect(() => {
     if (isOwner) return; // المالك يتحكّم محلياً
     if (!activeFileId) { setSelected(null); setMobileShowPreview(false); return; }
@@ -188,7 +188,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
   function selectFile(f: RoomFile) {
     setSelected(f);
     setMobileShowPreview(true);
-    // المالك يبثّ اختياره لكل الطلاب
+    // المالك يبثّ اختياره لكل التلاميذ
     if (isOwner) setActiveFile(roomId, f.id);
   }
 
@@ -212,7 +212,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
       const uploaded = await uploadToDrive(file, setProgress);
       await addRoomFile(roomId, {
         uploaderId: user.uid,
-        uploaderName: user.displayName || "طالب",
+        uploaderName: user.displayName || "تلميذ",
         name: uploaded.name,
         driveId: uploaded.id,
       });

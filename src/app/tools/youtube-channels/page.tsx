@@ -9,7 +9,7 @@ import { YouTubeDirectory } from "@/features/tools/youtube-directory";
 import { absUrl } from "@/features/guide/site-url";
 
 const TITLE = "أفضل قنوات يوتيوب لمراجعة البكالوريا في الجزائر";
-const DESC = `دليل تعليمي يضم ${TOTAL_CHANNELS} اسماً وقناة متاحة للبحث في يوتيوب، مصنفة حسب المادة لمساعدة طالب البكالوريا على الوصول إلى الشرح المناسب دون تضييع وقت.`;
+const DESC = `دليل تعليمي يضم ${TOTAL_CHANNELS} اسماً وقناة متاحة للبحث في يوتيوب، مصنفة حسب المادة لمساعدة تلميذ البكالوريا على الوصول إلى الشرح المناسب دون تضييع وقت.`;
 
 export const metadata: Metadata = {
   title: TITLE,

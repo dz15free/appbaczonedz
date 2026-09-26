@@ -51,7 +51,7 @@ export function AdminMissions({ adminUid }: { adminUid: string }) {
       <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
         <p className="text-xs font-bold text-text-primary">🔥 مهامّ اليوم</p>
         <p className="mt-1 text-[11px] leading-relaxed text-text-muted">
-          تظهر للطالب في الرئيسية حسب شعبته، ويصله إشعار واحد يومياً. التقدّم يُقاس من نشاطه
+          تظهر للتلميذ في الرئيسية حسب شعبته، ويصله إشعار واحد يومياً. التقدّم يُقاس من نشاطه
           الحقيقي في المنصّة — لا من ضغطة زرّ — والنقاط تُستلَم مرّة واحدة في اليوم لكل مهمّة.
         </p>
       </div>
@@ -79,7 +79,7 @@ export function AdminMissions({ adminUid }: { adminUid: string }) {
               maxLength={140} placeholder="مثال: احفظ ٥ بطاقات مراجعة" className={inp()} />
           </Field>
 
-          <Field label="توضيح للطالب (اختياري)">
+          <Field label="توضيح للتلميذ (اختياري)">
             <input value={editing.hint ?? ""} onChange={(e) => setEditing({ ...editing, hint: e.target.value })}
               maxLength={300} className={inp()} />
           </Field>

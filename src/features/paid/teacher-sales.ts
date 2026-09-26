@@ -54,7 +54,7 @@ export interface TeacherContact {
   phone?: string;
   /** روابط: فيسبوك · تيليغرام · إنستغرام · موقع… */
   links?: { label: string; url: string }[];
-  /** جمهور الظهور الجديد: الإدارة أو الطلاب أو الجميع؛ private/public قديمان للتوافق. */
+  /** جمهور الظهور الجديد: الإدارة أو التلاميذ أو الجميع؛ private/public قديمان للتوافق. */
   visibility?: TeacherContactVisibility;
 }
 

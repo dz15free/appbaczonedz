@@ -41,7 +41,7 @@ export function roomStateLabel(s: RoomState): string {
 
 /**
  * المالك يقرّر الحالة، والجميع يتبعونها لحظياً.
- * الطالب يستطيع دخول تركيزه الشخصي محلّياً دون أن يغيّر حالة الغرفة.
+ * التلميذ يستطيع دخول تركيزه الشخصي محلّياً دون أن يغيّر حالة الغرفة.
  */
 export function useRoomState(roomId: string, isOwner: boolean, enabled = true) {
   const [state, setState] = useState<RoomState>("study");

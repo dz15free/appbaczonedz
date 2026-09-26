@@ -11,7 +11,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 const TITLE = "تعرّف على تخصّصك الجامعي قبل أن تختاره";
 const DESC =
   "دليل التخصّصات الجامعية في الجزائر: ماذا تدرس فعلاً في كل تخصّص، كيف تُقبل فيه، " +
-  "وأين تعمل بعد التخرّج — بلغة يفهمها طالب البكالوريا.";
+  "وأين تعمل بعد التخرّج — بلغة يفهمها تلميذ البكالوريا.";
 
 export const metadata: Metadata = {
   title: TITLE,

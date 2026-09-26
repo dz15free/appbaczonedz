@@ -53,7 +53,7 @@ const NAV = [
   { href: "/leaderboard", label: "الترتيب", icon: faTrophy, wide: true },
 ];
 
-/* روابط الدورات حسب الدور — الطالب لا يرى «إنشاء دورة»، والأستاذ لا
+/* روابط الدورات حسب الدور — التلميذ لا يرى «إنشاء دورة»، والأستاذ لا
    يرى أدوات الإدارة. عرض ما لا يُسمح به يُنتج نقرة تنتهي برفض. */
 function courseLinksFor(role?: string) {
   if (role === "admin") {
@@ -76,7 +76,7 @@ function courseLinksFor(role?: string) {
   ];
 }
 
-/* قائمة "أدوات الدراسة" المنسدلة (حاسوب) — أدوات **الطالب** */
+/* قائمة "أدوات الدراسة" المنسدلة (حاسوب) — أدوات **التلميذ** */
 const TOOLS_DROPDOWN = [
   { href: "/groups", label: "المجموعات", icon: faLayerGroup, external: false },
   { href: "/aibot", label: "الخباشة — المساعدة الآلية", icon: faRobot, external: false },
@@ -86,7 +86,7 @@ const TOOLS_DROPDOWN = [
 ];
 
 /* أدوات **الأستاذ** — تحلّ محلّ أدوات الدراسة لا تُضاف إليها.
-   «تقدّمي الدراسي» و«بطاقات المراجعة» و«مهامي» أدوات مراجعة طالب،
+   «تقدّمي الدراسي» و«بطاقات المراجعة» و«مهامي» أدوات مراجعة تلميذ،
    ووجودها في قائمة أستاذ ازدحامٌ بلا فائدة. */
 const TEACH_DROPDOWN = [
   { href: "/courses/new", label: "أنشئ دورة", icon: faGraduationCap, external: false },
@@ -153,7 +153,7 @@ const MENU_ITEMS_BASE = [
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
 ];
 
-/* درج الهاتف للأستاذ — بلا أي أداة مراجعة طالب.
+/* درج الهاتف للأستاذ — بلا أي أداة مراجعة تلميذ.
    الدرج على الهاتف هو القائمة الرئيسية فعلياً، فبقاء «تقدّمي الدراسي»
    فيه يعني أنّ أوّل ما يراه الأستاذ شيءٌ لا يخصّه. */
 const MENU_ITEMS_TEACHER = [
@@ -248,7 +248,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ]);
   const isTeacher = profile?.role === "teacher";
   const courseLinks = courseLinksFor(profile?.role);
-  /* القائمة تتبع الدور: الطالب يرى أدوات المراجعة، والأستاذ يرى أدوات التدريس.
+  /* القائمة تتبع الدور: التلميذ يرى أدوات المراجعة، والأستاذ يرى أدوات التدريس.
      أدوات الحساب والمحاكاة العامة لا تدخل أيّاً من القائمتين، ولها نقطة وصول
      مستقلة باسم «الأدوات العامة» في المزيد والدرج. */
   const menuItems = dedupe([
@@ -546,7 +546,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <>
                   <LiveAvatar uid={user?.uid} name={profile?.name || "ط"} size="md" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-extrabold text-text-primary">{profile?.name || "طالب"}</p>
+                    <p className="truncate text-[15px] font-extrabold text-text-primary">{profile?.name || "تلميذ"}</p>
                     <Link href="/profile" onClick={() => setMenuOpen(false)}
                       className="text-[12px] font-bold text-primary hover:underline">عرض الملف الشخصي</Link>
                   </div>

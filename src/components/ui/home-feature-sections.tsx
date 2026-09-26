@@ -165,7 +165,7 @@ export function AdvertiseCard() {
           </span>
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-base font-extrabold">أعلن معنا 📢</h3>
-            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">وصّل رسالتك إلى طلاب البكالوريا المهتمين بالتعلّم</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-text-muted">وصّل رسالتك إلى تلاميذ البكالوريا المهتمين بالتعلّم</p>
           </div>
         </div>
         <div className="mt-3 flex gap-2">
@@ -205,7 +205,7 @@ export function YoutubeSourceCard() {
    وجهتان خارجيّتان بارزتان — دروس ومواضيع + قناة تيليغرام
 
    منفصلتان عن صفّ الوصول السريع (الذي فيه المكتبة والغرف…)
-   لأنهما وجهتان خارجيّتان مهمّتان للطالب، ونريد إبرازهما.
+   لأنهما وجهتان خارجيّتان مهمّتان للتلميذ، ونريد إبرازهما.
    الروابط قابلة للتهيئة من الإعدادات مع قيم احتياطية.
 ════════════════════════════════════════════════════════════ */
 export function HomeExternalHighlights() {

@@ -10,9 +10,9 @@ import { FloatingAssistant, type RadialAction } from "@/components/ui/floating-a
 import { useTimerLabel } from "@/features/rooms/room-timer";
 
 /* ════════════════════════════════════════════
-   Student Focus Mode — وضع التركيز للطالب (Mobile First)
+   Student Focus Mode — وضع التركيز للتلميذ (Mobile First)
    بيئة دراسة نظيفة: محتوى + دردشة قابلة للطي + شريطان صغيران
-   يُبقي فقط ما يحتاجه الطالب أثناء المتابعة
+   يُبقي فقط ما يحتاجه التلميذ أثناء المتابعة
 ════════════════════════════════════════════ */
 
 export interface StudentFocusProps {

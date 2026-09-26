@@ -118,7 +118,7 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
     if (!trimmed || !user) return;
     setText("");
     stopTyping();
-    await sendMessage(roomId, { userId: user.uid, userName: user.displayName || "طالب", text: trimmed });
+    await sendMessage(roomId, { userId: user.uid, userName: user.displayName || "تلميذ", text: trimmed });
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -130,7 +130,7 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
       const prepared = await prepareFile(file);
       await sendAttachment(roomId, {
         userId: user.uid,
-        userName: user.displayName || "طالب",
+        userName: user.displayName || "تلميذ",
         kind: prepared.kind,
         dataUrl: prepared.dataUrl,
         fileName: prepared.name,

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { absUrl } from "@/features/guide/site-url";
 
 const TITLE = "مؤقّت التركيز للبكالوريا — ادرس بتركيز";
-const DESC = "مؤقّت تركيز بسيط لطلاب البكالوريا: وقت دراسة واضح، استراحات قصيرة، وإيقاع يساعدك على الاستمرار دون تعقيد.";
+const DESC = "مؤقّت تركيز بسيط لتلاميذ البكالوريا: وقت دراسة واضح، استراحات قصيرة، وإيقاع يساعدك على الاستمرار دون تعقيد.";
 
 export const metadata: Metadata = {
   title: TITLE,

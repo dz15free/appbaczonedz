@@ -8,7 +8,7 @@ import { rtdb } from "@/lib/firebase/config";
    تقييمات الدورات
 
    بنية `contentRatings` نفسها حرفاً بحرف — نجوم، تعليق اختياري،
-   سطر واحد لكل طالب — لكن في عقدة خاصّة، لأنّ **شرط الأهلية مختلف**:
+   سطر واحد لكل تلميذ — لكن في عقدة خاصّة، لأنّ **شرط الأهلية مختلف**:
    الملخّص يشترط شراءً، والدورة تقبل التسجيل المجّاني أيضاً. ودمجهما
    في عقدة واحدة يعني قاعدة واحدة لا تصلح لأيّ منهما.
 
@@ -59,7 +59,7 @@ export async function saveCourseReview(
 ) {
   const s = Math.max(1, Math.min(5, Math.round(stars)));
   const data: Record<string, unknown> = {
-    name: (name || "طالب").slice(0, 80),
+    name: (name || "تلميذ").slice(0, 80),
     stars: s,
     at: firstAt ?? Date.now(),
   };

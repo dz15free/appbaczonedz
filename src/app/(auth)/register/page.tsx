@@ -101,7 +101,7 @@ export default function RegisterPage() {
             }`}
           >
             <span className="text-2xl">🎓</span>
-            <span className="text-sm font-bold">طالب</span>
+            <span className="text-sm font-bold">تلميذ</span>
           </button>
           <button
             type="button"

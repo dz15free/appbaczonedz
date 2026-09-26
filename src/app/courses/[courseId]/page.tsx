@@ -35,13 +35,13 @@ import {
 /* ════════════════════════════════════════════════════════════
    صفحة الدورة
 
-   مصدر البيانات يتبع الدور: الزائر والطالب يقرآن النسخة العامّة
+   مصدر البيانات يتبع الدور: الزائر والتلميذ يقرآن النسخة العامّة
    (`coursesPublic`)، وصاحب الدورة والأدمن يقرآن السجلّ الكامل — كي
-   يستطيع الأستاذ فتح رابط دورته قبل النشر ويرى ما سيراه الطالب.
+   يستطيع الأستاذ فتح رابط دورته قبل النشر ويرى ما سيراه التلميذ.
 
    الحالة الأهمّ هنا سؤال واحد: **هل أملك هذه الدورة؟** فالجواب في
    أعلى الصفحة وفي الزرّ وفي المنهج — ثلاث مرّات، لأنّ الالتباس فيه
-   يعني طالباً يدفع مرّتين أو لا يدفع أصلاً.
+   يعني تلميذاً يدفع مرّتين أو لا يدفع أصلاً.
 ════════════════════════════════════════════════════════════ */
 
 const KIND_ICON = { video: faPlay, pdf: faFilePdf, text: faFileLines, external: faLink } as const;
@@ -129,7 +129,7 @@ export default function CourseDetailsPage() {
     setEnrolling(true);
     setEnrollErr("");
     try {
-      await enrollFree(courseId, user.uid, profile?.name || user.displayName || "طالب");
+      await enrollFree(courseId, user.uid, profile?.name || user.displayName || "تلميذ");
       router.push(`/courses/${courseId}/learn`);
     } catch {
       setEnrollErr("تعذّر التسجيل في الدورة — حاول مجدّداً.");
@@ -197,7 +197,7 @@ export default function CourseDetailsPage() {
                   )}
                   {user && (
                     <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-muted">
-                      <FontAwesomeIcon icon={faUsers} className="h-3 w-3" /> {students} طالباً
+                      <FontAwesomeIcon icon={faUsers} className="h-3 w-3" /> {students} تلميذاً
                     </span>
                   )}
                 </div>
@@ -279,7 +279,7 @@ export default function CourseDetailsPage() {
             <ReviewsBlock
               course={course}
               uid={user?.uid}
-              name={profile?.name || user?.displayName || "طالب"}
+              name={profile?.name || user?.displayName || "تلميذ"}
               isAdmin={Boolean(isAdmin)}
               reviews={reviews}
               avg={avg}

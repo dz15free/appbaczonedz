@@ -9,7 +9,7 @@ import { Icon } from "@/components/ui/icon";
 /* ════════════════════════════════════════════════════════════
    التبليغ عن رابط لا يعمل
 
-   الطالب يفتح ملخّصاً فيجد الرابط ميّتاً، ثم يغادر صامتاً — فيبقى
+   التلميذ يفتح ملخّصاً فيجد الرابط ميّتاً، ثم يغادر صامتاً — فيبقى
    العطب سنوات ولا أحد يعلم. زرّ واحد يحوّل إحباطه إلى بلاغ.
 
    النصّ صريح: **«بلّغ إدارة الموقع»** لا «تبليغ» وحدها — كثيرون
@@ -51,7 +51,7 @@ export function ReportLinkButton({
           (subject ? ` · المادّة: ${subject}` : "") +
           (url ? `\nالرابط: ${url.slice(0, 300)}` : ""),
         reporterId: user.uid,
-        reporterName: user.displayName || "طالب",
+        reporterName: user.displayName || "تلميذ",
         reason: (reason || "الرابط لا يعمل").slice(0, 300),
         createdAt: Date.now(),
       });

@@ -29,7 +29,7 @@ function loadPdfJs(): Promise<any> {
 }
 
 /**
- * عارض PDF متزامن: المعلّم يتنقّل بين الصفحات فيتبعه الطلاب تلقائياً.
+ * عارض PDF متزامن: المعلّم يتنقّل بين الصفحات فيتبعه التلاميذ تلقائياً.
  * src: رابط base64 (data:application/pdf;...) أو رابط مباشر.
  */
 export function SyncedPdfViewer({ roomId, fileId, src, isOwner }: {
@@ -65,7 +65,7 @@ export function SyncedPdfViewer({ roomId, fileId, src, isOwner }: {
     return () => { cancelled = true; };
   }, [src]);
 
-  // مزامنة الصفحة: الطلاب يتبعون المعلّم
+  // مزامنة الصفحة: التلاميذ يتبعون المعلّم
   useEffect(() => {
     if (isOwner) return;
     const unsub = onValue(ref(rtdb, pagePath), (snap) => {
@@ -103,7 +103,7 @@ export function SyncedPdfViewer({ roomId, fileId, src, isOwner }: {
   function gotoPage(p: number) {
     const clamped = Math.max(1, Math.min(p, numPages || 1));
     setPage(clamped);
-    // المعلّم يبثّ الصفحة للطلاب
+    // المعلّم يبثّ الصفحة للتلاميذ
     if (isOwner) set(ref(rtdb, pagePath), clamped);
   }
 
@@ -147,7 +147,7 @@ export function SyncedPdfViewer({ roomId, fileId, src, isOwner }: {
 
         <div className="mx-1 h-5 w-px bg-white/15" />
 
-        {/* تنقّل الصفحات (للمعلّم فقط، الطلاب يتبعون) */}
+        {/* تنقّل الصفحات (للمعلّم فقط، التلاميذ يتبعون) */}
         {isOwner ? (
           <>
             <button onClick={() => gotoPage(page - 1)} disabled={page <= 1}

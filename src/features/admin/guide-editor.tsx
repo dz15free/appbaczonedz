@@ -20,7 +20,7 @@ import {
 
 const FIELDS_UI: { key: keyof SpecFull; label: string; rows: number; hint?: string }[] = [
   { key: "excerpt",   label: "وصف قصير (يظهر في البطاقة وفي Google)", rows: 2,
-    hint: "سطران على الأكثر — هذا ما يقرؤه الطالب في نتيجة البحث." },
+    hint: "سطران على الأكثر — هذا ما يقرؤه التلميذ في نتيجة البحث." },
   { key: "intro",     label: "ما هو هذا التخصّص؟", rows: 5, hint: "مطلوب للنشر." },
   { key: "study",     label: "نظام الدراسة ومدّتها", rows: 4 },
   { key: "admission", label: "القبول والمعدّلات", rows: 4 },

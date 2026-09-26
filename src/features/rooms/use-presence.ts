@@ -10,7 +10,7 @@ export interface PresenceMember {
   joinedAt: number;
   lastActive?: number;
   /* إشارات Teacher Radar — تُكتب مع النبض نفسه، بلا أي طلب إضافي */
-  visible?: boolean;   // هل تبويب الطالب مفتوح أمامه؟
+  visible?: boolean;   // هل تبويب التلميذ مفتوح أمامه؟
   idle?: boolean;      // لم يلمس شيئاً منذ فترة طويلة
 }
 
@@ -31,7 +31,7 @@ export function usePresence(roomId: string, uid?: string, name?: string) {
     // نكتب حالة الانتباه داخل نفس النبض الموجود — صفر طلبات إضافية
     const write = () => {
       set(myRef, {
-        name: name ?? "طالب",
+        name: name ?? "تلميذ",
         joinedAt: joined,
         lastActive: serverTimestamp(),
         visible: typeof document === "undefined" || document.visibilityState === "visible",

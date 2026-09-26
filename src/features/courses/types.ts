@@ -65,7 +65,7 @@ export const LESSON_KIND_LABEL: Record<LessonKind, string> = {
    لها في البكالوريا — الشُّعبة والمادّة تكفيان لوصف من تخاطبه الدورة،
    وحقل زائد في المعالج يُبطئ الأستاذ بلا فائدة. */
 
-/** وصف الدرس كما يراه الطالب — بلا رابط إلّا إن كان مجّاني المعاينة */
+/** وصف الدرس كما يراه التلميذ — بلا رابط إلّا إن كان مجّاني المعاينة */
 export interface CourseLesson {
   id: string;
   title: string;
@@ -143,7 +143,7 @@ export function branchLabel(b?: Course["branches"]): string {
   return names.length <= 2 ? names.join(" + ") : `${names[0]} +${names.length - 1}`;
 }
 
-/** هل الدورة مناسبة لشعبة الطالب؟ */
+/** هل الدورة مناسبة لشعبة التلميذ؟ */
 export function matchesTrack(c: { branches?: Course["branches"] }, track?: string | null): boolean {
   if (!track) return false;
   if (isAllBranches(c.branches)) return true;
@@ -206,7 +206,7 @@ export function providerOf(url?: string): Provider {
   return "unknown";
 }
 
-/** رابط العرض المدمج — الطالب لا يرى «رابط Drive» بل مشغّلاً */
+/** رابط العرض المدمج — التلميذ لا يرى «رابط Drive» بل مشغّلاً */
 export function embedUrl(url?: string): string | null {
   if (!url) return null;
   const yt = youtubeIdFrom(url);

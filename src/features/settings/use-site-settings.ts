@@ -142,7 +142,7 @@ export interface SiteSettings {
   features?: LandingCard[];       // بطاقات المزايا
   audienceTitle?: string;         // عنوان قسم "لمن هذه المنصّة"
   audienceSubtitle?: string;
-  audience?: LandingCard[];        // بطاقة للطالب وأخرى للأستاذ
+  audience?: LandingCard[];        // بطاقة للتلميذ وأخرى للأستاذ
   pricingTitle?: string;           // عنوان قسم التكلفة
   pricingNote?: string;            // شرح صريح لما هو مجاني وما هو مدفوع
   pricingRows?: { id: string; title: string; desc: string }[];
@@ -151,7 +151,7 @@ export interface SiteSettings {
   ctaTitle?: string;              // عنوان CTA النهائي
   ctaSubtitle?: string;           // وصف CTA النهائي
   ctaButton?: string;             // نص زر CTA
-  landingHeroImageUrl?: string;   // صورة الطالب في الـHero
+  landingHeroImageUrl?: string;   // صورة التلميذ في الـHero
   landingHeroImageAlt?: string;   // وصف صورة الـHero
   landingOverviewTitle?: string;
   landingOverviewSubtitle?: string;

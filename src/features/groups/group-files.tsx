@@ -48,7 +48,7 @@ export function GroupFiles({ groupId, isOwner, isMember }: Props) {
       const uploaded = await uploadToDrive(file, setProgress);
       await addGroupFile(groupId, {
         uploaderId: user.uid,
-        uploaderName: user.displayName || "طالب",
+        uploaderName: user.displayName || "تلميذ",
         name: uploaded.name,
         driveId: uploaded.id,
       });

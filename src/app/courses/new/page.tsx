@@ -12,7 +12,7 @@ import { loginHrefFor } from "@/features/auth/use-require-auth";
 import { CourseBuilder } from "@/features/courses/course-builder";
 
 /* إنشاء دورة — للأستاذ والأدمن وحدهما.
-   الحارس ينتظر `ready`: «لم يصل الدور بعد» ليست «طالب». */
+   الحارس ينتظر `ready`: «لم يصل الدور بعد» ليست «تلميذ». */
 export default function NewCoursePage() {
   const router = useRouter();
   const { user, loading } = useAuth();

@@ -81,7 +81,7 @@ export default function ProfilePage() {
     setSaving(true);
     setErr("");
     try {
-      // الأستاذ يحفظ المادة التي يدرّسها، الطالب يحفظ الشعبة
+      // الأستاذ يحفظ المادة التي يدرّسها، التلميذ يحفظ الشعبة
       if (isTeacher) {
         await updateAccount(user, { name, teachSubject, wilaya });
       } else {
@@ -120,7 +120,7 @@ export default function ProfilePage() {
             </span>
           </button>
 
-          <h1 className="mt-4 font-display text-xl font-extrabold">{profile?.name || user.displayName || "طالب"}</h1>
+          <h1 className="mt-4 font-display text-xl font-extrabold">{profile?.name || user.displayName || "تلميذ"}</h1>
           <span className="mt-0.5 text-sm text-text-muted">{user.email}</span>
 
           {/* شارة الدور */}
@@ -229,7 +229,7 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* تقييمات الطلاب — تظهر للأستاذ صاحب الحساب فقط */}
+      {/* تقييمات التلاميذ — تظهر للأستاذ صاحب الحساب فقط */}
       {user && isTeacher && <MyRatingSummary uid={user.uid} owner />}
 
       {/* بيانات تواصل الأستاذ — بجانب لوحة أرباحه */}
@@ -459,7 +459,7 @@ function TeacherEarnings({ uid }: { uid: string }) {
                         <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">معلّقة</span>
                       )}
                     </div>
-                    <p className="mt-1 text-text-muted">المشتري: <span className="font-semibold text-text-primary">{c.redeemedName || "طالب"}</span></p>
+                    <p className="mt-1 text-text-muted">المشتري: <span className="font-semibold text-text-primary">{c.redeemedName || "تلميذ"}</span></p>
                     <div className="mt-1 flex flex-wrap gap-x-3 text-[11px]">
                       <span>السعر: <span className="font-bold">{c.price} دج</span></span>
                       <span className="text-secondary">حصّتك: <span className="font-bold">{sp.owner} دج</span></span>

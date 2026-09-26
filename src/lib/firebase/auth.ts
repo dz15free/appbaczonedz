@@ -135,7 +135,7 @@ export async function needsOnboarding(user: User): Promise<boolean> {
   if (!snap.exists()) return true;
   const data = snap.val();
   if (!data.wilaya) return true;
-  // الأستاذ يحتاج مادة، الطالب يحتاج شعبة
+  // الأستاذ يحتاج مادة، التلميذ يحتاج شعبة
   if (data.role === "teacher") return !data.teachSubject;
   return !data.track;
 }
@@ -154,7 +154,7 @@ export async function ensureNameInRTDB(user: User) {
   try {
     const snap = await get(ref(rtdb, `users/${user.uid}/name`));
     const stored = snap.val() as string | null;
-    if (!stored || stored === "طالب") {
+    if (!stored || stored === "تلميذ") {
       await update(ref(rtdb, `users/${user.uid}`), { name: displayName });
     }
   } catch { /* تجاهل */ }
