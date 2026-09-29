@@ -409,10 +409,17 @@
         }
       }
     },
+    // ══ من ينشر في المكتبة؟ ══
+    // الأساتذة والمشرفون وحدهم. وكان الشرط `auth != null` فقط، أي أنّ
+    // أيّ تلميذ يستطيع الإنشاء بطلب مباشر ولو أُخفي الزرّ عنه — فالعميل
+    // كلّه قابل للتعديل من متصفّحه، والواجهة لا تحرس شيئاً.
+    //
+    // والقراءة تبقى لكل مسجّل: المكتبة للتصفّح والتحميل.
+    // والتعديل والحذف كما كانا: صاحب المصدر أو الأدمن.
     "library": {
       ".read": "auth != null",
       "$id": {
-        ".write": "auth != null && ((!data.exists() && newData.child('uploaderId').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('uploaderId').val() === data.child('uploaderId').val()))",
+        ".write": "auth != null && ((!data.exists() && newData.child('uploaderId').val() === auth.uid && (root.child('users').child(auth.uid).child('role').val() === 'teacher' || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && !newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')) || (data.exists() && newData.exists() && (data.child('uploaderId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin') && newData.child('uploaderId').val() === data.child('uploaderId').val()))",
         ".validate": "!newData.exists() || (newData.hasChildren(['title','fileUrl','uploaderId']) && newData.child('title').val().length <= 200 && newData.child('fileUrl').isString())"
       },
       ".indexOn": [

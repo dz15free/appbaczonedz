@@ -85,10 +85,29 @@ export default function LibraryPage() {
     })
     .sort((a, b) => (a.id === sharedId ? -1 : b.id === sharedId ? 1 : 0));
 
+  /* ════════════════════════════════════════════════════════════
+     من يضيف إلى المكتبة؟
+
+     الأساتذة والمشرفون وحدهم. والتلميذ يتصفّح ويحمّل ولا ينشر.
+
+     والسبب أنّ المكتبة مرجع يبني عليه التلاميذ مراجعتهم: ملخّص خاطئ
+     أو ملفّ مكرّر أو رابط ميّت يُفسد مذاكرة من يثق به، ولا أحد
+     يراجعه قبل النشر.
+
+     ⚠️ والقيد مطبَّق في ثلاثة مواضع لا واحد: الزرّ (فلا يُعرض ما لا
+     يُستعمل)، والنافذة (فلا تُفتح برابط أو بحالة قديمة)، ودالّة
+     الحفظ (وهي الحارس الحقيقي — الواجهة تُخدَع والدالّة لا).
+     ونظيرها في قواعد Firebase هو ما يحسم فعلاً، فالعميل كلّه
+     قابل للتعديل من متصفّح المستخدم. */
+  const canPublish = profile?.role === "teacher" || profile?.role === "admin";
+
   // فقط الأستاذ والأدمن يمكنهما نشر محتوى مدفوع
-  const canSell = profile?.role === "teacher" || profile?.role === "admin";
+  const canSell = canPublish;
 
   async function addEntry() {
+    /* الحارس الحقيقي: الزرّ قد يُخفى والنافذة قد تُفتح بحالة قديمة،
+       أمّا هذا فلا يُتجاوَز من الواجهة. */
+    if (!canPublish) { setFormErr("النشر في المكتبة متاح للأساتذة والمشرفين."); return; }
     if (!form.title.trim() || !form.fileUrl.trim()) { setFormErr("العنوان والرابط مطلوبان"); return; }
     const uid = user?.uid;
     const uname = profile?.name || user?.displayName || "تلميذ";
@@ -118,9 +137,11 @@ export default function LibraryPage() {
             <button onClick={() => router.back()} className="text-text-muted hover:text-primary"><FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" /></button>
             <div><h1 className="font-display text-xl font-extrabold">مكتبة البكالوريا 📚</h1><p className="text-xs text-text-muted">{entries.length} مصدر</p></div>
           </div>
-          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-xl bg-gradient-primary px-4 py-2.5 text-sm font-bold text-white">
-            <FontAwesomeIcon icon={faPlus} className="h-4 w-4" /> إضافة مصدر
-          </button>
+          {canPublish && (
+            <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-xl bg-gradient-primary px-4 py-2.5 text-sm font-bold text-white">
+              <FontAwesomeIcon icon={faPlus} className="h-4 w-4" /> إضافة مصدر
+            </button>
+          )}
         </div>
         <div className="relative mb-4">
           <FontAwesomeIcon icon={faSearch} className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -137,7 +158,15 @@ export default function LibraryPage() {
         {filtered.length === 0 ? (
           <div className="py-16 text-center">
             <FontAwesomeIcon icon={faBookOpen} className="h-12 w-12 text-text-muted opacity-20" />
-            <p className="mt-3 text-sm text-text-muted">{search ? `لا نتائج لـ «${search}»` : "لا مصادر بعد — كن أول من يضيف!"}</p>
+            {/* «كن أوّل من يضيف» دعوةٌ لا يستطيع التلميذ تلبيتها بعد
+                تقييد النشر — فالزرّ مخفيّ عنه. النصّ يتبع الصلاحية. */}
+            <p className="mt-3 text-sm text-text-muted">
+              {search
+                ? `لا نتائج لـ «${search}»`
+                : canPublish
+                  ? "لا مصادر بعد — كن أوّل من يضيف!"
+                  : "لا مصادر بعد. يضيفها الأساتذة والمشرفون."}
+            </p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -148,7 +177,7 @@ export default function LibraryPage() {
             ))}
           </div>
         )}
-        {showAdd && (
+        {showAdd && canPublish && (
           <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-4 sm:items-center" onClick={() => setShowAdd(false)}>
             <div className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="mb-4 flex items-center justify-between">

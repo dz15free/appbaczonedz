@@ -233,7 +233,16 @@ export async function reportContent(
 }
 
 export function listenPosts(myUid: string, cb: (posts: Post[]) => void) {
-  const q = query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(100));
+  /* ⚠️ الجلب بالتاريخ والترتيب بـ«الرائج» يقعان في طبقتين مختلفتين:
+     هنا نأخذ آخر 200 منشور، ثمّ ترتّبها الواجهة بالنقاط والحداثة معاً.
+
+     والحدّ ضروري (لا نُنزّل الأرشيف كلّه على كل فتح)، لكنّه كان 100
+     فقط — ومنشور رائج يقع خارج آخر 100 لا يظهر مهما بلغت أصواته.
+     ضُوعف إلى 200: يغطّي عدّة أسابيع من النشاط بتكلفة نقل مقبولة.
+
+     ولو كبر المجتمع فالحلّ ليس رفع الرقم، بل تخزين `hot` محسوباً في
+     القاعدة والفهرسة عليه — وهو تغيير أكبر لا داعي له الآن. */
+  const q = query(ref(rtdb, "community/posts"), orderByChild("createdAt"), limitToLast(200));
   return onValue(q, (snap) => {
     const val = (snap.val() as Record<string, any>) ?? {};
     const posts = Object.entries(val).map(([id, p]: [string, any]) => {

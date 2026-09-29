@@ -36,6 +36,7 @@ import { prepareFile, prepareImagePair, type PreparedImage } from "@/lib/upload"
 import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { LiveAvatar } from "@/components/ui/live-avatar";
+import { hotScore } from "@/features/community/hot-rank";
 import {
   createPost,
   listenPosts,
@@ -170,7 +171,13 @@ function Feed({ me, isAdmin, myRole, track }: {
   const [posts, setPosts] = useState<Post[]>([]);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
-  const [sort, setSort] = useState<"recent" | "top">("recent");
+  /* 🐛 الافتراضي كان «الأحدث» — وهو يتجاهل التصويت تماماً، فمنشور
+     بـ12 صوتاً يهبط إلى الأسفل لمجرّد أنّ غيره نُشر بعده. وهذا ما
+     يجعل التصعيد يبدو معطّلاً وهو يعمل: الترتيب المعروض أوّلاً لا
+     يستعمله أصلاً.
+     الافتراضي الآن «الرائج» — يوازن بين التصويت والحداثة. والخياران
+     الآخران باقيان لمن أرادهما صريحين. */
+  const [sort, setSort] = useState<"hot" | "recent" | "top">("hot");
   const [subjectFilter, setSubjectFilter] = useState("");
   const [postSubject, setPostSubject] = useState("");
   const [friends, setFriends] = useState<Person[]>([]);
@@ -310,7 +317,12 @@ function Feed({ me, isAdmin, myRole, track }: {
   const shown = [...posts]
     .filter(visible)
     .filter((p) => !subjectFilter || (p as any).subject === subjectFilter)
-    .sort((a, b) => (sort === "top" ? b.score - a.score : b.createdAt - a.createdAt));
+    .sort((a, b) => {
+      if (sort === "top") return b.score - a.score;
+      if (sort === "recent") return b.createdAt - a.createdAt;
+      return hotScore(b.score, b.commentCount, b.createdAt)
+           - hotScore(a.score, a.commentCount, a.createdAt);
+    });
 
   /* عناصر الدراسة المرتّبة لهذا المستخدم — تُحقن بين المنشورات لا
      تُستبدل بها. التصفية بالمادّة تسري عليها أيضاً كي يبقى الفلتر صادقاً. */
@@ -443,13 +455,18 @@ function Feed({ me, isAdmin, myRole, track }: {
 
       {/* الترتيب + فلتر الفئة */}
       <div className="flex flex-wrap gap-2">
+        <button onClick={() => setSort("hot")}
+          title="يوازن بين عدد الأصوات وحداثة المنشور"
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "hot" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
+          <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الرائج
+        </button>
         <button onClick={() => setSort("recent")}
           className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "recent" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
           <FontAwesomeIcon icon={faClock} className="h-3 w-3" /> الأحدث
         </button>
         <button onClick={() => setSort("top")}
           className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${sort === "top" ? "bg-primary/10 text-primary" : "text-text-muted"}`}>
-          <FontAwesomeIcon icon={faFire} className="h-3 w-3" /> الأكثر تفاعلاً
+          <FontAwesomeIcon icon={faArrowUp} className="h-3 w-3" /> الأعلى تصويتاً
         </button>
         <div className="mx-1 h-5 w-px self-center bg-border" />
         {["","رياضيات","علوم","فيزياء","عربية","فرنسية","فلسفة"].map((s) => (
