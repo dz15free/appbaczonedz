@@ -52,7 +52,8 @@ const MIC_NOTICE: Record<Exclude<MicResult, "ok">, Omit<Notice, "action">> = {
   unsupported: { kind: "error", title: "هذا المتصفّح لا يدعم الميكروفون", body: "يبدو أنّك فتحت الرابط من فيسبوك أو إنستغرام أو مسنجر. افتحه في Chrome أو Safari لتتكلّم — الاستماع يعمل هنا." },
   "no-device": { kind: "error", title: "لم نجد ميكروفوناً", body: "صِل سمّاعة فيها ميكروفون، أو تأكّد أنّ الميكروفون مفعّل في إعدادات جهازك." },
   busy: { kind: "error", title: "الميكروفون مشغول", body: "تطبيق آخر يستعمله الآن (مكالمة أو تسجيل). أغلقه ثمّ حاول ثانيةً." },
-  network: { kind: "error", title: "تعذّر إرسال صوتك", body: "الشبكة تحجب الاتصال الصوتي. جرّب بيانات الهاتف بدل Wi-Fi، أو أعد المحاولة بعد لحظة." },
+  network: { kind: "error", title: "خادم الصوت رفض إرسال صوتك", body: "أعد المحاولة بعد لحظة. إن تكرّر، افتح «افحص الصوت» لمعرفة السبب." },
+  blocked: { kind: "error", title: "شبكتك تحجب الاتصال الصوتي", body: "الاستماع قد يعمل لكنّ إرسال الصوت لم يكتمل. جرّب بيانات الهاتف بدل Wi-Fi، أو افتح «افحص الصوت»." },
 };
 
 function joinErrorNotice(e: unknown, canAdmin: boolean): Omit<Notice, "action"> {
@@ -269,6 +270,8 @@ export function RoomVoiceBar({
   }
 
   /* ── التحدّث ── */
+  const openCheck = () => { window.open("/voice-check", "_blank", "noopener"); };
+
   async function toggleMic() {
     const m = managerRef.current;
     if (!m || micBusy) return;
@@ -288,13 +291,18 @@ export function RoomVoiceBar({
     setMicBusy(false);
     if (res !== "ok") {
       const n = MIC_NOTICE[res];
+      /* الأدمن يرى السبب التقنيّ كما هو — يكفي أن يرسله ليُشخَّص العطل */
+      const detail = canAdmin && (res === "network" || res === "blocked") ? m.getLastError() : "";
       setNotice({
         ...n,
+        body: detail ? `${n.body}\nالتفاصيل: ${detail}` : n.body,
         action: res === "unsupported"
           ? { label: "انسخ الرابط", run: () => { void navigator.clipboard?.writeText(window.location.href).catch(() => {}); setNotice(null); } }
-          : res === "network" || res === "busy"
-            ? { label: "حاول ثانيةً", run: () => { setNotice(null); void toggleMic(); } }
-            : undefined,
+          : res === "network" || res === "blocked"
+            ? { label: "افحص الصوت", run: openCheck }
+            : res === "busy"
+              ? { label: "حاول ثانيةً", run: () => { setNotice(null); void toggleMic(); } }
+              : undefined,
       });
       return;
     }

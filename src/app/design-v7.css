@@ -839,7 +839,7 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 }
 .bz-vc-notice[data-kind="error"] .bz-vc-notice-icon { background: var(--bz-red-050); color: var(--bz-red); }
 .bz-vc-notice b { display: block; font-size: 13px; font-weight: 700; color: var(--bz-ink); line-height: 1.5; }
-.bz-vc-notice span > span, .bz-vc-notice .min-w-0 > span { display: block; font-size: 11.5px; color: var(--bz-ink-2); line-height: 1.75; }
+.bz-vc-notice span > span, .bz-vc-notice .min-w-0 > span { display: block; font-size: 11.5px; color: var(--bz-ink-2); line-height: 1.75; white-space: pre-line; overflow-wrap: anywhere; }
 .bz-vc-notice-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; align-self: center; }
 /* الهاتف: الأفعال تحت النصّ لا بجانبه — كانت تحشر النصّ في عمود ضيّق */
 @media (max-width: 560px) {

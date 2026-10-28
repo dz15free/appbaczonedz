@@ -29,7 +29,8 @@ export type MicResult =
   | "unsupported"  // متصفّح داخلي (فيسبوك/إنستغرام) أو صفحة غير آمنة
   | "no-device"    // لا ميكروفون في الجهاز
   | "busy"         // تطبيق آخر يستعمل الميكروفون
-  | "network";     // تعذّر الوصول إلى خادم الصوت
+  | "blocked"      // الخادم قبل الصوت لكنّ الشبكة لم تسمح باكتمال الاتصال (UDP محجوب)
+  | "network";     // خادم الصوت رفض النشر أو تعذّر الوصول إليه
 
 /* ════════════════════════════════════════════════════════════
    v7 — لماذا كان الميكروفون «لا يعمل»
@@ -60,7 +61,7 @@ export type MicResult =
 
 const FALLBACK_ICE: RTCIceServer[] = [{ urls: "stun:stun.cloudflare.com:3478" }];
 const RETRY_DELAYS = [800, 1600, 3200, 6000, 10000, 15000];
-const CONNECT_TIMEOUT = 12000;
+const CONNECT_TIMEOUT = 15000;
 
 function newCid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -75,6 +76,10 @@ export class VoiceManager {
   private published = false;
   private destroyed = false;
   private readonly cid = newCid();
+  /** السبب التقنيّ لآخر فشل — يُعرض للأدمن وفي صفحة الفحص */
+  private lastError = "";
+  /** أنواع مرشّحي ICE التي جمعها المتصفّح: host / srflx / relay */
+  private candidateTypes = new Set<string>();
 
   /** uid → «sessionId/trackName» — يُكتب **بعد** نجاح الاشتراك فقط */
   private subscribed = new Map<string, string>();
@@ -122,6 +127,7 @@ export class VoiceManager {
   /** هل يجوز لهذا الشخص أن يتكلّم الآن؟ */
   canSpeak() { return this.isOwner || this.allowed || this.voiceOpen; }
   isMicOn() { return this.micOn; }
+  getLastError() { return this.lastError; }
   getLocalStream() { return this.localStream; }
 
   /** صاحب الغرفة يُسمع دائماً. تغييره يُعيد فحص الاشتراكات فوراً —
@@ -144,6 +150,12 @@ export class VoiceManager {
     if (this.destroyed) return;
 
     this.pc = new RTCPeerConnection({ iceServers, bundlePolicy: "max-bundle" });
+    this.pc.onicecandidate = (e) => {
+      const c = e.candidate;
+      if (!c) return;
+      const t = (c as RTCIceCandidate & { type?: string }).type || / typ (\w+)/.exec(c.candidate)?.[1];
+      if (t) this.candidateTypes.add(t);
+    };
 
     this.pc.onconnectionstatechange = () => {
       const st = this.pc?.connectionState;
@@ -361,6 +373,7 @@ export class VoiceManager {
     if (!track) return "no-device";
     track.enabled = true;
 
+    this.lastError = "";
     try {
       if (this.published && this.sender) {
         /* المسار منشور من قبل: استبدالٌ بلا تفاوض. التفاوض في كل مرّة
@@ -369,13 +382,26 @@ export class VoiceManager {
       } else {
         await this.publish(track);           // (٣) يرمي عند الفشل — لا يبتلع
       }
-      /* ── (١) لا إعلان قبل الجاهزية ── */
-      await this.waitConnected();
     } catch (e) {
+      const err = e as { message?: string; code?: string };
+      this.lastError = `publish: ${err.code ? err.code + " — " : ""}${err.message ?? String(e)}`;
       console.error("[BacZone voice] فشل نشر الميكروفون:", e);
       this.localStream?.getTracks().forEach((t) => t.stop());
       this.localStream = null;
       return "network";
+    }
+    try {
+      /* ── (١) لا إعلان قبل الجاهزية ── */
+      await this.waitConnected();
+    } catch (e) {
+      /* الخادم قبل المسار، لكنّ الاتصال لم يكتمل: الشبكة تحجب UDP.
+         بلا مرشّح srflx يعني أنّ STUN نفسه لم يُجب — حجبٌ كامل. */
+      const types = [...this.candidateTypes].join(",") || "none";
+      this.lastError = `connect: ${(e as Error).message} · ice=${this.pc?.iceConnectionState} · candidates=${types}`;
+      console.error("[BacZone voice] لم يكتمل الاتصال الصوتي:", this.lastError);
+      this.localStream?.getTracks().forEach((t) => t.stop());
+      this.localStream = null;
+      return "blocked";
     }
 
     if (this.destroyed) return "network";
