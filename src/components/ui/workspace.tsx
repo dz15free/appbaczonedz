@@ -58,8 +58,8 @@ export function WorkspaceTitle({ title, subtitle }: { title: string; subtitle?: 
 
 export function LiveBadge({ label = "مباشر" }: { label?: string }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--bz-red-050,#FDEEED)] px-2 py-[3px] text-[10.5px] font-bold text-[var(--bz-red)]">
-      <span className="bz-live-pulse block h-[5px] w-[5px] rounded-full bg-[var(--bz-red)]" />
+    <span className="bz-live-badge">
+      <i aria-hidden="true" />
       {label}
     </span>
   );
@@ -112,9 +112,9 @@ export function BarButton({
       title={title ?? label}
       aria-label={title ?? label}
       aria-pressed={active || undefined}
-      className={`${base} ${tones}`}
+      className={`bz-barbtn ${base} ${tones}`}
     >
-      {icon && <Icon name={icon} size={13} />}
+      {icon && <Icon name={icon} size={14} />}
       {label && <span className={hideLabelOnMobile ? "hidden sm:inline" : ""}>{label}</span>}
       {typeof badge === "number" && badge > 0 && (
         <span className="absolute -right-1 -top-1 grid h-[15px] min-w-[15px] place-items-center rounded-full border-2 border-[var(--bz-surface,#fff)] bg-[var(--bz-red)] px-[3px] text-[8.5px] font-extrabold text-white">

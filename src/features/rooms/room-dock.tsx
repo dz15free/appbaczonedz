@@ -50,16 +50,18 @@ export function RoomDock({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface">
-      <div className="flex shrink-0 gap-1 border-b border-border px-1.5 pt-1.5">
+      <div role="tablist" aria-label="لوحة الغرفة" className="bz-dock-tabs shrink-0">
         {visible.map((t) => (
           <button
             key={t.id}
             type="button"
+            role="tab"
+            aria-selected={active === t.id}
             onClick={() => onTab(t.id)}
-            className={`bz-dock-tab relative flex flex-1 items-center justify-center gap-1.5 rounded-t-xl px-2 py-2 text-[11.5px] font-extrabold transition ${
+            className={`bz-dock-tab relative flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 text-[11.5px] font-bold transition ${
               active === t.id
-                ? "bg-[var(--bz-blue-050)] text-[var(--bz-blue-700)]"
-                : "text-text-muted hover:bg-primary/5 hover:text-primary"
+                ? "text-[var(--bz-ink)]"
+                : "text-text-muted hover:text-[var(--bz-ink)]"
             }`}
           >
             <Icon name={t.icon} size={14} />

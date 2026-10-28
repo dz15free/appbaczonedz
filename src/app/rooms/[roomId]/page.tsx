@@ -16,6 +16,7 @@ import {
   onFullscreenChange,
 } from "@/lib/fullscreen";
 import { useAuth } from "@/features/auth/auth-provider";
+import { useProfile } from "@/features/auth/use-profile";
 import { InviteSheet } from "@/features/rooms/invite-sheet";
 import { getRoomPublic, syncRoomPublic, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
@@ -153,6 +154,8 @@ export default function RoomPage() {
   }, [roomId, user?.uid, hasSideDock]);
 
   const members = usePresence(roomId, user?.uid, user?.displayName ?? undefined);
+  /* الأدمن وحده يرى أسماء متغيّرات البيئة في رسائل أعطال الصوت */
+  const profileRole = useProfile(user?.uid)?.role;
   const isOwner = !!room && !!user && room.ownerId === user.uid;
   const [mods, setMods] = useState<Set<string>>(new Set());
   const [roomAccess, setRoomAccess] = useState(false);
@@ -671,13 +674,14 @@ export default function RoomPage() {
           <Icon name="chevRight" size={17} />
         </button>
 
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bz-blue)] text-[13px] font-extrabold text-white">
+        {/* شارة الغرفة: حرفها الأوّل على ورقة بخطّ هامش — هويّة «الكرّاس» */}
+        <span className="bz-room-mark" aria-hidden="true">
           {(room?.name ?? "").charAt(0) || "B"}
         </span>
 
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="truncate text-[13.5px] font-extrabold leading-tight text-[var(--bz-ink)]">
+            <span className="bz-room-title truncate">
               {room?.name ?? "..."}
             </span>
             {room?.isPaid && (
@@ -983,12 +987,12 @@ export default function RoomPage() {
                 <div
                   className="bz-poll-in pointer-events-auto w-full max-w-lg overflow-hidden rounded-2xl border"
                   style={{
-                    background: "rgba(255,255,255,.97)",
+                    background: "color-mix(in srgb, var(--bz-surface) 97%, transparent)",
                     borderColor: "var(--bz-blue-100)",
                     backdropFilter: "saturate(180%) blur(12px)",
                     WebkitBackdropFilter: "saturate(180%) blur(12px)",
                     boxShadow:
-                      "0 0 0 1px rgba(19,23,34,.05), 0 18px 44px -12px rgba(19,23,34,.28)",
+                      "var(--bz-shadow-float)",
                   }}
                 >
                   <div className="flex items-center gap-2 border-b border-[var(--bz-line)] bg-[var(--bz-blue-050)] px-3.5 py-2">
@@ -1105,6 +1109,11 @@ export default function RoomPage() {
             <RoomVoiceBar
               roomId={roomId}
               isOwner={isOwner}
+              /* لا اتصال صوتي قبل أن تُعرف الغرفة ودوري فيها: كان الأستاذ
+                 يدخل كتلميذ ثمّ يُعاد اتصاله فيضيع حضوره — انظر
+                 `room-voice-bar.tsx`. */
+              ready={!!room && canReadLive}
+              canAdmin={profileRole === "admin"}
               ownerId={room?.ownerId}
               voiceOpen={voiceOpen}
               onToggleVoiceOpen={isOwner ? (open) => set(ref(rtdb, `roomLive/${roomId}/voiceOpen`), open) : undefined}

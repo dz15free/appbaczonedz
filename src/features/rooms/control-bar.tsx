@@ -70,6 +70,8 @@ export function CtlButton({ a, compact }: { a: CtlAction; compact?: boolean }) {
       /* `bz-ctl-btn`: القياس يُضبط في CSS بحسب نوع المؤشّر والارتفاع
          (44px على اللمس، مضغوط على الفأرة، أيقونة وحدها في الوضع
          الأفقي القصير) — بلا فرعٍ في الشيفرة لكل جهاز. */
+      data-tone={tone}
+      aria-pressed={a.active || undefined}
       className={`bz-ctl-btn relative flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 py-1.5 transition active:scale-95 ${TONE[tone]} ${
         compact ? "min-w-[48px] sm:min-w-[52px]" : "min-w-[56px]"
       }`}
@@ -376,12 +378,15 @@ export function RoomControlBar(p: RoomControlBarProps) {
 
   return (
     <>
-      <div className="bz-ctlbar flex shrink-0 items-center gap-1.5 border-t border-border bg-surface sm:gap-2">
+      {/* v7: رصيف عائم — كبسولة فوق أرضية الغرفة بدل شريط ملتصق بالحافّة.
+          البنية والقياس كما هما؛ الشكل في `design-v7.css`. */}
+      <div className="bz-ctlbar bz-dock flex shrink-0 items-center gap-1.5 sm:gap-2">
         {/* الصوت — أوّل ما تصل إليه اليد، ولا يُخفى في أيّ وضع.
             🐛 كان يُقصّ خارج الحافّة اليمنى حين يفيض الشريط: `shrink-0`
             وحدها لا تحمي من فيض الحاوية كلّها، والقياس أعلاه هو ما
             يمنع الفيض من أصله. */}
         <div className="shrink-0">{p.voiceSlot}</div>
+        <span className="bz-dock-sep" aria-hidden="true" />
 
         {/* 🐛 كان `overflow-hidden` هنا يقصّ **شارة العدد** على زرّ
             «الصفّ»: الشارة عند `-top-1.5` أي خارج حدود الزرّ عمداً،
@@ -398,9 +403,11 @@ export function RoomControlBar(p: RoomControlBarProps) {
           {scroller.map((a) => <CtlButton key={a.id} a={a} compact />)}
         </div>
 
+        <span className="bz-dock-sep hidden sm:block" aria-hidden="true" />
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
+            data-tone="default"
             onClick={() => setAllOpen(true)}
             title="كل أدوات الغرفة"
             aria-label="كل أدوات الغرفة"

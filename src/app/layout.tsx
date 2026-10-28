@@ -4,6 +4,9 @@ import Script from "next/script";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
+/* طبقة التصميم v7 «الكرّاس» — بعد globals عمداً لتتغلّب بالترتيب.
+   حذف هذا السطر يُعيد الشكل القديم كما كان. */
+import "./design-v7.css";
 import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
 import { PublicSiteFooter } from "@/components/ui/public-site-footer";
@@ -13,7 +16,8 @@ import { SITE_URL } from "@/lib/site-url";
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
 
-/* الخطوط تُدار محلياً عبر CSS system fallbacks حتى لا يعتمد Build أو أول paint على Google Fonts. */
+/* الخطوط مستضافة في /public/fonts (IBM Plex Sans Arabic + Alexandria) ومعرّفة في
+   design-v7.css — لا اعتماد على Google لا وقت البناء ولا وقت التشغيل. */
 
 /* العنوان من المصدر الوحيد — كان مكرّراً في ثمانية ملفّات */
 const SITE_NAME = "BacZoneDZ";
@@ -113,7 +117,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#2563eb",
+  themeColor: "#3044E0",
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
 };
@@ -130,6 +134,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
+        {/* الوزنان الأكثر استعمالاً يُطلبان مع الصفحة لا بعد قراءة CSS —
+            فلا يرمش النصّ من خطّ النظام إلى الخطّ الحقيقي. */}
+        <link rel="preload" href="/fonts/plex-arabic-arabic-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/alexandria-arabic.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen font-sans">
         {/* بيانات منظّمة على مستوى الموقع: تُعرّف المنصّة لمحرّكات

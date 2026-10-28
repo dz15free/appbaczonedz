@@ -60,7 +60,7 @@ export function StudyPlanner() {
 
   const selectedBranch = useMemo(() => getBranch(branch), [branch]);
   const options = useMemo(() => (branch ? cellOptions(branch) : []), [branch]);
-  const color = selectedBranch?.color ?? "#2350D9";
+  const color = selectedBranch?.color ?? "#3044E0";
   const total = days.length * slots.length;
   const filled = Object.values(grid).filter(Boolean).length;
 
@@ -180,7 +180,7 @@ export function StudyPlanner() {
         const y = tableY + tableHeadHeight + rowIndex * rowHeight;
         context.fillStyle = "#eff6ff";
         context.fillRect(tableX, y, timeWidth, rowHeight);
-        context.fillStyle = "#1d4ed8";
+        context.fillStyle = "#2433B8";
         context.font = "800 16px 'Arial', sans-serif";
         context.fillText(`${slot.from} — ${slot.to}`, tableX + timeWidth / 2, y + rowHeight / 2);
         days.forEach((day, dayIndex) => {

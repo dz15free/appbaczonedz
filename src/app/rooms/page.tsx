@@ -20,7 +20,7 @@ import { CreateRoomDialog, ROOM_SUBJECTS } from "@/features/rooms/create-room-di
 import { ScheduleSessionDialog } from "@/features/rooms/schedule-session-dialog";
 import { UpcomingSessions } from "@/features/rooms/upcoming-sessions";
 import { AppShell } from "@/components/app-shell";
-import { Input, Button } from "@/components/ui/field";
+import { Button } from "@/components/ui/field";
 import { loginHrefFor } from "@/features/auth/use-require-auth";
 
 export default function RoomsPage() {
@@ -76,14 +76,32 @@ export default function RoomsPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-4xl px-5 py-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-xl font-extrabold sm:text-2xl">الغرف النشطة الآن</h1>
-          <div className="flex items-center gap-2">
+      <section className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-9">
+        {/* ── الرأس: عنوان، وملخّص حيّ من البيانات نفسها، وأفعال ── */}
+        <header className="bz-rooms-head">
+          <div className="min-w-0">
+            <h1 className="bz-rooms-h1">الغرف النشطة الآن</h1>
+            <p className="bz-rooms-summary">
+              {fetching ? (
+                "نبحث عن الغرف المفتوحة…"
+              ) : rooms.length === 0 ? (
+                "لا غرفة مفتوحة في هذه اللحظة"
+              ) : (
+                <>
+                  <span className="bz-rooms-pulse" aria-hidden="true" />
+                  {rooms.length === 1 ? "غرفة واحدة" : `${rooms.length} غرف`}
+                  {" · "}
+                  {rooms.reduce((n, r) => n + (r.activeCount ?? 0), 0)} يراجعون الآن
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={manualRefresh}
-              aria-label="تحديث"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-surface text-text-muted transition hover:text-primary"
+              aria-label="تحديث القائمة"
+              title="تحديث القائمة"
+              className="bz-icon-btn"
             >
               <FontAwesomeIcon icon={faRotate} className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
@@ -97,57 +115,54 @@ export default function RoomsPage() {
               <span className="sm:hidden">جديدة</span>
             </Button>
           </div>
-        </div>
-        <p className="mt-1 text-sm text-text-muted">
-          تظهر هنا الغرف العامة التي بها تلميذ متصل خلال آخر دقيقة. اضغط التحديث للبحث عن الجديد.
-        </p>
+        </header>
 
         {/* الجلسات القادمة */}
         <UpcomingSessions />
 
-        {/* الانضمام بكتابة اسم الغرفة */}
-        <div className="mt-5 rounded-lg border border-border bg-surface p-4">
-          <span className="mb-2 block text-sm font-semibold">الانضمام بالاسم (يشمل الغرف الخاصة وغرف الأستاذ)</span>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              value={joinName}
-              onChange={(e) => {
-                setJoinName(e.target.value);
-                setJoinMsg("");
-              }}
-              onKeyDown={(e) => e.key === "Enter" && handleJoinByName()}
-              placeholder="اكتب اسم الغرفة بالضبط..."
-              className="flex-1"
-            />
-            <Button
-              onClick={handleJoinByName}
-              loading={joining}
-              disabled={!joinName.trim()}
-              className="flex items-center justify-center gap-2"
-            >
-              <FontAwesomeIcon icon={faRightToBracket} className="h-4 w-4 -scale-x-100" />
-              انضمام
-            </Button>
-          </div>
-          {joinMsg && <p className="mt-2 text-sm text-danger">{joinMsg}</p>}
+        {/* ── الانضمام بالاسم ── حقلٌ واحد بلا صندوق حوله */}
+        <div className="bz-joinbar">
+          <FontAwesomeIcon icon={faRightToBracket} className="bz-joinbar-icon h-4 w-4 -scale-x-100" />
+          <input
+            value={joinName}
+            onChange={(e) => {
+              setJoinName(e.target.value);
+              setJoinMsg("");
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handleJoinByName()}
+            placeholder="ادخل غرفة خاصّة باسمها…"
+            aria-label="اسم الغرفة"
+          />
+          <Button
+            onClick={handleJoinByName}
+            loading={joining}
+            disabled={!joinName.trim()}
+            className="shrink-0 px-4"
+          >
+            ادخل
+          </Button>
         </div>
+        {joinMsg ? (
+          <p className="mt-2 px-1 text-[12.5px] text-danger">{joinMsg} تأكّد من كتابة الاسم كما هو تماماً.</p>
+        ) : (
+          <p className="mt-2 px-1 text-[12px] text-text-muted">الغرف العامّة تظهر أسفله. الخاصّة وغرف الأساتذة تُدخل باسمها.</p>
+        )}
 
         {fetching ? (
-          <p className="mt-8 text-text-muted">جارٍ تحميل الغرف...</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2" aria-busy="true">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="bz-roomcard bz-roomcard--skel" />)}
+          </div>
         ) : (
           <>
             {/* فلتر المواد */}
             {rooms.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="bz-subject-filter" role="tablist" aria-label="تصفية حسب المادة">
                 {[{ id: "", label: "الكل" }, ...ROOM_SUBJECTS.filter((s) => s.id)].map((s) => (
                   <button
                     key={s.id}
+                    role="tab"
+                    aria-selected={subjectFilter === s.id}
                     onClick={() => setSubjectFilter(s.id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                      subjectFilter === s.id
-                        ? "bg-gradient-primary text-white"
-                        : "border border-border text-text-muted hover:border-primary hover:text-primary"
-                    }`}
                   >
                     {s.label}
                   </button>
@@ -161,46 +176,45 @@ export default function RoomsPage() {
                 ? rooms.filter((r) => r.subject === subjectFilter)
                 : rooms;
               return filtered.length === 0 ? (
-                <div className="mt-10 rounded-lg border border-dashed border-border p-10 text-center">
-                  <p className="text-text-muted">
+                <div className="bz-rooms-empty">
+                  <span className="bz-room-mark" aria-hidden="true">
+                    <FontAwesomeIcon icon={faUsers} className="h-4 w-4" />
+                  </span>
+                  <h2>
                     {rooms.length === 0
-                      ? "لا توجد غرف نشطة الآن. أنشئ غرفة وكن أول من يبدأ!"
-                      : `لا غرف نشطة لمادة «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}» الآن.`}
+                      ? "افتح أوّل غرفة اليوم"
+                      : `لا أحد يراجع «${ROOM_SUBJECTS.find((s) => s.id === subjectFilter)?.label}» الآن`}
+                  </h2>
+                  <p>
+                    {rooms.length === 0
+                      ? "أنشئ غرفة لمادّتك، وأرسل رابطها لزملائك، وراجعوا معاً بالصوت والسبورة."
+                      : "أنشئ غرفة لهذه المادّة وسيجدها من يبحث عنها."}
                   </p>
-                  <Button onClick={() => setShowCreate(true)} className="mt-4">إنشاء غرفة</Button>
+                  <Button onClick={() => setShowCreate(true)} className="mt-4">أنشئ غرفة</Button>
                 </div>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {filtered.map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/rooms/${r.id}`}
-                      className="group flex items-center justify-between rounded-lg border border-border bg-surface p-4 transition hover:border-primary/50 hover:shadow-glass"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-primary" />
-                          <span className="font-bold">{r.name}</span>
+                    <Link key={r.id} href={`/rooms/${r.id}`} className="bz-roomcard group">
+                      <span className="bz-room-mark" aria-hidden="true">{r.name?.charAt(0) || "غ"}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="bz-roomcard-title">{r.name}</span>
+                        <span className="bz-roomcard-meta">
                           {r.subject && (
-                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                            <span className="bz-roomcard-subject">
                               {ROOM_SUBJECTS.find((s) => s.id === r.subject)?.label ?? r.subject}
                             </span>
                           )}
-                          {r.isPaid && (
-                            <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                              🔒 {r.price} دج
-                            </span>
-                          )}
-                        </div>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-secondary">
-                          <span className="flex items-center gap-1.5">
-                            <FontAwesomeIcon icon={faCircle} className="h-2 w-2 animate-pulse" />
-                            {r.activeCount} متصل الآن · {r.ownerName}
-                          </span>
+                          <span className="truncate">{r.ownerName}</span>
+                          {r.isPaid && <span className="bz-roomcard-paid">{r.price} دج</span>}
                           {r.isPaid && <ContentRatingBadge itemId={r.id} showEmpty />}
                         </span>
-                      </div>
-                      <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4 -scale-x-100 text-text-muted transition group-hover:text-primary" />
+                      </span>
+                      <span className="bz-roomcard-live" title={`${r.activeCount} متصل الآن`}>
+                        <FontAwesomeIcon icon={faCircle} className="h-1.5 w-1.5" />
+                        {r.activeCount}
+                      </span>
+                      <FontAwesomeIcon icon={faArrowRight} className="bz-roomcard-go h-3.5 w-3.5 -scale-x-100" />
                     </Link>
                   ))}
                 </div>

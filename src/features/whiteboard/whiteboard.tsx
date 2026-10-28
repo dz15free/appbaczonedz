@@ -516,7 +516,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       ctx.save();
       ctx.fillStyle = "rgba(35,80,217,.08)";
       ctx.fillRect(X, Y, W, H);
-      ctx.strokeStyle = "#2350D9";
+      ctx.strokeStyle = "#3044E0";
       ctx.lineWidth = 1.5 * k;
       ctx.setLineDash([5 * k, 4 * k]);
       ctx.strokeRect(X, Y, W, H);
@@ -547,7 +547,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         const tw = ctx.measureText(lbl).width + 12 * k;
         const th = 17 * k;
         const tx = X + W - tw, ty = Math.max(Y - th - 3 * k, 0);
-        ctx.fillStyle = "#2350D9";
+        ctx.fillStyle = "#3044E0";
         ctx.beginPath();
         const rr = 4 * k;
         ctx.moveTo(tx + rr, ty);
@@ -582,7 +582,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         const arm = Math.max(6 * k, Math.min(14 * k, Math.min(W, H) * 0.28));
 
         ctx.save();
-        ctx.strokeStyle = "#2350D9";              // أزرق BacZone
+        ctx.strokeStyle = "#3044E0";              // أزرق BacZone
         ctx.lineWidth = 1 * k;
         ctx.setLineDash([]);
         ctx.globalAlpha = 0.35;
@@ -623,7 +623,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
           ctx.arcTo(tx, ty + th, tx, ty, rr);
           ctx.arcTo(tx, ty, tx + tw, ty, rr);
           ctx.closePath();
-          ctx.fillStyle = "#2350D9";
+          ctx.fillStyle = "#3044E0";
           ctx.fill();
           ctx.fillStyle = "#ffffff";
           ctx.textAlign = "right";

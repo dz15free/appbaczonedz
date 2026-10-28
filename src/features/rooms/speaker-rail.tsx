@@ -154,7 +154,8 @@ export function SpeakerRail({
             type="button"
             onClick={onOpenClass}
             title={`${m.name}${order ? ` — رفع يده (${order})` : ""}`}
-            className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-1.5 py-1 transition sm:px-2 ${
+            data-state={order ? "hand" : live ? "live" : undefined}
+            className={`bz-rail-chip flex shrink-0 items-center gap-1.5 rounded-xl border px-1.5 py-1 transition sm:px-2 ${
               order
                 ? "border-[var(--bz-amber)] bg-[var(--bz-amber-050)]"
                 : live
@@ -217,7 +218,7 @@ export function SpeakerRail({
         <button
           type="button"
           onClick={onOpenClass}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-background px-2 py-1 text-[11px] font-bold text-text-muted transition hover:border-primary/40 hover:text-primary"
+          className="bz-rail-chip flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-background px-2.5 py-1.5 text-[11px] font-bold text-text-muted transition hover:text-primary"
         >
           <Icon name="users" size={13} />+{rest}
         </button>

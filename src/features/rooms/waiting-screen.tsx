@@ -27,7 +27,7 @@ export const OWNER_STATUS_META: Record<
 > = {
   available: { label: "المعلّم متفرّغ", short: "متفرّغ", color: "var(--bz-green)", dot: "#16a34a" },
   busy: { label: "المعلّم مشغول الآن", short: "مشغول", color: "#b45309", dot: "#f59e0b" },
-  brb: { label: "المعلّم سيعود بعد قليل", short: "سأعود", color: "var(--bz-blue-700)", dot: "#2563eb" },
+  brb: { label: "المعلّم سيعود بعد قليل", short: "سأعود", color: "var(--bz-blue-700)", dot: "#3044E0" },
 };
 
 /**
