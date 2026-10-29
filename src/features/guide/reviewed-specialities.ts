@@ -57,4 +57,9 @@ export const REVIEWED_SLUGS: readonly string[] = [
   "radio",
   "sage-femme",
   "vetrinaire",
+  "ens",
+  "droit",
+  "eco",
+  "architecture-uni",
+  "polytech",
 ];
