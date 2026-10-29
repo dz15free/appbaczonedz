@@ -5,6 +5,8 @@ import { GUIDES } from "@/features/guides/guides-data";
 import { SITE_URL } from "@/lib/site-url";
 import { LEGAL_PATHS } from "@/features/settings/legal-links";
 import { getPublishedEntries } from "@/features/blog/blog-server";
+import { FEATURE_PAGES } from "@/features/landing/features-data";
+import { AUTHORS } from "@/features/authors/authors";
 
 /* ════════════════════════════════════════════════════════════
    خريطة الموقع
@@ -86,6 +88,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...blogPages,
     { url: `${BASE}/tools`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    /* v8: صفحات الميزات العامّة وصفحة الكاتب */
+    { url: `${BASE}/features`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    ...FEATURE_PAGES.map((f) => ({ url: `${BASE}/features/${f.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.7 })),
+    ...AUTHORS.map((a) => ({ url: `${BASE}/author/${a.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.6 })),
     { url: `${BASE}/tools/study-planner`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/tools/youtube-channels`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/exam-simulator`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },

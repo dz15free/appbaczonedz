@@ -5,7 +5,20 @@ import { usePathname } from "next/navigation";
 import { DEFAULT_FAVICON } from "@/lib/brand-assets";
 import { useAuth } from "@/features/auth/auth-provider";
 
-const MIN_VISIBLE_MS = 1500;
+/* كانت 1500: ثانية ونصف فوق صفحة جاهزة، عند كل دخول. تُبطئ القارئ
+   وتُسيء لمؤشّر LCP الذي يقيسه Google. */
+const MIN_VISIBLE_MS = 350;
+
+/* صفحات المحتوى العامّة لا شاشة تحميل فيها إطلاقاً: هي مُصيَّرة على
+   الخادم وجاهزة فوراً، وشاشة تغطّيها لا تحمي شيئاً — بل تجعل أوّل ما
+   يراه الزائر (والزاحف) «مرحباً بك…» بدل المقال. */
+const CONTENT_PREFIXES = [
+  "/blog", "/specialties", "/guides", "/tools", "/calculate", "/features",
+  "/author", "/about", "/contact", "/privacy", "/terms", "/voice-check",
+];
+function isContentPath(p: string | null) {
+  return !!p && CONTENT_PREFIXES.some((x) => p === x || p.startsWith(x + "/"));
+}
 const EXIT_MS = 280;
 const SAFETY_MS = 8000;
 
@@ -21,7 +34,8 @@ export function Preloader() {
   const pathname = usePathname();
   const { loading: authLoading } = useAuth();
   const waitForLandingAuth = pathname === "/";
-  const [state, setState] = useState<PreloaderState>("visible");
+  const skip = isContentPath(pathname);
+  const [state, setState] = useState<PreloaderState>(skip ? "gone" : "visible");
   const authLoadingRef = useRef(authLoading);
   const finishCheckRef = useRef<(() => void) | null>(null);
 
@@ -31,6 +45,7 @@ export function Preloader() {
   }, [authLoading]);
 
   useEffect(() => {
+    if (skip) return;
     const startedAt = performance.now();
     let settled = false;
     let paintReady = false;
@@ -87,7 +102,7 @@ export function Preloader() {
       if (leaveTimer !== undefined) window.clearTimeout(leaveTimer);
       if (removeTimer !== undefined) window.clearTimeout(removeTimer);
     };
-  }, [waitForLandingAuth]);
+  }, [waitForLandingAuth, skip]);
 
   if (state === "gone") return null;
 
@@ -110,10 +125,6 @@ export function Preloader() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={DEFAULT_FAVICON} alt="" className="bz-preloader-v4-logo" width={88} height={88} />
       </div>
-      <div className="bz-preloader-v4-text">
-        مرحباً بك<span>.</span><span>.</span><span>.</span>
-      </div>
-      <p className="bz-preloader-v4-subtitle">نفتح لك مساحة BacZone</p>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
+import { resolveAuthor } from "@/features/authors/authors";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -52,10 +53,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const related = await getRelated(post);
   const url = post.canonical || absUrl(`/blog/${post.slug}`);
   const description = post.seoDescription || post.excerpt || htmlToText(post.html, 160);
+  /* كاتب حقيقيّ بصفحة — لا «منظّمة» مجهولة. */
+  const author = resolveAuthor(post.authorName);
+  const authorUrl = absUrl(`/author/${author.slug}`);
+  /* «آخر تحديث» يظهر فقط إن كان التحديث حقيقياً (بعد يوم من النشر على الأقل) */
+  const updated = post.updatedAt && post.publishedAt && post.updatedAt - post.publishedAt > 86_400_000 ? post.updatedAt : 0;
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Article", headline: post.title, description, inLanguage: "ar", mainEntityOfPage: { "@type": "WebPage", "@id": url }, datePublished: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined, dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined, author: { "@type": "Organization", name: post.authorName || "BacZoneDZ", url: absUrl("/about") }, publisher: { "@type": "Organization", name: "BacZoneDZ", logo: { "@type": "ImageObject", url: absUrl("/icon-512.png") } }, image: post.cover ? [post.cover] : undefined },
+      { "@type": "Article", headline: post.title, description, inLanguage: "ar", mainEntityOfPage: { "@type": "WebPage", "@id": url }, datePublished: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined, dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined, author: { "@type": "Person", name: author.name, url: authorUrl, jobTitle: author.role, sameAs: author.links.map((l) => l.href) }, publisher: { "@type": "Organization", name: "BacZoneDZ", logo: { "@type": "ImageObject", url: absUrl("/icon-512.png") } }, image: post.cover ? [post.cover] : undefined },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "الرئيسية", item: absUrl("/") }, { "@type": "ListItem", position: 2, name: "المقالات", item: absUrl("/blog") }, { "@type": "ListItem", position: 3, name: post.title, item: url }] },
     ],
   };
@@ -66,14 +72,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <header className="bz-article-editorial-hero">
         <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:py-12">
-          <nav aria-label="مسار التنقّل" className="flex items-center gap-2 text-[11px] text-text-muted"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link><span>←</span><Link href="/blog" className="hover:text-primary hover:underline">المدونة</Link></nav>
+          <nav aria-label="مسار التنقّل" className="flex items-center gap-2 text-[11px] text-text-muted"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-primary hover:underline">الرئيسية</Link><span>←</span><Link href="/blog" className="hover:text-primary hover:underline">المقالات</Link></nav>
           <PublicBackButton fallbackHref="/blog" fallbackLabel="المدونة" className="mt-4" />
           <div className="bz-article-editorial-grid mt-6">
             <div className="max-w-3xl">
               {(post.labels?.length ?? 0) > 0 && <div className="flex flex-wrap gap-1.5">{post.labels!.map((label) => <Link key={label} href={`/blog?label=${encodeURIComponent(label)}`} className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-extrabold text-primary">{labelName(label)}</Link>)}</div>}
               <h1 className="mt-4 font-display text-[29px] font-extrabold leading-[1.3] text-text sm:text-[46px]">{post.title}</h1>
               {post.excerpt && <p className="mt-4 max-w-2xl text-[15px] leading-[2] text-text-muted sm:text-[17px]">{post.excerpt}</p>}
-              <div className="bz-article-byline mt-6"><span><FontAwesomeIcon icon={faUser} className="h-3 w-3" /> {post.authorName || "فريق BacZone"}</span>{post.publishedAt && <><i /> <time dateTime={new Date(post.publishedAt).toISOString()}>{arDate(post.publishedAt)}</time></>}<i /><span><FontAwesomeIcon icon={faClock} className="h-3 w-3" /> {post.readMinutes} دقائق قراءة</span></div>
+              <div className="bz-article-byline mt-6"><span><FontAwesomeIcon icon={faUser} className="h-3 w-3" /> <Link href={`/author/${author.slug}`} rel="author" className="font-bold hover:text-primary hover:underline">{author.name}</Link></span>{post.publishedAt && <><i /> <time dateTime={new Date(post.publishedAt).toISOString()}>{arDate(post.publishedAt)}</time></>}{updated > 0 && <><i /> <span>آخر تحديث: <time dateTime={new Date(updated).toISOString()}>{arDate(updated)}</time></span></>}<i /><span><FontAwesomeIcon icon={faClock} className="h-3 w-3" /> {post.readMinutes} دقائق قراءة</span></div>
             </div>
             <div className="bz-article-editorial-mark"><FontAwesomeIcon icon={faBookOpen} className="h-7 w-7" /><span>مقال من أجل مراجعة أهدأ</span></div>
           </div>
@@ -86,6 +92,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             <aside className="bz-article-reading-aside"><span>في هذا المقال</span><b>{post.readMinutes} دقائق</b><Link href="/blog"><FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /> كل المقالات</Link></aside>
             <article className="bz-article" dangerouslySetInnerHTML={{ __html: html }} />
           </div>
+          {/* عن الكاتب — من كتب، وما صلته بالموضوع */}
+          <aside className="bz-author-box" aria-label="عن الكاتب">
+            <span className="bz-author-mark" aria-hidden="true">{author.name.charAt(0)}</span>
+            <div className="min-w-0">
+              <span className="bz-author-kicker">عن الكاتب</span>
+              <Link href={`/author/${author.slug}`} rel="author" className="bz-author-name">{author.name}</Link>
+              <p className="bz-author-role">{author.role}</p>
+              <p className="bz-author-bio">{author.bio[0]}</p>
+              <Link href={`/author/${author.slug}`} className="bz-author-more">كل مقالات {author.name} <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></Link>
+            </div>
+          </aside>
           {related.length > 0 && <section className="bz-article-related"><div className="bz-article-related-head"><div><span>من نفس الموضوع</span><h2>اقرأ أيضاً</h2></div><Link href="/blog">كل المقالات <FontAwesomeIcon icon={faArrowLeft} className="ms-1 h-3 w-3" /></Link></div><ul className="mt-5 grid gap-3 sm:grid-cols-3">{related.map((relatedPost) => <li key={relatedPost.id}><Link href={`/blog/${relatedPost.slug}`} className="bz-article-related-card group">{relatedPost.cover ? <img src={relatedPost.cover} alt={relatedPost.coverAlt || relatedPost.title} width={320} height={168} loading="lazy" decoding="async" className="aspect-[320/168] w-full object-cover" /> : <div className="flex aspect-[320/168] items-center justify-center bg-primary/5"><span className="text-xs font-extrabold text-primary/60">BacZone</span></div>}<span><b>{relatedPost.title}</b><small>{relatedPost.readMinutes} دقائق قراءة <FontAwesomeIcon icon={faArrowLeft} className="ms-1 h-3 w-3" /></small></span></Link></li>)}</ul></section>}
           <PublicCta />
         </div>

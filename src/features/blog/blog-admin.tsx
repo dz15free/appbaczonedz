@@ -8,6 +8,7 @@ import {
   faFileImport,
 } from "@fortawesome/free-solid-svg-icons";
 import { ArticleEditor } from "@/features/blog/article-editor";
+import { RewritesPanel } from "@/features/blog/rewrites-panel";
 import {
   useBlogIndex, loadContent, saveArticle, setStatus, deleteArticle, slugTaken,
   type DraftInput,
@@ -76,6 +77,8 @@ export function BlogAdmin({ uid }: { uid: string }) {
           </button>
         </div>
       </div>
+
+      {loaded && <RewritesPanel uid={uid} rows={rows} />}
 
       {loaded && rows.length === 0 && (
         <p className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-text-muted">

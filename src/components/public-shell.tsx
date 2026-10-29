@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faLayerGroup,
   faBookOpen,
   faCalculator,
   faGraduationCap,
@@ -35,12 +36,15 @@ import { LiveAvatar } from "@/components/ui/live-avatar";
 import { Brand } from "@/components/ui/brand";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
+/* v8: المحتوى أوّلاً — المقالات والتخصّصات والأدلّة قبل الأدوات، ثمّ
+   «المنصّة» التي تشرح الغرف والمجتمع علناً بدل أن تقود إلى الدخول. */
 const PUBLIC_NAV = [
   { href: "/", label: "الرئيسية", icon: faHouse },
-  { href: "/tools", label: "أدوات البكالوريا", icon: faCalculator },
-  { href: "/guides", label: "الأدلّة", icon: faBookOpen },
+  { href: "/blog", label: "المقالات", icon: faMessage },
   { href: "/specialties", label: "التخصّصات", icon: faGraduationCap },
-  { href: "/blog", label: "المدونة", icon: faMessage },
+  { href: "/guides", label: "الأدلّة", icon: faBookOpen },
+  { href: "/tools", label: "الأدوات", icon: faCalculator },
+  { href: "/features", label: "المنصّة", icon: faLayerGroup },
 ] as const;
 
 const BAC_TOOLS = [

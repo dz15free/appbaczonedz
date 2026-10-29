@@ -43,11 +43,25 @@ async function readJson<T>(path: string, ttl = TTL): Promise<T | null> {
   }
 }
 
+const LABEL_COVERS: Record<string, string> = {
+  organize: "/blog/start.svg",
+  subjects: "/blog/plan.svg",
+  branches: "/blog/plan.svg",
+  mindset: "/blog/month.svg",
+  tools: "/blog/plan.svg",
+};
+
 function normalize(id: string, raw: Omit<BlogIndexEntry, "id">): BlogIndexEntry {
   const slug = raw.slug ?? id;
   const fallback = getBlogCoverFallback(slug);
-  const cover = raw.cover?.trim() || fallback?.cover || "";
-  const coverAlt = raw.coverAlt?.trim() || fallback?.coverAlt || "";
+  /* 🐛 بعض الأغلفة كانت روابط مباشرة لصور مواقع أخرى — حتى مصغّرات بحث
+     Google نفسها. صورة لا نملكها: مشكلة حقوق، وعلامة سيّئة عند مراجع
+     أدسنس، وقد تختفي في أيّ لحظة. لا نعرض إلّا صوراً من موقعنا. */
+  const rawCover = raw.cover?.trim() || "";
+  const ownCover = rawCover && (rawCover.startsWith("/") || /^https:\/\/(www\.)?baczone\.app\//.test(rawCover) || /firebasestorage\.googleapis\.com/.test(rawCover)) ? rawCover : "";
+  const labelCover = LABEL_COVERS[(Array.isArray(raw.labels) ? raw.labels[0] : "") ?? ""] ?? "/blog/start.svg";
+  const cover = ownCover || fallback?.cover || (rawCover ? labelCover : "");
+  const coverAlt = (ownCover ? raw.coverAlt?.trim() : "") || fallback?.coverAlt || (cover ? "رسم توضيحي لمقال من مقالات BacZone" : "");
 
   return {
     id,
@@ -60,7 +74,7 @@ function normalize(id: string, raw: Omit<BlogIndexEntry, "id">): BlogIndexEntry 
     status: raw.status === "published" ? "published" : "draft",
     publishedAt: raw.publishedAt ?? 0,
     updatedAt: raw.updatedAt ?? raw.publishedAt ?? 0,
-    authorName: raw.authorName ?? "فريق BacZone",
+    authorName: raw.authorName ?? "Raouf Said",
     readMinutes: raw.readMinutes ?? 1,
     oldSlugs: Array.isArray(raw.oldSlugs) ? raw.oldSlugs : [],
     seoTitle: raw.seoTitle ?? "",
