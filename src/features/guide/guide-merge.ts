@@ -158,14 +158,18 @@ const UNVERIFIED_VOICE_SLUGS = new Set([
    نزيل السطر الذي يحمل claim، لا الصفحة ولا الحقل التعليمي كله؛ أما
    salary/numbers فهما حقول مخصصة للأرقام ولذلك يُخفَيان إذا لم يثبتا. */
 const WHOLE_FIELD_RISK = new Set<keyof SpecContent>(["salary"]);
-const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|وظيفة مضمونة|وظائف مضمونة|التوظيف المباشر|التوظيف الحكومي|التوظيف السريع|التوظيف الفوري|التوظيف التلقائي|توظيف مباشر|توظيف حكومي|توظيف سريع|توظيف فوري|توظيف تلقائي|توظيف مضمون|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20|دج|%|شهر|تلميذ|مقعد)/u;
+const RISKY_CLAIM = /معدل القبول|معدل الترشح|عدد المقاعد|راتب|الراتب|منحة|وظيفة مضمونة|وظائف مضمونة|التوظيف المباشر|التوظيف الحكومي|التوظيف السريع|التوظيف الفوري|التوظيف التلقائي|توظيف مباشر|توظيف حكومي|توظيف سريع|توظيف فوري|توظيف تلقائي|توظيف مضمون|مضمون|يضمن|مطلوب جداً|مطلوب جدًا|منصب الشغل|الامتيازات|100%|\d+(?:[.,]\d+)?\s*(?:\/20(?!\d)|دج|%|شهر|تلميذ|مقعد)/u;
+/* v8: «2021/2022» موسم جامعي لا علامة «21/20» — `(?!\d)` يمنع الخلط.
+   والنفي تحذير لا وعد: «ليس مضموناً» و«لا يضمن» يُحذفان قبل الفحص،
+   وإلّا حُذفت الجملة التي تُنبّه التلميذ إلى غياب الضمان. */
+const NEGATED_GUARANTEE = /(?:ليس|ليست|غير|لا)\s+(?:مضمون\S*|يضمن|تضمن)/gu;
 const SAFE_EDUCATIONAL_DURATION = /(?:مدة الدراسة|نظام الدراسة|مدة التكوين|الدراسة لمدة|تكوين يمتد|تستغرق الدراسة)[^\n]{0,140}?\d+(?:[.,]\d+)?\s*(?:سنة|سنوات|عام|أعوام|عامين|ثلاث سنوات|أربع سنوات|خمس سنوات|ست سنوات)/u;
 const URL_TOKEN = /https?:\/\/[^\s]+/gu;
 
 /* لا نحسب الأرقام الموجودة داخل URL-encoded الرسمي كـclaim؛ فالتسلسل
    `%D8%...` يحتوي أرقاماً وعلامة `%` لكنه ليس معدل قبول أو نسبة. */
 function hasUnverifiedRisk(value: string): boolean {
-  const withoutUrls = value.replace(URL_TOKEN, "");
+  const withoutUrls = value.replace(URL_TOKEN, "").replace(NEGATED_GUARANTEE, "");
   const withoutSafeDurations = withoutUrls.split("\n").map((line) => line.replace(SAFE_EDUCATIONAL_DURATION, "")).join("\n");
   return RISKY_CLAIM.test(withoutSafeDurations);
 }
@@ -212,11 +216,44 @@ const EDITORIAL_DISAMBIGUATORS: Record<string, string> = {
    الجولة عام لشبكة ENS وسياق تكوين الأساتذة، لا بطاقة رسمية مطابقة لكل
    لغة/طور. تبقى الصفحات accessible مع noindex إلى أن يتوفر عرض مؤسسي
    مطابق؛ لا نرفعها إلى البحث لمجرد بلوغ حد الأحرف. */
-const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
-  "ens-anglais-primaire",
-  "ens-francais-primaire",
+/* v8 (الدفعة 10): الشرط أعلاه تحقّق للإنجليزية والفرنسية — صار لكلّ منهما
+   مدخل مراجَع يستند إلى بطاقة رمز تكوينه الرسمية (H06PPL01 وH01PPL01):
+   الأولويات، والحدّ الأدنى، والمؤسّسات. فخرجتا من القائمة. أمّا الرياضة
+   والأمازيغية للابتدائي فتبقيان حتى تُراجَعا بالشرط نفسه. */
+/* الدفعة 11: الأمازيغية للابتدائي خرجت أيضاً — بطاقة M00PPL01 كاملة (الشعب،
+   أساس الترتيب، المؤسّستان بدوائرهما، المعدّلات). أمّا الرياضة للابتدائي
+   فمراجَعة لكنّ بطاقتها J00PPL01 لا تُظهر الأولويات ولا الحدّ الأدنى ولا
+   قائمة المؤسّسات كاملة، فتبقى حتى تكتمل بياناتها الرسمية. */
+/* الدفعة 18: «إدارة المطارات والعبور» لم يُعثر عليه في أيّ منشور وزاري
+   لسنوات 2024–2026 — ظهر فقط في موقع طرف ثالث. صفحته صارت تقول ذلك صراحةً
+   وتحيل إلى التكوين الرسمي الأقرب، وتبقى خارج الفهرسة حتى يظهر في منشور. */
+export const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
   "ens-sport-primaire",
-  "ens-tamazight-primaire",
+  "aeroport",
+  /* الدفعة 21: لم تظهر بهذه الأسماء في منشور 2025 ولا في مقالَي الشروق عن
+     الشهادات المزدوجة ومسارات الكفاءة المزدوجة؛ صفحاتها تقول ذلك وتحيل إلى
+     التكوينات الرسمية القريبة. */
+  "e-biz",
+  "digital-biz",
+  "digital-prod",
+  /* الدفعة 24: لم يُعثر عليها بهذه الأسماء في أيّ مصدر جزائري (بحث بالعربية
+     والفرنسية). صفحاتها تقول ذلك وتحيل إلى التكوينات الرسمية القريبة. */
+  "esi-kolea",
+  "esss",
+  "iedf",
+  "trading",
+  "fintech",
+  "marketing-comm",
+  "ind-entr",
+  /* الدفعة 25 */
+  "law-pol",
+  "essp",
+  "commissariat-corps",
+  /* الدفعة 26 */
+  "media-pol",
+  "sports-psych",
+  "history-data",
+  "soc-leisure",
 ]);
 
 function focusPhrase(content: SpecContent): string {
@@ -310,6 +347,24 @@ const REVIEWED_BY_SLUG = new Map<string, Partial<SpecContent>>(
        وكلّ التخصّصات الأربعة والأربعين ورثتها من `p17`. */
     patch.sections = [];
 
+    /* ── v8: المصادر تُعرض ──
+       🐛 المراجِعون يضعون المصادر في `extra` (المخطّط لا يقبل حقل `sources`)،
+       والصفحة تعرض قسم «مصادر المعلومات» من `sources` وحده. فكانت مصادر كلّ
+       مدخل مراجَع غير مرئية لا للتلميذ ولا لـGoogle. تُنقل هنا. */
+    const extraList = (rest as { extra?: { t?: string; v?: string }[] }).extra;
+    const srcItem = Array.isArray(extraList) ? extraList.find((e) => (e?.t ?? "").includes("مصادر")) : undefined;
+    if (srcItem?.v && !patch.sources) patch.sources = srcItem.v;
+
+    /* ── v8: الطبقة المراجَعة هي الصفحة كلّها ──
+       🐛 كانت تكتب فوق الحقول التي تعرّفها فقط، فتبقى تحتها أقسام القالب
+       القديمة من الطبقات السابقة — «كيف يبدو يومك الدراسي؟» و«آفاق التطوّر
+       المهني» بنصّ عامّ واحد يتكرّر في مئات الصفحات بتبديل الاسم. وهذا
+       بالضبط ما تُصنّفه Google محتوى قالبياً. كلّ حقل لم يكتبه المراجِع
+       يُفرَغ صراحةً. */
+    for (const field of CONTENT_FIELDS) {
+      if (patch[field] === undefined) (patch as Record<string, unknown>)[field] = "";
+    }
+
     /* ── `excerpt`: يُشتقّ من المقدّمة الجديدة ──
        🐛 المُصيِّر يكتب: `spec.excerpt || spec.intro`. أي أنّ
        `excerpt` **يسبق** `intro` لا يكمّله — فما دام القديم موجوداً
@@ -362,7 +417,13 @@ export function mergeGuide(content: Record<string, SpecContent>): SpecFull[] {
     const quality = editorialQuality(c);
     // noindex يعبّر عن سياسة فهرسة محافظة، ولا يعني أن المقال نفسه ناقص؛
     // لذلك نحافظ على تقييم المحتوى الحقيقي ونفصل بين جودة التحرير وقابلية الفهرسة.
-    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || P13_KEEP_NOINDEX_SLUGS.has(s.slug)
+    /* v8: قائمة P13_KEEP_NOINDEX وُضعت حين كان نصّ هذه الصفحات ضعيفاً.
+       التخصّص المراجَع يستبدل ذلك النصّ كلّه (انظر REVIEWED_BY_SLUG)، فلا
+       معنى لإبقائه خارج الفهرسة. 🐛 كانت صفحات الطبّ وطبّ الأسنان والمدارس
+       العليا للأساتذة — من أكثر ما يُبحث عنه — مراجَعةً ومخفيّةً عن Google
+       معاً. أمّا غير المراجَعة في القائمة فتبقى noindex حتى يأتي دورها. */
+    const p13Noindex = P13_KEEP_NOINDEX_SLUGS.has(s.slug) && !REVIEWED.has(s.slug);
+    const finalQuality = GENERAL_SOURCE_ONLY_NOINDEX.has(s.slug) || p13Noindex
       ? { ...quality, indexable: false }
       : quality;
     return {
