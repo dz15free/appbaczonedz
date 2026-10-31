@@ -248,12 +248,27 @@ export const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
   /* الدفعة 25 */
   "law-pol",
   "essp",
-  "commissariat-corps",
+  /* commissariat-corps: أُعيد في الدفعة 30 — المعتمدية موثّقة في دليل التجنيد 2026 */
   /* الدفعة 26 */
   "media-pol",
   "sports-psych",
   "history-data",
   "soc-leisure",
+  /* الدفعة 28: ensrpc تكرار لصفحة enscrbc (المدرسة نفسها) — يُخفى لتجنّب
+     المحتوى المكرّر؛ scenario و3d-design بلا مصدر بهذين الاسمين. */
+  "ensrpc",
+  "scenario",
+  "3d-design",
+  /* الدفعة 29 */
+  "agronomie",
+  "health-info",
+  "health-comm",
+  "forensique",
+  "enmas",
+  "genomic-data",
+  "molecular-engineering",
+  /* الدفعة 30 */
+  "esesm",
 ]);
 
 function focusPhrase(content: SpecContent): string {
