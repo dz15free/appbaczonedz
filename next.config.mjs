@@ -20,6 +20,9 @@ const nextConfig = {
     ],
   },
   images: {
+    // على Cloudflare Workers لا نستعمل تحسين الصور المدفوع: تُعرض الصور من مصدرها مباشرة
+    // (Supabase / Cloudinary / Google). remotePatterns تبقى للتوثيق ولـ next dev.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "**.supabase.co" },
       { protocol: "https", hostname: "res.cloudinary.com" },

@@ -1,9 +1,43 @@
-# نشر مجاني على Cloudflare Workers عبر OpenNext
+# BacZone على Cloudflare Workers عبر OpenNext (@opennextjs/cloudflare)
+# الخطّة المطلوبة: Workers Paid — الخطّة المجانية تحدّ وقت المعالجة بـ 10ms لكلّ طلب.
+# الأسرار لا تُكتب هنا أبداً: `npx wrangler secret put NAME` أو لوحة Cloudflare.
 name = "baczonedz"
-compatibility_date = "2025-03-01"
-compatibility_flags = ["nodejs_compat"]
 main = ".open-next/worker.js"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+# مرجع ذاتي يستعمله OpenNext لإعادة توليد صفحات ISR — يجب أن يطابق `name` أعلاه.
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "baczonedz"
+
+# incremental cache (صفحات ISR) — أنشئه مرّة واحدة:
+#   npx wrangler r2 bucket create baczone-next-cache
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "baczone-next-cache"
+
+# tag cache لـ revalidatePath — أنشئه مرّة واحدة:
+#   npx wrangler d1 create baczone-next-tag-cache
+# ثمّ ضع database_id الذي يطبعه الأمر مكان القيمة المؤقّتة أدناه
+# (القيمة المؤقّتة تكفي للتشغيل المحلّي عبر `npm run preview` فقط).
+[[d1_databases]]
+binding = "NEXT_TAG_CACHE_D1"
+database_name = "baczone-next-tag-cache"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# طابور إعادة التوليد في الخلفية (ISR الزمني)
+[[durable_objects.bindings]]
+name = "NEXT_CACHE_DO_QUEUE"
+class_name = "DOQueueHandler"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DOQueueHandler"]
+
+[observability]
+enabled = true
