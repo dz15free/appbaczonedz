@@ -15,20 +15,18 @@ binding = "ASSETS"
 binding = "WORKER_SELF_REFERENCE"
 service = "baczonedz"
 
-# incremental cache (صفحات ISR) — أنشئه مرّة واحدة:
+# incremental cache (صفحات ISR) — أُنشئ على الحساب بالأمر:
 #   npx wrangler r2 bucket create baczone-next-cache
 [[r2_buckets]]
 binding = "NEXT_INC_CACHE_R2_BUCKET"
 bucket_name = "baczone-next-cache"
 
-# tag cache لـ revalidatePath — أنشئه مرّة واحدة:
+# tag cache لـ revalidatePath — أُنشئ على الحساب بالأمر:
 #   npx wrangler d1 create baczone-next-tag-cache
-# ثمّ ضع database_id الذي يطبعه الأمر مكان القيمة المؤقّتة أدناه
-# (القيمة المؤقّتة تكفي للتشغيل المحلّي عبر `npm run preview` فقط).
 [[d1_databases]]
 binding = "NEXT_TAG_CACHE_D1"
 database_name = "baczone-next-tag-cache"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "443a0776-0ed1-4a1e-b320-35f9635c4f62"
 
 # طابور إعادة التوليد في الخلفية (ISR الزمني)
 [[durable_objects.bindings]]
