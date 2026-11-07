@@ -3,6 +3,9 @@
 ## المرحلة 0 — الانتقال إلى Cloudflare Workers (فرع `cloudflare-migration`)
 
 ### 2026-11-07
+- **Cloudflare Builds:** ملفّ `.env.production` بالمتغيّرات العامّة فقط (11 متغيّراً، كلّها ظاهرة أصلاً
+  في كود الموقع) كي يُبنى الموقع على Cloudflare دون إدخالها يدوياً. لا أسرار فيه، وأُبعد عنه ما لا يستعمله
+  الكود (Supabase وCloudinary). جُرّب بناءٌ كامل بهذا الملفّ وحده دون `.env.local`.
 - **السرعة:** ذاكرة إقليمية فوق R2 (`withRegionalCache`، وضع long-lived) واعتراض الكاش
   (`enableCacheInterception`) في `open-next.config.ts`. زمن أوّل استجابة من الجزائر صار قريباً
   من Vercel (فارق 20–80 ms بدل 80–490 ms)، وصفحة المقالات أسرع منه.

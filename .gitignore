@@ -9,3 +9,8 @@ out
 .wrangler
 .dev.vars
 .dev.vars.*
+
+.vercel
+.env*
+!.env.example
+!.env.production
