@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { InviteSheet } from "@/features/rooms/invite-sheet";
-import { getRoomPublic, syncRoomPublic, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
+import { getRoomPublic, syncRoomPublic, setRoomVisibility, type Room, promoteToMod, demoteMod, kickUser, listenMods, listenKicked, listenBanned, listenPoll, type RoomPoll, listenMessages, setOwnerStatus, listenOwnerStatus, type OwnerStatus } from "@/features/rooms/rooms";
 import { RoomPollPanel, CreatePollModal } from "@/features/rooms/room-poll";
 import { RoomActivityToasts } from "@/features/rooms/room-activity-toasts";
 import { RoomTimerButton, RoomTimerDisplay } from "@/features/rooms/room-timer";
@@ -406,6 +406,27 @@ export default function RoomPage() {
   const isMod = isModEarly;               // حُسبت أعلى مع أهليّة القراءة
   const isPrivileged = isOwner || isMod;
 
+  /* ── عامّة / خاصّة ── المالك وحده، ولغير غرف الأستاذ (لها منطق دفع خاصّ) */
+  const canToggleVisibility = isOwner && (room?.type === "public" || room?.type === "private");
+  const [visOpen, setVisOpen] = useState(false);
+  const [visBusy, setVisBusy] = useState(false);
+  const [visError, setVisError] = useState("");
+  async function applyVisibility(next: "public" | "private") {
+    setVisBusy(true);
+    setVisError("");
+    try {
+      await setRoomVisibility(roomId, next);
+      setVisOpen(false);
+    } catch (e) {
+      const msg = String((e as { message?: string })?.message ?? e);
+      setVisError(/permission|denied/i.test(msg)
+        ? "قاعدة البيانات رفضت التغيير. إن كنت صاحب الغرفة فقواعد Firebase لم تُحدَّث بعد."
+        : "تعذّر الحفظ. تحقّق من الإنترنت ثمّ أعد المحاولة.");
+    } finally {
+      setVisBusy(false);
+    }
+  }
+
   useEffect(() => {
     const unsub = listenMods(roomId, setMods);
     return () => { if (typeof unsub === "function") unsub(); };
@@ -684,6 +705,15 @@ export default function RoomPage() {
             <span className="bz-room-title truncate">
               {room?.name ?? "..."}
             </span>
+            {room?.type === "private" && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--bz-canvas)] px-1.5 text-[9.5px] font-bold text-[var(--bz-ink-2)]"
+                title="غرفة خاصّة: لا تظهر في القوائم ولا في البحث، ويُدخَل إليها بالرابط"
+              >
+                <Icon name="lock" size={9} />
+                خاصّة
+              </span>
+            )}
             {room?.isPaid && (
               <>
                 <span className="shrink-0 rounded-md bg-[var(--bz-amber-050)] px-1.5 text-[9.5px] font-bold text-[var(--bz-amber)]">
@@ -727,6 +757,18 @@ export default function RoomPage() {
           />
         )}
 
+        {canToggleVisibility && (
+          <BarButton
+            icon={room?.type === "private" ? "lock" : "eye"}
+            label={room?.type === "private" ? "خاصّة" : "عامّة"}
+            title={room?.type === "private"
+              ? "الغرفة خاصّة — اضغط لجعلها عامّة"
+              : "الغرفة عامّة — اضغط لجعلها خاصّة"}
+            active={room?.type === "private"}
+            onClick={() => { setVisError(""); setVisOpen(true); }}
+          />
+        )}
+
         <BarButton
           icon="users"
           label={String(members.length)}
@@ -767,6 +809,49 @@ export default function RoomPage() {
 
       {/* الأيدي المرفوعة — كان الزرّ يضبط `handsOpen` ولا شيء يُصيَّرها،
           فيبدو معطّلاً. سقط الدرج عند دمج الشريطين. */}
+      {canToggleVisibility && (
+        <BottomSheet
+          open={visOpen}
+          onClose={() => !visBusy && setVisOpen(false)}
+          title={room?.type === "private" ? "جعل الغرفة عامّة" : "جعل الغرفة خاصّة"}
+        >
+          <div className="space-y-3 px-1 pb-2 text-[13.5px] leading-relaxed text-[var(--bz-ink-2)]">
+            {room?.type === "private" ? (
+              <p>ستظهر الغرفة للجميع في قائمة الغرف وفي البحث، ويستطيع أيّ تلميذ الدخول إليها.</p>
+            ) : (
+              <>
+                <p>ستختفي الغرفة من قائمة الغرف ومن الاكتشاف ومن البحث.</p>
+                <p>يدخلها من لديه <b>الرابط</b> أو يكتب <b>اسمها كاملاً</b>. ومن في الغرفة الآن يبقى فيها.</p>
+              </>
+            )}
+            {visError && (
+              <p role="alert" className="rounded-lg bg-[var(--bz-red-050,#FDEEED)] px-3 py-2 text-[12.5px] font-semibold text-[var(--bz-red)]">
+                {visError}
+              </p>
+            )}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                disabled={visBusy}
+                onClick={() => void applyVisibility(room?.type === "private" ? "public" : "private")}
+                className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--bz-blue)] px-4 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+              >
+                <Icon name={room?.type === "private" ? "eye" : "lock"} size={15} />
+                {visBusy ? "جارٍ الحفظ…" : room?.type === "private" ? "اجعلها عامّة" : "اجعلها خاصّة"}
+              </button>
+              <button
+                type="button"
+                disabled={visBusy}
+                onClick={() => setVisOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--bz-line)] px-4 text-sm font-semibold text-[var(--bz-ink-2)] disabled:opacity-60"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </BottomSheet>
+      )}
+
       <BottomSheet
         open={handsOpen}
         onClose={() => setHandsOpen(false)}

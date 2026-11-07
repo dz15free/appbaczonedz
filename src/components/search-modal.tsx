@@ -28,6 +28,9 @@ async function searchRooms(q: string): Promise<Result[]> {
   const snap = await get(query(ref(rtdb, "roomsPublic"), orderByChild("name"), limitToFirst(200)));
   const val = snap.val() ?? {};
   return Object.entries(val)
+    /* الخاصّة لا تُكتشف بجزءٍ من اسمها — كانت تظهر هنا رغم غيابها عن القوائم.
+       الدخول إليها بالرابط أو بالاسم كاملاً («انضمّ بالاسم») يبقى كما هو. */
+    .filter(([, r]: any) => r.type !== "private")
     .filter(([, r]: any) => r.name && String(r.name).toLowerCase().includes(lower))
     .slice(0, 6)
     .map(([id, r]: any) => ({

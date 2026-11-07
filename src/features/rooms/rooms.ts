@@ -161,6 +161,22 @@ export async function syncRoomPublic(roomId: string, room: Omit<Room, "id">): Pr
 }
 
 /**
+ * «اجعل الغرفة خاصّة / عامّة» — للمالك أو admin، وبين النوعين فقط
+ * (غرف الأستاذ `teacher` خارج هذا عمداً: لها منطق دفع خاصّ).
+ *
+ * الخاصّة تختفي من القوائم والاكتشاف والبحث، ويُدخَل إليها بالرابط أو
+ * بالاسم كاملاً. من في الغرفة الآن لا يُخرَج.
+ *
+ * الترتيب مقصود كما في `createRoom`: الأصل أوّلاً ثمّ المرآة. لو كُتبت
+ * المرآة وحدها لأعادتها `syncRoomPublic` إلى النوع القديم عند أوّل فتح
+ * من المالك (تقارن المرآة بالأصل وتصحّحها منه).
+ */
+export async function setRoomVisibility(roomId: string, type: "public" | "private"): Promise<void> {
+  await set(ref(rtdb, `rooms/${roomId}/type`), type);
+  await set(ref(rtdb, `roomsPublic/${roomId}/type`), type);
+}
+
+/**
  * قراءة الغرفة **بمحتواها** — لا تنجح إلّا لمن يستحقّ (مجانية، أو
  * مالك، أو مشرف، أو دافع، أو admin). من يريد الاسم والسعر وحدهما —
  * قبل أن يدفع مثلاً — فليقرأ `getRoomPublic`.

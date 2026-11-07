@@ -169,6 +169,12 @@
         },
         "files": {
           ".write": "auth != null && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || (newData.exists() && newData.child('uploaderId').val() === auth.uid) || (data.exists() && data.child('uploaderId').val() === auth.uid))"
+        },
+        // «اجعل الغرفة خاصّة/عامّة» — المالك أو admin، بين `public` و`private` فقط.
+        // لا يمسّ غرف الأستاذ (`teacher`) ولا الدفع، ولا يسمح بحذف النوع. الكتابة
+        // العامّة على `rooms/$roomId` تبقى للإنشاء وحده كما كانت؛ هذه إضافة ضيّقة.
+        "type": {
+          ".write": "auth != null && data.exists() && (data.val() === 'public' || data.val() === 'private') && newData.isString() && newData.val().matches(/^(public|private)$/) && (root.child('rooms').child($roomId).child('ownerId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
         }
       }
     },
