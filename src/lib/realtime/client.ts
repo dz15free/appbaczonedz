@@ -20,7 +20,7 @@ export class RealtimeError extends Error {
    فـ`res.ok` وحده يقول «نجح» والمسار لم يُنشر ولم يُسحب. كان هذا
    أحد أسباب «الميكروفون أخضر ولا أحد يسمع». نفحص الآن الجسم كلّه.
    ════════════════════════════════════════════════════════════ */
-async function parse(res: Response, what: string): Promise<any> {
+async function parse(res: Response, what: string, allowTrackErrors = false): Promise<any> {
   let data: any = null;
   try { data = await res.json(); } catch { /* جسم فارغ */ }
   if (!res.ok) {
@@ -30,11 +30,18 @@ async function parse(res: Response, what: string): Promise<any> {
   if (data?.errorCode) {
     throw new RealtimeError(data.errorDescription || data.errorCode, data.errorCode, res.status);
   }
-  if (Array.isArray(data?.tracks)) {
-    const bad = data.tracks.find((t: any) => t?.errorCode);
-    if (bad) throw new RealtimeError(bad.errorDescription || bad.errorCode, bad.errorCode, res.status);
+  if (!allowTrackErrors) {
+    const bad = firstTrackError(data);
+    if (bad) throw bad;
   }
   return data;
+}
+
+/** أوّل خطأ على مستوى المسار داخل ردّ ناجح (HTTP 200) — أو null */
+export function firstTrackError(data: any): RealtimeError | null {
+  if (!Array.isArray(data?.tracks)) return null;
+  const bad = data.tracks.find((t: any) => t?.errorCode);
+  return bad ? new RealtimeError(bad.errorDescription || bad.errorCode, bad.errorCode) : null;
 }
 
 export async function newSession(): Promise<string> {
@@ -51,13 +58,17 @@ export async function newSession(): Promise<string> {
   return data.sessionId as string;
 }
 
-export async function pushTracks(sessionId: string, body: any): Promise<any> {
+/* `allowTrackErrors`: يُرجع الردّ ولو فشل مسارٌ داخله، ليُكمل المُنادي التفاوض أوّلاً.
+   🐛 v8: سحب مسارٍ لم يصل بعد (`empty_track_error`) يأتي **ومعه** عرض SDP
+   (`requiresImmediateRenegotiation`). رمي الخطأ قبل الإجابة عن العرض يترك جلسة
+   Cloudflare عالقةً تنتظر جواباً لن يصل — فيفشل كلّ طلب بعده حتى إعادة تحميل الصفحة. */
+export async function pushTracks(sessionId: string, body: any, opts?: { allowTrackErrors?: boolean }): Promise<any> {
   const res = await fetch(`${API}/sessions/${sessionId}/tracks/new`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return parse(res, "tracks/new");
+  return parse(res, "tracks/new", opts?.allowTrackErrors);
 }
 
 export async function renegotiate(sessionId: string, sessionDescription: any): Promise<any> {

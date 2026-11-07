@@ -3,7 +3,9 @@ import {
   ref, onValue, update, onDisconnect, runTransaction, type DatabaseReference,
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
-import { newSession, pushTracks, renegotiate, getIceServers, RealtimeError } from "@/lib/realtime/client";
+import {
+  newSession, pushTracks, renegotiate, getIceServers, RealtimeError, firstTrackError,
+} from "@/lib/realtime/client";
 
 
 export interface VoiceParticipant {
@@ -56,6 +58,11 @@ export type MicResult =
    ٥) **عقدة تفاوض عالقة.** إن فشل تفاوضٌ في منتصفه بقي الاتصال في
       حالة `have-remote-offer`، فتفشل كل محاولة بعده إلى الأبد.
 
+   ٦) **v8 — جلسة عالقة بعد سحبٍ فاشل.** Cloudflare يرسل عرض SDP حتى حين
+      يفشل السحب، وكنّا نرمي الخطأ قبل الإجابة عنه ⇒ الجلسة تنتظر جواباً
+      إلى الأبد، ويفشل كلّ ما بعدها ومنه نشر الميكروفون. ومعه: لا يُرسل
+      `mid` فارغاً أبداً (كان يُرفض بـ`decoding_error`).
+
    وكلّها مُعالَجة أدناه بالترتيب نفسه.
    ════════════════════════════════════════════════════════════ */
 
@@ -65,6 +72,19 @@ const CONNECT_TIMEOUT = 15000;
 
 function newCid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+
+/* رقم المسار (mid) من نصّ SDP نفسه: نبحث عن القسم الذي يحمل معرّف مسارنا في
+   سطر `a=msid:` ونقرأ `a=mid:` منه. احتياطٌ إن لم يُسنده المتصفّح إلى الكائن. */
+function midFromSdp(sdp: string | undefined, trackId: string): string | null {
+  if (!sdp || !trackId) return null;
+  for (const section of sdp.split(/\r?\n(?=m=)/)) {
+    if (!section.startsWith("m=")) continue;
+    if (!new RegExp(`^a=msid:\\S+ ${trackId.replace(/[{}]/g, "\\$&")}\\s*$`, "m").test(section)) continue;
+    const m = /^a=mid:(\S+)/m.exec(section);
+    if (m) return m[1];
+  }
+  return null;
 }
 
 export class VoiceManager {
@@ -305,21 +325,27 @@ export class VoiceManager {
         if (!pc || this.destroyed) return;
         const res = await pushTracks(this.sessionId, {
           tracks: [{ location: "remote", sessionId: p.sessionId, trackName: p.trackName }],
-        });
+        }, { allowTrackErrors: true });
+        const trackErr = firstTrackError(res);
         if (Array.isArray(res.tracks)) {
           for (const t of res.tracks) {
-            if (!t.mid) continue;
+            if (!t.mid || t.errorCode) continue;
             this.midToUid.set(t.mid, uid);
             const orphan = this.orphanTracks.get(t.mid);
             if (orphan) { this.orphanTracks.delete(t.mid); this.deliverTrack(uid, orphan); }
           }
         }
+        /* ── (٦) الإجابة عن العرض **قبل** أيّ خطأ ──
+           Cloudflare يرسل عرض SDP حتى حين يفشل السحب (المتحدّث لم يصل بعد).
+           إن لم نُجب عنه بقيت الجلسة عالقة تنتظر جواباً، ففشل كلّ ما بعده —
+           ومنه فتح الميكروفون نفسه. نُكمل التفاوض، ثمّ نرمي ليُعاد السحب. */
         if (res.requiresImmediateRenegotiation && res.sessionDescription) {
           await pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           await renegotiate(this.sessionId, { type: "answer", sdp: answer.sdp });
         }
+        if (trackErr) throw trackErr;
         this.subscribed.set(uid, key);
         this.retries.delete(uid);
       })
@@ -427,10 +453,22 @@ export class VoiceManager {
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
+        /* 🐛 v8: وصل إلى Cloudflare `mid: null` فرفض الطلب كلّه
+           (`decoding_error — Body JSON validation error`). لا نُرسل قيمة فارغة أبداً:
+           نقرأ الرقم من SDP إن لم يُسنده المتصفّح، وإلّا نذكر السبب بوضوح. */
+        const sdp = pc.localDescription?.sdp ?? offer.sdp;
+        const mid = tr.mid ?? midFromSdp(sdp, track.id);
+        if (!mid || !sdp) {
+          const tx = pc.getTransceivers().map((t) => `${t.mid ?? "∅"}/${t.direction}`).join(",");
+          throw new RealtimeError(
+            `المتصفّح لم يُحدّد رقم مسار الميكروفون (signaling=${pc.signalingState} · tx=${tx})`,
+            "no_mid",
+          );
+        }
         const name = `mic-${this.uid}-${Date.now()}`;
         const res = await pushTracks(this.sessionId, {
-          sessionDescription: { type: "offer", sdp: offer.sdp },
-          tracks: [{ location: "local", mid: tr.mid, trackName: name }],
+          sessionDescription: { type: "offer", sdp },
+          tracks: [{ location: "local", mid, trackName: name }],
         });
         if (!res.sessionDescription) throw new RealtimeError("no answer from SFU");
         await pc.setRemoteDescription(new RTCSessionDescription(res.sessionDescription));
