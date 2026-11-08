@@ -81,6 +81,12 @@ export function LessonVideoField({
               </span>
             </span>
           )}
+          {providerOf(content.url) === "drive" && (
+            <span className="mt-1.5 block rounded-lg bg-primary/8 px-2.5 py-1.5 text-[10.5px] font-bold leading-relaxed text-primary">
+              روابط Drive تُعرض بمشغّل Google (لا تحكّم فيه بالسرعة ولا بمتابعة المشاهدة).
+              لتجربة أفضل ارفع الفيديو من «ارفع إلى BacZone» أو «ارفع إلى Drive».
+            </span>
+          )}
         </label>
       )}
     </div>

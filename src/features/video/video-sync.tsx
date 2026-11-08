@@ -46,6 +46,10 @@ function gdriveEmbed(url: string): string {
   return url;
 }
 
+/* واجهة BacZone Player للمالك — أزرارنا فوق المشغّل، والتزامن أدناه كما هو */
+import { PlayerChrome, youtubeAdapter, html5Adapter, type MediaAdapter } from "@/components/player/bz-player";
+import { DEFAULT_LOGO } from "@/lib/brand-assets";
+
 export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolean }) {
   const [urlInput, setUrlInput] = useState("");
   const [state, setState] = useState<VideoState | null>(null);
@@ -66,6 +70,9 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
   const stateRef = useRef<VideoState | null>(null);
   const mp4Ref = useRef<HTMLVideoElement>(null);
   const studentUnmuted = useRef(false); // هل فعّل التلميذ الصوت يدوياً؟
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [ytAdapter, setYtAdapter] = useState<MediaAdapter | null>(null);
+  const [mp4Adapter, setMp4Adapter] = useState<MediaAdapter | null>(null);
 
   /* ── استمع لتغيّرات الحالة ── */
   useEffect(() => {
@@ -223,8 +230,10 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         height: "100%",
         width: "100%",
         playerVars: {
-          controls: isOwner ? 1 : 0,
-          disablekb: isOwner ? 0 : 1,
+          /* أزرار YouTube مخفيّة للجميع: المالك يتحكّم من واجهة المنصّة
+             (PlayerChrome) التي تنادي الدوال نفسها، فلا يتغيّر التزامن. */
+          controls: 0,
+          disablekb: 1,
           modestbranding: 1,
           rel: 0,
           playsinline: 1,
@@ -234,6 +243,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
           onReady: () => {
             if (destroyed) return;
             ytReady.current = true;
+            if (isOwner) setYtAdapter(youtubeAdapter(ytPlayerRef.current));
             const s = stateRef.current;
             // التلاميذ: نبدأ مكتومين ليسمح iOS بالتشغيل التلقائي، ثم زر لفك الكتم
             if (!isOwner) {
@@ -283,6 +293,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
     return () => {
       destroyed = true;
       ytReady.current = false;
+      setYtAdapter(null);
       try { ytPlayerRef.current?.destroy?.(); } catch { /* ignore */ }
       ytPlayerRef.current = null;
     };
@@ -394,9 +405,9 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
         </div>
       )}
 
-      <div className="relative flex-1 overflow-hidden bg-black">
+      <div ref={stageRef} className="bzp-root relative flex-1 overflow-hidden bg-black">
         {hasVideo && (
-          <span className="absolute right-2 top-2 z-20 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
+          <span className="absolute left-2 top-2 z-20 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
             {src === "youtube" ? "▶ YouTube" : src === "gdrive" ? "🔗 Google Drive" : "🎬 مباشر"}
           </span>
         )}
@@ -446,9 +457,10 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
             ref={mp4Ref}
             src={state?.videoUrl}
             className="absolute inset-0 h-full w-full"
-            controls={isOwner}
+            controls={false}
             playsInline
             preload="metadata"
+            onLoadedMetadata={() => isOwner && setMp4Adapter(html5Adapter(mp4Ref.current))}
             onWaiting={() => setBuffering(true)}
             onPlaying={() => setBuffering(false)}
             onCanPlay={() => setBuffering(false)}
@@ -464,6 +476,30 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
               <span className="text-xs text-white/70">جارٍ التحميل...</span>
             </div>
           </div>
+        )}
+
+        {/* واجهة المالك: أزرار المنصّة. القفز يُبثّ للصفّ فوراً — حتى والفيديو
+            متوقّف، حيث لا يُطلق YouTube أيّ حدث (كان التلاميذ يبقون في موضعهم). */}
+        {isOwner && hasVideo && (src === "youtube" || src === "direct") && (
+          <PlayerChrome
+            adapter={src === "youtube" ? ytAdapter : mp4Adapter}
+            containerRef={stageRef}
+            allowSpeed={false}
+            onSeekCommit={() => {
+              if (src === "youtube") {
+                setTimeout(() => pushYTState(ytPlayerRef.current?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING), 300);
+              }
+            }}
+          />
+        )}
+
+        {/* علامة المنصّة للتلاميذ — لا تمسّ التحكّم */}
+        {!isOwner && hasVideo && (
+          <span className="pointer-events-none absolute right-2 top-2 z-20 flex items-center gap-1.5 rounded-full bg-black/45 py-1 pe-2.5 ps-1 backdrop-blur-sm" dir="rtl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={DEFAULT_LOGO} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-full" />
+            <span className="text-[10px] font-extrabold text-white/90">BacZone</span>
+          </span>
         )}
 
         {!hasVideo && (

@@ -6691,3 +6691,14 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
   .bz-preloader-v4-text span { -webkit-animation: bz-preloader-v4-dot 2.8s ease-in-out infinite both !important; animation: bz-preloader-v4-dot 2.8s ease-in-out infinite both !important; }
   .bz-actions-fallback-dot { animation: none; border-color: #93c5fd; }
 }
+
+/* ── BacZone Player ── */
+.bzp-root:fullscreen { border-radius: 0; aspect-ratio: auto; width: 100vw; height: 100vh; }
+.bzp-root.bzp-pseudo-fs {
+  position: fixed !important; inset: 0; z-index: 9999; width: 100vw; height: 100dvh;
+  aspect-ratio: auto; border-radius: 0;
+}
+.bzp-ripple { animation: bzp-ripple .55s ease-out forwards; }
+@keyframes bzp-ripple { from { opacity: 1; transform: translateY(-50%) scale(.6); } to { opacity: 0; transform: translateY(-50%) scale(1.15); } }
+.bzp-vol { accent-color: #3044E0; height: 4px; }
+@media (prefers-reduced-motion: reduce) { .bzp-ripple { animation: none; opacity: 0; } }

@@ -13,12 +13,13 @@ import { useProfile } from "@/features/auth/use-profile";
 import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
 import { listenPublicCourse, listenCourse, listenCourseContent } from "@/features/courses/courses";
 import { HostedVideo } from "@/features/courses/hosted-video";
+import { BzPlayer, BrandedEmbed } from "@/components/player/bz-player";
 import {
   useCourseAccess, useProgress, percentOf, setLessonDone, markLastLesson,
 } from "@/features/courses/enrollment";
 import {
   type Course, type CourseLesson, type LessonContent,
-  LESSON_KIND_LABEL, embedUrl, providerOf, formatDuration, flatLessons,
+  LESSON_KIND_LABEL, embedUrl, providerOf, formatDuration, flatLessons, youtubeIdFrom,
 } from "@/features/courses/types";
 
 /* ════════════════════════════════════════════════════════════
@@ -399,13 +400,17 @@ function LessonViewer({
   }
 
   // فيديو مباشر (MP4…) — مشغّل المتصفّح أخفّ من أي إطار
+  /* مشغّل المنصّة الموحّد: YouTube وMP4 بالواجهة نفسها، مع متابعة المشاهدة */
   if (lesson.kind === "video" && provider === "direct") {
-    return (
-      <div className="overflow-hidden rounded-3xl border border-border bg-black">
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video src={url} controls playsInline className="aspect-video w-full" />
-      </div>
-    );
+    return <BzPlayer source={{ kind: "file", url: url! }} title={lesson.title} resumeKey={`${courseId}:${lesson.id}`} />;
+  }
+  const ytId = lesson.kind === "video" && provider === "youtube" ? youtubeIdFrom(url ?? "") : null;
+  if (ytId) {
+    return <BzPlayer source={{ kind: "youtube", id: ytId }} title={lesson.title} resumeKey={`${courseId}:${lesson.id}`} />;
+  }
+  /* Drive: لا واجهة رسمية للتحكّم فيه — مشغّل Google داخل إطار بهويّة المنصّة */
+  if (lesson.kind === "video" && provider === "drive" && embed) {
+    return <BrandedEmbed url={embed} title={lesson.title} />;
   }
 
   return (
