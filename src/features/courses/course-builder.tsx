@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useSiteSubjects } from "@/features/study/subjects-store";
 import {
-  createCourse, saveCourse, submitForReview, canTeacherEdit,
+  createCourse, saveCourse, submitForReview, canTeacherEdit, isLiveStatus, syncLiveEdit,
   type CourseDraftInput,
 } from "@/features/courses/courses";
 import {
@@ -100,6 +100,8 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
   const [err, setErr] = useState("");
 
   const locked = Boolean(course && !canTeacherEdit(course.status));
+  /** منشورة (أو مقبولة/موقوفة): الحفظ يُنشر مباشرةً ويُبلَّغ الأدمن */
+  const live = isLiveStatus(course?.status);
 
   /* ── ملفّات الفيديو على BacZone: ما حُفظ، وما رُفع في هذه الجلسة ──
      بعد كلّ حفظ ناجح يُحذف من R2 كلّ ملفّ لم يعد درسٌ يستعمله (أُزيل أو
@@ -161,6 +163,11 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
   /* ── حفظ ── */
   async function persist(silent = false): Promise<string | null> {
     if (locked) return null;
+    /* الدورة المنشورة يراها الطلبة فوراً: لا تُحفظ ناقصةً */
+    if (live && !valid) {
+      setErr("أكمل الحقول الناقصة قبل الحفظ — التعديل يظهر للطلبة فوراً.");
+      return null;
+    }
     setSaving(true);
     setErr("");
     try {
@@ -173,6 +180,11 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
         }
         savedVids.current = now;
         sessionVids.current = new Set();
+        if (live) {
+          await syncLiveEdit(courseId);
+          if (!silent) setMsg("نُشرت التعديلات للطلبة وأُبلغت الإدارة.");
+          return courseId;
+        }
       } else {
         const id = await createCourse(input, teacher);
         setCourseId(id);
@@ -183,8 +195,8 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
       }
       if (!silent) setMsg("حُفظت التعديلات.");
       return courseId;
-    } catch {
-      setErr("تعذّر الحفظ — تحقّق من اتصالك ومن صلاحياتك.");
+    } catch (e) {
+      setErr(live && e instanceof Error && e.message ? e.message : "تعذّر الحفظ — تحقّق من اتصالك ومن صلاحياتك.");
       return null;
     } finally {
       setSaving(false);
@@ -300,6 +312,15 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
   return (
     <div className="space-y-4">
+      {live && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/8 p-3.5 text-[12.5px] leading-relaxed text-text-primary">
+          <FontAwesomeIcon icon={faCircleInfo} className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          <span>
+            <b>دورتك {COURSE_STATUS_LABEL[course!.status]}.</b> تعديلاتك تظهر للطلبة فور الضغط على «حفظ ونشر التعديلات»،
+            ويصل إشعار بملخّصها إلى الإدارة.
+          </span>
+        </div>
+      )}
       {/* شريط الخطوات */}
       <ol className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" aria-label="خطوات إنشاء الدورة">
         {STEPS.map((s) => (
@@ -490,6 +511,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
                       onPatch={(p) => patchLesson(s.id, l.id, p)}
                       onContent={(p) => patchContent(l.id, p)}
                       courseId={courseId}
+                      ensureCourseId={async () => courseId ?? (await persist(true))}
                       onUploaded={(v) => {
                         if (v.source === "r2") sessionVids.current.add(v.vid);
                         setAutoSave((n) => n + 1);
@@ -614,20 +636,38 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
             </div>
           )}
 
-          <div className="mt-3 rounded-2xl border border-border bg-background p-3.5 text-[12px] leading-relaxed text-text-muted">
-            بعد الإرسال تصبح الحالة <b className="text-text-primary">«بانتظار المراجعة»</b>، ويصل إشعار
-            للإدارة. قد تطلب الإدارة تعديلات — وستجد ملاحظاتها في صفحة «دوراتي التعليمية»
-            وتستطيع الردّ عليها هناك.
-          </div>
+          {live ? (
+            <>
+              <div className="mt-3 rounded-2xl border border-border bg-background p-3.5 text-[12px] leading-relaxed text-text-muted">
+                الدورة منشورة: لا حاجة لإرسالها للمراجعة مجدّداً. التعديلات تُنشر مباشرةً ويُبلَّغ بها الأدمن.
+              </div>
+              <button
+                onClick={() => void persist()}
+                disabled={!valid || saving}
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary py-3.5 text-[14px] font-extrabold text-white shadow-glow transition disabled:opacity-50"
+              >
+                <FontAwesomeIcon icon={saving ? faSpinner : faPaperPlane} className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
+                {saving ? "جارٍ النشر…" : "حفظ ونشر التعديلات"}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mt-3 rounded-2xl border border-border bg-background p-3.5 text-[12px] leading-relaxed text-text-muted">
+                بعد الإرسال تصبح الحالة <b className="text-text-primary">«بانتظار المراجعة»</b>، ويصل إشعار
+                للإدارة. قد تطلب الإدارة تعديلات — وستجد ملاحظاتها في صفحة «دوراتي التعليمية»
+                وتستطيع الردّ عليها هناك.
+              </div>
 
-          <button
-            onClick={submit}
-            disabled={!valid || submitting}
-            className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary py-3.5 text-[14px] font-extrabold text-white shadow-glow transition disabled:opacity-50"
-          >
-            <FontAwesomeIcon icon={submitting ? faSpinner : faPaperPlane} className={`h-4 w-4 ${submitting ? "animate-spin" : ""}`} />
-            {submitting ? "جارٍ الإرسال…" : "إرسال للمراجعة"}
-          </button>
+              <button
+                onClick={submit}
+                disabled={!valid || submitting}
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary py-3.5 text-[14px] font-extrabold text-white shadow-glow transition disabled:opacity-50"
+              >
+                <FontAwesomeIcon icon={submitting ? faSpinner : faPaperPlane} className={`h-4 w-4 ${submitting ? "animate-spin" : ""}`} />
+                {submitting ? "جارٍ الإرسال…" : "إرسال للمراجعة"}
+              </button>
+            </>
+          )}
         </Panel>
       )}
 
@@ -647,7 +687,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
           className="flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2.5 text-[12.5px] font-extrabold text-text-muted transition hover:border-primary hover:text-primary disabled:opacity-40"
         >
           <FontAwesomeIcon icon={saving ? faSpinner : faFloppyDisk} className={`h-3 w-3 ${saving ? "animate-spin" : ""}`} />
-          حفظ المسوّدة
+          {live ? "حفظ ونشر التعديلات" : "حفظ المسوّدة"}
         </button>
 
         {courseId && (
@@ -675,7 +715,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
 /* ── محرّر الدرس ── */
 function LessonEditor({
-  lesson, index, total, content, error, onPatch, onContent, onMove, onRemove, courseId, onUploaded,
+  lesson, index, total, content, error, onPatch, onContent, onMove, onRemove, courseId, onUploaded, ensureCourseId,
 }: {
   lesson: CourseLesson;
   index: number;
@@ -686,6 +726,7 @@ function LessonEditor({
   onContent: (p: Partial<LessonContent>) => void;
   courseId?: string;
   onUploaded?: (v: NonNullable<LessonContent["video"]>) => void;
+  ensureCourseId?: () => Promise<string | null>;
   onMove: (d: -1 | 1) => void;
   onRemove: () => void;
 }) {
@@ -742,7 +783,7 @@ function LessonEditor({
             </label>
           ) : lesson.kind === "video" ? (
             <LessonVideoField courseId={courseId} lessonId={lesson.id} content={content}
-              onContent={onContent} onUploaded={onUploaded} />
+              onContent={onContent} onUploaded={onUploaded} ensureCourseId={ensureCourseId} />
           ) : (
             <label className="block">
               <span className="mb-1 block text-[11px] font-bold text-text-muted">

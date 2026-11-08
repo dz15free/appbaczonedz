@@ -3,7 +3,7 @@
 import {
   ref, get, set, update, remove, push, onValue, query, orderByChild, equalTo, limitToLast,
 } from "firebase/database";
-import { rtdb } from "@/lib/firebase/config";
+import { rtdb, auth } from "@/lib/firebase/config";
 import { addNotification } from "@/features/community/social";
 import { purgeCourseVideos } from "./video-client";
 import {
@@ -265,8 +265,30 @@ export function canTeacherDelete(status: CourseStatus): boolean {
   return TEACHER_DELETABLE_STATUSES.includes(status);
 }
 
+/* المسوّدة والمرفوضة و«تعديلات مطلوبة» تُعدَّل كما كانت. والمنشورة
+   (والمقبولة والموقوفة) تُعدَّل **مباشرةً** أيضاً: تظهر التعديلات للطلبة
+   فور الحفظ ويُبلَّغ الأدمن بملخّصها. أمّا أثناء المراجعة فلا تعديل —
+   كي لا يتغيّر ما يراجعه الأدمن تحت يده. */
 export function canTeacherEdit(status: CourseStatus): boolean {
-  return status === "draft" || status === "changes" || status === "rejected";
+  return status === "draft" || status === "changes" || status === "rejected" || isLiveStatus(status);
+}
+
+/** دورة تجاوزت المراجعة: تعديلها يُنشر مباشرةً ويُبلَّغ به الأدمن */
+export function isLiveStatus(status?: CourseStatus): boolean {
+  return status === "published" || status === "approved" || status === "unpublished";
+}
+
+/** بعد حفظ دورة منشورة: الخادم يُحدّث نسخة السوق ويُبلغ الأدمن */
+export async function syncLiveEdit(courseId: string): Promise<string | undefined> {
+  const token = (await auth?.currentUser?.getIdToken().catch(() => "")) ?? "";
+  const res = await fetch("/api/courses/live-edit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ courseId }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { error?: string; summary?: string };
+  if (!res.ok) throw new Error(data.error || "تعذّر نشر التعديلات.");
+  return data.summary;
 }
 
 /* ── دورة حياة المراجعة ── */

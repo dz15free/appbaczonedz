@@ -12,6 +12,7 @@ import {
   type Quota, type UploadProgress,
 } from "./video-client";
 import { initDrive, connectDrive, uploadToDrive, isDriveConfigured } from "@/lib/gdrive";
+import { HostedVideo } from "./hosted-video";
 
 /* ════════════════════════════════════════════════════════════
    فيديو الدرس — ثلاث طرق، والأستاذ يختار
@@ -24,7 +25,7 @@ import { initDrive, connectDrive, uploadToDrive, isDriveConfigured } from "@/lib
 type Tab = "r2" | "drive" | "link";
 
 export function LessonVideoField({
-  courseId, lessonId, content, onContent, onUploaded,
+  courseId, lessonId, content, onContent, onUploaded, ensureCourseId,
 }: {
   courseId?: string;
   lessonId: string;
@@ -32,12 +33,14 @@ export function LessonVideoField({
   onContent: (patch: Partial<LessonContent>) => void;
   /** يُستدعى بعد اكتمال الرفع — لحفظ المسوّدة فوراً فلا يضيع المرجع */
   onUploaded?: (v: LessonVideo) => void;
+  /** دورة جديدة لم تُحفظ بعد: تُنشأ مسوّدتها تلقائياً عند أوّل رفع */
+  ensureCourseId?: () => Promise<string | null>;
 }) {
   const video = content.video;
   const [tab, setTab] = useState<Tab>(content.url && !video ? "link" : "r2");
 
   if (video) {
-    return <UploadedCard video={video} onRemove={() => onContent({ video: undefined })} />;
+    return <UploadedCard video={video} courseId={courseId} lessonId={lessonId} onRemove={() => onContent({ video: undefined })} />;
   }
 
   return (
@@ -58,11 +61,11 @@ export function LessonVideoField({
       </div>
 
       {tab === "r2" && (
-        <R2Uploader courseId={courseId} lessonId={lessonId}
+        <R2Uploader courseId={courseId} lessonId={lessonId} ensureCourseId={ensureCourseId}
           onDone={(v) => { onContent({ video: v, url: undefined }); onUploaded?.(v); }} />
       )}
       {tab === "drive" && (
-        <DriveUploader courseId={courseId}
+        <DriveUploader courseId={courseId} ensureCourseId={ensureCourseId}
           onDone={(v) => { onContent({ video: v, url: undefined }); onUploaded?.(v); }} />
       )}
       {tab === "link" && (
@@ -85,8 +88,13 @@ export function LessonVideoField({
 }
 
 /* ── الفيديو المحفوظ ── */
-function UploadedCard({ video, onRemove }: { video: LessonVideo; onRemove: () => void }) {
+function UploadedCard({ video, courseId, lessonId, onRemove }: {
+  video: LessonVideo; courseId?: string; lessonId: string; onRemove: () => void;
+}) {
   return (
+    <div className="space-y-2">
+    {/* المعاينة في المحرّر نفسه: يرى الأستاذ فيديوه يعمل فور اكتمال الرفع */}
+    {courseId && <HostedVideo courseId={courseId} lessonId={lessonId} title={video.name || "فيديو الدرس"} video={video} />}
     <div className="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2.5">
       <FontAwesomeIcon icon={video.source === "drive" ? faHardDrive : faCircleCheck} className="h-5 w-5 shrink-0 text-emerald-600" />
       <span className="min-w-0 flex-1">
@@ -102,11 +110,14 @@ function UploadedCard({ video, onRemove }: { video: LessonVideo; onRemove: () =>
         <FontAwesomeIcon icon={faTrash} className="h-3 w-3" /> إزالة
       </button>
     </div>
+    </div>
   );
 }
 
 /* ── الرفع إلى BacZone (R2) ── */
-function R2Uploader({ courseId, lessonId, onDone }: { courseId?: string; lessonId: string; onDone: (v: LessonVideo) => void }) {
+function R2Uploader({ courseId, lessonId, onDone, ensureCourseId }: {
+  courseId?: string; lessonId: string; onDone: (v: LessonVideo) => void; ensureCourseId?: () => Promise<string | null>;
+}) {
   const [quota, setQuota] = useState<Quota | null>(null);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [error, setError] = useState("");
@@ -114,14 +125,12 @@ function R2Uploader({ courseId, lessonId, onDone }: { courseId?: string; lessonI
   const ctrl = useRef<AbortController | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  /* الحصّة للأستاذ لا للدورة — تُجلب مرّة. والإلغاء عند مغادرة الشاشة وحدها:
+     إنشاء المسوّدة تلقائياً يغيّر `courseId` أثناء الرفع، ولا يجوز أن يُلغيه. */
   useEffect(() => {
-    if (courseId) getQuota().then(setQuota).catch(() => {});
+    getQuota().then(setQuota).catch(() => {});
     return () => ctrl.current?.abort();
-  }, [courseId]);
-
-  if (!courseId) {
-    return <Note>احفظ المسوّدة أوّلاً (زرّ «حفظ»)، ثمّ ارفع الفيديو — الملفّ يُربط بالدورة المحفوظة.</Note>;
-  }
+  }, []);
 
   async function pick(file?: File | null) {
     if (!file || progress) return;
@@ -132,8 +141,13 @@ function R2Uploader({ courseId, lessonId, onDone }: { courseId?: string; lessonI
       return setError(`لا تكفي مساحتك (المتبقّي ${fmtBytes(Math.max(0, quota.limitBytes - quota.usedBytes))}). ارفع هذا الفيديو إلى Google Drive من الخيار الثاني.`);
     }
     ctrl.current = new AbortController();
+    setProgress({ loaded: 0, total: file.size, speed: 0, eta: null, state: "starting" });
     try {
-      const v = await uploadVideoToR2({ courseId: courseId!, lessonId, file, signal: ctrl.current.signal, onProgress: setProgress });
+      /* دورة جديدة لم تُحفظ: تُنشأ مسوّدتها الآن تلقائياً — لا «احفظ أوّلاً» */
+      const id = courseId ?? (await ensureCourseId?.()) ?? null;
+      if (!id) throw new Error("تعذّر إنشاء مسوّدة الدورة. تحقّق من الإنترنت ثمّ أعد المحاولة.");
+      if (!quota) getQuota().then(setQuota).catch(() => {});
+      const v = await uploadVideoToR2({ courseId: id, lessonId, file, signal: ctrl.current.signal, onProgress: setProgress });
       onDone(v);
       getQuota().then(setQuota).catch(() => {});
     } catch (e) {
@@ -214,14 +228,15 @@ function QuotaBar({ q }: { q: Quota }) {
 }
 
 /* ── الرفع إلى Drive الأستاذ ── */
-function DriveUploader({ courseId, onDone }: { courseId?: string; onDone: (v: LessonVideo) => void }) {
+function DriveUploader({ courseId, onDone, ensureCourseId }: {
+  courseId?: string; onDone: (v: LessonVideo) => void; ensureCourseId?: () => Promise<string | null>;
+}) {
   const [pct, setPct] = useState<number | null>(null);
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => { void initDrive().catch(() => {}); }, []);
 
-  if (!courseId) return <Note>احفظ المسوّدة أوّلاً، ثمّ ارفع الفيديو.</Note>;
   if (!isDriveConfigured()) return <ErrorNote text="الربط مع Google Drive غير مُفعّل على المنصّة." />;
 
   async function choose() {
@@ -240,8 +255,10 @@ function DriveUploader({ courseId, onDone }: { courseId?: string; onDone: (v: Le
     setError("");
     setPct(0);
     try {
+      const id = courseId ?? (await ensureCourseId?.()) ?? null;
+      if (!id) throw new Error("تعذّر إنشاء مسوّدة الدورة. تحقّق من الإنترنت ثمّ أعد المحاولة.");
       const r = await uploadToDrive(file, setPct);
-      const check = await checkDriveFile(courseId!, r.id).catch(() => ({ ok: true } as { ok: boolean; reason?: string }));
+      const check = await checkDriveFile(id, r.id).catch(() => ({ ok: true } as { ok: boolean; reason?: string }));
       if (!check.ok) throw new Error(check.reason || "تعذّر التحقّق من الملفّ على Drive.");
       onDone({ source: "drive", fileId: r.id, name: r.name || file.name, size: file.size, type: file.type });
     } catch (e) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { playLesson, VideoApiError } from "./video-client";
+import type { LessonVideo } from "./types";
 
 /* ════════════════════════════════════════════════════════════
    تشغيل فيديو مرفوع (BacZone أو Drive الأستاذ)
@@ -12,7 +13,11 @@ import { playLesson, VideoApiError } from "./video-client";
    المرحلة 3 ستستبدل واجهة المشغّل كلّها؛ المنطق هنا يبقى.
    ════════════════════════════════════════════════════════════ */
 
-export function HostedVideo({ courseId, lessonId, title }: { courseId: string; lessonId: string; title: string }) {
+export function HostedVideo({ courseId, lessonId, title, video }: {
+  courseId: string; lessonId: string; title: string;
+  /** معاينة المحرّر: الفيديو قبل حفظ الدرس */
+  video?: LessonVideo;
+}) {
   const [src, setSrc] = useState<{ kind: "file" | "embed"; url: string; type?: string; expiresAt?: number } | null>(null);
   const [error, setError] = useState("");
   const resumeAt = useRef(0);
@@ -21,12 +26,13 @@ export function HostedVideo({ courseId, lessonId, title }: { courseId: string; l
   const load = useCallback(async () => {
     setError("");
     try {
-      setSrc(await playLesson(courseId, lessonId));
+      setSrc(await playLesson(courseId, lessonId, video));
     } catch (e) {
       const status = e instanceof VideoApiError ? e.status : 0;
       setError(status === 404 ? "محتوى هذا الدرس غير متاح حالياً." : (e as Error).message || "تعذّر تحميل الفيديو.");
     }
-  }, [courseId, lessonId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, lessonId, video?.source === "r2" ? video.vid : video?.source === "drive" ? video.fileId : ""]);
 
   useEffect(() => {
     setSrc(null);

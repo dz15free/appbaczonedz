@@ -153,8 +153,25 @@ async function purge(req: NextRequest) {
 
 async function play(req: NextRequest) {
   const uid = await optionalUid(req);
-  const b = await body<{ courseId?: string; lessonId?: string }>(req);
+  const b = await body<{ courseId?: string; lessonId?: string; vid?: string; fileId?: string }>(req);
   if (!isId(b.courseId) || !isId(b.lessonId)) throw new HttpError(400, "طلب غير صالح.");
+
+  /* معاينة المحرّر: الأستاذ يرى فيديوه فور رفعه، قبل حفظ الدرس */
+  if ((b.vid || b.fileId) && uid) {
+    await assertCourseEditor(uid, b.courseId);
+    if (b.vid) {
+      const o = await getObject(b.vid);
+      if (!o || o.courseId !== b.courseId || o.status !== "done") throw new HttpError(404, "الفيديو غير متوفّر.");
+      return ok({ kind: "file", url: await playUrl(o.key), type: o.type, expiresAt: Date.now() + PLAY_URL_TTL * 1000 });
+    }
+    if (!/^[\w-]{10,200}$/.test(String(b.fileId))) throw new HttpError(400, "معرّف Drive غير صالح.");
+    if (driveStreamingEnabled()) {
+      const t = await driveStreamToken(String(b.fileId));
+      return ok({ kind: "file", url: `/api/videos/stream?t=${encodeURIComponent(t)}`, expiresAt: Date.now() + PLAY_URL_TTL * 1000 });
+    }
+    return ok({ kind: "embed", url: `https://drive.google.com/file/d/${b.fileId}/preview` });
+  }
+
   if (!(await canWatch(uid, b.courseId, b.lessonId))) {
     throw new HttpError(uid ? 403 : 401, uid ? "هذا الدرس للمشتركين في الدورة." : "سجّل الدخول لمشاهدة الدرس.");
   }

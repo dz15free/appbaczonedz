@@ -41,8 +41,12 @@ export const deleteVideo = (vid: string, courseId: string) => api("delete", { vi
 export const purgeCourseVideos = (courseId: string) => api("purge", { courseId });
 export const checkDriveFile = (courseId: string, fileId: string) =>
   api<{ ok: boolean; reason?: string; mimeType?: string; size?: number; streaming?: boolean }>("drive", { courseId, fileId });
-export const playLesson = (courseId: string, lessonId: string) =>
-  api<{ kind: "file" | "embed"; url: string; type?: string; expiresAt?: number }>("play", { courseId, lessonId });
+/** `video`: معاينة الأستاذ في المحرّر قبل حفظ الدرس — يقبلها الخادم من أستاذ الدورة وحده */
+export const playLesson = (courseId: string, lessonId: string, video?: LessonVideo) =>
+  api<{ kind: "file" | "embed"; url: string; type?: string; expiresAt?: number }>("play", {
+    courseId, lessonId,
+    ...(video?.source === "r2" ? { vid: video.vid } : video?.source === "drive" ? { fileId: video.fileId } : {}),
+  });
 export const videoAdmin = <T = unknown>(body: Record<string, unknown>) => api<T>("admin", body);
 
 export const MAX_VIDEO_BYTES = 2 * 1024 ** 3;
