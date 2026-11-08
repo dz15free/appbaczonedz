@@ -12,6 +12,10 @@ import {
   faPlay,
   faScaleBalanced,
   faVideo,
+  faMicrophone,
+  faComments,
+  faCompass,
+  faWandMagicSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { PublicHeader } from "@/components/public-shell";
 import { SiteFooter } from "@/components/ui/site-footer";
@@ -28,8 +32,8 @@ import { FEATURE_PAGES } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { DEFAULT_AUTHOR } from "@/features/authors/authors";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
-/* التصميم v8 «الكرّاس الحيّ» — طبقة على هذه الصفحة وحدها. حذف السطر يُعيد السابق. */
-import "./home-v8.css";
+/* التصميم v9 «واضح» — طبقة على هذه الصفحة وحدها. */
+import "./home-v9.css";
 
 export const revalidate = 600;
 
@@ -69,10 +73,6 @@ export default async function LandingPage() {
   const allArticles = await getPublishedEntries();
   const articles = allArticles.slice(0, 6);
   const freeToolsCount = TOOLS.filter((tool) => !tool.needsAccount).length;
-  /* الصورة الافتراضية بنسخ AVIF/WebP مصغّرة (15–25 KB بدل 3.3 MB). صورةٌ يرفعها
-     الأدمن من الإعدادات تُعرض كما هي. */
-  const DEFAULT_HERO = /\/landing\/baczone-student-hero\.png$/;
-  const customHero = s.landingHeroImageUrl && !DEFAULT_HERO.test(s.landingHeroImageUrl) ? s.landingHeroImageUrl : "";
   const footerDescription = s.landingFooterDescription || "منصّة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر: مقالات وأدلّة وأدوات وغرف ومجتمع في مكان واحد.";
   const fields = SPEC_FIELDS.slice(0, 8);
 
@@ -88,43 +88,74 @@ export default async function LandingPage() {
   return (
     <>
       <PublicRootRedirect />
-      <main dir="rtl" className="bz-landing-v2 bz-v8 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased">
+      <main dir="rtl" className="bz-landing-v2 bz-v9 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased">
         <FaviconSync href={s.faviconUrl} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-        <PublicHeader variant="landing" />
+        <PublicHeader />
 
-        {/* ── البطل ── */}
-        <section className="bz-landing-v2-hero relative isolate overflow-hidden bg-[#0C0F1E] text-white">
-          <HeroPicture custom={customHero} alt={s.landingHeroImageAlt || "تلميذ جزائري يراجع دروسه على الحاسوب"} className="bz-landing-hero-image absolute inset-0 h-full w-full object-cover" priority />
-          <div className="bz-v8-hero-shade" />
-          <div className="bz-v8-hero-ruled" aria-hidden="true" />
-          <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-center px-5 pb-24 pt-28 sm:px-8 lg:min-h-[680px] lg:px-10 lg:pb-28 lg:pt-32" dir="ltr">
-            <div className="bz-landing-hero-copy max-w-2xl text-left" dir="rtl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-bold text-white/85 backdrop-blur-md">
-                <span className="bz-hero-margin" aria-hidden="true" />{LANDING.badge}
-              </div>
-              <h1 className="bz-landing-hero-title max-w-2xl font-display font-black tracking-tight">
-                <span className="bz-landing-hero-title-lead">{LANDING.titleLead} <span className="bz-landing-hero-title-review">{LANDING.titleMid}</span></span>
-                <span className="bz-landing-hero-title-success bz-hero-success">{LANDING.titleSuccess}</span>
+        {/* ── البطل: المنتج نفسه هو الصورة ── */}
+        <section className="bz-v9-hero">
+          <div className="bz-v9-hero-glow" aria-hidden="true" />
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-14 pt-10 sm:px-8 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-20 lg:pt-16">
+            <div>
+              <span className="bz-v9-badge"><span className="bz-v9-dot" aria-hidden="true" />{LANDING.badge}</span>
+              <h1 className="bz-v9-title">
+                <span>{LANDING.titleLead}</span>
+                <span>{LANDING.titleMid}</span>
+                <span className="bz-v9-grad">{LANDING.titleSuccess}</span>
               </h1>
-              <p className="mt-6 max-w-xl text-base leading-[2] text-white/78 sm:text-lg">{LANDING.subtitle}</p>
+              <p className="bz-v9-sub">{LANDING.subtitle}</p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/register" className="bz-landing-primary-btn"><span>أنشئ حسابك مجّاناً</span><FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
-                <Link href="/blog" className="bz-landing-ghost-btn">تصفّح المقالات<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
+                <Link href="/register" className="bz-v9-btn">أنشئ حسابك مجّاناً <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
+                <Link href="/blog" className="bz-v9-btn-2">تصفّح المقالات <FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
               </div>
               {/* أرقام حقيقية من المحتوى نفسه — لا أرقام مختلَقة */}
-              <p className="bz-v8-stats" aria-label="ما تجده في BacZone">
-                <span><b>{SPEC_INDEX.length}</b> تخصّصاً في الدليل</span>
-                <span><b>{freeToolsCount}</b> أدوات مجّانية</span>
-                {allArticles.length > 0 && <span><b>{allArticles.length}</b> مقالاً للمراجعة</span>}
-              </p>
-              <nav aria-label="روابط سريعة" className="bz-hero-quick mt-7">
+              <dl className="bz-v9-stats">
+                <div><dt>تخصّصاً في الدليل</dt><dd>{SPEC_INDEX.length}</dd></div>
+                <div><dt>أدوات مجّانية</dt><dd>{freeToolsCount}</dd></div>
+                {allArticles.length > 0 && <div><dt>مقالاً للمراجعة</dt><dd>{allArticles.length}</dd></div>}
+              </dl>
+              <nav aria-label="روابط سريعة" className="bz-v9-quick">
                 {LANDING.quickLinks.map((q) => <Link key={q.href} href={q.href}>{q.label}</Link>)}
               </nav>
             </div>
-            <div className="bz-landing-mobile-visual" aria-hidden="true"><HeroPicture custom={customHero} alt="" className="bz-landing-mobile-visual-image" /><span className="bz-landing-mobile-visual-shade" /></div>
+
+            {/* البينتو: كلّ بلاطة تفتح صفحتها — شكل الأداة، لا نشاط مختلَق */}
+            <div className="bz-v9-bento">
+              <Link href="/calculate" className="bz-v9-tile is-calc">
+                <span className="bz-v9-ico"><FontAwesomeIcon icon={faCalculator} /></span>
+                <h3>احسب معدّلك بالمعاملات الرسمية</h3>
+                <div className="bz-v9-calc" aria-hidden="true">
+                  <span className="bz-v9-calc-row">الرياضيات <i>×5</i><u /></span>
+                  <span className="bz-v9-calc-row">العلوم الفيزيائية <i>×5</i><u /></span>
+                  <span className="bz-v9-calc-row">علوم الطبيعة <i>×6</i><u /></span>
+                  <span className="bz-v9-calc-btn">احسب معدّلي</span>
+                </div>
+                <span className="bz-v9-go">جرّبها الآن <FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span>
+              </Link>
+              <Link href="/features/study-rooms" className="bz-v9-tile is-rooms">
+                <span className="bz-v9-ico"><FontAwesomeIcon icon={faChalkboard} /></span>
+                <h3>غرف دراسة مباشرة</h3>
+                <span className="bz-v9-chips" aria-hidden="true">
+                  <span><FontAwesomeIcon icon={faChalkboard} className="h-3 w-3" />سبورة</span>
+                  <span><FontAwesomeIcon icon={faMicrophone} className="h-3 w-3" />صوت</span>
+                  <span><FontAwesomeIcon icon={faComments} className="h-3 w-3" />دردشة</span>
+                </span>
+              </Link>
+              <Link href="/specialties" className="bz-v9-tile is-spec">
+                <span className="bz-v9-big">{SPEC_INDEX.length}</span>
+                <h3>تخصّصاً جامعياً بالتفصيل</h3>
+                <span className="bz-v9-go" style={{ color: "var(--v9-mint)" }}><FontAwesomeIcon icon={faCompass} className="h-3 w-3" /> اختر عن علم</span>
+              </Link>
+              <Link href="/features/ai-assistant" className="bz-v9-tile is-ai">
+                <span className="bz-v9-ico"><FontAwesomeIcon icon={faWandMagicSparkles} /></span>
+                <span className="min-w-0">
+                  <h3>الخبّاشة — مساعدك الذكي</h3>
+                  <span className="bz-v9-bubble" aria-hidden="true">كيف أنظّم مراجعة الفلسفة؟<span className="bz-v9-typing"><i /><i /><i /></span></span>
+                </span>
+              </Link>
+            </div>
           </div>
-          <div className="absolute inset-x-0 bottom-0 h-12 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-16" />
         </section>
 
         <PublicSidebarLayout placement="global" includeArticles={false}>
@@ -173,7 +204,7 @@ export default async function LandingPage() {
           <section className="bz-platform px-5 py-16 sm:px-8 sm:py-20">
             <div className="mx-auto max-w-7xl">
               <div className="mb-9 text-center"><span className="bz-landing-kicker">ادرس مع الآخرين</span><h2 className="bz-landing-section-title">منصّة كاملة حين تحتاجها</h2><p className="bz-landing-section-subtitle">غرف بسبورة وصوت، ومجتمع حسب المادّة، ومساعدة ذكيّة. اضغط أيّ ميزة لترى كيف تعمل بالتفصيل.</p></div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bz-v9-features grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {FEATURE_PAGES.map((f) => (
                   <Link key={f.slug} href={`/features/${f.slug}`} className="bz-landing-info-card bz-feature-card">
                     <span className="bz-landing-icon-box"><FontAwesomeIcon icon={FEATURE_ICON[f.icon]} className="h-5 w-5" /></span>
@@ -224,7 +255,7 @@ export default async function LandingPage() {
           </section>
 
           {/* ── ٦: أسئلة ── */}
-          <section className="bz-v8-faq px-5 py-16 sm:px-8 sm:py-20">
+          <section className="bz-v9-faq px-5 py-16 sm:px-8 sm:py-20">
             <div className="mx-auto max-w-4xl">
               <div className="mb-9 text-center"><span className="bz-landing-kicker">أسئلة شائعة</span><h2 className="bz-landing-section-title">قبل أن تبدأ</h2></div>
               <div className="grid gap-3 md:grid-cols-2">{LANDING.faq.map((f) => <LandingFaqRow key={f.q} q={f.q} a={f.a} />)}</div>
@@ -232,38 +263,19 @@ export default async function LandingPage() {
           </section>
         </PublicSidebarLayout>
 
-        <section className="bz-landing-final-cta relative overflow-hidden px-5 py-20 text-white sm:px-8 sm:py-24">
-          <div className="bz-v8-cta-bg" />
-          <div className="relative mx-auto max-w-3xl text-center">
-            <img src={s.logoUrl || DEFAULT_LOGO} alt="" width={64} height={64} className="mx-auto mb-5 h-14 w-14 rounded-2xl object-contain" />
+        <section className="px-0 pt-4 sm:px-8">
+          <div className="bz-v9-cta px-6 py-16 text-center text-white sm:px-10 sm:py-20">
+            <img src={s.logoUrl || DEFAULT_LOGO} alt="" width={64} height={64} className="mx-auto mb-5 h-14 w-14 rounded-2xl bg-white/95 object-contain p-1.5" />
             <h2 className="font-display text-3xl font-black sm:text-5xl">ابدأ بما تحتاجه اليوم</h2>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/75">مقال يوضّح طريقك، أو أداة تحسب معدّلك، أو غرفة تراجع فيها مع غيرك.</p>
+            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/80">مقال يوضّح طريقك، أو أداة تحسب معدّلك، أو غرفة تراجع فيها مع غيرك.</p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/blog" className="bz-landing-primary-btn">اقرأ المقالات <FontAwesomeIcon icon={faArrowLeft} /></Link>
-              <Link href="/register" className="bz-landing-ghost-btn">أنشئ حسابك <FontAwesomeIcon icon={faArrowLeft} /></Link>
+              <Link href="/register" className="bz-v9-btn">أنشئ حسابك مجّاناً <FontAwesomeIcon icon={faArrowLeft} /></Link>
+              <Link href="/blog" className="bz-v9-btn-2">اقرأ المقالات <FontAwesomeIcon icon={faArrowLeft} /></Link>
             </div>
           </div>
         </section>
         <SiteFooter variant="full" landingDescription={footerDescription} />
       </main>
     </>
-  );
-}
-
-/* صورة البطل: AVIF ثمّ WebP بثلاثة مقاسات، والمتصفّح يختار الأنسب لشاشته.
-   الأولى (المرئية فوراً) تُطلب بأولويّة عالية لأنّها أكبر عنصر في الشاشة (LCP). */
-function HeroPicture({ custom, alt, className, priority = false }: { custom: string; alt: string; className: string; priority?: boolean }) {
-  if (custom) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={custom} alt={alt} className={className} />;
-  }
-  const set = (ext: string) => [640, 1280, 1920].map((w) => `/landing/hero-${w}.${ext} ${w}w`).join(", ");
-  return (
-    <picture>
-      <source type="image/avif" srcSet={set("avif")} sizes="100vw" />
-      <source type="image/webp" srcSet={set("webp")} sizes="100vw" />
-      <img src="/landing/hero-1280.webp" width={2560} height={1440} alt={alt} className={className}
-        fetchPriority={priority ? "high" : undefined} loading={priority ? "eager" : "lazy"} decoding="async" />
-    </picture>
   );
 }
