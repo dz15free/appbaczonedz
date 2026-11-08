@@ -12,6 +12,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { loginHrefFor, useQueryParam } from "@/features/auth/use-require-auth";
 import { listenPublicCourse, listenCourse, listenCourseContent } from "@/features/courses/courses";
+import { HostedVideo } from "@/features/courses/hosted-video";
 import {
   useCourseAccess, useProgress, percentOf, setLessonDone, markLastLesson,
 } from "@/features/courses/enrollment";
@@ -241,7 +242,8 @@ export default function CoursePlayerPage() {
             </div>
           ) : (
             <>
-              <LessonViewer lesson={lesson} url={url} text={text} />
+              <LessonViewer lesson={lesson} url={url} text={text} courseId={courseId}
+                hosted={Boolean(lesson && lesson.kind === "video" && (content[lesson.id]?.video || !url))} />
 
               <div className="rounded-3xl border border-border bg-surface p-4">
                 <h1 className="font-display text-lg font-extrabold text-text-primary">{lesson?.title}</h1>
@@ -350,9 +352,12 @@ export default function CoursePlayerPage() {
    زرّ صريح.
 ════════════════════════════════════════════════════════════ */
 function LessonViewer({
-  lesson, url, text,
-}: { lesson: CourseLesson | null; url?: string; text?: string }) {
+  lesson, url, text, courseId, hosted,
+}: { lesson: CourseLesson | null; url?: string; text?: string; courseId: string; hosted?: boolean }) {
   if (!lesson) return null;
+
+  /* فيديو مرفوع (BacZone أو Drive الأستاذ) — رابطه مؤقّت يُطلب من الخادم */
+  if (hosted) return <HostedVideo courseId={courseId} lessonId={lesson.id} title={lesson.title} />;
 
   if (lesson.kind === "text") {
     return (

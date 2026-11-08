@@ -44,3 +44,10 @@ new_sqlite_classes = ["DOQueueHandler"]
 
 [observability]
 enabled = true
+
+# متغيّرات غير سرّية. الأسرار عبر `npx wrangler secret put` فقط:
+#   R2_VIDEO_ACCESS_KEY_ID / R2_VIDEO_SECRET_ACCESS_KEY  مفتاح S3 محصور بـ bucket الفيديو
+#   VIDEO_STREAM_SECRET                                  توقيع روابط تشغيل Drive المؤقّتة
+#   GOOGLE_DRIVE_API_KEY (اختياري)                       يُشغّل فيديو Drive في مشغّل المنصّة
+[vars]
+R2_ACCOUNT_ID = "2c3434fe7a99b353f1d23ac1473527f5"

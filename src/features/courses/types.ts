@@ -92,7 +92,14 @@ export interface LessonContent {
   url?: string;
   resourceUrl?: string;
   text?: string;
+  /** فيديو مرفوع: إلى BacZone (R2) أو إلى Drive الأستاذ. يتقدّم على `url` في التشغيل */
+  video?: LessonVideo;
 }
+
+/** مرجع الفيديو المرفوع — لا رابط فيه: رابط المشاهدة يُصدره الخادم مؤقّتاً بعد التحقّق */
+export type LessonVideo =
+  | { source: "r2"; vid: string; size?: number; type?: string; name?: string }
+  | { source: "drive"; fileId: string; size?: number; type?: string; name?: string };
 
 export interface Course {
   id: string;

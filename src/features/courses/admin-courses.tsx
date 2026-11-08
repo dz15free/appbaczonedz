@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminVideoStorage } from "./admin-video-storage";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -64,6 +65,7 @@ export function AdminCourses({ admin }: { admin: { uid: string; name: string } }
 
   return (
     <div className="space-y-3">
+      <AdminVideoStorage />
       <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
         <p className="text-xs font-bold text-text-primary">🎓 إدارة الدورات</p>
         <p className="mt-1 text-[11px] leading-relaxed text-text-muted">

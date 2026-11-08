@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,6 +21,8 @@ import {
   formatDuration, providerOf,
 } from "@/features/courses/types";
 import { CourseCover, CoursePrice } from "@/features/courses/course-ui";
+import { LessonVideoField } from "@/features/courses/lesson-video-field";
+import { deleteVideo } from "@/features/courses/video-client";
 
 /* ════════════════════════════════════════════════════════════
    بنّاء الدورة — معالج من خمس خطوات
@@ -99,6 +101,15 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
   const locked = Boolean(course && !canTeacherEdit(course.status));
 
+  /* ── ملفّات الفيديو على BacZone: ما حُفظ، وما رُفع في هذه الجلسة ──
+     بعد كلّ حفظ ناجح يُحذف من R2 كلّ ملفّ لم يعد درسٌ يستعمله (أُزيل أو
+     استُبدل). وما يفوت هنا (إغلاق الصفحة قبل الحفظ) ينظّفه زرّ الإدارة. */
+  const r2Vids = (c: Record<string, LessonContent>) =>
+    new Set(Object.values(c).flatMap((x) => (x.video?.source === "r2" ? [x.video.vid] : [])));
+  const savedVids = useRef<Set<string>>(r2Vids(content ?? {}));
+  const sessionVids = useRef<Set<string>>(new Set());
+  const [autoSave, setAutoSave] = useState(0);
+
   useEffect(() => {
     if (!draft.subject && subjects.length) setDraft((d) => (d.subject ? d : { ...d, subject: subjects[0].id }));
   }, [subjects, draft.subject]);
@@ -126,7 +137,8 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
       for (const l of s.lessons ?? []) {
         if (!l.title.trim()) { e.lessons = "كل درس يحتاج عنواناً."; continue; }
         const u = draft.content[l.id]?.url ?? "";
-        const v = validateLessonUrl(l.kind, u);
+        /* فيديو مرفوع (BacZone أو Drive) يُغني عن الرابط */
+        const v = l.kind === "video" && draft.content[l.id]?.video ? null : validateLessonUrl(l.kind, u);
         if (v) e[`lesson-${l.id}`] = `«${l.title}»: ${v}`;
         if (l.kind === "text" && !(draft.content[l.id]?.text ?? "").trim()) {
           e[`lesson-${l.id}`] = `«${l.title}»: نصّ الدرس فارغ.`;
@@ -139,6 +151,13 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
   const lessonErrors = Object.entries(errors).filter(([k]) => k.startsWith("lesson-")).map(([, v]) => v);
   const valid = Object.keys(errors).length === 0;
 
+  /* بعد اكتمال رفع فيديو تُحفظ المسوّدة فوراً، فلا يضيع مرجع الملفّ إن
+     أُغلقت الصفحة. الأثر يعمل بعد تحديث المسوّدة، فيحفظ نسختها الجديدة. */
+  useEffect(() => {
+    if (autoSave) void persist(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSave]);
+
   /* ── حفظ ── */
   async function persist(silent = false): Promise<string | null> {
     if (locked) return null;
@@ -148,6 +167,12 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
       const input: CourseDraftInput = { ...draft, content: draft.content };
       if (courseId) {
         await saveCourse(courseId, input, teacher);
+        const now = r2Vids(input.content);
+        for (const vid of new Set([...savedVids.current, ...sessionVids.current])) {
+          if (!now.has(vid)) void deleteVideo(vid, courseId).catch(() => { /* ينظّفه زرّ الإدارة لاحقاً */ });
+        }
+        savedVids.current = now;
+        sessionVids.current = new Set();
       } else {
         const id = await createCourse(input, teacher);
         setCourseId(id);
@@ -464,6 +489,11 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
                       error={errors[`lesson-${l.id}`]}
                       onPatch={(p) => patchLesson(s.id, l.id, p)}
                       onContent={(p) => patchContent(l.id, p)}
+                      courseId={courseId}
+                      onUploaded={(v) => {
+                        if (v.source === "r2") sessionVids.current.add(v.vid);
+                        setAutoSave((n) => n + 1);
+                      }}
                       onMove={(d) => moveLesson(s.id, li, d)}
                       onRemove={() => removeLesson(s.id, l.id)}
                     />
@@ -645,7 +675,7 @@ export function CourseBuilder({ course, content, teacher }: BuilderProps) {
 
 /* ── محرّر الدرس ── */
 function LessonEditor({
-  lesson, index, total, content, error, onPatch, onContent, onMove, onRemove,
+  lesson, index, total, content, error, onPatch, onContent, onMove, onRemove, courseId, onUploaded,
 }: {
   lesson: CourseLesson;
   index: number;
@@ -654,6 +684,8 @@ function LessonEditor({
   error?: string;
   onPatch: (p: Partial<CourseLesson>) => void;
   onContent: (p: Partial<LessonContent>) => void;
+  courseId?: string;
+  onUploaded?: (v: NonNullable<LessonContent["video"]>) => void;
   onMove: (d: -1 | 1) => void;
   onRemove: () => void;
 }) {
@@ -708,12 +740,13 @@ function LessonEditor({
               <textarea value={content.text ?? ""} onChange={(e) => onContent({ text: e.target.value })}
                 rows={6} maxLength={20000} className={inputCls(undefined, true)} />
             </label>
+          ) : lesson.kind === "video" ? (
+            <LessonVideoField courseId={courseId} lessonId={lesson.id} content={content}
+              onContent={onContent} onUploaded={onUploaded} />
           ) : (
             <label className="block">
               <span className="mb-1 block text-[11px] font-bold text-text-muted">
-                {lesson.kind === "video" ? "رابط الفيديو (YouTube / Google Drive / MP4)"
-                  : lesson.kind === "pdf" ? "رابط الملفّ (Google Drive / PDF)"
-                  : "رابط المصدر الخارجي"}
+                {lesson.kind === "pdf" ? "رابط الملفّ (Google Drive / PDF)" : "رابط المصدر الخارجي"}
               </span>
               <input value={content.url ?? ""} onChange={(e) => onContent({ url: e.target.value })}
                 dir="ltr" placeholder="https://…" className={`${inputCls()} font-mono text-xs`} />

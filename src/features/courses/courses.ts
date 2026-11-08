@@ -5,6 +5,7 @@ import {
 } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
 import { addNotification } from "@/features/community/social";
+import { purgeCourseVideos } from "./video-client";
 import {
   type Course, type CourseSection, type CourseStatus, type LessonContent,
   countLessons, sumDuration, flatLessons, stripUndefined,
@@ -202,6 +203,9 @@ function contentFor(input: CourseDraftInput): Record<string, LessonContent> {
       url: c.url?.trim() || undefined,
       resourceUrl: c.resourceUrl?.trim() || undefined,
       text: l.kind === "text" ? (c.text?.slice(0, 20000) || undefined) : undefined,
+      /* مرجع الفيديو المرفوع يُحفظ مع المحتوى — وإلّا محاه الحفظ التالي
+         (الحفظ يستبدل عقدة المحتوى كاملة). */
+      video: l.kind === "video" && c.video ? stripUndefined({ ...c.video }) : undefined,
     });
     out[l.id] = row;
   }
@@ -237,6 +241,9 @@ export async function saveCourse(courseId: string, input: CourseDraftInput, teac
  * قاعدة البيانات.
  */
 export async function deleteCourse(courseId: string, teacherId?: string) {
+  /* فيديوهات الدورة على BacZone أوّلاً: الخادم يتحقّق من ملكيّة الدورة،
+     وصفّها ما زال موجوداً الآن. فشلها لا يمنع الحذف — يلتقطها زرّ التنظيف. */
+  await purgeCourseVideos(courseId).catch(() => {});
   await remove(ref(rtdb, `${CONTENT}/${courseId}`)).catch(() => {});
   await remove(ref(rtdb, `${PUB}/${courseId}`)).catch(() => {});
   if (teacherId) await remove(ref(rtdb, `${INDEX}/${teacherId}/${courseId}`)).catch(() => {});
