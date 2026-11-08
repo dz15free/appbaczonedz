@@ -63,7 +63,7 @@
 .bz-v8 .bz-v8-hero-shade {
   position: absolute; inset: 0;
   background:
-    radial-gradient(60rem 30rem at 85% 0%, rgb(48 68 224 / .45), transparent 60%),
+    radial-gradient(48rem 28rem at 12% 8%, rgb(48 68 224 / .38), transparent 62%),
     linear-gradient(to left, rgb(11 16 51 / .15), rgb(11 16 51 / .62) 45%, rgb(11 16 51 / .97));
 }
 .bz-v8 .bz-v8-hero-ruled {

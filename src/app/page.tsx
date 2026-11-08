@@ -71,7 +71,8 @@ export default async function LandingPage() {
   const freeToolsCount = TOOLS.filter((tool) => !tool.needsAccount).length;
   /* الصورة الافتراضية بنسخ AVIF/WebP مصغّرة (15–25 KB بدل 3.3 MB). صورةٌ يرفعها
      الأدمن من الإعدادات تُعرض كما هي. */
-  const customHero = s.landingHeroImageUrl || "";
+  const DEFAULT_HERO = /\/landing\/baczone-student-hero\.png$/;
+  const customHero = s.landingHeroImageUrl && !DEFAULT_HERO.test(s.landingHeroImageUrl) ? s.landingHeroImageUrl : "";
   const footerDescription = s.landingFooterDescription || "منصّة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر: مقالات وأدلّة وأدوات وغرف ومجتمع في مكان واحد.";
   const fields = SPEC_FIELDS.slice(0, 8);
 
