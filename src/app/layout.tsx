@@ -16,6 +16,26 @@ import { SITE_URL } from "@/lib/site-url";
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
 
+/* ════════════════════════════════════════════════════════════
+   Google AdSense — السكربت الأساسي وحده (لا وحدات إعلانية يدوية)
+   يكفي لربط الموقع بالحساب وللإعلانات التلقائية بعد القبول.
+   الحساب يطابق public/ads.txt.
+
+   في الإنتاج وحده، ويُقرَّر **وقت البناء** (الصفحات تُولَّد ثابتةً، فلا
+   يُعرف اسم النطاق وقت الطلب):
+     • لا في التطوير (`next dev`)،
+     • ولا في معاينات Vercel (`VERCEL_ENV=preview`)،
+     • ولا في بناءات معاينة Cloudflare: فرعٌ غير فرع الإنتاج
+       (`WORKERS_CI_BRANCH` يحقنه Cloudflare Builds).
+   ════════════════════════════════════════════════════════════ */
+const ADSENSE_CLIENT = "ca-pub-9915600428717387";
+const PRODUCTION_BRANCHES = ["main", "cloudflare-migration"];
+const ciBranch = process.env.WORKERS_CI_BRANCH;
+const ADSENSE_ON =
+  process.env.NODE_ENV === "production" &&
+  process.env.VERCEL_ENV !== "preview" &&
+  !(ciBranch && !PRODUCTION_BRANCHES.includes(ciBranch));
+
 /* الخطوط مستضافة في /public/fonts (IBM Plex Sans Arabic + Alexandria) ومعرّفة في
    design-v7.css — لا اعتماد على Google لا وقت البناء ولا وقت التشغيل. */
 
@@ -65,6 +85,9 @@ export const metadata: Metadata = {
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
+  /* وسم ربط AdSense — طريقة التحقّق الرسمية الثانية بجانب السكربت، ويظهر في
+     مصدر HTML نفسه. علنيّ بطبعه (هو نفسه في ads.txt). */
+  other: { "google-adsense-account": ADSENSE_CLIENT },
   /* الأيقونات كلّها محلّية من `public/` — لا نطاق ثالث على المسار
      الحرج لكل صفحة. والترتيب مقصود، و`?v=3` مقصود:
 
@@ -134,6 +157,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
+        {ADSENSE_ON && (
+          <Script
+            id="adsense"
+            async
+            strategy="afterInteractive"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
+        )}
         {/* الوزنان الأكثر استعمالاً يُطلبان مع الصفحة لا بعد قراءة CSS —
             فلا يرمش النصّ من خطّ النظام إلى الخطّ الحقيقي. */}
         <link rel="preload" href="/fonts/plex-arabic-arabic-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
