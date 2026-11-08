@@ -28,6 +28,8 @@ import { FEATURE_PAGES } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { DEFAULT_AUTHOR } from "@/features/authors/authors";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
+/* التصميم v8 «الكرّاس الحيّ» — طبقة على هذه الصفحة وحدها. حذف السطر يُعيد السابق. */
+import "./home-v8.css";
 
 export const revalidate = 600;
 
@@ -64,8 +66,12 @@ export default async function LandingPage() {
   const s = await getPublicSiteSettings();
   const publicTools = TOOLS.filter((tool) => !tool.needsAccount).slice(0, 8);
   const landingGuides = GUIDES.slice(0, 4);
-  const articles = (await getPublishedEntries()).slice(0, 6);
-  const heroImage = s.landingHeroImageUrl || "/landing/baczone-student-hero.png";
+  const allArticles = await getPublishedEntries();
+  const articles = allArticles.slice(0, 6);
+  const freeToolsCount = TOOLS.filter((tool) => !tool.needsAccount).length;
+  /* الصورة الافتراضية بنسخ AVIF/WebP مصغّرة (15–25 KB بدل 3.3 MB). صورةٌ يرفعها
+     الأدمن من الإعدادات تُعرض كما هي. */
+  const customHero = s.landingHeroImageUrl || "";
   const footerDescription = s.landingFooterDescription || "منصّة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر: مقالات وأدلّة وأدوات وغرف ومجتمع في مكان واحد.";
   const fields = SPEC_FIELDS.slice(0, 8);
 
@@ -81,15 +87,16 @@ export default async function LandingPage() {
   return (
     <>
       <PublicRootRedirect />
-      <main dir="rtl" className="bz-landing-v2 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased">
+      <main dir="rtl" className="bz-landing-v2 bz-v8 relative min-h-screen overflow-x-hidden bg-[var(--bz-bg)] text-[var(--bz-text)] antialiased">
         <FaviconSync href={s.faviconUrl} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <PublicHeader variant="landing" />
 
         {/* ── البطل ── */}
         <section className="bz-landing-v2-hero relative isolate overflow-hidden bg-[#0C0F1E] text-white">
-          <img src={heroImage} alt={s.landingHeroImageAlt || "تلميذ جزائري يراجع دروسه على الحاسوب"} className="bz-landing-hero-image absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-l from-[#0C0F1E]/15 via-[#0C0F1E]/60 to-[#0C0F1E]/96" />
+          <HeroPicture custom={customHero} alt={s.landingHeroImageAlt || "تلميذ جزائري يراجع دروسه على الحاسوب"} className="bz-landing-hero-image absolute inset-0 h-full w-full object-cover" priority />
+          <div className="bz-v8-hero-shade" />
+          <div className="bz-v8-hero-ruled" aria-hidden="true" />
           <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-center px-5 pb-24 pt-28 sm:px-8 lg:min-h-[680px] lg:px-10 lg:pb-28 lg:pt-32" dir="ltr">
             <div className="bz-landing-hero-copy max-w-2xl text-left" dir="rtl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-bold text-white/85 backdrop-blur-md">
@@ -104,11 +111,17 @@ export default async function LandingPage() {
                 <Link href="/register" className="bz-landing-primary-btn"><span>أنشئ حسابك مجّاناً</span><FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
                 <Link href="/blog" className="bz-landing-ghost-btn">تصفّح المقالات<FontAwesomeIcon icon={faArrowLeft} className="h-3.5 w-3.5" /></Link>
               </div>
+              {/* أرقام حقيقية من المحتوى نفسه — لا أرقام مختلَقة */}
+              <p className="bz-v8-stats" aria-label="ما تجده في BacZone">
+                <span><b>{SPEC_INDEX.length}</b> تخصّصاً في الدليل</span>
+                <span><b>{freeToolsCount}</b> أدوات مجّانية</span>
+                {allArticles.length > 0 && <span><b>{allArticles.length}</b> مقالاً للمراجعة</span>}
+              </p>
               <nav aria-label="روابط سريعة" className="bz-hero-quick mt-7">
                 {LANDING.quickLinks.map((q) => <Link key={q.href} href={q.href}>{q.label}</Link>)}
               </nav>
             </div>
-            <div className="bz-landing-mobile-visual" aria-hidden="true"><img src={heroImage} alt="" className="bz-landing-mobile-visual-image" /><span className="bz-landing-mobile-visual-shade" /></div>
+            <div className="bz-landing-mobile-visual" aria-hidden="true"><HeroPicture custom={customHero} alt="" className="bz-landing-mobile-visual-image" /><span className="bz-landing-mobile-visual-shade" /></div>
           </div>
           <div className="absolute inset-x-0 bottom-0 h-12 bg-[var(--bz-bg)] [clip-path:ellipse(70%_100%_at_50%_100%)] sm:h-16" />
         </section>
@@ -170,7 +183,11 @@ export default async function LandingPage() {
                 ))}
               </div>
               <div className="bz-landing-platform-shot mx-auto mt-10 max-w-5xl overflow-hidden rounded-[24px] border border-[var(--bz-line)] bg-[var(--bz-surface)] p-2 shadow-xl shadow-slate-900/10">
-                <img src="/landing/baczonedz-dashboard-reference-v2.png" alt="لقطة من واجهة منصّة BacZone: المجتمع والغرف والأدوات" loading="lazy" className="block h-auto w-full rounded-[18px]" />
+                <picture>
+                  <source type="image/avif" srcSet="/landing/dashboard-800.avif 800w, /landing/dashboard-1366.avif 1366w" sizes="(max-width: 1024px) 100vw, 1024px" />
+                  <source type="image/webp" srcSet="/landing/dashboard-800.webp 800w, /landing/dashboard-1366.webp 1366w" sizes="(max-width: 1024px) 100vw, 1024px" />
+                  <img src="/landing/dashboard-1366.webp" width={1366} height={610} alt="لقطة من واجهة منصّة BacZone: المجتمع والغرف والأدوات" loading="lazy" decoding="async" className="block h-auto w-full rounded-[18px]" />
+                </picture>
               </div>
             </div>
           </section>
@@ -206,7 +223,7 @@ export default async function LandingPage() {
           </section>
 
           {/* ── ٦: أسئلة ── */}
-          <section className="bg-[var(--bz-canvas)] px-5 py-16 sm:px-8 sm:py-20">
+          <section className="bz-v8-faq px-5 py-16 sm:px-8 sm:py-20">
             <div className="mx-auto max-w-4xl">
               <div className="mb-9 text-center"><span className="bz-landing-kicker">أسئلة شائعة</span><h2 className="bz-landing-section-title">قبل أن تبدأ</h2></div>
               <div className="grid gap-3 md:grid-cols-2">{LANDING.faq.map((f) => <LandingFaqRow key={f.q} q={f.q} a={f.a} />)}</div>
@@ -215,7 +232,7 @@ export default async function LandingPage() {
         </PublicSidebarLayout>
 
         <section className="bz-landing-final-cta relative overflow-hidden px-5 py-20 text-white sm:px-8 sm:py-24">
-          <div className="absolute inset-0 bg-[linear-gradient(120deg,#0C0F1E,#2433B8)]" />
+          <div className="bz-v8-cta-bg" />
           <div className="relative mx-auto max-w-3xl text-center">
             <img src={s.logoUrl || DEFAULT_LOGO} alt="" width={64} height={64} className="mx-auto mb-5 h-14 w-14 rounded-2xl object-contain" />
             <h2 className="font-display text-3xl font-black sm:text-5xl">ابدأ بما تحتاجه اليوم</h2>
@@ -229,5 +246,23 @@ export default async function LandingPage() {
         <SiteFooter variant="full" landingDescription={footerDescription} />
       </main>
     </>
+  );
+}
+
+/* صورة البطل: AVIF ثمّ WebP بثلاثة مقاسات، والمتصفّح يختار الأنسب لشاشته.
+   الأولى (المرئية فوراً) تُطلب بأولويّة عالية لأنّها أكبر عنصر في الشاشة (LCP). */
+function HeroPicture({ custom, alt, className, priority = false }: { custom: string; alt: string; className: string; priority?: boolean }) {
+  if (custom) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={custom} alt={alt} className={className} />;
+  }
+  const set = (ext: string) => [640, 1280, 1920].map((w) => `/landing/hero-${w}.${ext} ${w}w`).join(", ");
+  return (
+    <picture>
+      <source type="image/avif" srcSet={set("avif")} sizes="100vw" />
+      <source type="image/webp" srcSet={set("webp")} sizes="100vw" />
+      <img src="/landing/hero-1280.webp" width={2560} height={1440} alt={alt} className={className}
+        fetchPriority={priority ? "high" : undefined} loading={priority ? "eager" : "lazy"} decoding="async" />
+    </picture>
   );
 }

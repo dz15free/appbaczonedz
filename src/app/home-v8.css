@@ -1,0 +1,209 @@
+/* ════════════════════════════════════════════════════════════════════
+   BacZone v8 — «الكرّاس الحيّ»  (الصفحة الرئيسية أوّلاً — المرحلة 4.1)
+
+   الاتّجاه: تطوير هويّة «الكرّاس» (v7) لا استبدالها. التلميذ الجزائري
+   يعرف هذه الأشياء بيده: حبر القلم الأزرق، وخطّ الهامش الأحمر، وسطور
+   Seyès. نأخذها ونجعلها أهدأ وأفخم:
+
+     • حبر   #3044E0   الأساسي — أزرار، روابط، تقدّم
+     • ليل   #0B1033   أسطح العمق: البطل، الدعوة الأخيرة، الوضع الليلي
+     • هامش  #E5484D   توقيعٌ لا لون: خطّ رفيع يُعلِّم البداية فقط
+     • نعناع #0E9F75   النجاح والأستاذ — شمس #F2A93B للتمييز
+     • ورق   #F6F7FC   خلفية باردة، والبطاقات بيضاء فوقها
+
+   الخطوط: Alexandria للعناوين (ثقيلة، متقاربة)، IBM Plex Sans Arabic للنصّ
+   (16px، سطر 1.9). الزوايا 20px للبطاقات و14px للأزرار. الظلال طبقتان
+   بلون الحبر لا رمادية. الحركة 200ms، وظهور البطاقات عند التمرير بلا
+   أيّ JavaScript (scroll-driven) — ويتوقّف كلّه مع «تقليل الحركة».
+
+   النطاق: `.bz-v8` على <main> الصفحة الرئيسية وحدها. حذف استيراد هذا
+   الملفّ من `app/page.tsx` يُعيد التصميم السابق كما كان تماماً.
+   ════════════════════════════════════════════════════════════════════ */
+
+.bz-v8 {
+  --v8-ink: #3044E0;
+  --v8-ink-600: #2433B8;
+  --v8-ink-050: #EEF0FE;
+  --v8-ink-text: #3044E0;
+  --v8-night: #0B1033;
+  --v8-night-2: #141A3D;
+  --v8-paper: #F6F7FC;
+  --v8-surface: #FFFFFF;
+  --v8-line: #E4E7F2;
+  --v8-text: #131833;
+  --v8-muted: #586080;
+  --v8-margin: #E5484D;
+  --v8-mint: #0E9F75;
+  --v8-sun: #F2A93B;
+  --v8-r-card: 20px;
+  --v8-r-btn: 14px;
+  --v8-shadow: 0 1px 2px rgb(19 24 51 / .05), 0 10px 28px -16px rgb(19 24 51 / .22);
+  --v8-shadow-hover: 0 2px 4px rgb(19 24 51 / .06), 0 24px 46px -20px rgb(48 68 224 / .38);
+  --v8-ruled: repeating-linear-gradient(180deg, transparent 0 31px, rgb(48 68 224 / .07) 31px 32px);
+  --bz-bg: var(--v8-paper);
+  background: var(--v8-paper);
+  color: var(--v8-text);
+}
+
+.dark .bz-v8 {
+  --v8-ink-text: #8F9BFF;
+  --v8-ink-050: rgb(143 155 255 / .12);
+  --v8-paper: #0B1033;
+  --v8-surface: #141A3D;
+  --v8-line: #252D58;
+  --v8-text: #E9EBF8;
+  --v8-muted: #A3AAC8;
+  --v8-shadow: 0 1px 2px rgb(0 0 0 / .3), 0 12px 30px -16px rgb(0 0 0 / .6);
+  --v8-shadow-hover: 0 2px 4px rgb(0 0 0 / .35), 0 24px 46px -20px rgb(80 98 255 / .45);
+  --v8-ruled: repeating-linear-gradient(180deg, transparent 0 31px, rgb(143 155 255 / .06) 31px 32px);
+}
+
+/* ── البطل ── */
+.bz-v8 .bz-landing-v2-hero { background: var(--v8-night); }
+.bz-v8 .bz-v8-hero-shade {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60rem 30rem at 85% 0%, rgb(48 68 224 / .45), transparent 60%),
+    linear-gradient(to left, rgb(11 16 51 / .15), rgb(11 16 51 / .62) 45%, rgb(11 16 51 / .97));
+}
+.bz-v8 .bz-v8-hero-ruled {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(180deg, transparent 0 39px, rgb(255 255 255 / .045) 39px 40px);
+  mask-image: linear-gradient(to left, transparent 30%, #000 75%);
+}
+.bz-v8 .bz-landing-hero-title { font-weight: 900; letter-spacing: -.035em; }
+.bz-v8 .bz-hero-success { position: relative; color: #fff; }
+.bz-v8 .bz-landing-hero-copy > p { color: rgb(255 255 255 / .8); }
+
+.bz-v8 .bz-v8-stats {
+  display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.6rem;
+}
+.bz-v8 .bz-v8-stats span {
+  display: inline-flex; align-items: baseline; gap: .35rem;
+  border-radius: 999px; border: 1px solid rgb(255 255 255 / .14); background: rgb(255 255 255 / .06);
+  padding: .45rem .9rem; font-size: .8rem; font-weight: 700; color: rgb(255 255 255 / .82);
+  backdrop-filter: blur(6px);
+}
+.bz-v8 .bz-v8-stats b { font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 900; color: #fff; }
+
+/* ── الأزرار ── */
+.bz-v8 .bz-landing-primary-btn {
+  min-height: 52px; border-radius: var(--v8-r-btn); padding: 0 1.5rem;
+  background: linear-gradient(180deg, #4357F0, var(--v8-ink));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), 0 14px 30px -12px rgb(48 68 224 / .75);
+  font-weight: 800; color: #fff;
+}
+.bz-v8 .bz-landing-primary-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.bz-v8 .bz-landing-ghost-btn {
+  min-height: 52px; border-radius: var(--v8-r-btn); padding: 0 1.4rem;
+  border: 1px solid rgb(255 255 255 / .22); background: rgb(255 255 255 / .07);
+  backdrop-filter: blur(8px); font-weight: 800;
+}
+.bz-v8 .bz-landing-primary-btn:focus-visible,
+.bz-v8 .bz-landing-ghost-btn:focus-visible,
+.bz-v8 a:focus-visible { outline: 3px solid #AAB6FF; outline-offset: 3px; border-radius: 10px; }
+
+/* ── عناوين الأقسام: «هامش» بدل الحبّة ── */
+.bz-v8 .bz-landing-kicker {
+  gap: .55rem; border-radius: 0; background: none; padding: 0;
+  color: var(--v8-ink-text); font-size: .8rem; font-weight: 800; letter-spacing: .01em;
+}
+.bz-v8 .bz-landing-kicker::before {
+  content: ""; width: 1.4rem; height: 3px; border-radius: 3px; background: var(--v8-margin);
+}
+.bz-v8 .bz-landing-section-title {
+  font-weight: 900; letter-spacing: -.03em; line-height: 1.2; color: var(--v8-text);
+  font-size: clamp(1.75rem, 3.2vw, 2.65rem);
+}
+.bz-v8 .bz-landing-section-subtitle { color: var(--v8-muted); font-size: .98rem; line-height: 1.95; }
+.bz-v8 .bz-landing-text-link { color: var(--v8-ink-text); font-weight: 800; }
+
+/* ── البطاقات: سطحٌ أبيض فوق الورق، وظلٌّ بلون الحبر ── */
+.bz-v8 :is(.bz-hub-col, .bz-landing-tool-card, .bz-landing-info-card, .bz-landing-audience-card, .bz-author-box) {
+  border: 1px solid var(--v8-line); border-radius: var(--v8-r-card);
+  background: var(--v8-surface); box-shadow: var(--v8-shadow);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.bz-v8 :is(.bz-landing-tool-card, .bz-landing-info-card, .bz-landing-audience-card):hover {
+  transform: translateY(-3px); border-color: rgb(48 68 224 / .35); box-shadow: var(--v8-shadow-hover);
+}
+.bz-v8 :is(.bz-landing-tool-card, .bz-landing-info-card) { padding: 1.35rem; }
+.bz-v8 :is(.bz-landing-tool-card, .bz-landing-info-card) h3 { color: var(--v8-text); font-weight: 800; font-size: 1.02rem; }
+.bz-v8 :is(.bz-landing-tool-card, .bz-landing-info-card) p { color: var(--v8-muted); font-size: .84rem; line-height: 1.9; }
+.bz-v8 :is(.bz-landing-icon-box, .bz-landing-tool-icon) { height: 3rem; width: 3rem; border-radius: 14px; }
+.bz-v8 .bz-landing-icon-box { background: var(--v8-ink-050); color: var(--v8-ink-text); }
+.bz-v8 .bz-landing-card-link { color: var(--v8-ink-text); font-weight: 800; }
+
+/* المحور: خطّ الهامش الأحمر على بداية البطاقة — توقيع الكرّاس */
+.bz-v8 .bz-hub-col { position: relative; overflow: hidden; }
+.bz-v8 .bz-hub-col::before {
+  content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; width: 3px;
+  background: linear-gradient(180deg, var(--v8-margin), rgb(229 72 77 / .25));
+}
+.bz-v8 .bz-hub-col header h3 { color: var(--v8-text); font-weight: 900; }
+.bz-v8 .bz-hub-col header a { color: var(--v8-ink-text); font-weight: 800; }
+.bz-v8 .bz-hub-col li a { border-radius: 12px; transition: background .15s ease; }
+.bz-v8 .bz-hub-col li a:hover { background: var(--v8-ink-050); }
+.bz-v8 .bz-hub-col li b { color: var(--v8-text); }
+.bz-v8 .bz-hub-col small, .bz-v8 .bz-hub-lede { color: var(--v8-muted); }
+.bz-v8 .bz-hub-chips a {
+  border-radius: 999px; border: 1px solid var(--v8-line); background: var(--v8-paper); color: var(--v8-text);
+  font-weight: 700; transition: border-color .15s ease, color .15s ease;
+}
+.bz-v8 .bz-hub-chips a:hover { border-color: var(--v8-ink); color: var(--v8-ink-text); }
+
+/* ── قسم المنصّة: ورقٌ مسطّر خفيف ── */
+.bz-v8 .bz-platform { background: var(--v8-ruled), linear-gradient(180deg, var(--v8-paper), var(--v8-surface) 60%, var(--v8-paper)); }
+.dark .bz-v8 .bz-platform { background: var(--v8-ruled), var(--v8-paper); }
+.bz-v8 .bz-landing-platform-shot {
+  border: 0; padding: 6px; border-radius: 26px;
+  background: linear-gradient(135deg, rgb(48 68 224 / .55), rgb(14 159 117 / .35));
+  box-shadow: 0 30px 60px -30px rgb(48 68 224 / .55);
+}
+.bz-v8 .bz-landing-platform-shot img { border-radius: 20px; }
+
+/* ── لكلّ دور ── */
+.bz-v8 .bz-landing-audience-card { padding: 1.6rem; }
+.bz-v8 .bz-landing-audience-card.is-student { background: linear-gradient(150deg, var(--v8-ink-050), var(--v8-surface) 55%); }
+.bz-v8 .bz-landing-audience-card.is-teacher { background: linear-gradient(150deg, rgb(14 159 117 / .1), var(--v8-surface) 55%); }
+.bz-v8 .bz-landing-audience-card h3 { color: var(--v8-text); font-weight: 900; }
+.bz-v8 .bz-landing-audience-card p { color: var(--v8-muted); }
+.bz-v8 .bz-landing-audience-card a { color: var(--v8-ink-text); font-weight: 800; }
+.bz-v8 .bz-landing-audience-icon { border-radius: 16px; }
+
+/* ── الكاتب والأسئلة ── */
+.bz-v8 .bz-author-box { padding: 1.5rem; }
+.bz-v8 .bz-v8-faq { background: var(--v8-ruled), var(--v8-surface); }
+.dark .bz-v8 .bz-v8-faq { background: var(--v8-ruled), var(--v8-night-2); }
+
+/* ── الدعوة الأخيرة ── */
+.bz-v8 .bz-v8-cta-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(40rem 22rem at 50% -10%, rgb(67 87 240 / .55), transparent 70%),
+    repeating-linear-gradient(180deg, transparent 0 39px, rgb(255 255 255 / .04) 39px 40px),
+    linear-gradient(160deg, var(--v8-night), #1A2270);
+}
+
+/* ── الظهور عند التمرير: CSS وحده، ويتوقّف مع «تقليل الحركة» ── */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bz-v8 :is(.bz-hub-col, .bz-landing-tool-card, .bz-landing-info-card, .bz-landing-audience-card, .bz-author-box, .bz-landing-platform-shot) {
+      animation: bz-v8-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+@keyframes bz-v8-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .bz-v8 * { transition: none !important; }
+}
+
+/* ── الهاتف ── */
+@media (max-width: 640px) {
+  .bz-v8 .bz-v8-stats span { padding: .4rem .75rem; font-size: .75rem; }
+  .bz-v8 :is(.bz-landing-tool-card, .bz-landing-info-card) { padding: 1.15rem; }
+  .bz-v8 .bz-landing-section-title { font-size: clamp(1.55rem, 7vw, 2rem); }
+}
