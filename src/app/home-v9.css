@@ -284,3 +284,6 @@
   .bz-v9-tile { padding: 1rem; border-radius: 22px; }
   .bz-v9 .bz-v9-cta { margin-inline: 1rem; border-radius: 28px; }
 }
+
+/* الليل: تدرّج العنوان أفتح كي لا يغرق الأزرق في الكحلي */
+.dark .bz-v9-grad { background: linear-gradient(90deg, #B7ACFF, #8E9BFF 55%, #7DB4FF); -webkit-background-clip: text; background-clip: text; }
