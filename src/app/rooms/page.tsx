@@ -76,7 +76,7 @@ export default function RoomsPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-9">
+      <section className="bz-v9-rooms mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-9">
         {/* ── الرأس: عنوان، وملخّص حيّ من البيانات نفسها، وأفعال ── */}
         <header className="bz-rooms-head">
           <div className="min-w-0">

@@ -440,3 +440,84 @@
 /* شريط كتابة الرسالة */
 .bz-v9-chatbar input:not([type="file"]) { border-radius: 999px; padding-inline: 16px; }
 .bz-v9-chatbar button { border-radius: 999px; }
+
+/* ═══ ٨ — غرف الدراسة (الشكل وحده — منطق الصوت والسبورة لا يُمسّ) ═══
+   يُستبدل «الكرّاس» (شبكة الورق وخطّ الهامش الأحمر) بلغة v9: أسطح نظيفة،
+   زوايا واسعة، كبسولات، وتدرّج المنصّة للعنصر النشط. */
+
+/* شارة الغرفة: مربّع ناعم بتدرّج المنصّة، بلا خطّ هامش */
+.bz-room-mark {
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue) 55%, var(--v9-violet));
+  box-shadow: 0 8px 16px -8px rgb(48 68 224 / .65);
+}
+.dark .bz-room-mark { background: linear-gradient(135deg, #5B6BFF, #4152E8 55%, #7A68FF); }
+.bz-room-mark::after { display: none; }
+
+/* ── صفحة الغرف ── */
+.bz-v9-rooms .bz-rooms-head { border-bottom-color: var(--v9-line); }
+.bz-v9-rooms button.rounded-xl { border-radius: 999px; }
+.bz-v9-rooms .bg-gradient-primary { background-image: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); }
+.bz-icon-btn { border-radius: 999px; border-color: var(--v9-line); }
+.bz-icon-btn:hover { border-color: color-mix(in srgb, var(--v9-blue) 35%, var(--v9-line)); color: var(--v9-link); }
+
+.bz-joinbar { border-radius: 999px; border-color: var(--v9-line); padding-inline-start: 18px; }
+.bz-joinbar:focus-within { border-color: var(--v9-blue); box-shadow: 0 0 0 4px var(--v9-tint-blue); }
+
+.bz-subject-filter button { height: 38px; padding: 0 16px; border-color: var(--v9-line); font-weight: 700; }
+.bz-subject-filter button[aria-selected="true"] {
+  border-color: transparent; background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); color: #fff;
+  box-shadow: 0 10px 20px -12px rgb(48 68 224 / .7);
+}
+
+.bz-roomcard {
+  min-height: 80px; border-radius: 24px; border-color: var(--v9-line);
+  background: var(--bz-surface);
+  padding-inline-start: 16px;
+}
+.bz-roomcard::before { display: none; }
+.bz-roomcard:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--v9-blue) 35%, var(--v9-line)); box-shadow: 0 22px 40px -30px rgb(48 68 224 / .55); }
+.bz-roomcard .bz-room-mark { width: 44px; height: 44px; border-radius: 14px; font-size: 17px; }
+.bz-roomcard-subject, .bz-roomcard-paid { border-radius: 999px; padding-inline: 10px; }
+.bz-roomcard-subject { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-roomcard:hover .bz-roomcard-go { color: var(--v9-link); }
+
+.bz-rooms-empty { border-radius: 28px; border: 1.5px dashed color-mix(in srgb, var(--v9-blue) 30%, var(--v9-line)); background: var(--v9-tint-blue); }
+.bz-rooms-empty .bz-room-mark { width: 52px; height: 52px; border-radius: 16px; }
+
+/* ── داخل الغرفة ── */
+.bz-room { background: var(--bz-canvas); }
+.bz-room #bz-room-stage { border-radius: 24px; border-color: var(--v9-line); }
+.bz-room #bz-room-stage::before { display: none; }
+.bz-room aside { border-radius: 24px; border-color: var(--v9-line) !important; }
+@media (max-width: 640px) { .bz-room #bz-room-stage { border-radius: 20px; } }
+@media (max-height: 560px) and (orientation: landscape) { .bz-room #bz-room-stage { border-radius: 12px; } }
+/* ملء الشاشة يبقى بلا زوايا ولا حدود (القاعدة الأصلية أدقّ، فتتقدّم هنا أيضاً) */
+.bz-room:fullscreen #bz-room-stage,
+.bz-room:-webkit-full-screen #bz-room-stage,
+body.bz-fullscreen-active .bz-room #bz-room-stage,
+.bz-room.bz-fullscreen #bz-room-stage { border-radius: 0; }
+
+/* الرصيف العائم */
+.bz-room .bz-ctlbar, .bz-ctlbar.bz-dock { border-radius: 28px; border-color: var(--v9-line) !important; }
+@media (max-width: 640px) { .bz-room .bz-ctlbar, .bz-ctlbar.bz-dock { border-radius: 24px; } }
+@media (max-height: 560px) and (orientation: landscape) { .bz-room .bz-ctlbar, .bz-ctlbar.bz-dock { border-radius: 18px; } }
+.bz-ctl-btn { border-radius: 18px !important; }
+.bz-ctl-btn[data-tone="default"]:hover { background: var(--v9-tint-blue) !important; color: var(--v9-link) !important; }
+.bz-ctl-btn[data-tone="primary"] {
+  background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 20px -10px rgb(48 68 224 / .75);
+}
+
+/* تبويبات الرصيف الجانبي: كبسولة */
+.bz-dock-tabs { border-radius: 999px; border-color: var(--v9-line); }
+.bz-dock-tab { border-radius: 999px !important; }
+.bz-dock-tab[aria-selected="true"] { color: var(--v9-link) !important; }
+
+/* أزرار الشريط العلوي ورفّ الحضور */
+.bz-barbtn { border-radius: 999px !important; }
+.bz-rail-chip { border-color: var(--v9-line) !important; }
+
+/* كبسولة الصوت: الزوايا وحدها — حالاتها وألوانها ومنطقها كما هي */
+.bz-vc { border-radius: 22px; }
