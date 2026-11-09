@@ -228,3 +228,13 @@
 .bz-blog-article-page .bz-author-box { border-color: var(--v9-line); border-radius: 28px; }
 .bz-article-related-card { border-radius: 22px; border-color: var(--v9-line); }
 .bz-article-related-card:hover { box-shadow: 0 22px 42px -30px rgb(16 20 43 / .4); border-color: transparent; }
+
+/* محرّر المقالات يُدرج <br> فارغة بين الفقرات (مرّة أو مرّتين)، والفقرات بلا هوامش —
+   فتتفاوت المسافات. الفواصل بين الكتل لا معنى لها فتُخفى، ولكلّ كتلة هامش ثابت.
+   (الـ<br> داخل الفقرات لا يُمسّ.) */
+.bz-article > br { display: none; }
+.bz-article > :is(p, ul, ol, blockquote, figure, table, pre, img, iframe) { margin-top: 1.05em; }
+.bz-article > h2 { margin-top: 2em; }
+.bz-article > h3 { margin-top: 1.6em; }
+.bz-article > :first-child { margin-top: 0; }
+@media (max-width: 767px) { .bz-article { font-size: 16px; line-height: 2; } }
