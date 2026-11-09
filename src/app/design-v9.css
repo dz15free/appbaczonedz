@@ -372,3 +372,11 @@
 .bz-v9-guide .bz-spec-hero-actions a { min-height: 48px; border-radius: 999px; padding: 0 20px; font-size: 13px; }
 .bz-v9-guide .bz-spec-hero-actions a:first-child { color: var(--v9-blue); box-shadow: 0 16px 30px -18px rgb(10 14 40 / .55); }
 .bz-v9-guide .bz-spec-hero-actions a:last-child { border-color: rgb(255 255 255 / .32); background: rgb(255 255 255 / .1); }
+
+/* صندوق «حان وقت التطبيق» في الدليل — 🐛 قديم: خلفيته var(--bz-ink) تصير فاتحة ليلاً والنصّ أبيض */
+.bz-v9-guide .bz-guide-actions {
+  border-radius: 28px;
+  background: radial-gradient(26rem 16rem at 90% -20%, rgb(255 255 255 / .16), transparent 60%), linear-gradient(135deg, #1B2160, #2B2F86 55%, #4B3DC4);
+}
+.dark .bz-v9-guide .bz-guide-actions { background: linear-gradient(135deg, #161A44, #222775 55%, #3A2F9A); }
+.bz-v9-guide .bz-guide-action-links a { border-radius: 999px; }
