@@ -367,3 +367,8 @@
 /* بطاقات الأدلّة */
 .bz-v9-guide .bz-guides-editorial-card { transition: transform .18s, box-shadow .18s; }
 .bz-v9-guide .bz-guides-editorial-card:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -32px rgb(48 68 224 / .55); }
+
+/* أزرار واجهة صفحة التخصّص: كبسولات، ولون ثابت (🐛 قديم: --bz-blue-700 يصير فاتحاً ليلاً على خلفية بيضاء) */
+.bz-v9-guide .bz-spec-hero-actions a { min-height: 48px; border-radius: 999px; padding: 0 20px; font-size: 13px; }
+.bz-v9-guide .bz-spec-hero-actions a:first-child { color: var(--v9-blue); box-shadow: 0 16px 30px -18px rgb(10 14 40 / .55); }
+.bz-v9-guide .bz-spec-hero-actions a:last-child { border-color: rgb(255 255 255 / .32); background: rgb(255 255 255 / .1); }
