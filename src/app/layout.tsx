@@ -13,6 +13,7 @@ import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
 import { PublicSiteFooter } from "@/components/ui/public-site-footer";
 import { Analytics } from "@/components/analytics";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { SITE_URL } from "@/lib/site-url";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
@@ -74,7 +75,7 @@ export const metadata: Metadata = {
   /* `?v=3` على المانيفست أيضاً: أندرويد يُخزّنه ولا يُعيد قراءته إلّا
      إذا تغيّر رابطه — وبلا إعادة قراءته يبقى `orientation: portrait`
      القديم فاعلاً فلا يدور التطبيق المثبَّت. */
-  manifest: "/manifest.json?v=3",
+  manifest: "/manifest.json?v=4",
   alternates: { canonical: "/" },
   robots: {
     index: true,
@@ -154,11 +155,19 @@ if(t==='dark'){document.documentElement.classList.add('dark');}
 else{document.documentElement.classList.remove('dark');}}catch(e){}})();
 `;
 
+/* زرّ التثبيت (Chrome/Edge): الحدث قد يصل قبل أن يعمل React، فنحفظه
+   هنا لتأخذه واجهة التثبيت لاحقاً (src/features/pwa/install.ts). */
+const installCaptureScript = `
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bzInstallEvt=e;});
+window.addEventListener('appinstalled',function(){window.__bzInstallEvt=null;try{localStorage.setItem('bz-pwa-installed','1')}catch(e){}});
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className="bz-font-fallbacks">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
+        <script dangerouslySetInnerHTML={{ __html: installCaptureScript }} />
         {ADSENSE_ON && (
           <Script
             id="adsense"
@@ -208,6 +217,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Preloader />
           {children}
           <PublicSiteFooter />
+          <InstallPrompt />
         </Providers>
         {/* آخر ما في الصفحة، وبعد التفاعل — فلا يزاحم الرسم الأوّل */}
         {/* ⚠️ `Suspense` إلزامية هنا: `Analytics` تستعمل

@@ -20,10 +20,13 @@ export async function subscribePush(uid: string): Promise<boolean> {
     return false;
   }
   try {
-    const reg = await navigator.serviceWorker.register("/sw.js");
-    await navigator.serviceWorker.ready;
+    /* طلب الإذن **أوّلاً**، مباشرةً من نقرة المستخدم: Safari على iPhone
+       (التطبيق المثبّت، iOS 16.4+) يرفض الطلب إن سبقه انتظارٌ غير متزامن
+       كتسجيل خادم الخدمة، فيضيع أثر النقرة. */
     const perm = await Notification.requestPermission();
     if (perm !== "granted") return false;
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,

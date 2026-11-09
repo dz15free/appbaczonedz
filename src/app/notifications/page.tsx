@@ -14,6 +14,8 @@ import {
 import { useAuth } from "@/features/auth/auth-provider";
 import { AppShell } from "@/components/app-shell";
 import { isPushSupported, subscribePush, unsubscribePush } from "@/lib/push";
+import { InstallAppButton } from "@/components/pwa/install-prompt";
+import { installMode, isStandalone } from "@/features/pwa/install";
 import {
   listenNotifications,
   markNotificationsRead,
@@ -62,6 +64,8 @@ export default function NotificationsPage() {
   const [casts, setCasts] = useState<AppNotification[]>([]);
   const [pushPerm, setPushPerm] = useState<"granted" | "denied" | "default" | "na">("na");
   const [pushBusy, setPushBusy] = useState(false);
+  /* آيفون في Safari: الإشعارات تعمل في التطبيق المثبّت وحده (iOS 16.4+) */
+  const [iosNeedsInstall, setIosNeedsInstall] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search));
@@ -95,7 +99,12 @@ export default function NotificationsPage() {
   }, [user, merged.length]);
 
   useEffect(() => {
-    if (!isPushSupported()) { setPushPerm("na"); return; }
+    if (!isPushSupported()) {
+      setPushPerm("na");
+      const m = installMode();
+      setIosNeedsInstall(!isStandalone() && (m === "ios-safari" || m === "ios-other"));
+      return;
+    }
     setPushPerm(Notification.permission as any);
   }, []);
 
@@ -129,6 +138,18 @@ export default function NotificationsPage() {
         </div>
 
         {/* بطاقة إشعارات المتصفّح */}
+        {iosNeedsInstall && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faBellSlash} className="h-5 w-5 shrink-0 text-primary" />
+              <span className="text-sm font-semibold">على آيفون تعمل الإشعارات بعد تثبيت التطبيق على الشاشة الرئيسية</span>
+            </div>
+            <InstallAppButton className="shrink-0 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-bold text-white">
+              كيف؟
+            </InstallAppButton>
+          </div>
+        )}
+
         {pushPerm !== "na" && (
           <div className={`mb-4 flex items-center justify-between rounded-xl border p-3 ${pushPerm === "granted" ? "border-secondary/30 bg-secondary/5" : "border-primary/30 bg-primary/5"}`}>
             <div className="flex items-center gap-2">

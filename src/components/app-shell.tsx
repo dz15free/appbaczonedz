@@ -7,7 +7,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { InstallAppButton } from "@/components/pwa/install-prompt";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -591,6 +592,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 )
               )}
+              {/* الخيار الدائم للتثبيت — يختفي داخل التطبيق المثبّت */}
+              <InstallAppButton onClick={() => setMenuOpen(false)}
+                className="mt-1 flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-[13.5px] font-bold text-primary transition hover:bg-primary/10">
+                <span className="bz-menu-ic"><FontAwesomeIcon icon={faDownload} className="h-4 w-4" /></span>
+                <span className="min-w-0 flex-1 truncate text-start">ثبّت التطبيق</span>
+              </InstallAppButton>
             </nav>
 
             {/* روابط التواصل */}

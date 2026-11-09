@@ -16,7 +16,6 @@ import { useProfile } from "@/features/auth/use-profile";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { AppShell } from "@/components/app-shell";
 import { HomeHeroSlider } from "@/components/ui/home-hero-slider";
-import { InstallAppBanner } from "@/components/ui/install-app-banner";
 import { SocialLinks, AdvertiseCard, YoutubeSourceCard, NotificationToggle } from "@/components/ui/home-feature-sections";
 import { QuickAccess } from "@/components/ui/quick-access";
 import { HomeArticles } from "@/components/ui/home-articles";
@@ -336,7 +335,6 @@ export default function HomePage() {
 
       {/* ══════════ نسخة الهاتف ══════════ */}
       <section className="mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
-        <InstallAppBanner />
         <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
         {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}

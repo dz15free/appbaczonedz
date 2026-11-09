@@ -15,6 +15,8 @@ const MIN_VISIBLE_MS = 350;
 const CONTENT_PREFIXES = [
   "/blog", "/specialties", "/guides", "/tools", "/calculate", "/features",
   "/author", "/about", "/contact", "/privacy", "/terms", "/voice-check",
+  /* تُعرض من الكاش بلا JavaScript — شاشة التحميل لن تختفي فيها أبداً */
+  "/offline",
 ];
 function isContentPath(p: string | null) {
   return !!p && CONTENT_PREFIXES.some((x) => p === x || p.startsWith(x + "/"));

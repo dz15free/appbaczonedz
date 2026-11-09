@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LEGAL_LINKS } from "@/features/settings/legal-links";
+import { InstallAppButton } from "@/components/pwa/install-prompt";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDownload } from "@fortawesome/free-solid-svg-icons";
 
 function FooterLink({ href, label, compact = false }: { href: string; label: string; compact?: boolean }) {
   const internal = href.startsWith("/");
@@ -42,6 +45,7 @@ export function SiteFooter({
                 <span className="font-display text-2xl font-black text-white">{settings.siteName || "BacZone"}</span>
               </div>
               <p>{landingDescription || copyright}</p>
+              <InstallAppButton className="bz-footer-install"><FontAwesomeIcon icon={faDownload} /> ثبّت التطبيق</InstallAppButton>
             </div>
             <FooterColumn title="استكشف" links={[{ href: "/tools", label: "الأدوات" }, { href: "/blog", label: "المقالات" }, { href: "/guides", label: "الأدلة" }, { href: "/specialties", label: "التخصصات" }]} />
             <FooterColumn title="المنصة" links={[{ href: "/courses", label: "الدورات" }, { href: "/rooms", label: "الغرف" }, { href: "/community", label: "المجتمع" }, { href: "/library", label: "المكتبة" }]} />
@@ -57,7 +61,7 @@ export function SiteFooter({
 
   return (
     <footer className={`border-t border-border bg-surface px-4 py-4 pb-24 text-center text-xs text-text-muted lg:pb-4 ${className}`}>
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-2.5"><p>{copyright}</p>{custom.length > 0 && <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">{custom.map((link, index) => <FooterLink key={`compact-${index}`} href={link.href} label={link.label} compact />)}</nav>}<nav aria-label="روابط قانونية" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-2.5">{LEGAL_LINKS.map((link) => <FooterLink key={link.href} href={link.href} label={link.href === "/terms" ? "اتفاقية الاستخدام" : link.label} compact />)}</nav></div>
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-2.5"><p>{copyright}</p>{custom.length > 0 && <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">{custom.map((link, index) => <FooterLink key={`compact-${index}`} href={link.href} label={link.label} compact />)}</nav>}<InstallAppButton className="bz-footer-install is-compact"><FontAwesomeIcon icon={faDownload} /> ثبّت التطبيق</InstallAppButton><nav aria-label="روابط قانونية" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-border/60 pt-2.5">{LEGAL_LINKS.map((link) => <FooterLink key={link.href} href={link.href} label={link.href === "/terms" ? "اتفاقية الاستخدام" : link.label} compact />)}</nav></div>
     </footer>
   );
 }

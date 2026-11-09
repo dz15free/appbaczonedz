@@ -1,26 +1,62 @@
 {
+  "id": "/home",
   "name": "BacZoneDZ",
   "short_name": "BacZone",
-  "description": "منصّة مجانية للطلاب الجزائريين — ادرس، راجع، وانجح في البكالوريا",
+  "description": "منصّة مجانية لتلاميذ البكالوريا في الجزائر — ادرس، راجع، وانجح في البكالوريا",
   "start_url": "/home",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
-  "background_color": "#0f0f1a",
-  "theme_color": "#4f46e5",
+  "background_color": "#FFFFFF",
+  "theme_color": "#3044E0",
   "dir": "rtl",
   "lang": "ar",
   "categories": ["education"],
+  "prefer_related_applications": false,
   "icons": [
     { "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icon-maskable-192.png?v=3", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "/icon-maskable-512.png?v=3", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/landing/dashboard-1366.webp",
+      "sizes": "1366x610",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "لوحة BacZone: الغرف والأدوات والتقدّم في مكان واحد"
+    }
+  ],
   "shortcuts": [
-    { "name": "غرف الدراسة", "url": "/rooms",       "description": "ادخل غرفة دراسة" },
-    { "name": "مروة",       "url": "/aibot",      "description": "اسأل مروة" },
-    { "name": "المجتمع",    "url": "/community",   "description": "تصفّح المجتمع" }
+    {
+      "name": "حساب المعدّل",
+      "short_name": "المعدّل",
+      "url": "/calculate",
+      "description": "احسب معدّل البكالوريا",
+      "icons": [{ "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "غرف الدراسة",
+      "short_name": "الغرف",
+      "url": "/rooms",
+      "description": "ادخل غرفة دراسة",
+      "icons": [{ "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "مؤقّت التركيز",
+      "short_name": "المؤقّت",
+      "url": "/tools/pomodoro",
+      "description": "ادرس بتركيز بطريقة بومودورو",
+      "icons": [{ "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "مروة — المساعد الذكي",
+      "short_name": "مروة",
+      "url": "/aibot",
+      "description": "اسأل مروة",
+      "icons": [{ "src": "/icon-192.png?v=3", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

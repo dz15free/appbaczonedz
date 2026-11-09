@@ -1,16 +1,34 @@
 // خادم الخدمة — BacZoneDZ
 // يتعامل مع: Push Notifications + Offline Support
 
-const CACHE_NAME = "baczone-v2";
+const CACHE_NAME = "baczone-v3";
 const OFFLINE_URL = "/offline";
-const STATIC_ASSETS = [OFFLINE_URL];
+
+/* صفحة «لا اتّصال» تُحفظ **مع ملفّات CSS التي تطلبها** وأيقونة المنصّة —
+   بدونها كانت تظهر بلا تنسيق. أسماء ملفّات CSS تتغيّر مع كلّ نشر، فنقرؤها
+   من الصفحة نفسها، والموقع يطلب تحديثها مرّة في اليوم (رسالة refresh-offline). */
+async function cacheOfflinePage() {
+  const cache = await caches.open(CACHE_NAME);
+  const res = await fetch(OFFLINE_URL, { cache: "no-store" });
+  if (!res.ok) return;
+  const html = await res.clone().text();
+  const css = [...html.matchAll(/href="(\/_next\/static\/[^"]+\.css)"/g)].map((m) => m[1]);
+  await cache.put(OFFLINE_URL, res);
+  await Promise.all([...new Set([...css, "/icon-192.png?v=3"])].map((u) =>
+    cache.add(u).catch(() => {})
+  ));
+}
 
 /* ─── تثبيت: حفظ صفحة الأوفلاين في الكاش ─── */
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+  event.waitUntil(cacheOfflinePage().catch(() => {}));
   self.skipWaiting();
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "refresh-offline") {
+    event.waitUntil(cacheOfflinePage().catch(() => {}));
+  }
 });
 
 /* ─── تفعيل: تنظيف الكاش القديم ─── */
@@ -25,11 +43,23 @@ self.addEventListener("activate", (event) => {
 
 /* ─── اعتراض الطلبات: اعرض Offline عند انقطاع الشبكة ─── */
 self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
+  const req = event.request;
+  if (req.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() =>
+      fetch(req).catch(() =>
         caches.match(OFFLINE_URL).then((r) => r ?? new Response("Offline", { status: 503 }))
       )
+    );
+    return;
+  }
+  /* ملفّات صفحة «لا اتّصال» وحدها تُخدَم من الكاش عند انقطاع الشبكة */
+  const url = new URL(req.url);
+  const offlineAsset =
+    url.origin === self.location.origin &&
+    ((url.pathname.startsWith("/_next/static/") && url.pathname.endsWith(".css")) || url.pathname === "/icon-192.png");
+  if (req.method === "GET" && offlineAsset) {
+    event.respondWith(
+      fetch(req).catch(() => caches.match(req).then((r) => r ?? Response.error()))
     );
   }
 });

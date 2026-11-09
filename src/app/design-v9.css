@@ -539,3 +539,134 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 .bz-v9-admin > div:nth-child(2) > button.rounded-full { min-height: 36px; padding-inline: 14px; }
 .bz-v9-admin > div:nth-child(2) > button.rounded-full.border { border-color: var(--v9-line); }
 .bz-v9-admin > div:nth-child(2) > button.rounded-full.border:hover { background: var(--v9-tint-blue); }
+
+/* ═══ ١٠ — تثبيت التطبيق وصفحة «لا اتّصال» (المرحلة 5) ═══ */
+
+/* البطاقة العائمة: فوق القائمة السفلية على الهاتف، وفي الزاوية على الحاسوب */
+.bz-install-card {
+  position: fixed; z-index: 70;
+  left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  padding: 16px; border-radius: 28px;
+  border: 1px solid var(--v9-line); background: var(--bz-surface);
+  box-shadow: 0 30px 60px -28px rgb(16 20 43 / .45);
+  animation: bz-install-in .35s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+@media (min-width: 1024px) {
+  .bz-install-card { left: 24px; right: auto; bottom: 24px; width: 380px; }
+}
+@keyframes bz-install-in { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+.bz-install-row { display: flex; align-items: center; gap: 12px; padding-inline-end: 26px; }
+.bz-install-icon { flex-shrink: 0; border-radius: 16px; box-shadow: 0 10px 22px -12px rgb(48 68 224 / .7); }
+.bz-install-title { margin: 0; color: var(--v9-ink); font-family: var(--font-display); font-size: 15px; font-weight: 800; }
+.bz-install-text { margin: 3px 0 0; color: var(--v9-muted); font-size: 12px; line-height: 1.8; }
+.bz-install-actions { display: flex; gap: 8px; margin-top: 14px; }
+.bz-install-primary {
+  display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; border-radius: 999px; padding: 0 18px;
+  background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); color: #fff;
+  font-size: 13.5px; font-weight: 800; box-shadow: 0 12px 24px -14px rgb(48 68 224 / .8);
+}
+.bz-install-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 46px; border-radius: 999px; padding: 0 16px;
+  border: 1px solid var(--v9-line); color: var(--v9-muted); font-size: 13px; font-weight: 700;
+}
+.bz-install-ghost:hover { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-install-x {
+  position: absolute; top: 12px; inset-inline-end: 12px;
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px;
+  color: var(--v9-muted);
+}
+.bz-install-x:hover { background: var(--v9-tint-blue); color: var(--v9-ink); }
+
+/* النافذة السفلية (آيفون والتعليمات) */
+.bz-install-overlay {
+  position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; justify-content: center;
+  background: rgb(10 14 32 / .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  animation: bz-install-fade .2s ease both;
+}
+@keyframes bz-install-fade { from { opacity: 0; } }
+.bz-install-sheet {
+  position: relative; width: 100%; max-width: 460px; max-height: 92dvh; overflow-y: auto;
+  padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 30px 30px 0 0; background: var(--bz-surface); color: var(--v9-ink);
+  animation: bz-install-up .32s cubic-bezier(.2, .9, .3, 1) both;
+}
+@media (min-width: 640px) { .bz-install-overlay { align-items: center; } .bz-install-sheet { border-radius: 30px; } }
+@keyframes bz-install-up { from { transform: translateY(40px); opacity: 0; } }
+.bz-install-sheet-head { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 4px 18px 6px; }
+.bz-install-sheet-head h2 { margin: 6px 0 0; font-family: var(--font-display); font-size: 18px; font-weight: 800; line-height: 1.5; }
+.bz-install-sheet-head p { margin: 0; color: var(--v9-muted); font-size: 12.5px; line-height: 1.8; }
+.bz-install-steps { display: grid; gap: 14px; margin: 16px 0 4px; padding: 0; list-style: none; }
+.bz-install-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.bz-install-steps p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.85; }
+.bz-install-steps small { display: block; color: var(--v9-muted); font-size: 11.5px; line-height: 1.7; }
+.bz-install-n {
+  display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 999px;
+  background: var(--v9-tint-blue); color: var(--v9-link); font-size: 13px; font-weight: 800;
+}
+.bz-install-inline { margin-inline: 2px; color: var(--v9-blue); }
+.dark .bz-install-inline { color: var(--v9-link); }
+.bz-install-done { width: 100%; margin-top: 16px; }
+.bz-install-note { margin: 14px 0 0; padding: 14px; border-radius: 20px; background: var(--v9-tint-blue); font-size: 13px; line-height: 1.9; }
+.bz-install-note .bz-install-ghost { margin-top: 10px; width: 100%; background: var(--bz-surface); }
+.bz-install-list { display: grid; gap: 8px; list-style: none; }
+
+/* الرسوم التوضيحية */
+.bz-install-art { display: block; width: 100%; max-width: 300px; height: auto; margin-top: 8px; }
+.bz-install-art .art-bg { fill: var(--bz-canvas); stroke: var(--v9-line); }
+.bz-install-art .art-row { fill: var(--bz-surface); }
+.bz-install-art .art-hl { fill: var(--v9-tint-blue); stroke: var(--v9-blue); stroke-width: 1.5; }
+.bz-install-art .art-muted { stroke: var(--v9-muted); opacity: .55; }
+.bz-install-art .art-accent { stroke: var(--v9-blue); }
+.dark .bz-install-art .art-accent { stroke: var(--v9-link); }
+.bz-install-art .art-ring { fill: var(--v9-tint-blue); stroke: var(--v9-blue); stroke-width: 1.5; animation: bz-install-pulse 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.bz-install-art .art-txt { fill: var(--v9-muted); font-size: 11.5px; font-family: inherit; }
+.bz-install-art .art-txt-strong { fill: var(--v9-ink); font-weight: 700; }
+@keyframes bz-install-pulse { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .bz-install-card, .bz-install-sheet, .bz-install-overlay, .bz-install-art .art-ring { animation: none; }
+}
+
+/* الخيار الدائم */
+.bz-pubmenu-link.is-install { width: 100%; color: var(--v9-link); }
+.bz-footer-install {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+  min-height: 40px; border-radius: 999px; padding: 0 16px;
+  border: 1px solid rgb(255 255 255 / .25); background: rgb(255 255 255 / .08);
+  color: #fff; font-size: 12.5px; font-weight: 800;
+}
+.bz-footer-install:hover { background: rgb(255 255 255 / .16); }
+.bz-footer-install.is-compact {
+  margin-top: 0; min-height: 34px; border-color: var(--v9-line); background: transparent; color: var(--v9-link);
+}
+.bz-footer-install.is-compact:hover { background: var(--v9-tint-blue); }
+
+/* صفحة «لا اتّصال» */
+.bz-offline {
+  display: grid; place-items: center; min-height: 100dvh; padding: 24px 16px;
+  background: radial-gradient(40rem 24rem at 50% -10%, var(--v9-tint-violet), transparent 70%), var(--bz-canvas);
+}
+.bz-offline-card {
+  width: 100%; max-width: 420px; padding: 28px 22px; border-radius: 32px; text-align: center;
+  border: 1px solid var(--v9-line); background: var(--bz-surface);
+  box-shadow: 0 30px 60px -40px rgb(48 68 224 / .55);
+}
+.bz-offline-mark { position: relative; display: inline-block; }
+.bz-offline-mark img { border-radius: 20px; box-shadow: 0 14px 28px -14px rgb(48 68 224 / .7); }
+.bz-offline-dot {
+  position: absolute; bottom: -3px; inset-inline-start: -3px; width: 18px; height: 18px; border-radius: 999px;
+  background: var(--v9-coral); box-shadow: 0 0 0 4px var(--bz-surface);
+}
+.bz-offline h1 { margin: 18px 0 0; color: var(--v9-ink); font-family: var(--font-display); font-size: 22px; font-weight: 800; line-height: 1.45; }
+.bz-offline-lede { margin: 8px 0 0; color: var(--v9-muted); font-size: 14px; line-height: 1.9; }
+.bz-offline-wait { display: inline-flex; align-items: center; gap: 8px; margin: 16px 0 0; color: var(--v9-muted); font-size: 12.5px; font-weight: 700; }
+.bz-offline-wait span { width: 8px; height: 8px; border-radius: 999px; background: var(--v9-coral); animation: bz-install-pulse 1.4s ease-in-out infinite; }
+.bz-offline-btn {
+  display: flex; align-items: center; justify-content: center; min-height: 50px; margin-top: 18px;
+  border-radius: 999px; background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue));
+  color: #fff; font-size: 14.5px; font-weight: 800; box-shadow: 0 14px 28px -16px rgb(48 68 224 / .8);
+}
+.bz-offline-tips { margin-top: 20px; padding: 14px 16px; border-radius: 22px; background: var(--v9-tint-blue); text-align: start; }
+.bz-offline-tips-h { margin: 0 0 6px; color: var(--v9-link); font-size: 12px; font-weight: 800; }
+.bz-offline-tips ul { display: grid; gap: 6px; margin: 0; padding-inline-start: 18px; color: var(--v9-ink); font-size: 12.5px; line-height: 1.8; }

@@ -29,7 +29,9 @@ import {
   faPlay,
   faScaleBalanced,
   faVideo,
+  faDownload,
 } from "@fortawesome/free-solid-svg-icons";
+import { InstallAppButton } from "@/components/pwa/install-prompt";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { LiveAvatar } from "@/components/ui/live-avatar";
@@ -257,6 +259,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
               </Link>
             );
           })}
+          <InstallAppButton onClick={() => setMenuOpen(false)} className="bz-pubmenu-link is-install"><FontAwesomeIcon icon={faDownload} className="h-4 w-4" /><span>ثبّت التطبيق</span></InstallAppButton>
           <div ref={mobileAboutMenuRef} className="bz-pubmenu-about mt-2 border-t border-border/70 pt-3">
             <button type="button" className="bz-pubmenu-link" onClick={() => { setMobileAboutOpen((open) => !open); setMobileToolsOpen(false); }} aria-expanded={mobileAboutOpen} aria-controls="bz-public-mobile-about-list"><FontAwesomeIcon icon={faCircleInfo} className="h-4 w-4" /><span>عن BacZone</span><FontAwesomeIcon icon={faChevronDown} className={`ms-auto h-3 w-3 transition-transform ${mobileAboutOpen ? "rotate-180" : ""}`} /></button>
             {mobileAboutOpen && <div id="bz-public-mobile-about-list" className="bz-pubmenu-about-list"> <Link href="/about" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faCircleInfo} /> من نحن</Link><Link href="/contact" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faEnvelope} /> اتصل بنا</Link><Link href="/privacy" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faShieldHalved} /> سياسة الخصوصية</Link><Link href="/terms" onClick={() => { setMobileAboutOpen(false); setMenuOpen(false); }}><FontAwesomeIcon icon={faFileContract} /> اتفاقية الاستخدام</Link></div>}
