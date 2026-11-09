@@ -284,3 +284,7 @@
 
 /* المؤقّت: الحلقة والأزرار بألوان المنصّة */
 .bz-v9-tools svg circle[stroke-dasharray] { stroke-linecap: round; }
+
+/* 🐛 قديم: حقل العلامة أبيض ثابت والنصّ فاتح في الوضع الليلي ← العلامة المكتوبة لا تُرى */
+.dark .bz-calc-pro-input { background: rgb(255 255 255 / .05); border-color: var(--v9-line); color: var(--v9-ink); }
+.dark .bz-calc-pro-input::placeholder { color: #6E76A0; }
