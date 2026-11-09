@@ -7,6 +7,8 @@ import "./globals.css";
 /* طبقة التصميم v7 «الكرّاس» — بعد globals عمداً لتتغلّب بالترتيب.
    حذف هذا السطر يُعيد الشكل القديم كما كان. */
 import "./design-v7.css";
+/* طبقة التصميم v9 «واضح» — تُعمَّم صفحةً بصفحة بعد كلّ موافقة. حذف السطر يُعطّلها. */
+import "./design-v9.css";
 import { Providers } from "./providers";
 import { Preloader } from "@/components/preloader";
 import { PublicSiteFooter } from "@/components/ui/public-site-footer";

@@ -1,0 +1,123 @@
+/* ════════════════════════════════════════════════════════════════════
+   BacZone v9 «واضح» — طبقة الموقع كلّه (المرحلة 4.2)
+
+   تُحمَّل بعد `design-v7.css` في `layout.tsx`، فتتغلّب بالترتيب لا بـ
+   `!important`. تُعمَّم صفحةً بصفحة: كلّ مجموعة تُضاف هنا بعد موافقة.
+   حذف سطر استيرادها يُعيد ما قبلها كما كان.
+
+     ١  الرموز (الألوان والزوايا) — نفسها في الصفحة الرئيسية
+     ٢  شريط التنقّل العلوي (المنصّة والصفحات العامّة)
+     ٣  القائمة السفلية على الهاتف — «رصيف» عائم
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ═══ ١ — الرموز ═══ */
+:root {
+  --v9-blue: #3044E0;
+  --v9-blue-2: #4F5FF2;
+  --v9-violet: #6D5BFF;
+  --v9-mint: #12B886;
+  --v9-sun: #FFB020;
+  --v9-coral: #FF6B57;
+  --v9-line: #E6E8F5;
+  --v9-ink: #10142B;
+  --v9-muted: #5B6384;
+  --v9-tint-blue: #EDF0FF;
+  --v9-tint-violet: #F1EEFF;
+  --v9-link: #3044E0;
+}
+.dark {
+  --v9-line: #23284A;
+  --v9-ink: #EEF0FB;
+  --v9-muted: #A2A9C9;
+  --v9-tint-blue: rgb(79 95 242 / .16);
+  --v9-tint-violet: rgb(109 91 255 / .16);
+  --v9-link: #AEB8FF;
+}
+
+/* ═══ ٢ — شريط التنقّل العلوي ═══ */
+.bz-header,
+.bz-pubheader:not(.is-landing) {
+  border-bottom: 1px solid var(--v9-line);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* حاوية الروابط: بلا علبة رمادية — الروابط وحدها كبسولات */
+.bz-navpill { background: transparent; border-color: transparent; padding: 0; gap: 4px; }
+
+.bz-navlink,
+.bz-pubheader:not(.is-landing) .bz-pubnav {
+  border-radius: 999px;
+  color: var(--v9-muted);
+  font-weight: 700;
+  transition: background-color .15s ease, color .15s ease;
+}
+.bz-navlink:hover,
+.bz-pubheader:not(.is-landing) .bz-pubnav:hover { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-navlink.is-active,
+.bz-pubheader:not(.is-landing) .bz-pubnav.is-active {
+  background: var(--v9-tint-blue); color: var(--v9-link); font-weight: 800; box-shadow: none;
+}
+.dark .bz-navlink.is-active { background: var(--v9-tint-blue); }
+
+/* أزرار الأيقونات: دائرية بلون الحبر عند المرور */
+.bz-hbtn { border-radius: 999px; }
+.bz-hbtn:hover { background: var(--v9-tint-blue); color: var(--v9-link); }
+
+/* أزرار الحساب: كبسولات بتدرّج المنصّة (أزرق→أزرق، بلا السماوي القديم) */
+.bz-hcta, .bz-hcta-ghost { border-radius: 999px; padding: 0 16px; }
+.bz-hcta {
+  background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue));
+  box-shadow: 0 10px 22px -12px rgb(48 68 224 / .75), inset 0 1px 0 rgb(255 255 255 / .2);
+}
+.bz-hcta-ghost { border-color: var(--v9-line); }
+.bz-hcta-ghost:hover { border-color: var(--v9-blue); color: var(--v9-link); }
+
+:is(.bz-navlink, .bz-pubnav, .bz-hbtn, .bz-hcta, .bz-hcta-ghost):focus-visible {
+  outline: 3px solid #8C9AFF; outline-offset: 2px;
+}
+
+/* ═══ ٣ — القائمة السفلية: رصيف عائم ═══
+   كان شريطاً ملتصقاً بحافّة الشاشة بخطّ علوي. صار «رصيفاً» عائماً بزوايا
+   مستديرة يرتفع عن الحافّة، والقسم النشط داخل كبسولة ملوّنة، وزرّ الإنشاء
+   مربّع ناعم بتدرّج المنصّة. الارتفاع الكلّي لم يتغيّر تقريباً، فحشوة
+   المحتوى السفلية (`bz-shell-pad`) تبقى كافية. */
+.bz-bottom-bar {
+  margin: 0 10px 8px;
+  border: 1px solid var(--v9-line);
+  border-radius: 24px;
+  background: rgb(255 255 255 / .9);
+  box-shadow: 0 14px 34px -14px rgb(16 20 43 / .3), 0 2px 6px rgb(16 20 43 / .05);
+  padding: 6px 6px;
+}
+:root.dark .bz-bottom-bar, .dark .bz-bottom-bar {
+  background: rgb(18 22 43 / .92);
+  box-shadow: 0 14px 34px -14px rgb(0 0 0 / .75);
+}
+.bz-bottom-bar > a:not(.bz-fab),
+.bz-bottom-bar > button {
+  margin: 0 2px;
+  border-radius: 16px;
+  padding-block: 6px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  color: var(--v9-muted);
+  transition: background-color .15s ease, color .15s ease;
+}
+.bz-bottom-bar a.bz-bottom-active {
+  background: var(--v9-tint-blue);
+  color: var(--v9-link);
+  font-weight: 800 !important;
+}
+.bz-bottom-bar a.bz-fab {
+  width: 54px; height: 54px; margin-top: -26px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--v9-violet), var(--v9-blue));
+  box-shadow: 0 14px 26px -10px rgb(48 68 224 / .7), 0 0 0 4px var(--bz-bg, #fff);
+}
+.dark .bz-bottom-bar a.bz-fab { box-shadow: 0 14px 26px -10px rgb(0 0 0 / .8), 0 0 0 4px #0A0D1C; }
+.bz-bottom-bar a.bz-fab:active { transform: scale(.94); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bz-bottom-bar > *, .bz-navlink, .bz-pubnav, .bz-hbtn { transition: none !important; }
+}
