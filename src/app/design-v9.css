@@ -121,3 +121,110 @@
 @media (prefers-reduced-motion: reduce) {
   .bz-bottom-bar > *, .bz-navlink, .bz-pubnav, .bz-hbtn { transition: none !important; }
 }
+
+/* ═══ ٤ — المقالات: القائمة والمقال المفرد ═══
+   القراءة أوّلاً: لا تغيير في بنية العناوين ولا البيانات المنظّمة ولا
+   مسار التنقّل — الشكل وحده. */
+
+/* عناصر مشتركة لصفحات المحتوى */
+.bz-v9-crumbs { color: var(--v9-muted); }
+.bz-v9-crumbs a:hover { color: var(--v9-link); }
+.bz-v9-pill {
+  display: inline-flex; align-items: center; gap: .45rem; border-radius: 999px;
+  background: var(--v9-tint-blue); color: var(--v9-link); padding: .38rem .8rem; font-size: .74rem; font-weight: 800;
+}
+.bz-v9-h1 {
+  font-family: var(--font-display, inherit); font-weight: 900; letter-spacing: -.03em; line-height: 1.3;
+  font-size: clamp(2rem, 5vw, 3.4rem); color: var(--v9-ink);
+}
+.bz-v9-grad {
+  background: linear-gradient(90deg, var(--v9-violet), var(--v9-blue) 55%, #2F7BFF);
+  -webkit-background-clip: text; background-clip: text; color: transparent; padding-block: .04em .1em;
+}
+.dark .bz-v9-grad { background: linear-gradient(90deg, #B7ACFF, #8E9BFF 55%, #7DB4FF); -webkit-background-clip: text; background-clip: text; }
+.bz-v9-lede { color: var(--v9-muted); font-size: 1rem; line-height: 2; }
+.bz-v9-card { border: 1px solid var(--v9-line); border-radius: 28px; background: var(--bz-surface); }
+
+/* بطل القائمة: فاتح بوهج المنصّة بدل الشريط الكحلي */
+.bz-blog-editorial-hero {
+  color: var(--v9-ink);
+  background:
+    radial-gradient(34rem 20rem at 85% 0%, rgb(79 95 242 / .16), transparent 65%),
+    radial-gradient(26rem 18rem at 10% 30%, rgb(109 91 255 / .12), transparent 65%),
+    var(--bz-bg);
+}
+.dark .bz-blog-editorial-hero {
+  background:
+    radial-gradient(34rem 20rem at 85% 0%, rgb(79 95 242 / .28), transparent 65%),
+    radial-gradient(26rem 18rem at 10% 30%, rgb(109 91 255 / .2), transparent 65%),
+    var(--bz-bg);
+}
+.bz-blog-editorial-hero::after { display: none; }
+.bz-blog-editorial-note {
+  border: 0; border-radius: 28px; background: var(--v9-tint-violet); backdrop-filter: none; color: var(--v9-ink);
+}
+.bz-blog-editorial-note svg { color: var(--v9-violet); }
+.bz-blog-editorial-note p { color: var(--v9-muted); font-size: 12.5px; }
+.bz-blog-editorial-note span { border-top-color: rgb(109 91 255 / .2); color: var(--v9-violet); font-size: 11px; }
+
+.bz-blog-filter { border-color: var(--v9-line); padding: 8px 15px; font-size: 12px; font-weight: 800; color: var(--v9-muted); }
+.bz-blog-filter:hover { border-color: var(--v9-blue); color: var(--v9-link); transform: none; background: var(--v9-tint-blue); }
+.bz-blog-filter.is-active { border-color: transparent; background: var(--v9-blue); color: #fff; }
+
+.bz-blog-section-heading span { color: var(--v9-link); font-size: 11px; }
+.bz-blog-section-heading h2 { font-family: var(--font-display, inherit); font-size: 24px; letter-spacing: -.02em; color: var(--v9-ink); }
+
+.bz-blog-featured { border-color: var(--v9-line); border-radius: 28px; }
+.bz-blog-featured:hover { border-color: transparent; box-shadow: 0 30px 60px -34px rgb(48 68 224 / .55); }
+.bz-blog-featured-copy { padding: 28px 26px; }
+.bz-blog-featured-copy > strong { font-family: var(--font-display, inherit); font-size: 25px; font-weight: 900; letter-spacing: -.02em; }
+.bz-blog-card-label {
+  align-self: flex-start; border-radius: 999px; background: var(--v9-tint-blue); color: var(--v9-link);
+  padding: 4px 10px; font-size: 10.5px;
+}
+.bz-blog-featured-foot b, .bz-blog-editorial-card-copy > small b { color: var(--v9-link); }
+
+.bz-blog-editorial-card { border-color: var(--v9-line); border-radius: 24px; }
+.bz-blog-editorial-card:hover { border-color: transparent; box-shadow: 0 24px 46px -30px rgb(16 20 43 / .4); }
+.dark .bz-blog-editorial-card:hover { box-shadow: 0 24px 46px -30px rgb(0 0 0 / .85); border-color: var(--v9-line); }
+.bz-blog-editorial-card-copy { padding: 16px; }
+.bz-blog-editorial-card-copy > strong { font-size: 15.5px; font-weight: 800; }
+.bz-blog-editorial-card-copy > span:not(.bz-blog-card-label) { font-size: 12px; }
+.bz-blog-editorial-card-copy > small { font-size: 10.5px; }
+
+/* المقال المفرد */
+.bz-article-editorial-hero {
+  border-bottom-color: var(--v9-line);
+  background: radial-gradient(34rem 18rem at 90% 0%, rgb(79 95 242 / .12), transparent 65%), var(--bz-surface);
+}
+.bz-blog-article-page h1 { font-weight: 900; letter-spacing: -.025em; }
+.bz-blog-article-page .bz-article-editorial-hero a.rounded-full { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-article-editorial-mark { border: 0; border-radius: 28px; background: var(--v9-tint-violet); color: var(--v9-violet); }
+.bz-article-byline { color: var(--v9-muted); font-size: 12px; }
+.bz-article-cover-pro { border-radius: 28px; }
+.bz-article-reading-aside { border-radius: 22px; }
+
+/* النصّ: أوسع قليلاً على الشاشات الكبيرة، وعناصر بهويّة المنصّة */
+@media (min-width: 768px) { .bz-article { font-size: 17px; line-height: 2.05; } }
+.bz-article h2 { position: relative; padding-inline-start: 16px; letter-spacing: -.015em; }
+.bz-article h2::before {
+  content: ""; position: absolute; inset-inline-start: 0; top: .35em; bottom: .35em; width: 5px; border-radius: 99px;
+  background: linear-gradient(180deg, var(--v9-blue), var(--v9-violet));
+}
+.bz-article h3 { color: var(--v9-ink); }
+.bz-article a { color: var(--v9-link); text-decoration-color: color-mix(in srgb, var(--v9-link) 35%, transparent); text-underline-offset: 4px; }
+.bz-article a:hover { text-decoration-color: currentColor; }
+.bz-article li::marker { color: var(--v9-blue); }
+.bz-article blockquote {
+  border-inline-start: 0; border-radius: 22px; background: var(--v9-tint-violet); padding: 16px 20px; color: var(--v9-ink);
+}
+.bz-article img { border-radius: 20px; }
+.bz-article table { border-radius: 18px; border: 1px solid var(--v9-line); }
+.bz-article th { background: var(--v9-tint-blue); color: var(--v9-ink); }
+.bz-article mark { background: rgb(255 176 32 / .28); border-radius: 6px; }
+.bz-article code { border-radius: 8px; background: var(--v9-tint-blue); border-color: transparent; }
+
+/* الكاتب و«اقرأ أيضاً» */
+.bz-blog-article-page .bz-author-box { border-color: var(--v9-line); border-radius: 28px; }
+.bz-article-related-card { border-radius: 22px; border-color: var(--v9-line); }
+.bz-article-related-card:hover { box-shadow: 0 22px 42px -30px rgb(16 20 43 / .4); border-color: transparent; }

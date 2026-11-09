@@ -56,17 +56,17 @@ export default async function BlogIndex({ searchParams }: { searchParams: Promis
       <header className="bz-blog-editorial-hero">
         <div className="bz-blog-editorial-grid mx-auto w-full max-w-6xl px-5 py-9 sm:px-6 sm:py-14">
           <div>
-            <nav aria-label="مسار التنقّل" className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><span className="font-bold text-white">المدونة</span></nav>
-            <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-extrabold text-white/85"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> مساحة قراءة للتلميذ</span>
-            <h1 className="mt-4 font-display text-[30px] font-extrabold leading-[1.2] text-white sm:text-[52px]">اقرأ ما يساعدك<br /><span className="text-sky-200">على التقدّم.</span></h1>
-            <p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/75 sm:text-[16px]">{DESC}</p>
+            <nav aria-label="مسار التنقّل" className="bz-v9-crumbs flex items-center gap-2 text-[11px]"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:underline">الرئيسية</Link><span>←</span><span className="font-bold">المدونة</span></nav>
+            <span className="bz-v9-pill mt-7"><FontAwesomeIcon icon={faBookOpen} className="h-3 w-3" /> مساحة قراءة للتلميذ</span>
+            <h1 className="bz-v9-h1 mt-4">اقرأ ما يساعدك<br /><span className="bz-v9-grad">على التقدّم.</span></h1>
+            <p className="bz-v9-lede mt-4 max-w-2xl">{DESC}</p>
           </div>
-          <div className="bz-blog-editorial-note"><FontAwesomeIcon icon={faLayerGroup} className="h-5 w-5 text-sky-200" /><b>من الفكرة إلى الخطة</b><p>مقالات قصيرة تساعدك على تحويل المراجعة من ضغط يومي إلى خطوات يمكن إنجازها.</p><span>{all.length} {all.length === 1 ? "مقال منشور" : "مقالات منشورة"}</span></div>
+          <div className="bz-blog-editorial-note"><FontAwesomeIcon icon={faLayerGroup} className="h-5 w-5" /><b>من الفكرة إلى الخطة</b><p>مقالات قصيرة تساعدك على تحويل المراجعة من ضغط يومي إلى خطوات يمكن إنجازها.</p><span>{all.length} {all.length === 1 ? "مقال منشور" : "مقالات منشورة"}</span></div>
         </div>
       </header>
       {used.length > 0 && <nav aria-label="تصنيفات المدونة" className="bz-blog-editorial-filters mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-5 py-4 sm:px-6"><Link href="/blog" className={`bz-blog-filter ${!label ? "is-active" : ""}`}>كل المقالات</Link>{used.map((item) => <Link key={item.id} href={`/blog?label=${encodeURIComponent(item.id)}`} className={`bz-blog-filter ${label === item.id ? "is-active" : ""}`}>{item.label}</Link>)}</nav>}
       <section className="mx-auto w-full max-w-6xl px-5 pt-7 sm:px-6">
-        <div className="rounded-3xl border border-border/80 bg-surface px-5 py-5 sm:px-7">
+        <div className="bz-v9-card px-5 py-5 sm:px-7">
           <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr] lg:items-start">
             <div>
               <span className="text-[11px] font-black text-primary">كيف تستعمل مكتبة القراءة؟</span>
