@@ -129,7 +129,7 @@ export default function GroupPage() {
 
   return (
     <AppShell>
-      <div className="flex h-[calc(100dvh-9rem)] flex-col lg:h-[calc(100dvh-4.5rem)]">
+      <div className="bz-v9-social flex h-[calc(100dvh-9rem)] flex-col lg:h-[calc(100dvh-4.5rem)]">
         {/* الرأس */}
         <div className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
           <button onClick={() => router.push("/groups")} aria-label="رجوع" className="text-text-muted hover:text-primary">
@@ -177,7 +177,7 @@ export default function GroupPage() {
                 return (
                   <div key={m.id} className={`flex ${isMe ? "justify-start flex-row-reverse" : "justify-start"} gap-2`}>
                     <LiveAvatar uid={m.senderId} name={m.senderName} size="sm" className="h-8 w-8 self-end" />
-                    <div className={`max-w-[75%] rounded-xl px-3 py-2 ${isMe ? "bg-primary text-white" : "bg-surface border border-border"}`}>
+                    <div className={`bz-v9-bubble ${isMe ? "is-mine" : "is-theirs"} max-w-[75%] rounded-xl px-3 py-2 ${isMe ? "bg-primary text-white" : "bg-surface border border-border"}`}>
                       {!isMe && <span className="mb-0.5 block text-[11px] font-bold text-primary">{m.senderName}</span>}
                       <p className="whitespace-pre-wrap text-sm"><Linkify text={m.text} mentions={m.mentions} /></p>
                       <span className={`mt-1 block text-[10px] ${isMe ? "text-white/70 text-left" : "text-text-muted text-right"}`}>{timeHm(m.createdAt)}</span>

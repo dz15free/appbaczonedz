@@ -150,7 +150,7 @@ export default function DMPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex h-[calc(100dvh-9rem)] max-w-2xl flex-col px-3 lg:h-[calc(100dvh-4.5rem)]">
+      <div className="bz-v9-social mx-auto flex h-[calc(100dvh-9rem)] max-w-2xl flex-col px-3 lg:h-[calc(100dvh-4.5rem)]">
         <div className="flex items-center gap-3 border-b border-border py-3">
           <button onClick={() => router.back()} aria-label="رجوع" className="text-text-muted hover:text-primary">
             <FontAwesomeIcon icon={faArrowRight} className="h-5 w-5" />
@@ -174,7 +174,7 @@ export default function DMPage() {
                   />
                 ) : (
                   <div
-                    className={`max-w-[85%] break-words rounded-lg px-3 py-2 text-sm sm:max-w-[75%] ${
+                    className={`bz-v9-bubble ${mine ? "is-mine" : "is-theirs"} max-w-[85%] break-words rounded-lg px-3 py-2 text-sm sm:max-w-[75%] ${
                       mine ? "bg-gradient-primary text-white" : "border border-border bg-surface"
                     }`}
                   >
@@ -189,7 +189,7 @@ export default function DMPage() {
         </div>
 
         {/* شريط الإدخال */}
-        <div className="flex items-center gap-1.5 border-t border-border py-3 sm:gap-2">
+        <div className="bz-v9-chatbar flex items-center gap-1.5 border-t border-border py-3 sm:gap-2">
           <input ref={imageInput} type="file" accept="image/*" hidden onChange={handleUpload} />
           <input ref={fileInput} type="file" hidden onChange={handleUpload} />
           <button

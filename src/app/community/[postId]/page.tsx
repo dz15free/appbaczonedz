@@ -205,7 +205,7 @@ export default function PostPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-4">
+      <section className="bz-v9-social mx-auto max-w-2xl px-4 py-4">
         <button onClick={() => router.push("/community")} className="mb-3 flex items-center gap-2 text-sm text-text-muted">
           <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" />
           رجوع للمجتمع

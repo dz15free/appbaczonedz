@@ -101,8 +101,8 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-5 py-8">
-        <div className="relative flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
+      <section className="bz-v9-social mx-auto max-w-2xl px-5 py-8">
+        <div className="bz-v9-profile-card relative flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
           <button
             onClick={openEdit}
             aria-label="تعديل"

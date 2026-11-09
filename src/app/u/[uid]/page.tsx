@@ -129,14 +129,14 @@ export default function UserProfilePage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-4">
+      <section className="bz-v9-social mx-auto max-w-2xl px-4 py-4">
         <button onClick={() => router.back()} className="mb-3 flex items-center gap-2 text-sm text-text-muted">
           <FontAwesomeIcon icon={faArrowRight} className="h-4 w-4" />
           رجوع
         </button>
 
         {/* بطاقة البروفايل */}
-        <div className="flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
+        <div className="bz-v9-profile-card flex flex-col items-center rounded-xl border border-border bg-surface p-6 text-center">
           <UserAvatar name={name} avatarUrl={theirProfile?.avatarUrl} size="xl" />
           <h1 className="mt-3 font-display text-xl font-extrabold">{name}</h1>
           {isTeacher ? (

@@ -120,9 +120,9 @@ export default function CommunityPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-5">
+      <section className="bz-v9-social mx-auto max-w-2xl px-4 py-5">
         <AdSlot placement="community" className="mb-4" />
-        <div className="mb-4 flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
+        <div className="bz-v9-tabs mb-4 flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -331,7 +331,7 @@ function Feed({ me, isAdmin, myRole, track }: {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-3 sm:p-4">
+      <div className="bz-v9-composer rounded-2xl border border-border bg-surface p-3 sm:p-4">
         <div className="flex gap-3">
           <LiveAvatar uid={me.uid} name={me.name || "ط"} size="md" className="shrink-0" />
           {/* حقل يدعم الإشارة (@) — والمرشَّحون أصدقاؤك */}

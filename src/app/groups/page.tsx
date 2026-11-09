@@ -72,7 +72,7 @@ export default function GroupsPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-2xl px-4 py-4">
+      <section className="bz-v9-social mx-auto max-w-2xl px-4 py-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-display text-xl font-extrabold">مجموعات المواد</h1>
           <button
