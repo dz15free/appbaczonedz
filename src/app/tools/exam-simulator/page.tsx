@@ -84,12 +84,12 @@ export default function ExamSimulatorPage() {
   };
 
   return (
-    <main className="bz-guide min-h-screen">
+    <main className="bz-guide min-h-screen bz-v9-tools">
       <PublicHeader />
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="bz-guide-hero">
+      <header className="bz-guide-hero bz-v9-tool-hero">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-10">
           <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link>

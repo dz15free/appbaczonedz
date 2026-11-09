@@ -77,7 +77,7 @@ export default function PomodoroPage() {
 
   return (
     <AppShell>
-      <section className={`flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center bg-gradient-to-b ${BG[phase]} px-4 py-8 transition-all duration-700`}>
+      <section className={`bz-v9-tools flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center bg-gradient-to-b ${BG[phase]} px-4 py-8 transition-all duration-700`}>
         <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" className="mb-6 self-start" />
         <div className="mb-6 max-w-2xl text-center">
           <h1 className="font-display text-2xl font-extrabold">مؤقّت التركيز بطريقة بومودورو</h1>

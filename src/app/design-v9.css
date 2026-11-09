@@ -238,3 +238,49 @@
 .bz-article > h3 { margin-top: 1.6em; }
 .bz-article > :first-child { margin-top: 0; }
 @media (max-width: 767px) { .bz-article { font-size: 16px; line-height: 2; } }
+
+/* ═══ ٥ — الأدوات: الحاسبة، الموزون، المحاكي، المؤقّت، والفهرس ═══
+   رؤوس الأدوات فيها عناصر مصمَّمة للخلفية الداكنة (المدارات، العُقد،
+   بطاقات الأرقام). بدل قلبها فاتحةً، تأخذ الوجه الثاني من هويّة v9 —
+   بطاقة عائمة بتدرّج أزرق→بنفسجي كدعوة الصفحة الرئيسية — فيبقى النصّ
+   الأبيض صحيحاً كما هو. `bz-v9-tool-hero` على رؤوس الأدوات وحدها
+   (`bz-guide-hero` مشترك مع الأدلّة، فلا يُمسّ هنا). */
+.bz-v9-tool-hero {
+  margin: 12px 12px 0;
+  border-radius: 32px;
+  background:
+    radial-gradient(36rem 20rem at 88% -10%, rgb(255 255 255 / .22), transparent 60%),
+    radial-gradient(26rem 18rem at 6% 110%, rgb(18 184 134 / .32), transparent 65%),
+    linear-gradient(135deg, #4F5FF2 0%, #3044E0 48%, #6D5BFF 100%);
+  box-shadow: 0 30px 60px -36px rgb(48 68 224 / .65);
+}
+.dark .bz-v9-tool-hero {
+  background:
+    radial-gradient(36rem 20rem at 88% -10%, rgb(255 255 255 / .12), transparent 60%),
+    radial-gradient(26rem 18rem at 6% 110%, rgb(18 184 134 / .22), transparent 65%),
+    linear-gradient(135deg, #2E3BB8 0%, #222E9C 48%, #4B3DC4 100%);
+  box-shadow: 0 30px 60px -36px rgb(0 0 0 / .8);
+}
+.bz-v9-tool-hero::after { display: none !important; }
+@media (min-width: 1024px) { .bz-v9-tool-hero { margin: 16px auto 0; max-width: calc(100% - 32px); } }
+
+/* البطاقات والأقسام داخل صفحات الأدوات */
+.bz-v9-tools :is(
+  .bz-calc-pro-shell, .bz-calc-directory-picker, .bz-calc-directory-explain,
+  .bz-weighted-product-app, .bz-weighted-product-explain > article, .bz-weighted-product-faq,
+  .bz-tools-product-group, .bz-tools-product-account, .bz-vbr-panel, .bz-spec-sec
+) {
+  border-radius: 28px;
+  border-color: var(--v9-line);
+}
+.bz-v9-tools :is(.bz-weighted-product-eyebrow, .bz-calc-directory-eyebrow, .bz-tools-product-eyebrow, .bz-vbr-eyebrow) {
+  border-radius: 999px;
+}
+
+/* الأزرار الرئيسية: تدرّج المنصّة الجديد بدل الأزرق→السماوي القديم */
+.bz-v9-tools .bg-gradient-primary { background-image: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); }
+.bz-v9-tools :is(.bz-exam-primary) { border-radius: 999px; }
+.bz-v9-tools :is(.bz-exam-secondary) { border-radius: 999px; }
+
+/* المؤقّت: الحلقة والأزرار بألوان المنصّة */
+.bz-v9-tools svg circle[stroke-dasharray] { stroke-linecap: round; }

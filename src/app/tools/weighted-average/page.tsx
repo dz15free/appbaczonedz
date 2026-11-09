@@ -40,11 +40,11 @@ export default function WeightedAveragePage() {
   };
 
   return (
-    <main className="bz-guide bz-weighted-page min-h-screen">
+    <main className="bz-guide bz-weighted-page min-h-screen bz-v9-tools">
       <PublicHeader />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="bz-weighted-product-hero">
+      <header className="bz-weighted-product-hero bz-v9-tool-hero">
         <div className="bz-weighted-product-hero-grid mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
           <div>
             <nav className="mb-4 flex flex-wrap items-center gap-2 text-[11px] text-white/65"><Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link><span>←</span><span>المعدل الموزون</span></nav>

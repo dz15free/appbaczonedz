@@ -100,10 +100,10 @@ export default function ToolsPage() {
   };
 
   return (
-    <main className="bz-guide bz-tools-page bz-tools-product min-h-screen">
+    <main className="bz-guide bz-tools-page bz-tools-product min-h-screen bz-v9-tools">
       <PublicHeader />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <header className="bz-tools-product-hero">
+      <header className="bz-tools-product-hero bz-v9-tool-hero">
         <div className="bz-tools-product-hero-inner mx-auto w-full max-w-6xl px-4 py-12 sm:py-16">
           <div className="bz-tools-product-copy">
             <span className="bz-guide-kicker">BacZone · مساحة أدواتك</span>

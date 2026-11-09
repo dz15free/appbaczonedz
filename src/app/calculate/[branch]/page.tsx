@@ -100,11 +100,11 @@ export default async function BranchCalculatorPage(
     <EditablePage pageKey={`calculate-${b.slug}`}>
     <>
       <PublicHeader />
-      <main className="bz-guide min-h-screen">
+      <main className="bz-guide min-h-screen bz-v9-tools">
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="bz-calc-branch-hero">
+      <header className="bz-calc-branch-hero bz-v9-tool-hero">
         <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:py-11">
           <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-[11px] text-white/70">
             <Link href="/" className="hover:text-white hover:underline">BacZone</Link>

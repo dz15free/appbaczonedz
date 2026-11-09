@@ -68,10 +68,10 @@ export default function CalculateHub() {
     <EditablePage pageKey="calculate">
       <>
         <PublicHeader />
-        <main className="bz-guide bz-calc-directory min-h-screen">
+        <main className="bz-guide bz-calc-directory min-h-screen bz-v9-tools">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-          <header className="bz-calc-directory-hero">
+          <header className="bz-calc-directory-hero bz-v9-tool-hero">
             <div className="bz-calc-directory-hero-grid mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
               <div className="bz-calc-directory-copy">
                 <span className="bz-calc-directory-kicker"><FontAwesomeIcon icon={faCalculator} /> مساحة الحساب</span>
