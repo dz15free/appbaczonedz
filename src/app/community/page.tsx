@@ -1,5 +1,6 @@
 "use client";
 
+import { toast, errorText } from "@/components/ui/toast";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { hasAllMention, canBroadcast, sendBroadcast } from "@/features/notifications/broadcast";
 import Link from "next/link";
@@ -171,6 +172,7 @@ function Feed({ me, isAdmin, myRole, track }: {
   const [posts, setPosts] = useState<Post[]>([]);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  const publishingRef = useRef(false);
   /* 🐛 الافتراضي كان «الأحدث» — وهو يتجاهل التصويت تماماً، فمنشور
      بـ12 صوتاً يهبط إلى الأسفل لمجرّد أنّ غيره نُشر بعده. وهذا ما
      يجعل التصعيد يبدو معطّلاً وهو يعمل: الترتيب المعروض أوّلاً لا
@@ -237,7 +239,7 @@ function Feed({ me, isAdmin, myRole, track }: {
 
       if (images.length) {
         const room = MAX_IMAGES - pendingImages.length;
-        if (room <= 0) { alert(`الحد الأقصى ${MAX_IMAGES} صور في المنشور.`); return; }
+        if (room <= 0) { toast.error(`الحد الأقصى ${MAX_IMAGES} صور في المنشور.`); return; }
         const prepared = await Promise.all(images.slice(0, room).map((f) => prepareImagePair(f)));
         setPendingImages((prev) => [...prev, ...prepared]);
       }
@@ -247,7 +249,7 @@ function Feed({ me, isAdmin, myRole, track }: {
         setPending({ kind: p.kind, dataUrl: p.dataUrl, name: p.name });
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "فشل تجهيز الملف.");
+      toast.error(errorText(err, "فشل تجهيز الملف."));
     } finally {
       setPreparing(false);
     }
@@ -256,10 +258,13 @@ function Feed({ me, isAdmin, myRole, track }: {
   async function publish() {
     const vid = videoUrl.trim();
     if (vid && !isSupportedVideoUrl(vid)) {
-      alert("رابط الفيديو غير مدعوم. استعمل يوتيوب أو Vimeo أو رابط ملف mp4.");
+      toast.error("رابط الفيديو غير مدعوم. استعمل يوتيوب أو Vimeo أو رابط ملف mp4.");
       return;
     }
     if (!text.trim() && !pending && !pendingImages.length && !vid) return;
+    /* نقرتان سريعتان كانتا تنشران المنشور مرّتين: الحالة لا تتحدّث قبل النقرة الثانية */
+    if (publishingRef.current) return;
+    publishingRef.current = true;
     setPosting(true);
     const media = [
       ...(vid ? [{ kind: "video" as const, url: vid }] : []),
@@ -290,11 +295,13 @@ function Feed({ me, isAdmin, myRole, track }: {
       setVideoUrl("");
       setVisibility("public");
       setPostSubject("");
+      toast.success("نُشر منشورك ✓");
     } catch (err) {
       // بلا هذا كان الزرّ يبقى «جارٍ النشر» إلى الأبد عند أي فشل
       console.error("[BacZone] فشل النشر:", err);
-      alert(err instanceof Error ? err.message : "تعذّر نشر المنشور. تحقّق من اتصالك وحاول مجدداً.");
+      toast.error(errorText(err, "تعذّر نشر المنشور. تحقّق من اتصالك وحاول مجدداً."));
     } finally {
+      publishingRef.current = false;
       setPosting(false);
     }
   }
@@ -446,9 +453,10 @@ function Feed({ me, isAdmin, myRole, track }: {
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <button onClick={publish} disabled={posting || (!text.trim() && !pending)}
+          <button onClick={publish} disabled={posting || (!text.trim() && !pending && !pendingImages.length && !videoUrl.trim())}
+            aria-busy={posting}
             className="h-9 shrink-0 rounded-lg bg-gradient-primary px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50">
-            {posting ? "..." : "نشر"}
+            {posting ? <span className="inline-flex items-center gap-1.5"><span className="bz-spin" aria-hidden="true" />جارٍ النشر</span> : "نشر"}
           </button>
         </div>
       </div>
@@ -545,7 +553,7 @@ function Feed({ me, isAdmin, myRole, track }: {
                 onDelete={() => { if (confirm("حذف هذا المنشور؟")) deletePost(p); }}
                 onReport={() => {
                   reportContent("post", p.id, me);
-                  alert("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
+                  toast.success("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
                 }}
                 friendState={!showAdd ? null : (sent[p.authorId] || sentSet.has(p.authorId)) ? "sent" : "none"}
                 onFriend={() => addFriend(p.authorId, p.authorName)}

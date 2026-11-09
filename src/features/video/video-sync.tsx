@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { ref, onValue, set, update } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -357,7 +358,7 @@ export function VideoSync({ roomId, isOwner }: { roomId: string; isOwner: boolea
     const src = detectSource(url);
     if (src === "youtube") {
       const id = extractYouTubeId(url);
-      if (!id) { alert("رابط YouTube غير صالح"); return; }
+      if (!id) { toast.error("رابط YouTube غير صالح"); return; }
       set(ref(rtdb, statePath), { sourceType: "youtube", videoId: id, isPlaying: true, currentTime: 0, updatedAt: Date.now() });
     } else if (src === "gdrive") {
       set(ref(rtdb, statePath), { sourceType: "gdrive", videoUrl: gdriveEmbed(url), isPlaying: true, currentTime: 0, updatedAt: Date.now() });

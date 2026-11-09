@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faCheck, faTrash, faShieldHalved } from "@fortawesome/free-solid-svg-icons";
@@ -93,7 +94,7 @@ export function RateTeacherSheet({
       setDone(true);
       setTimeout(onClose, 1200);
     } catch {
-      alert("تعذّر حفظ التقييم. تأكّد أنك حضرت حصة مع هذا الأستاذ.");
+      toast.error("تعذّر حفظ التقييم. تأكّد أنك حضرت حصة مع هذا الأستاذ.");
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
@@ -144,7 +145,7 @@ export default function PlannerPage() {
       a.href = canvas.toDataURL("image/png");
       a.click();
     } catch {
-      alert("تعذّر حفظ الصورة على هذا المتصفّح. استعمل زر «طباعة / حفظ PDF» ثم اختر «حفظ كصورة» إن أردت.");
+      toast.error("تعذّر حفظ الصورة على هذا المتصفّح. استعمل زر «طباعة / حفظ PDF» ثم اختر «حفظ كصورة» إن أردت.");
     } finally {
       setExporting(false);
     }

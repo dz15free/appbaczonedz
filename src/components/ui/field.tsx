@@ -35,6 +35,7 @@ export function Input({
               : "border-border focus:border-primary focus:ring-2 focus:ring-primary/20",
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         />
         {isPassword && (
@@ -49,7 +50,7 @@ export function Input({
           </button>
         )}
       </div>
-      {error && <span className="mt-1 block text-xs font-semibold text-danger">{error}</span>}
+      {error && <span role="alert" className="mt-1.5 block text-xs font-semibold text-danger">{error}</span>}
     </label>
   );
 }
@@ -72,11 +73,16 @@ export function Button({
         variant === "ghost" && "border border-border bg-surface text-text-primary hover:bg-primary/10",
         className
       )}
-      disabled={loading || props.disabled}
       {...props}
+      /* 🐛 كانت قبل `{...props}`، فأيّ `disabled` تمرّره الصفحة (مثل
+         `disabled={!canSubmit}`) يُلغي التعطيل أثناء التحميل — فيبقى الزرّ
+         قابلاً للنقر مرّة ثانية ويُرسَل الطلب مرّتين. */
+      disabled={loading || props.disabled}
+      aria-busy={loading || undefined}
     >
       {loading ? (
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+        /* currentColor: يظهر على الزرّ الأبيض أيضاً لا الملوّن وحده */
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent opacity-80" aria-label="جارٍ التنفيذ" />
       ) : (
         children
       )}

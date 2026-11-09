@@ -1,5 +1,6 @@
 "use client";
 
+import { toast, errorText } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RichText } from "@/components/ui/linkify";
@@ -48,7 +49,7 @@ function DMAttachment({
     return (
       <button onClick={() => onZoom(dataUrl, msg.fileName || "image")} className="overflow-hidden rounded-lg border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={dataUrl} alt={msg.fileName || ""} className="max-h-56 max-w-full object-cover sm:max-w-[16rem]" />
+        <img loading="lazy" decoding="async" src={dataUrl} alt={msg.fileName || ""} className="max-h-56 max-w-full object-cover sm:max-w-[16rem]" />
       </button>
     );
 
@@ -140,7 +141,7 @@ export default function DMPage() {
       const other: Person = { uid: otherUid, name: otherName };
       await sendDMAttachment(me, other, { kind: prepared.kind, dataUrl: prepared.dataUrl, name: prepared.name });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "فشل الرفع.");
+      toast.error(errorText(err, "فشل الرفع."));
     } finally {
       setUploading(false);
     }

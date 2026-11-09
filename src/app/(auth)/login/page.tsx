@@ -1,26 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginUser, resetPassword, needsOnboarding, AuthError } from "@/lib/firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { Input, Button } from "@/components/ui/field";
 import { useNextDestination } from "@/features/auth/use-require-auth";
+import { emailError } from "@/lib/validate";
 
 export default function LoginPage() {
   const next = useNextDestination();
   const router = useRouter();
+  /* الصفحة التالية تُجهَّز أثناء الكتابة، فتظهر فور الدخول */
+  useEffect(() => { router.prefetch(next); router.prefetch("/onboarding"); }, [router, next]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  /* أخطاء الحقول تُعرض تحت الحقل نفسه؛ أعلى البطاقة للأخطاء العامّة وحدها */
+  const [fieldErr, setFieldErr] = useState<{ email?: string; password?: string }>({});
 
   async function handleLogin() {
-    if (!email.trim() || !password) {
-      setMsg({ type: "error", text: "الرجاء إدخال البريد وكلمة المرور." });
-      return;
-    }
+    /* Enter أثناء التحميل كان يُرسل طلب دخول ثانياً */
+    if (loading) return;
+    const errs = { email: emailError(email), password: password ? undefined : "أدخل كلمة المرور." };
+    setFieldErr(errs);
+    if (errs.email || errs.password) { setMsg(null); return; }
     setLoading(true);
     setMsg(null);
     try {
@@ -40,21 +46,26 @@ export default function LoginPage() {
       router.push(goOnboarding ? `/onboarding?next=${encodeURIComponent(next)}` : next);
     } catch (err) {
       console.error("[BacZone] خطأ الدخول:", err);
-      setMsg({
-        type: "error",
-        text: err instanceof AuthError ? err.message : "خطأ غير متوقّع.",
-      });
+      if (err instanceof AuthError && err.field) {
+        setFieldErr({ [err.field]: err.message });
+      } else {
+        setMsg({
+          type: "error",
+          text: err instanceof AuthError ? err.message : "تعذّر الدخول. تحقّق من اتصالك وحاول مجدداً.",
+        });
+      }
       setLoading(false);
     }
   }
 
   async function handleReset() {
-    if (!email.trim()) {
-      return setMsg({
-        type: "error",
-        text: "أدخل بريدك أولاً ثم اضغط نسيت كلمة المرور.",
-      });
+    const eErr = emailError(email);
+    if (eErr) {
+      setMsg(null);
+      setFieldErr({ email: email.trim() ? eErr : "أدخل بريدك هنا أوّلاً، ثمّ اضغط «نسيت كلمة المرور»." });
+      return;
     }
+    setFieldErr({});
     try {
       await resetPassword(email);
       setMsg({
@@ -62,9 +73,10 @@ export default function LoginPage() {
         text: "تم إرسال رابط استعادة كلمة المرور إلى بريدك.",
       });
     } catch (err) {
-      setMsg({
+      if (err instanceof AuthError && err.field === "email") setFieldErr({ email: err.message });
+      else setMsg({
         type: "error",
-        text: err instanceof AuthError ? err.message : "فشل الإرسال.",
+        text: err instanceof AuthError ? err.message : "تعذّر إرسال الرابط. تحقّق من اتصالك وحاول مجدداً.",
       });
     }
   }
@@ -103,9 +115,10 @@ export default function LoginPage() {
             autoComplete="email"
             dir="ltr"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); if (fieldErr.email) setFieldErr((f) => ({ ...f, email: undefined })); }}
             placeholder="example@email.com"
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            error={fieldErr.email}
           />
 
           <div>
@@ -114,8 +127,9 @@ export default function LoginPage() {
               type="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); if (fieldErr.password) setFieldErr((f) => ({ ...f, password: undefined })); }}
               onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              error={fieldErr.password}
             />
             <div className="mt-2 flex justify-end">
               <button

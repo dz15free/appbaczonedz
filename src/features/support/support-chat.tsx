@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeadset, faPaperPlane, faCreditCard, faComments } from "@fortawesome/free-solid-svg-icons";
@@ -53,7 +54,7 @@ export function SupportChatSheet({
       );
     } catch {
       setText(t);
-      alert("تعذّر الإرسال. حاول مجدداً.");
+      toast.error("تعذّر الإرسال. حاول مجدداً.");
     } finally {
       setBusy(false);
     }

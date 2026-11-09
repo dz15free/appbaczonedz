@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -94,7 +95,7 @@ export function ShareSheet({ open, onClose, target }: {
       setPosted(true);
       setTimeout(onClose, 1200);
     } catch {
-      alert("تعذّر النشر. حاول مجدداً.");
+      toast.error("تعذّر النشر. حاول مجدداً.");
     } finally { setBusy(false); }
   }
 

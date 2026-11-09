@@ -47,6 +47,9 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
   const [price, setPrice] = useState("");
   const [branches, setBranches] = useState<BranchMap>({ all: true });
   const [error, setError] = useState("");
+  /* أخطاء الحقول تحت حقولها؛ `error` أسفل النافذة لأخطاء الخادم وحدها */
+  const [nameErr, setNameErr] = useState("");
+  const [priceErr, setPriceErr] = useState("");
 
   const isTeacher = profile?.role === "teacher" || profile?.role === "admin";
   const availableTypes = TYPES.filter((t) => t.id !== "teacher" || isTeacher);
@@ -56,12 +59,13 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
     const cleanName = name.trim();
     const priceNum = parseInt(price, 10);
 
+    if (loading) return;
     if (!cleanName) {
-      setError("اكتب اسم الغرفة أولاً.");
+      setNameErr("اكتب اسم الغرفة أوّلاً.");
       return;
     }
     if (isPaid && isTeacher && (!priceNum || priceNum <= 0)) {
-      setError("أدخل سعراً صحيحاً بالدينار الجزائري.");
+      setPriceErr("أدخل سعراً صحيحاً بالدينار الجزائري.");
       return;
     }
 
@@ -133,9 +137,10 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
               <Input
                 label="اسم الغرفة"
                 value={name}
-                onChange={(e) => { setName(e.target.value); setError(""); }}
+                onChange={(e) => { setName(e.target.value); setError(""); setNameErr(""); }}
                 placeholder="مثال: مراجعة رياضيات بكالوريا"
                 className="h-12"
+                error={nameErr || undefined}
               />
             </section>
 
@@ -237,11 +242,13 @@ export function CreateRoomDialog({ onClose }: { onClose: () => void }) {
                           type="number"
                           inputMode="numeric"
                           value={price}
-                          onChange={(e) => { setPrice(e.target.value); setError(""); }}
+                          onChange={(e) => { setPrice(e.target.value); setError(""); setPriceErr(""); }}
                           placeholder="2000"
                           min="1"
-                          className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                          aria-invalid={priceErr ? true : undefined}
+                          className={`h-11 w-full rounded-xl border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 ${priceErr ? "border-danger" : "border-border"}`}
                         />
+                        {priceErr && <p role="alert" className="mt-1.5 text-xs font-semibold text-danger">{priceErr}</p>}
                         <p className="mt-2 text-[11px] leading-relaxed text-text-muted">سيتواصل التلاميذ مع الإدارة للدفع والحصول على كود الدخول.</p>
                       </div>
                     )}

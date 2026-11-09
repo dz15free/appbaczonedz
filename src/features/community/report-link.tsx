@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useState } from "react";
 import { push, ref } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -58,7 +59,7 @@ export function ReportLinkButton({
       setState("done");
     } catch {
       setState("idle");
-      alert("تعذّر إرسال البلاغ. أعد المحاولة.");
+      toast.error("تعذّر إرسال البلاغ. أعد المحاولة.");
     }
   }
 

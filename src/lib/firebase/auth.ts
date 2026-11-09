@@ -32,7 +32,22 @@ function arabicError(code: string): string {
   return map[code] ?? "حدث خطأ غير متوقّع. حاول مرة أخرى.";
 }
 
-export class AuthError extends Error {}
+/* الحقل المعنيّ بالخطأ — لتُعرض الرسالة تحته لا أعلى النموذج */
+const FIELD_OF: Record<string, "email" | "password"> = {
+  "auth/email-already-in-use": "email",
+  "auth/invalid-email": "email",
+  "auth/user-not-found": "email",
+  "auth/weak-password": "password",
+  "auth/wrong-password": "password",
+};
+
+export class AuthError extends Error {
+  field?: "email" | "password";
+  constructor(message: string, code?: string) {
+    super(message);
+    this.field = code ? FIELD_OF[code] : undefined;
+  }
+}
 
 export async function registerUser(name: string, email: string, password: string, role: "student" | "teacher" = "student") {
   if (!name || !email || !password) throw new AuthError("الرجاء تعبئة جميع الحقول.");
@@ -57,7 +72,7 @@ export async function registerUser(name: string, email: string, password: string
     // يبقى المستخدم مسجّلاً دخوله مباشرة دون الحاجة لتأكيد البريد
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 
@@ -69,7 +84,7 @@ export async function loginUser(email: string, password: string) {
   } catch (err: unknown) {
     if (err instanceof AuthError) throw err;
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 
@@ -79,7 +94,7 @@ export async function resetPassword(email: string) {
     await sendPasswordResetEmail(auth, email);
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 
@@ -95,7 +110,7 @@ export async function sendVerificationEmail(user: User) {
     await sendEmailVerification(user, actionSettings("/profile#account-security"));
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 
@@ -106,7 +121,7 @@ export async function sendEmailChangeVerification(user: User, newEmail: string) 
     await verifyBeforeUpdateEmail(user, normalized, actionSettings("/profile#account-security"));
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 
@@ -122,7 +137,7 @@ export async function changePassword(user: User, currentPassword: string, newPas
     await updatePassword(user, newPassword);
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code ?? "";
-    throw new AuthError(arabicError(code));
+    throw new AuthError(arabicError(code), code);
   }
 }
 

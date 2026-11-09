@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PLAN_BRANCHES, WEEK_DAYS, cellOptions, getBranch } from "@/features/tools/planner-data";
@@ -209,7 +210,7 @@ export function StudyPlanner() {
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch {
-      window.alert("تعذّر حفظ الصورة في هذا المتصفح. جرّب الطباعة ثم اختر حفظًا مناسبًا.");
+      toast.error("تعذّر حفظ الصورة في هذا المتصفح. جرّب الطباعة ثم اختر حفظًا مناسبًا.");
     } finally {
       setExporting(false);
     }

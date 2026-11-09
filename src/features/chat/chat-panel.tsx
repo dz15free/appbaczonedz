@@ -1,5 +1,6 @@
 "use client";
 
+import { toast, errorText } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -64,7 +65,7 @@ function Attachment({
         className="mt-1 overflow-hidden rounded-md border border-border"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={dataUrl} alt={msg.fileName || ""} className="max-h-48 max-w-[12rem] object-cover" />
+        <img loading="lazy" decoding="async" src={dataUrl} alt={msg.fileName || ""} className="max-h-48 max-w-[12rem] object-cover" />
       </button>
     );
 
@@ -136,7 +137,7 @@ export function ChatPanel({ roomId, isOwner = false, canModerate = false }: { ro
         fileName: prepared.name,
       });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "فشل الرفع.");
+      toast.error(errorText(err, "فشل الرفع."));
     } finally {
       setUploading(false);
     }

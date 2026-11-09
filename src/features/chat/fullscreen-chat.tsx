@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faPaperPlane, faXmark, faFile, faSpinner, faImage, faPaperclip, faTrash } from "@fortawesome/free-solid-svg-icons";
@@ -33,7 +34,7 @@ function FsAttachment({ roomId, msg }: { roomId: string; msg: ChatMessage }) {
       <>
         <button onClick={() => setZoom(true)} className="overflow-hidden rounded-lg border border-white/15">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={dataUrl} alt="" className="max-h-40 max-w-[200px] object-cover" />
+          <img loading="lazy" decoding="async" src={dataUrl} alt="" className="max-h-40 max-w-[200px] object-cover" />
         </button>
         {zoom && <ImageZoom src={dataUrl} onClose={() => setZoom(false)} />}
       </>
@@ -127,7 +128,7 @@ export function FullscreenChatOverlay({ roomId, isOwner, canModerate = false }: 
         fileName: prepared.name,
       });
     } catch {
-      alert("تعذّر رفع الملف.");
+      toast.error("تعذّر رفع الملف.");
     } finally {
       setUploading(false);
     }

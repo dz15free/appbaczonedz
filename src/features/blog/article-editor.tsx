@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -72,7 +73,7 @@ export function ArticleEditor({
     const url = window.prompt("رابط (https:// أو / للداخلي):", "https://");
     if (!url) return;
     if (!/^https?:\/\//i.test(url) && !url.startsWith("/")) {
-      window.alert("رابط غير مقبول. استعمل https:// أو مساراً داخلياً يبدأ بـ /");
+      toast.error("رابط غير مقبول. استعمل https:// أو مساراً داخلياً يبدأ بـ /");
       return;
     }
     exec("createLink", url);
@@ -83,7 +84,7 @@ export function ArticleEditor({
     if (!url || !/^https?:\/\//i.test(url)) return;
     const alt = window.prompt("وصف الصورة (alt) — إلزاميّ للوصولية وللسيو:", "") || "";
     if (!alt.trim()) {
-      window.alert("الوصف مطلوب: صورة بلا وصف لا يقرأها قارئ الشاشة ولا Google.");
+      toast.error("الوصف مطلوب: صورة بلا وصف لا يقرأها قارئ الشاشة ولا Google.");
       return;
     }
     /* أبعاد وتحميل كسول تُضاف هنا لا وقت العرض: بلا أبعاد تقفز الصفحة

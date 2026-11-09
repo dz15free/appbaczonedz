@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChargilyPayButton } from "@/features/paid/chargily-button";
 import { useParams, useRouter } from "next/navigation";
@@ -631,7 +632,7 @@ export default function RoomPage() {
   function shareRoomLink() {
     const url = window.location.href;
     navigator.clipboard?.writeText(url)
-      .then(() => alert("تم نسخ رابط الغرفة"))
+      .then(() => toast.success("تم نسخ رابط الغرفة"))
       .catch(() => prompt("انسخ الرابط:", url));
   }
 

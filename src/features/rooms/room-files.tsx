@@ -1,5 +1,6 @@
 "use client";
 
+import { toast, errorText } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -200,7 +201,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
 
   async function connect() {
     try { await connectDrive(); setConnected(true); }
-    catch (err) { alert(err instanceof Error ? err.message : "تعذّر ربط Google."); }
+    catch (err) { toast.error(errorText(err, "تعذّر ربط Google.")); }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -217,7 +218,7 @@ export function RoomFiles({ roomId, isOwner = false }: { roomId: string; isOwner
         driveId: uploaded.id,
       });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "فشل الرفع.");
+      toast.error(errorText(err, "فشل الرفع."));
     } finally {
       setUploading(false); setProgress(0);
     }

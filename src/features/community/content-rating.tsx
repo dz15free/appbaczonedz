@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import { ref, set, remove, onValue } from "firebase/database";
 import { rtdb } from "@/lib/firebase/config";
@@ -148,7 +149,7 @@ export function ContentRatingSheet({
       setDone(true);
       setTimeout(onClose, 1200);
     } catch {
-      alert("التقييم متاح لمن اشترى هذا المحتوى.");
+      toast.info("التقييم متاح لمن اشترى هذا المحتوى.");
     } finally {
       setBusy(false);
     }

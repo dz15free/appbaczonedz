@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -177,7 +178,7 @@ export default function PostPage() {
               <button
                 onClick={() => {
                   reportContent("comment", c.id, { uid: user.uid, name: myName });
-                  alert("تم الإبلاغ. شكراً.");
+                  toast.success("تم الإبلاغ. شكراً.");
                 }}
                 aria-label="إبلاغ"
                 className="text-text-muted hover:text-warning"
@@ -270,7 +271,7 @@ export default function PostPage() {
                     <button
                       onClick={() => {
                         reportContent("post", post.id, { uid: user.uid, name: profile?.name || user.displayName || "تلميذ" });
-                        alert("تم الإبلاغ. شكراً.");
+                        toast.success("تم الإبلاغ. شكراً.");
                       }}
                       aria-label="إبلاغ"
                       className="grid h-8 w-8 place-items-center rounded-md text-text-muted hover:text-warning"

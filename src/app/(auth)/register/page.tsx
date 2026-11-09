@@ -1,24 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { registerUser, AuthError } from "@/lib/firebase/auth";
 import { Input, Button } from "@/components/ui/field";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { useNextDestination } from "@/features/auth/use-require-auth";
+import { emailError } from "@/lib/validate";
 import { SupportChatSheet } from "@/features/support/support-chat";
 import { useAuth } from "@/features/auth/auth-provider";
 
 export default function RegisterPage() {
   const next = useNextDestination();
   const router = useRouter();
+  /* صفحة الإعداد تُجهَّز أثناء الكتابة، فتظهر فور إنشاء الحساب */
+  useEffect(() => { router.prefetch("/onboarding"); }, [router]);
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [fieldErr, setFieldErr] = useState<{ name?: string; email?: string; password?: string; confirm?: string }>({});
   const [loading, setLoading] = useState(false);
   const [accountType, setAccountType] = useState<"student" | "teacher">("student");
   const [supportOpen, setSupportOpen] = useState(false);
@@ -61,20 +65,29 @@ export default function RegisterPage() {
   const passwordTooShort = password.length > 0 && password.length < 6;
 
   async function handleRegister() {
+    if (loading) return;
     setMsg(null);
-    if (!name.trim()) return setMsg("الرجاء إدخال اسمك الكامل.");
-    if (!email.trim()) return setMsg("الرجاء إدخال بريدك الإلكتروني.");
-    if (password.length < 6) return setMsg("كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
-    if (password !== confirm) return setMsg("كلمتا المرور غير متطابقتين.");
+    /* كلّ خطأ تحت حقله — كان الخطأ الأوّل وحده يظهر أعلى النموذج */
+    const errs = {
+      name: name.trim().length < 2 ? "أدخل اسمك كما سيظهر لزملائك." : undefined,
+      email: emailError(email),
+      password: password.length < 6 ? "كلمة المرور 6 أحرف على الأقل." : undefined,
+      confirm: password !== confirm ? "كلمتا المرور غير متطابقتين." : undefined,
+    };
+    setFieldErr(errs);
+    if (errs.name || errs.email || errs.password || errs.confirm) return;
     setLoading(true);
     try {
       await registerUser(name, email, password, accountType);
       router.push(`/onboarding?next=${encodeURIComponent(next)}`);
     } catch (err) {
-      setMsg(err instanceof AuthError ? err.message : "خطأ غير متوقّع.");
+      if (err instanceof AuthError && err.field) setFieldErr({ [err.field]: err.message });
+      else setMsg(err instanceof AuthError ? err.message : "تعذّر إنشاء الحساب. تحقّق من اتصالك وحاول مجدداً.");
       setLoading(false);
     }
   }
+
+  const clearErr = (k: keyof typeof fieldErr) => { if (fieldErr[k]) setFieldErr((f) => ({ ...f, [k]: undefined })); };
 
   return (
     <div className="space-y-5">
@@ -128,8 +141,9 @@ export default function RegisterPage() {
           label="الاسم الكامل"
           autoComplete="name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); clearErr("name"); }}
           placeholder="مثال: أمين بلحاج"
+          error={fieldErr.name}
         />
         <Input
           label="البريد الإلكتروني"
@@ -138,26 +152,27 @@ export default function RegisterPage() {
           autoComplete="email"
           dir="ltr"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); clearErr("email"); }}
           placeholder="example@email.com"
+          error={fieldErr.email}
         />
         <Input
           label="كلمة المرور"
           type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => { setPassword(e.target.value); clearErr("password"); }}
           placeholder="6 أحرف على الأقل"
-          error={passwordTooShort ? "كلمة المرور قصيرة جداً" : undefined}
+          error={fieldErr.password ?? (passwordTooShort ? "كلمة المرور قصيرة جداً" : undefined)}
         />
         <Input
           label="تأكيد كلمة المرور"
           type="password"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          onChange={(e) => { setConfirm(e.target.value); clearErr("confirm"); }}
           onKeyDown={(e) => e.key === "Enter" && handleRegister()}
-          error={passwordMismatch ? "كلمتا المرور غير متطابقتين" : undefined}
+          error={fieldErr.confirm ?? (passwordMismatch ? "كلمتا المرور غير متطابقتين" : undefined)}
         />
       </div>
 

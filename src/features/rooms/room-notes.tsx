@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "@/components/ui/toast";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getFullscreenHost } from "@/lib/fullscreen";
@@ -584,7 +585,7 @@ export function RoomNotes({
 
   function tableOp(op: "row+" | "row-" | "col+" | "col-" | "del") {
     const cell = currentCell();
-    if (!cell) { alert("ضع المؤشّر داخل خليّة في الجدول أوّلاً."); return; }
+    if (!cell) { toast.error("ضع المؤشّر داخل خليّة في الجدول أوّلاً."); return; }
     const row = cell.parentElement as HTMLTableRowElement;
     const table = cell.closest("table");
     if (!row || !table) return;
@@ -701,11 +702,11 @@ export function RoomNotes({
     setDocxBusy(true);
     try {
       const mammoth = await loadMammoth();
-      if (!mammoth) { alert("تعذّر تحميل قارئ Word. تحقّق من الاتصال."); return; }
+      if (!mammoth) { toast.error("تعذّر تحميل قارئ Word. تحقّق من الاتصال."); return; }
       const buf = await f.arrayBuffer();
       const out = await mammoth.convertToHtml({ arrayBuffer: buf });
       const cleaned = cleanExternalHtml(out.value || "");
-      if (!cleaned.trim()) { alert("الملفّ فارغ أو غير مقروء."); return; }
+      if (!cleaned.trim()) { toast.error("الملفّ فارغ أو غير مقروء."); return; }
       const ed = edRef.current;
       if (ed) {
         const keep = ed.innerHTML.replace(/<p><br><\/p>/g, "").trim();
@@ -714,7 +715,7 @@ export function RoomNotes({
         sync();
       }
     } catch {
-      alert("تعذّرت قراءة الملفّ. تأكّد أنّه بصيغة .docx (لا .doc القديمة).");
+      toast.error("تعذّرت قراءة الملفّ. تأكّد أنّه بصيغة .docx (لا .doc القديمة).");
     } finally {
       setDocxBusy(false);
     }

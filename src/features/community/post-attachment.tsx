@@ -54,7 +54,7 @@ export function PostAttachment({ post }: { post: Post }) {
       {post.attachmentKind === "image" ? (
         <button onClick={() => setViewer(true)} className="mt-3 block overflow-hidden rounded-md border border-border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={dataUrl} alt={name} className="max-h-72 w-full object-cover" />
+          <img loading="lazy" decoding="async" src={dataUrl} alt={name} className="max-h-72 w-full object-cover" />
         </button>
       ) : (
         <button

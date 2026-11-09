@@ -14,6 +14,8 @@ import { Preloader } from "@/components/preloader";
 import { PublicSiteFooter } from "@/components/ui/public-site-footer";
 import { Analytics } from "@/components/analytics";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { Toaster } from "@/components/ui/toast";
+import { NavProgress } from "@/components/ui/nav-progress";
 import { SITE_URL } from "@/lib/site-url";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
@@ -218,6 +220,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <PublicSiteFooter />
           <InstallPrompt />
+          <Toaster />
+          <NavProgress />
         </Providers>
         {/* آخر ما في الصفحة، وبعد التفاعل — فلا يزاحم الرسم الأوّل */}
         {/* ⚠️ `Suspense` إلزامية هنا: `Analytics` تستعمل

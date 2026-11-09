@@ -1,5 +1,6 @@
 "use client";
 
+import { toast, errorText } from "@/components/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileArrowUp, faFile, faEye, faSpinner, faTrash, faLink } from "@fortawesome/free-solid-svg-icons";
@@ -36,7 +37,7 @@ export function GroupFiles({ groupId, isOwner, isMember }: Props) {
 
   async function connect() {
     try { await connectDrive(); setConnected(true); }
-    catch (err) { alert(err instanceof Error ? err.message : "تعذّر ربط Google."); }
+    catch (err) { toast.error(errorText(err, "تعذّر ربط Google.")); }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -52,7 +53,7 @@ export function GroupFiles({ groupId, isOwner, isMember }: Props) {
         name: uploaded.name,
         driveId: uploaded.id,
       });
-    } catch (err) { alert(err instanceof Error ? err.message : "فشل الرفع."); }
+    } catch (err) { toast.error(errorText(err, "فشل الرفع.")); }
     finally { setUploading(false); setProgress(0); }
   }
 
