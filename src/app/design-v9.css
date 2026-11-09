@@ -382,42 +382,42 @@
 .bz-v9-guide .bz-guide-action-links a { border-radius: 999px; }
 
 /* ═══ ٧ — المجتمع والملفّ الشخصي والرسائل (الشكل وحده) ═══
-   الصفحات مكتوبة بأصناف Tailwind، فالطبقة تعمل داخل .bz-v9-social وحدها
+   الصفحات مكتوبة بأصناف Tailwind، فالطبقة تعمل داخل .bz-v9-social و.bz-v9-admin (لوحة الإدارة) وحدهما
    ولا تمسّ بقيّة التطبيق. */
-.bz-v9-social .border-border { border-color: var(--v9-line); }
+:is(.bz-v9-social, .bz-v9-admin) .border-border { border-color: var(--v9-line); }
 
 /* البطاقات: منشور، صفّ صديق، مجموعة، تعليق */
 /* :not(...) — التبويبات والفقاعات والقوائم المنسدلة لها أشكالها أدناه */
-.bz-v9-social :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.bg-surface:not(.absolute, .bz-v9-bubble, .bz-v9-tabs, .bz-v9-composer, .bz-v9-profile-card) { border-radius: 26px; }
-.bz-v9-social .rounded-lg.border:is(.bg-surface, .bg-background):not(.absolute, .bz-v9-bubble, .bz-v9-tabs, .bz-v9-composer, .bz-v9-profile-card) { border-radius: 20px; }
-.bz-v9-social a:is(.rounded-xl, .rounded-2xl).border.bg-surface:hover,
-.bz-v9-social div.rounded-2xl.border.bg-surface.overflow-hidden:hover { box-shadow: 0 22px 40px -34px rgb(48 68 224 / .5); }
-.bz-v9-social .absolute.rounded-xl.border.bg-surface { border-radius: 18px; }
+:is(.bz-v9-social, .bz-v9-admin) :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.bg-surface:not(.absolute, .bz-v9-bubble, .bz-v9-tabs, .bz-v9-composer, .bz-v9-profile-card) { border-radius: 26px; }
+:is(.bz-v9-social, .bz-v9-admin) .rounded-lg.border:is(.bg-surface, .bg-background):not(.absolute, .bz-v9-bubble, .bz-v9-tabs, .bz-v9-composer, .bz-v9-profile-card) { border-radius: 20px; }
+:is(.bz-v9-social, .bz-v9-admin) a:is(.rounded-xl, .rounded-2xl).border.bg-surface:hover,
+:is(.bz-v9-social, .bz-v9-admin) div.rounded-2xl.border.bg-surface.overflow-hidden:hover { box-shadow: 0 22px 40px -34px rgb(48 68 224 / .5); }
+:is(.bz-v9-social, .bz-v9-admin) .absolute.rounded-xl.border.bg-surface { border-radius: 18px; }
 
 /* التبويبات: كبسولة فيها كبسولات */
-.bz-v9-social .bz-v9-tabs { border-radius: 999px; padding: 5px; border-color: var(--v9-line); }
+:is(.bz-v9-social, .bz-v9-admin) .bz-v9-tabs { border-radius: 999px; padding: 5px; border-color: var(--v9-line); }
 .bz-v9-tabs > button { border-radius: 999px; min-height: 42px; }
 .bz-v9-tabs > button:not(.bg-gradient-primary):hover { background: var(--v9-tint-blue); color: var(--v9-link); }
 
 /* الأزرار الرئيسية: تدرّج المنصّة وكبسولة */
-.bz-v9-social .bg-gradient-primary { background-image: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); }
-.bz-v9-social :is(button, a).bg-gradient-primary { border-radius: 999px; }
-.bz-v9-social :is(button, a).rounded-lg.border:not(.bg-surface):not(.bg-background) { border-radius: 999px; }
+:is(.bz-v9-social, .bz-v9-admin) .bg-gradient-primary { background-image: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); }
+:is(.bz-v9-social, .bz-v9-admin) :is(button, a).bg-gradient-primary { border-radius: 999px; }
+:is(.bz-v9-social, .bz-v9-admin) :is(button, a).rounded-lg.border:not(.bg-surface):not(.bg-background) { border-radius: 999px; }
 
 /* الحقول */
-.bz-v9-social input.border:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-.bz-v9-social select.border { border-radius: 999px; border-color: var(--v9-line); }
-.bz-v9-social textarea.border { border-radius: 20px; border-color: var(--v9-line); }
-.bz-v9-social :is(input, select, textarea).border:focus { border-color: var(--v9-blue); box-shadow: 0 0 0 4px var(--v9-tint-blue); }
+:is(.bz-v9-social, .bz-v9-admin) input.border:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]),
+:is(.bz-v9-social, .bz-v9-admin) select.border { border-radius: 999px; border-color: var(--v9-line); }
+:is(.bz-v9-social, .bz-v9-admin) textarea.border { border-radius: 20px; border-color: var(--v9-line); }
+:is(.bz-v9-social, .bz-v9-admin) :is(input, select, textarea).border:focus { border-color: var(--v9-blue); box-shadow: 0 0 0 4px var(--v9-tint-blue); }
 
 /* أزرار الأيقونات (صورة، ملف، قائمة): دوائر */
-.bz-v9-social button.grid.place-items-center:is(.rounded-lg, .rounded-md) { border-radius: 999px; }
+:is(.bz-v9-social, .bz-v9-admin) button.grid.place-items-center:is(.rounded-lg, .rounded-md) { border-radius: 999px; }
 
 /* محرّر المنشور */
-.bz-v9-social .bz-v9-composer.bz-v9-composer { border-radius: 28px; box-shadow: 0 18px 36px -32px rgb(48 68 224 / .45); }
+:is(.bz-v9-social, .bz-v9-admin) .bz-v9-composer.bz-v9-composer { border-radius: 28px; box-shadow: 0 18px 36px -32px rgb(48 68 224 / .45); }
 
 /* بطاقة الملفّ الشخصي: لمسة من تدرّج المنصّة أعلاها */
-.bz-v9-social .bz-v9-profile-card.bz-v9-profile-card {
+:is(.bz-v9-social, .bz-v9-admin) .bz-v9-profile-card.bz-v9-profile-card {
   border-radius: 28px;
   background:
     radial-gradient(28rem 12rem at 50% -30%, rgb(109 91 255 / .16), transparent 70%),
@@ -425,11 +425,11 @@
 }
 
 /* النوافذ السفلية */
-.bz-v9-social .rounded-t-2xl.bg-surface { border-top-left-radius: 28px; border-top-right-radius: 28px; }
-@media (min-width: 640px) { .bz-v9-social .rounded-t-2xl.bg-surface { border-radius: 28px; } }
+:is(.bz-v9-social, .bz-v9-admin) .rounded-t-2xl.bg-surface { border-top-left-radius: 28px; border-top-right-radius: 28px; }
+@media (min-width: 640px) { :is(.bz-v9-social, .bz-v9-admin) .rounded-t-2xl.bg-surface { border-radius: 28px; } }
 
 /* فقاعات المحادثة: زوايا ناعمة وذيل صغير جهة المرسِل */
-.bz-v9-social .bz-v9-bubble { border-radius: 20px; padding: 9px 14px; }
+:is(.bz-v9-social, .bz-v9-admin) .bz-v9-bubble { border-radius: 20px; padding: 9px 14px; }
 .bz-v9-bubble.is-mine {
   border-end-end-radius: 6px;
   background-image: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue));
@@ -438,7 +438,7 @@
 .bz-v9-bubble.is-theirs { border-end-start-radius: 6px; border-color: var(--v9-line); }
 
 /* شريط كتابة الرسالة */
-.bz-v9-chatbar input:not([type="file"]) { border-radius: 999px; padding-inline: 16px; }
+.bz-v9-chatbar input:not([type="file"]):not([type="color"]):not([type="range"]) { border-radius: 999px; padding-inline: 16px; }
 .bz-v9-chatbar button { border-radius: 999px; }
 
 /* ═══ ٨ — غرف الدراسة (الشكل وحده — منطق الصوت والسبورة لا يُمسّ) ═══
@@ -521,3 +521,21 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 
 /* كبسولة الصوت: الزوايا وحدها — حالاتها وألوانها ومنطقها كما هي */
 .bz-vc { border-radius: 22px; }
+
+/* ═══ ٩ — لوحة الإدارة (الشكل وحده) ═══
+   تشترك مع طبقة المجتمع (§٧) في البطاقات والحقول والأزرار؛ هنا رأسها وتبويباتها. */
+.bz-v9-admin-head {
+  padding: 16px 18px; border-radius: 28px; color: #fff;
+  background:
+    radial-gradient(30rem 14rem at 90% -30%, rgb(255 255 255 / .2), transparent 60%),
+    linear-gradient(135deg, #4F5FF2 0%, #3044E0 50%, #6D5BFF 100%);
+  box-shadow: 0 24px 50px -34px rgb(48 68 224 / .7);
+}
+.dark .bz-v9-admin-head { background: linear-gradient(135deg, #2E3BB8 0%, #222E9C 50%, #4B3DC4 100%); }
+.bz-v9-admin-head > span:first-child { border-radius: 16px; background: rgb(255 255 255 / .18) !important; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .25); }
+.bz-v9-admin-head h1 { color: #fff; }
+.bz-v9-admin-head p { color: rgb(255 255 255 / .75) !important; }
+/* تبويبات اللوحة: كبسولات أعلى قليلاً لسهولة اللمس */
+.bz-v9-admin > div:nth-child(2) > button.rounded-full { min-height: 36px; padding-inline: 14px; }
+.bz-v9-admin > div:nth-child(2) > button.rounded-full.border { border-color: var(--v9-line); }
+.bz-v9-admin > div:nth-child(2) > button.rounded-full.border:hover { background: var(--v9-tint-blue); }

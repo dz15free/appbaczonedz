@@ -544,8 +544,8 @@ export default function AdminPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-3xl px-4 py-4">
-        <div className="mb-5 flex items-center gap-3">
+      <section className="bz-v9-admin mx-auto max-w-3xl px-4 py-4">
+        <div className="bz-v9-admin-head mb-5 flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-primary text-white">
             <FontAwesomeIcon icon={faShield} className="h-5 w-5" />
           </span>
