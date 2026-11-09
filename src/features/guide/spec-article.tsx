@@ -115,10 +115,10 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
 
   return <>
     <PublicHeader />
-    <main className="bz-guide">
+    <main className="bz-guide bz-v9-guide">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs) }} />
-      <header className="bz-spec-hero-pro bz-spec-editorial-hero">
+      <header className="bz-spec-hero-pro bz-spec-editorial-hero bz-v9-tool-hero">
         <div className="bz-spec-hero-orb bz-spec-hero-orb-one" />
         <div className="bz-spec-hero-orb bz-spec-hero-orb-two" />
         <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">

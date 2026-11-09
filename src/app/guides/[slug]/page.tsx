@@ -27,9 +27,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const jsonLd = { "@context": "https://schema.org", "@graph": [{ "@type": "Article", headline: guide.seoTitle, description: guide.description, inLanguage: "ar", publisher: { "@type": "Organization", name: "BacZone" }, mainEntityOfPage: { "@type": "WebPage", "@id": absUrl(`/guides/${guide.slug}`) } }, { "@type": "FAQPage", mainEntity: guide.faq.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "الأدلّة", item: absUrl("/guides") }, { "@type": "ListItem", position: 2, name: guide.title, item: absUrl(`/guides/${guide.slug}`) }] }] };
   return <>
     <PublicHeader />
-    <main className="bz-guide-detail-editorial min-h-screen bg-[var(--bz-bg)]" style={{ "--guide-color": guide.color } as React.CSSProperties}>
+    <main className="bz-guide-detail-editorial bz-v9-guide min-h-screen bg-[var(--bz-bg)]" style={{ "--guide-color": guide.color } as React.CSSProperties}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <header className="bz-guide-detail-hero">
+      <header className="bz-guide-detail-hero bz-v9-tool-hero">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">
           <nav className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><Link href="/guides" className="hover:text-white hover:underline">الأدلّة</Link><span>←</span><span className="font-bold text-white">{guide.title}</span></nav>
           <PublicBackButton fallbackHref="/guides" fallbackLabel="الأدلّة" tone="dark" className="mt-4" />

@@ -17,9 +17,9 @@ export default function GuidesIndex() {
   const jsonLd = { "@context": "https://schema.org", "@type": "CollectionPage", name: TITLE, description: DESC, url: absUrl("/guides"), inLanguage: "ar" };
   return <>
     <PublicHeader />
-    <main className="bz-guides-editorial min-h-screen bg-[var(--bz-bg)]">
+    <main className="bz-guides-editorial bz-v9-guide min-h-screen bg-[var(--bz-bg)]">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <header className="bz-guides-editorial-hero">
+      <header className="bz-guides-editorial-hero bz-v9-tool-hero">
         <div className="mx-auto w-full max-w-6xl px-5 py-9 sm:px-6 sm:py-14">
           <nav className="flex items-center gap-2 text-[11px] text-white/65"><FontAwesomeIcon icon={faHouse} className="h-3 w-3" /><Link href="/" className="hover:text-white hover:underline">الرئيسية</Link><span>←</span><span className="font-bold text-white">الأدلّة</span></nav>
           <div className="bz-guides-editorial-grid mt-8"><div><span className="bz-guides-kicker"><FontAwesomeIcon icon={faCompass} className="h-3 w-3" /> مرجع التلميذ</span><h1 className="mt-4 max-w-3xl font-display text-[29px] font-extrabold leading-[1.25] text-white sm:text-[49px]">خذ قرارك الدراسي<br /><span className="text-sky-200">على معرفة.</span></h1><p className="mt-4 max-w-2xl text-[14px] leading-[2] text-white/75 sm:text-[16px]">{DESC}</p></div><div className="bz-guides-hero-stats"><div><b>{GUIDES.length}</b><span>أدلّة</span></div><div><b>{sectionCount}</b><span>قسم مفصّل</span></div><div><b>{faqCount}</b><span>إجابة شائعة</span></div></div></div>

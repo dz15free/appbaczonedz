@@ -45,9 +45,9 @@ export default async function SpecialtiesPage() {
     <EditablePage pageKey={"specialties"}>
       <>
         <PublicHeader />
-        <main className="bz-guide min-h-screen">
+        <main className="bz-guide bz-v9-guide min-h-screen">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-          <header className="bz-specialties-editorial-hero">
+          <header className="bz-specialties-editorial-hero bz-v9-tool-hero">
             <div className="bz-specialties-editorial-grid mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
               <div className="bz-specialties-editorial-copy">
                 <span className="bz-guide-kicker">دليل التوجيه الجامعي</span>

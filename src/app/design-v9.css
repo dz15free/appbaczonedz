@@ -288,3 +288,82 @@
 /* 🐛 قديم: حقل العلامة أبيض ثابت والنصّ فاتح في الوضع الليلي ← العلامة المكتوبة لا تُرى */
 .dark .bz-calc-pro-input { background: rgb(255 255 255 / .05); border-color: var(--v9-line); color: var(--v9-ink); }
 .dark .bz-calc-pro-input::placeholder { color: #6E76A0; }
+
+/* ═══ ٦ — دليل التخصّصات والأدلّة (الشكل وحده — لا مساس بالبيانات ولا بالمنطق) ═══
+   الواجهة: البطاقة المتدرّجة العائمة نفسها في الأدوات (.bz-v9-tool-hero)،
+   فيُخفى المنحنى السفلي القديم ويُكتفى بالشبكة الخفيفة داخل البطاقة. */
+.bz-v9-guide .bz-v9-tool-hero::before { border-radius: inherit; }
+.bz-v9-guide :is(.bz-spec-hero-orb) { display: none; }
+.bz-v9-guide :is(.bz-guide-kicker, .bz-guides-kicker) {
+  border-color: rgb(255 255 255 / .28); background: rgb(255 255 255 / .14); color: #fff;
+}
+.bz-v9-guide .bz-specialties-editorial-copy .bz-guide-kicker { color: #fff; }
+
+/* أزرار الواجهة: كبسولات */
+.bz-v9-guide :is(.bz-specialties-primary-action, .bz-specialties-secondary-action) {
+  min-height: 48px; border-radius: 999px; padding: 0 20px; font-size: 13px;
+}
+.bz-v9-guide .bz-specialties-primary-action { color: var(--v9-blue); box-shadow: 0 16px 30px -18px rgb(10 14 40 / .55); }
+.bz-v9-guide .bz-specialties-secondary-action { border-color: rgb(255 255 255 / .32); background: rgb(255 255 255 / .1); color: #fff; }
+
+/* البطاقات الزجاجية داخل الواجهة */
+.bz-v9-guide :is(.bz-specialties-reading-card, .bz-spec-editorial-summary, .bz-guides-hero-stats, .bz-guide-detail-card) {
+  border-radius: 26px; border-color: rgb(255 255 255 / .24); background: rgb(255 255 255 / .12);
+}
+.bz-v9-guide .bz-specialties-reading-index { color: #FFD98A; }
+.bz-v9-guide :is(.bz-specialties-reading-steps b) { border-radius: 10px; background: rgb(255 255 255 / .18); color: #fff; }
+.bz-v9-guide :is(.bz-specialties-reading-card p, .bz-spec-summary-row small) { color: rgb(255 255 255 / .72); }
+.bz-v9-guide .bz-spec-field-pill { border-color: rgb(255 255 255 / .3); color: #fff; }
+
+/* الأرقام الثلاثة */
+.bz-v9-guide .bz-specialty-overview-pro > div { border-radius: 24px; border-color: var(--v9-line); }
+.bz-v9-guide .bz-specialty-overview-pro > div.is-primary {
+  border-color: transparent; background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue) 55%, var(--v9-violet));
+}
+.bz-v9-guide .bz-specialty-stat-icon { border-radius: 12px; background: var(--v9-tint-blue); }
+
+/* البحث والتصفية */
+.bz-v9-guide :is(.bz-specialty-command, .bz-specialty-group-pro, .bz-spec-sec, .bz-spec-lede,
+  .bz-guides-editorial-card, .bz-avg-card, .bz-specialty-empty-pro) {
+  border-radius: 28px; border-color: var(--v9-line);
+}
+.bz-v9-guide :is(.bz-specialty-field-rail, .bz-spec-sticky-toc, .bz-guide-detail-toc) { border-radius: 22px; border-color: var(--v9-line); }
+.bz-v9-guide .bz-specialty-search-pro { border-radius: 999px; border-color: var(--v9-line); padding-inline: 18px; }
+.bz-v9-guide .bz-specialty-search-pro:focus-within { border-color: var(--v9-blue); box-shadow: 0 0 0 4px var(--v9-tint-blue); }
+.bz-v9-guide .bz-guide-chip { min-height: 38px; padding: 8px 15px; border-color: var(--v9-line); font-weight: 800; }
+.bz-v9-guide .bz-guide-chip.is-on {
+  border-color: transparent; background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue)); color: #fff;
+  box-shadow: 0 10px 20px -12px rgb(48 68 224 / .7);
+}
+.bz-v9-guide .bz-specialty-active-filter { border-radius: 999px; padding-inline: 14px; background: var(--v9-tint-blue); }
+.bz-v9-guide .bz-specialty-field-link { border-radius: 999px; padding-inline: 12px; }
+.bz-v9-guide .bz-specialty-field-link:hover { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-v9-guide :is(.bz-specialty-command-kicker, .bz-specialties-directory-intro span) { color: var(--v9-link); }
+.bz-v9-guide .bz-specialty-command-count b { color: var(--v9-link); }
+
+/* بطاقات التخصّصات */
+.bz-v9-guide .bz-spec-card-pro {
+  border-radius: 22px; border-color: var(--v9-line); background: var(--bz-surface);
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+}
+.bz-v9-guide a.bz-spec-card-pro:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--v9-blue) 35%, var(--v9-line)); box-shadow: 0 22px 40px -30px rgb(48 68 224 / .55); }
+.bz-v9-guide .bz-spec-card-pro::after { display: none; }
+.bz-v9-guide .bz-spec-status { border-radius: 999px; }
+.bz-v9-guide .bz-spec-go { color: var(--v9-link); }
+
+/* صفحة التخصّص المفردة */
+.bz-v9-guide .bz-spec-lede-editorial { background: var(--v9-tint-blue); border-color: transparent; }
+.bz-v9-guide .bz-spec-sec-pro:nth-child(-n + 3) { background: var(--bz-surface); }
+.bz-v9-guide .bz-spec-sec-pro .bz-spec-sec-heading small { color: var(--v9-link); }
+.bz-v9-guide :is(.bz-spec-sticky-toc a, .bz-guide-detail-toc a) { border-radius: 12px; }
+.bz-v9-guide .bz-spec-sticky-toc a:hover { background: var(--v9-tint-blue); color: var(--v9-link); }
+.bz-v9-guide .bz-spec-related-pro {
+  border-radius: 28px;
+  background: radial-gradient(26rem 16rem at 90% -20%, rgb(255 255 255 / .16), transparent 60%), linear-gradient(135deg, #1B2160, #2B2F86 55%, #4B3DC4);
+}
+.bz-v9-guide .bz-spec-related-grid a { border-radius: 999px; padding-inline: 14px; }
+.dark .bz-v9-guide .bz-spec-related-pro { background: linear-gradient(135deg, #161A44, #222775 55%, #3A2F9A); }
+
+/* بطاقات الأدلّة */
+.bz-v9-guide .bz-guides-editorial-card { transition: transform .18s, box-shadow .18s; }
+.bz-v9-guide .bz-guides-editorial-card:hover { transform: translateY(-3px); box-shadow: 0 24px 44px -32px rgb(48 68 224 / .55); }
