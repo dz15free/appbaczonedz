@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus, faDownload } from "@fortawesome/free-solid-svg-icons";
-import { InstallAppButton } from "@/components/pwa/install-prompt";
+import { InstallAppButton, InstallHeaderButton } from "@/components/pwa/install-prompt";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { SearchModal } from "@/components/search-modal";
@@ -479,6 +479,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <ThemeToggle compact />
             </span>
 
+            {/* زرّ التثبيت ظاهر في الشريط — يختفي لمن ثبّت التطبيق */}
+            <InstallHeaderButton />
+
             {/* 🐛 الزائر كان يرى هيدر مستخدم مسجّل: جرس إشعارات وصورة
                 حساب فارغة، بلا أي طريق إلى التسجيل. */}
             {isGuest ? (
@@ -640,7 +643,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div>
+      {/* طبقة v9 للمحتوى الداخلي (بطاقات، أزرار، حقول) — ما عدا صفحات لها تصميمها الخاصّ */}
+      <div className={/^\/(tools\/planner|courses\/new|courses\/[^/]+\/edit)(\/|$)/.test(pathname ?? "") ? undefined : "bz-v9-app"}>
         {/* وضع الصيانة — يحجب المحتوى لغير الأدمن */}
         {settings.maintenanceMode && profile?.role !== "admin" ? (
           <div className="flex min-h-[70vh] flex-col items-center justify-center px-5 text-center">

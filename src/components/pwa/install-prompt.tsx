@@ -299,3 +299,35 @@ export function InstallAppButton({ className = "", onClick, children }: {
     </button>
   );
 }
+
+/* ── زرّ التثبيت الظاهر في الشريط العلوي ──
+   يظهر فقط حين يكون التثبيت ممكناً فعلاً:
+   • أندرويد/الحاسوب: بعد أن يسمح المتصفّح (حدث beforeinstallprompt) —
+     وChrome لا يُطلق هذا الحدث أصلاً لمن ثبّت التطبيق.
+   • آيفون/آيباد: دائماً (Apple لا تُخبر الموقع بالتثبيت إلّا من داخله).
+   ويختفي نهائياً لمن ثبّته: الوضع المستقلّ، أو `appinstalled`، أو
+   `getInstalledRelatedApps` في Chrome. */
+export function InstallHeaderButton({ className = "" }: { className?: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      if (isInstalled()) { setShow(false); return; }
+      const m = installMode();
+      setShow(m === "prompt" || m === "ios-safari" || m === "ios-other");
+    };
+    check();
+    /* Chrome يعرف إن كان التطبيق مثبّتاً على الجهاز ولو فُتح الموقع في تبويب */
+    const nav = navigator as Navigator & { getInstalledRelatedApps?: () => Promise<unknown[]> };
+    nav.getInstalledRelatedApps?.().then((apps) => { if (apps.length) { markInstalled(); check(); } }).catch(() => {});
+    return subscribeInstall(check);
+  }, []);
+  if (!show) return null;
+  return (
+    <button type="button" className={`bz-install-hbtn ${className}`}
+      onClick={() => window.dispatchEvent(new Event(OPEN_EVENT))}
+      aria-label="ثبّت تطبيق BacZone">
+      <FontAwesomeIcon icon={faDownload} className="h-3.5 w-3.5" />
+      <span>التطبيق</span>
+    </button>
+  );
+}

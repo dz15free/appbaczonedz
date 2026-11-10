@@ -110,23 +110,34 @@ export function Preloader() {
 
   return (
     <div
-      className={`bz-preloader-v4 ${state === "leaving" ? "is-leaving" : ""}`}
+      className={`bz-pl ${state === "leaving" ? "is-leaving" : ""}`}
       role="status"
       aria-live="polite"
       aria-label="جارٍ فتح BacZone"
       data-state={state}
       data-auth-pending={waitForLandingAuth && authLoading ? "true" : "false"}
     >
-      <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-a" aria-hidden="true" />
-      <div className="bz-preloader-v4-orbit bz-preloader-v4-orbit-b" aria-hidden="true" />
-      <div className="bz-preloader-v4-brand-wrapper" aria-hidden="true">
-        <div className="bz-preloader-v4-pulse" />
-        <div className="bz-preloader-v4-pulse" />
-        <div className="bz-preloader-v4-spinner" />
-        <div className="bz-preloader-v4-spinner-mask" />
+      {/* شاشة الافتتاح v9: الشعار داخل حلقة متدرّجة تدور، والاسم، وشريط رفيع.
+          لا ضبابية ولا طبقات كبيرة — حركات transform/opacity وحدها، فتبقى
+          خفيفة على الهواتف الضعيفة. والوضع الليلي من أوّل إطار (صنف `dark`
+          يُضاف في <head> قبل الرسم). */}
+      <div className="bz-pl-mark" aria-hidden="true">
+        <svg className="bz-pl-ring" viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="bz-pl-g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#6D5BFF" />
+              <stop offset=".55" stopColor="#3044E0" />
+              <stop offset="1" stopColor="#2F7BFF" />
+            </linearGradient>
+          </defs>
+          <circle className="bz-pl-track" cx="60" cy="60" r="54" />
+          <circle className="bz-pl-arc" cx="60" cy="60" r="54" stroke="url(#bz-pl-g)" />
+        </svg>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={DEFAULT_FAVICON} alt="" className="bz-preloader-v4-logo" width={88} height={88} />
+        <img src={DEFAULT_FAVICON} alt="" className="bz-pl-logo" width={64} height={64} />
       </div>
+      <p className="bz-pl-name" aria-hidden="true">BacZone</p>
+      <span className="bz-pl-bar" aria-hidden="true"><i /></span>
     </div>
   );
 }

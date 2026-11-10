@@ -212,7 +212,7 @@ export default function HomePage() {
   return (
     <AppShell>
       {/* ══════════ نسخة الحاسوب ══════════ */}
-      <div className="mx-auto hidden max-w-6xl gap-6 px-5 py-6 lg:grid lg:grid-cols-3">
+      <div className="bz-v9-home mx-auto hidden max-w-6xl gap-6 px-5 py-6 lg:grid lg:grid-cols-3">
         {/* العمود الرئيسي */}
         <div className="space-y-6 lg:col-span-2">
           <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
@@ -334,7 +334,7 @@ export default function HomePage() {
       </div>
 
       {/* ══════════ نسخة الهاتف ══════════ */}
-      <section className="mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
+      <section className="bz-v9-home mx-auto max-w-2xl space-y-6 px-4 py-4 lg:hidden">
         <HomeHeroSlider name={name} welcomeTitle={settings.homeWelcomeTitle} />
 
         {/* الإشعارات — فوق الوصول السريع ليراها الجميع */}

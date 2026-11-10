@@ -31,7 +31,7 @@ import {
   faVideo,
   faDownload,
 } from "@fortawesome/free-solid-svg-icons";
-import { InstallAppButton } from "@/components/pwa/install-prompt";
+import { InstallAppButton, InstallHeaderButton } from "@/components/pwa/install-prompt";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
 import { LiveAvatar } from "@/components/ui/live-avatar";
@@ -224,6 +224,7 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
         </nav>
 
         <div className="bz-pub-actions ms-auto flex min-w-0 shrink-0 items-center gap-1.5">
+          <InstallHeaderButton />
           <ThemeToggle compact />
           <div className="bz-pub-auth-desktop hidden items-center gap-1.5 xl:flex">
             <PublicAuthActions />

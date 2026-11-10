@@ -6,7 +6,7 @@ const TITLE = "سياسة الخصوصية";
 const DESC =
   "ما تجمعه منصّة BacZoneDZ وتطبيق Android الرسمي من بيانات، ولماذا، ومن يعالجها، " +
   "وكيف تتحكّم فيها وتحذف حسابك — مكتوبة بلغة مفهومة لا بصيغة قانونية مبهمة.";
-const UPDATED = "2026-09-23";
+const UPDATED = "2026-11-10";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -180,9 +180,17 @@ export default function PrivacyPage() {
 
       <h3>على الموقع — Google AdSense</h3>
       <p>
-        حين نستعمل <strong>Google AdSense</strong> في صفحات الموقع، فإنّ
-        Google وشركاءها قد يستعملون ملفّات تعريف الارتباط لعرض إعلانات
-        مبنيّة على زياراتك السابقة لهذا الموقع أو لمواقع أخرى.
+        يعرض الموقع إعلانات عبر <strong>Google AdSense</strong>.
+        والمورّدون الخارجيون، ومنهم Google، يستعملون ملفّات تعريف الارتباط
+        لعرض إعلانات مبنيّة على زياراتك السابقة لهذا الموقع أو لمواقع أخرى.
+      </p>
+      <p>
+        يتيح ملفّ تعريف الارتباط الإعلاني الخاصّ بـ Google (ومنه DoubleClick)
+        لها ولشركائها عرض إعلانات لك بناءً على زياراتك لهذا الموقع ولمواقع
+        أخرى على الإنترنت. ويمكنك إيقاف الإعلانات المخصّصة من{" "}
+        <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer nofollow">إعدادات الإعلانات في Google</a>،
+        أو إيقاف ملفّات تعريف الارتباط لدى المورّدين الآخرين من{" "}
+        <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer nofollow">www.aboutads.info</a>.
       </p>
 
       <h3>في تطبيق Android — Google AdMob</h3>
