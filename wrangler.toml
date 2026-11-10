@@ -6,8 +6,11 @@ main = ".open-next/worker.js"
 compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 
-# نطاق التجربة. baczone.app نفسه يبقى على Vercel حتى التحويل النهائي.
+# ⚠️ كلّ نشر يجعل نطاقات الـ Worker **مطابقة لهذه القائمة حرفياً**: نطاقٌ يُضاف من لوحة
+# Cloudflare ولا يُذكر هنا يُحذف (مع سجلّ DNS الخاصّ به) في النشر التالي.
+# baczone.app: الإنتاج منذ 2026-11-10. cf.baczone.app: يبقى ليعمل تحويل 308 إلى baczone.app.
 routes = [
+  { pattern = "baczone.app", custom_domain = true },
   { pattern = "cf.baczone.app", custom_domain = true },
 ]
 
