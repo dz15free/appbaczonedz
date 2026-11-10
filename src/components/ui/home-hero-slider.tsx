@@ -143,12 +143,15 @@ export function HomeHeroSlider({ name, welcomeTitle }: { name: string; welcomeTi
           <div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-white/70">
               <FontAwesomeIcon icon={faBolt} className="h-3.5 w-3.5 text-yellow-400" />
-              نصيحة اليوم
+              حكمة اليوم
             </p>
-            <h2 className="mt-1.5 max-w-md font-display text-xl font-extrabold leading-relaxed text-white sm:text-2xl">
-              {quote.text}
-            </h2>
-            <p className="mt-2 text-xs text-white/50">{quote.hint}</p>
+            <blockquote className="mt-1.5 max-w-md">
+              <p className="font-display text-xl font-extrabold leading-relaxed text-white sm:text-2xl">
+                «{quote.text}»
+              </p>
+              <footer className="mt-1 text-[12.5px] font-bold text-white/80">— {quote.by}</footer>
+            </blockquote>
+            <p className="mt-2 text-xs leading-relaxed text-white/85">💡 {quote.hint}</p>
           </div>
         )}
         </div>

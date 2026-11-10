@@ -835,22 +835,6 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
   .bz-pl-bar i { width: 60%; }
 }
 
-/* ═══ ١٣ — زرّ التثبيت في الشريط العلوي ═══ */
-.bz-install-hbtn {
-  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-  height: 36px; padding: 0 13px; border-radius: 999px;
-  background: linear-gradient(135deg, var(--v9-blue-2), var(--v9-blue) 60%, var(--v9-violet));
-  color: #fff; font-size: 12.5px; font-weight: 800; white-space: nowrap;
-  box-shadow: 0 8px 18px -10px rgb(48 68 224 / .8), inset 0 0 0 1px rgb(255 255 255 / .18);
-  transition: transform .15s, box-shadow .15s;
-  animation: bz-install-hbtn-in .4s cubic-bezier(.2, .9, .3, 1.2) both;
-}
-.bz-install-hbtn:hover { transform: translateY(-1px); box-shadow: 0 12px 22px -10px rgb(48 68 224 / .9), inset 0 0 0 1px rgb(255 255 255 / .22); }
-.bz-install-hbtn:active { transform: scale(.96); }
-@keyframes bz-install-hbtn-in { from { opacity: 0; transform: scale(.85); } }
-/* أضيق الهواتف: الأيقونة وحدها، بالحجم نفسه لأزرار الشريط */
-@media (max-width: 359px) { .bz-install-hbtn { width: 36px; padding: 0; justify-content: center; } .bz-install-hbtn span { display: none; } }
-
 /* ═══ ١٤ — الواجهة الداخلية (بعد الدخول) ═══ */
 
 /* بطاقة الترحيب */
@@ -881,6 +865,9 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
   content: ""; flex-shrink: 0; width: 5px; height: 18px; border-radius: 999px;
   background: linear-gradient(180deg, var(--v9-violet), var(--v9-blue));
 }
+/* 🐛 داخل بطاقة الترحيب: النصّ أبيض كبقيّة البطاقة (القاعدة أعلاه كانت تجعل الحكمة داكنة) */
+.bz-v9-home .bz-hero :is(h1, h2, h3).font-display { display: block; color: #fff; }
+.bz-v9-home .bz-hero :is(h1, h2, h3).font-display::before { display: none; }
 /* عنوان فيه أيقونته الخاصّة (أبطال المنصّة…): لا شريط مكرّر */
 .bz-v9-home :is(h2, h3).font-display:has(svg)::before { display: none; }
 .bz-v9-home a.text-primary { color: var(--v9-link); }
