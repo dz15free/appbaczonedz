@@ -46,8 +46,9 @@ export function NavProgress() {
       /* أمان: لا يبقى الشريط عالقاً إن أُلغي التنقّل */
       timers.current.push(window.setTimeout(() => setState("idle"), 12_000));
     }
-    document.addEventListener("click", onClick);
-    return () => { document.removeEventListener("click", onClick); clear(); };
+    /* مرحلة الالتقاط: `Link` في Next يستدعي preventDefault قبل أن تصل النقرة إلى document */
+    document.addEventListener("click", onClick, true);
+    return () => { document.removeEventListener("click", onClick, true); clear(); };
   }, []);
 
   if (state === "idle") return null;
