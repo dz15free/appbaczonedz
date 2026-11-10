@@ -830,9 +830,16 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 @keyframes bz-pl-spin { to { transform: rotate(360deg); } }
 @keyframes bz-pl-breathe { 50% { transform: scale(.96); } }
 @keyframes bz-pl-slide { from { transform: translateX(-110%); } to { transform: translateX(260%); } }
+/* «تقليل الحركة» مفعَّل افتراضياً في كثير من الحواسيب (إيقاف الرسوم في
+   Windows) وفي آيفون، والقاعدة العامة في globals.css توقف كلّ حركة — فتبدو
+   الشاشة متجمّدة كأنّ الموقع عالق. مؤشّر التحميل حركة «ضرورية» تخبر بالحالة
+   (ومؤشّرات النظام نفسها تبقى تدور)، فنُبقي دوراناً هادئاً أبطأ ونستبدل
+   انزلاق الشريط بنبض شفافية بلا إزاحة، ونحذف تنفّس الشعار وحده. */
+@keyframes bz-pl-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) {
-  .bz-pl-ring, .bz-pl-logo, .bz-pl-bar i { animation: none; }
-  .bz-pl-bar i { width: 60%; }
+  .bz-pl-ring { animation: bz-pl-spin 1.8s linear infinite !important; }
+  .bz-pl-logo { animation: none !important; }
+  .bz-pl-bar i { width: 100%; transform: none; animation: bz-pl-pulse 1.4s ease-in-out infinite !important; }
 }
 
 /* ═══ ١٤ — الواجهة الداخلية (بعد الدخول) ═══ */
