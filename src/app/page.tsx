@@ -32,6 +32,7 @@ import { FEATURE_PAGES } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { DEFAULT_AUTHOR } from "@/features/authors/authors";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
+import { OG_DEFAULT } from "@/lib/seo";
 /* التصميم v9 «واضح» — طبقة على هذه الصفحة وحدها. */
 import "./home-v9.css";
 
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
   title: "BacZone — منصة الدراسة التفاعلية لتلاميذ البكالوريا",
   description: "أدوات للحساب والتخطيط والمحاكاة، محتوى وأدلة للمراجعة والتوجيه، ومجتمع وغرف تفاعلية لتلاميذ البكالوريا في الجزائر.",
   alternates: { canonical: "/" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website",
     locale: "ar_DZ",
     url: "/",

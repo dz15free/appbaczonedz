@@ -7,6 +7,7 @@ import { GuideBrowser } from "@/features/guide/guide-browser";
 import { absUrl } from "@/features/guide/site-url";
 import { getGuideRows } from "@/features/guide/guide-server";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "تعرّف على تخصّصك الجامعي قبل أن تختاره";
 const DESC =
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     "معدلات القبول", "بكالوريا", "المدارس العليا", "BacZone", "باك زون",
   ],
   alternates: { canonical: "/specialties" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: "/specialties",
     title: TITLE, description: DESC, siteName: "BacZone",
   },

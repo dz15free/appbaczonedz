@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LegalShell } from "@/features/legal/legal-shell";
 import { ContactBody } from "@/features/legal/contact-body";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "اتصل بنا";
 const DESC =
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   alternates: { canonical: "/contact" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: "/contact",
     title: TITLE, description: DESC, siteName: "BacZone",
   },

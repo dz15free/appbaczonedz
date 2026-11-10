@@ -6,10 +6,11 @@ import { GUIDES } from "@/features/guides/guides-data";
 import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "أدلّة البكالوريا والتوجيه الجامعي";
 const DESC = "أدلّة مرجعية لتلميذ البكالوريا في الجزائر: التوجيه بعد البكالوريا، ترتيب الرغبات، والمعدّل الموزون — مشروحة خطوة بخطوة.";
-export const metadata: Metadata = { title: TITLE, description: DESC, keywords: ["أدلة البكالوريا", "التوجيه الجامعي", "دليل التلميذ", "بكالوريا 2027", "BacZone"], alternates: { canonical: "/guides" }, openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/guides"), title: TITLE, description: DESC, siteName: "BacZone" } };
+export const metadata: Metadata = { title: TITLE, description: DESC, keywords: ["أدلة البكالوريا", "التوجيه الجامعي", "دليل التلميذ", "بكالوريا 2027", "BacZone"], alternates: { canonical: "/guides" }, openGraph: { images: OG_DEFAULT, type: "website", locale: "ar_DZ", url: absUrl("/guides"), title: TITLE, description: DESC, siteName: "BacZone" } };
 
 export default function GuidesIndex() {
   const sectionCount = GUIDES.reduce((total, guide) => total + guide.sections.length, 0);

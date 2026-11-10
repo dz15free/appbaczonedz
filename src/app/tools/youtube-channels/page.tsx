@@ -7,6 +7,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { CHANNELS, TOTAL_CHANNELS } from "@/features/tools/channels-data";
 import { YouTubeDirectory } from "@/features/tools/youtube-directory";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "أفضل قنوات يوتيوب لمراجعة البكالوريا في الجزائر";
 const DESC = `دليل تعليمي يضم ${TOTAL_CHANNELS} اسماً وقناة متاحة للبحث في يوتيوب، مصنفة حسب المادة لمساعدة تلميذ البكالوريا على الوصول إلى الشرح المناسب دون تضييع وقت.`;
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   description: DESC,
   keywords: ["قنوات يوتيوب للبكالوريا", "مراجعة البكالوريا يوتيوب", "أساتذة يوتيوب بكالوريا", "شرح دروس البكالوريا", "BacZone"],
   alternates: { canonical: "/tools/youtube-channels" },
-  openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/tools/youtube-channels"), title: TITLE, description: DESC, siteName: "BacZone" },
+  openGraph: { images: OG_DEFAULT, type: "website", locale: "ar_DZ", url: absUrl("/tools/youtube-channels"), title: TITLE, description: DESC, siteName: "BacZone" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
 

@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/ui/site-footer";
 import { FEATURE_PAGES, getFeaturePage } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { absUrl } from "@/lib/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 export function generateStaticParams() {
   return FEATURE_PAGES.map((f) => ({ slug: f.slug }));
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${f.title} | BacZone`,
     description: f.description,
     alternates: { canonical: url },
-    openGraph: { type: "article", locale: "ar_DZ", url, title: f.title, description: f.description, siteName: "BacZone" },
+    openGraph: { images: OG_DEFAULT, type: "article", locale: "ar_DZ", url, title: f.title, description: f.description, siteName: "BacZone" },
   };
 }
 

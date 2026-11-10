@@ -8,6 +8,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { W_DOMAINS } from "@/features/tools/weighted";
 import { WeightedCalculator } from "@/features/tools/weighted-calculator";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_CALC } from "@/lib/seo";
 
 const TITLE = "حساب المعدل الموزون للبكالوريا 2027 — كل الميادين";
 const DESC = "احسب معدّلك الموزون للتوجيه الجامعي في الجزائر: الطبّ، الإعلام الآلي، الهندسة، اللغات، الترجمة وغيرها — بالصيغ المعتمدة، بلا تسجيل.";
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
   description: DESC,
   keywords: ["حساب المعدل الموزون", "المعدل الموزون بكالوريا", "معدل التوجيه الجامعي", "حساب معدل الطب", "المعدل الموزون الجزائر", "BacZone"],
   alternates: { canonical: "/tools/weighted-average" },
-  openGraph: { type: "website", locale: "ar_DZ", url: absUrl("/tools/weighted-average"), title: TITLE, description: DESC, siteName: "BacZone" },
+  openGraph: { images: OG_CALC, type: "website", locale: "ar_DZ", url: absUrl("/tools/weighted-average"), title: TITLE, description: DESC, siteName: "BacZone" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESC },
 };
 
@@ -50,8 +51,8 @@ export default function WeightedAveragePage() {
             <nav className="mb-4 flex flex-wrap items-center gap-2 text-[11px] text-white/65"><Link href="/tools" className="font-bold text-white hover:underline">الأدوات</Link><span>←</span><span>المعدل الموزون</span></nav>
             <PublicBackButton fallbackHref="/tools" fallbackLabel="الأدوات" tone="dark" className="mb-6" />
             <span className="bz-weighted-product-kicker"><FontAwesomeIcon icon={faScaleBalanced} /> أداة التوجيه</span>
-            <h1 className="mt-4 font-display text-[31px] font-extrabold leading-[1.2] tracking-tight sm:text-5xl">اعرف أيّ ميدان يرفع فرصك</h1>
-            <p className="mt-5 max-w-2xl text-[15px] leading-[1.95] text-white/72 sm:text-lg">المعدل العام لا يحكي القصة كاملة. اختر الميدان، أدخل معدلك وعلامة التخصص، ثم شاهد أثر الترجيح بوضوح قبل ترتيب رغباتك.</p>
+            <h1 className="mt-4 font-display text-[31px] font-extrabold leading-[1.2] tracking-tight sm:text-5xl">حساب المعدل الموزون للبكالوريا 2027</h1>
+            <p className="mt-5 max-w-2xl text-[15px] leading-[1.95] text-white/72 sm:text-lg">اعرف أيّ ميدان يرفع فرصك: المعدل العام لا يحكي القصة كاملة. اختر الميدان، أدخل معدلك وعلامة التخصص، ثم شاهد أثر الترجيح بوضوح قبل ترتيب رغباتك.</p>
             <div className="mt-7 flex flex-wrap gap-2.5"><span><b>{W_DOMAINS.length}</b> ميادين</span><span><b>3</b> خطوات</span><span><b>5 ثوانٍ</b> كشف هادئ</span></div>
           </div>
           <div className="bz-weighted-product-hero-card"><span>المعادلة الأساسية</span><strong>المعدل × 2</strong><i>＋ علامة مادة التخصص</i><b>÷ 3</b><small>قارن الفرق قبل أن تختار</small></div>

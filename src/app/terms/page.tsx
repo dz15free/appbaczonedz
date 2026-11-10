@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalShell } from "@/features/legal/legal-shell";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "شروط الاستخدام";
 const DESC =
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   alternates: { canonical: "/terms" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: "/terms",
     title: TITLE, description: DESC, siteName: "BacZone",
   },

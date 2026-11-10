@@ -3,6 +3,7 @@ import { SpecArticle, SpecNotFound } from "@/features/guide/spec-article";
 import { getGuideRows, findSpec } from "@/features/guide/guide-server";
 import { linkOf } from "@/features/guide/spec-link";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 /* ════════════════════════════════════════════════════════════
    صفحة تخصّص واحد — مُصيَّرة على الخادم
@@ -53,7 +54,7 @@ export async function generateMetadata(
     /* وجود مقدمة لا يعني أن الدليل مكتمل؛ الصفحات التي تفتقد حقولاً
        أساسية تبقى accessible وروابطها تُتبع، لكنها لا تُعلن في البحث كمرجع مكتمل. */
     robots: spec.indexable ? undefined : { index: false, follow: true },
-    openGraph: {
+    openGraph: { images: OG_DEFAULT,
       type: "article", locale: "ar_DZ", url: absUrl(canonical),
       title, description, siteName: "BacZoneDZ",
     },

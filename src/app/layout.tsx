@@ -17,6 +17,7 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { Toaster } from "@/components/ui/toast";
 import { NavProgress } from "@/components/ui/nav-progress";
 import { SITE_URL } from "@/lib/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 // نمنع FontAwesome من حقن CSS تلقائياً (نستورده يدوياً أعلاه)
 config.autoAddCss = false;
@@ -119,13 +120,12 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: SITE_TITLE,
     description: SITE_DESC,
-    images: [{ url: "/icon-512.png", width: 512, height: 512, alt: SITE_NAME }],
+    images: OG_DEFAULT,
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESC,
-    images: ["/icon-512.png"],
   },
 };
 

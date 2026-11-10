@@ -917,3 +917,29 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 .bz-article :is(td, th) .bz-math { white-space: normal; }
 /* 🐛 فواصل <br> تركها المحرّر داخل القوائم والجداول كانت تفتح فراغات كبيرة بين العناصر */
 .bz-article :is(ul, ol, table, thead, tbody, tr, blockquote) > br { display: none; }
+
+/* ═══ ١٦ — جداول صفحات حساب المعدّل (سيو) ═══
+   جدول المعاملات لكل الشعب، والمثال المحسوب، والتقديرات. الحاوية تمرّر
+   أفقياً على الهاتف بدل أن تكسر عرض الصفحة، والعمود الأوّل لاصق في
+   المصفوفة حتى لا يضيع اسم المادّة أثناء التمرير. */
+.bz-calc-table-wrap { margin: 12px 0; overflow-x: auto; border: 1px solid var(--bz-line); border-radius: 16px; -webkit-overflow-scrolling: touch; }
+.bz-calc-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.bz-calc-table :is(th, td) { padding: 10px 12px; text-align: center; white-space: nowrap; }
+.bz-calc-table :is(thead, tfoot) :is(th, td) { background: var(--bz-canvas); font-size: 12px; font-weight: 800; color: var(--bz-ink-2); }
+.bz-calc-table tfoot :is(th, td) { color: var(--bz-ink); font-size: 13px; border-top: 2px solid var(--bz-line-2, var(--bz-line)); }
+.bz-calc-table tbody tr { border-top: 1px solid var(--bz-line); }
+.bz-calc-table :is(tbody, tfoot) th { text-align: start; font-weight: 700; color: var(--bz-ink); white-space: normal; }
+.bz-calc-table thead th:first-child { text-align: start; }
+.bz-calc-table tbody td { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--bz-ink); }
+.bz-calc-table th small { font-weight: 600; color: var(--bz-ink-3); }
+.bz-calc-table thead a { color: var(--v9-link, var(--bz-blue)); text-decoration: underline; text-underline-offset: 3px; }
+.bz-calc-table.is-matrix { min-width: 640px; }
+.bz-calc-table.is-matrix :is(tbody, tfoot) th { min-width: 9.5rem; }
+@media (max-width: 480px) { .bz-calc-table:not(.is-matrix) :is(th, td) { padding: 9px 7px; font-size: 13px; } }
+.bz-calc-table.is-matrix :is(thead, tbody, tfoot) th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bz-surface, #fff); box-shadow: -1px 0 0 var(--bz-line); }
+.bz-calc-table.is-matrix :is(thead, tfoot) th:first-child { background: var(--bz-canvas); }
+.bz-calc-inline-formula { margin: 12px 0; padding: 12px 14px; border-radius: 14px; text-align: center; font-weight: 800; font-size: 14.5px; color: var(--v9-link, var(--bz-blue)); background: color-mix(in srgb, var(--bz-blue) 7%, transparent); }
+/* التذييل: عمود «حساب المعدل» الخامس */
+@media (min-width: 1024px) {
+  .bz-footer-grid { gap: 2rem; grid-template-columns: minmax(13rem, 1.5fr) repeat(5, minmax(6.5rem, 1fr)); }
+}

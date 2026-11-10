@@ -15,6 +15,7 @@ import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { resolveAuthor } from "@/features/authors/authors";
+import { OG_DEFAULT } from "@/lib/seo";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -36,8 +37,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description,
     alternates: { canonical: url },
     robots: post.noindex ? { index: false, follow: true } : undefined,
-    openGraph: { type: "article", locale: "ar_DZ", url, title, description, siteName: "BacZone", publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined, modifiedTime: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined, images: post.cover ? [{ url: post.cover }] : undefined },
-    twitter: { card: post.cover ? "summary_large_image" : "summary", title, description, images: post.cover ? [post.cover] : undefined },
+    openGraph: { type: "article", locale: "ar_DZ", url, title, description, siteName: "BacZone", publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined, modifiedTime: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined, images: post.cover ? [{ url: post.cover }] : OG_DEFAULT },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalShell } from "@/features/legal/legal-shell";
 import { PublicCta } from "@/components/public-shell";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "من نحن";
 const DESC =
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESC,
   alternates: { canonical: "/about" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: "/about",
     title: TITLE, description: DESC, siteName: "BacZone",
   },

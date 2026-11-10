@@ -8,6 +8,7 @@ import { getPublishedEntries } from "@/features/blog/blog-server";
 import { BLOG_LABELS, labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "مدونة BacZone";
 const DESC = "أفكار وأدلة عملية تساعد تلميذ البكالوريا في الجزائر على تنظيم المراجعة، فهم الأدوات، والتقدّم بثقة.";
@@ -20,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: DESC,
     alternates: { canonical: "/blog" },
     robots: { index: published.length > 0, follow: true },
-    openGraph: { type: "website", locale: "ar_DZ", url: "/blog", title: TITLE, description: DESC, siteName: "BacZone" },
+    openGraph: { images: OG_DEFAULT, type: "website", locale: "ar_DZ", url: "/blog", title: TITLE, description: DESC, siteName: "BacZone" },
     twitter: { card: "summary_large_image", title: TITLE, description: DESC },
   };
 }

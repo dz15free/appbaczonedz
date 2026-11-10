@@ -6,6 +6,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { PLAN_BRANCHES } from "@/features/tools/planner-data";
 import { StudyPlanner } from "@/features/tools/study-planner";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "إنشاء برنامج مراجعة البكالوريا — جدول أسبوعي حسب شعبتك";
 const DESC =
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     "جدول دراسة يومي", "بكالوريا 2027", "BacZone",
   ],
   alternates: { canonical: "/tools/study-planner" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: absUrl("/tools/study-planner"),
     title: TITLE, description: DESC, siteName: "BacZone",
   },

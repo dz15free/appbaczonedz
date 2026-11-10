@@ -8,6 +8,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { notFound } from "next/navigation";
 import { GUIDES, getGuide } from "@/features/guides/guides-data";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 export const dynamicParams = false;
 export function generateStaticParams() { return GUIDES.map((guide) => ({ slug: guide.slug })); }
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const guide = getGuide(slug);
   if (!guide) return { title: "دليل غير موجود" };
   const url = `/guides/${guide.slug}`;
-  return { title: guide.seoTitle, description: guide.description, keywords: [...guide.keywords, "BacZone"], alternates: { canonical: url }, openGraph: { type: "article", locale: "ar_DZ", url: absUrl(url), title: guide.seoTitle, description: guide.description, siteName: "BacZone" }, twitter: { card: "summary_large_image", title: guide.seoTitle, description: guide.description } };
+  return { title: guide.seoTitle, description: guide.description, keywords: [...guide.keywords, "BacZone"], alternates: { canonical: url }, openGraph: { images: OG_DEFAULT, type: "article", locale: "ar_DZ", url: absUrl(url), title: guide.seoTitle, description: guide.description, siteName: "BacZone" }, twitter: { card: "summary_large_image", title: guide.seoTitle, description: guide.description } };
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {

@@ -9,6 +9,7 @@ import { AUTHORS, getAuthor, resolveAuthor } from "@/features/authors/authors";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 export const revalidate = 600;
 
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${a.name} — ${a.role}`,
     description,
     alternates: { canonical: absUrl(`/author/${a.slug}`) },
-    openGraph: { type: "profile", locale: "ar_DZ", url: absUrl(`/author/${a.slug}`), title: a.name, description, siteName: "BacZone" },
+    openGraph: { images: OG_DEFAULT, type: "profile", locale: "ar_DZ", url: absUrl(`/author/${a.slug}`), title: a.name, description, siteName: "BacZone" },
   };
 }
 

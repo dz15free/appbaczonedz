@@ -6,6 +6,7 @@ import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { SPECIALTY_KEYS, specialty } from "@/features/rooms/exam-sim/exam-data";
 import { SoloSimulator } from "@/features/tools/solo-simulator";
 import { absUrl } from "@/features/guide/site-url";
+import { OG_DEFAULT } from "@/lib/seo";
 
 const TITLE = "غرفة امتحان البكالوريا الافتراضية (Virtual Bac Room) — محاكاة امتحان البكالوريا";
 const DESC =
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
     "تجربة امتحان البكالوريا", "بكالوريا 2027", "BacZone",
   ],
   alternates: { canonical: "/tools/exam-simulator" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: absUrl("/tools/exam-simulator"),
     title: TITLE, description: DESC, siteName: "BacZone",
   },

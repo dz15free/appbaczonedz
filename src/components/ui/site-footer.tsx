@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { LEGAL_LINKS } from "@/features/settings/legal-links";
+import { BRANCHES } from "@/features/calculator/branches";
 
 function FooterLink({ href, label, compact = false }: { href: string; label: string; compact?: boolean }) {
   const internal = href.startsWith("/");
@@ -44,6 +45,9 @@ export function SiteFooter({
               <p>{landingDescription || copyright}</p>
             </div>
             <FooterColumn title="استكشف" links={[{ href: "/tools", label: "الأدوات" }, { href: "/blog", label: "المقالات" }, { href: "/guides", label: "الأدلة" }, { href: "/specialties", label: "التخصصات" }]} />
+            {/* روابط داخلية ثابتة إلى صفحات حساب المعدّل من كلّ صفحة عامّة:
+                أقوى إشارة داخلية على أهمّيتها، ونصّ كلّ رابط يسمّي شعبته. */}
+            <FooterColumn title="حساب المعدل" links={[{ href: "/calculate", label: "حساب معدل البكالوريا" }, ...BRANCHES.map((b) => ({ href: `/calculate/${b.slug}`, label: `معدل ${b.short}` })), { href: "/tools/weighted-average", label: "المعدل الموزون" }]} />
             <FooterColumn title="المنصة" links={[{ href: "/courses", label: "الدورات" }, { href: "/rooms", label: "الغرف" }, { href: "/community", label: "المجتمع" }, { href: "/library", label: "المكتبة" }]} />
             <FooterColumn title="عن BacZone" links={legal.map((link) => ({ href: link.href, label: link.label === "شروط الاستخدام" ? "اتفاقية الاستخدام" : link.label }))} />
             <FooterColumn title="الحساب" links={[{ href: "/login", label: "دخول" }, { href: "/register", label: "إنشاء حساب" }]} />

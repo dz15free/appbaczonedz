@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_DEFAULT } from "@/lib/seo";
 
 /* ════════════════════════════════════════════════════════════
    ميتاداتا فهرس الدورات
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
      (انظر `new` و`mine` و`teach` و`[courseId]`) — وإلّا أعلنت أنّ
      نسختها الأصلية هي `/courses` فيُهمل Google فهرستها. */
   alternates: { canonical: "/courses" },
-  openGraph: {
+  openGraph: { images: OG_DEFAULT,
     type: "website", locale: "ar_DZ", url: "/courses",
     title: TITLE, description: DESC, siteName: "BacZoneDZ",
   },

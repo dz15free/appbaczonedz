@@ -3,6 +3,7 @@ import { getGuideRows } from "@/features/guide/guide-server";
 import { BRANCHES } from "@/features/calculator/branches";
 import { GUIDES } from "@/features/guides/guides-data";
 import { SITE_URL } from "@/lib/site-url";
+import { CALC_UPDATED } from "@/features/calculator/seo";
 import { LEGAL_PATHS } from "@/features/settings/legal-links";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { FEATURE_PAGES } from "@/features/landing/features-data";
@@ -98,13 +99,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/tools/weighted-average`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE}/tools/planner`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/tools/pomodoro`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/calculate`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    /* تاريخ آخر مراجعة فعلية للمحتوى — «الآن» في كلّ زحف يجعل Google
+       يتجاهل lastmod كلّه لأنّه لا يدلّ على تغيير حقيقي. */
+    { url: `${BASE}/calculate`, lastModified: new Date(CALC_UPDATED), changeFrequency: "monthly", priority: 0.95 },
     // صفحة لكل شعبة: كل واحدة تُفهرَس بعنوانها الدقيق
     ...BRANCHES.map((b) => ({
       url: `${BASE}/calculate/${b.slug}`,
-      lastModified: now,
+      lastModified: new Date(CALC_UPDATED),
       changeFrequency: "monthly" as const,
-      priority: 0.85,
+      priority: 0.9,
     })),
     /* الصفحات القانونية والتعريفية — مراجعة AdSense تبحث عن سياسة
        الخصوصية أوّلاً، وغيابها عن الخريطة يُبطئ فهرستها.
