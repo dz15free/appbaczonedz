@@ -65,6 +65,19 @@ export const BLOG_COVER_FALLBACKS: Record<string, BlogCoverFallback> = {
     cover: "/blog/covers/يوم-امتحان-البكالوريا.webp",
     coverAlt: "تلاميذ يكتبون في قاعة امتحان",
   },
+  /* أغلفة أصلية مرسومة للمنصّة (2026-11-10) — لا حقوق لطرف ثالث */
+  "مراجعة-اللغة-العربية": {
+    cover: "/blog/covers/مراجعة-اللغة-العربية.webp",
+    coverAlt: "كتاب مفتوح وقلم فوق صفحاته لمراجعة اللغة العربية",
+  },
+  "استغلال-الفروض-والاختبارات": {
+    cover: "/blog/covers/استغلال-الفروض-والاختبارات.webp",
+    coverAlt: "ورقة اختبار مصحّحة بعلامة 16 وعلامات صحّ وخطأ",
+  },
+  "الدالة-الأسية-بكالوريا": {
+    cover: "/blog/covers/الدالة-الأسية-بكالوريا.webp",
+    coverAlt: "منحنى الدالة الأسية يمرّ بالنقطة (0، 1) على معلم",
+  },
 };
 
 export function getBlogCoverFallback(slug: string): BlogCoverFallback | undefined {
