@@ -897,3 +897,14 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 .bz-drawer nav > a, .bz-drawer nav > button { border-radius: 999px; }
 .bz-drawer nav > a[aria-current="page"] { background: var(--v9-tint-blue); color: var(--v9-link); }
 .bz-drawer .bz-menu-ic { border-radius: 12px; }
+
+/* ═══ ١٥ — معادلات المقالات (KaTeX) ═══ */
+.bz-article .bz-math { direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+.bz-article .bz-math .katex { font-size: 1.08em; }
+.bz-article .bz-math-display {
+  direction: ltr; margin: 1.1em 0; padding: 14px 16px; overflow-x: auto; overflow-y: hidden;
+  border-radius: 18px; background: var(--v9-tint-blue); text-align: center;
+}
+.bz-article .bz-math-display .katex-display { margin: 0; }
+.bz-article .bz-math-display .katex { font-size: 1.18em; }
+.bz-article :is(td, th) .bz-math { white-space: normal; }

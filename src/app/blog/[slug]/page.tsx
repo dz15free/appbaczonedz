@@ -8,6 +8,9 @@ import { PublicBackButton } from "@/components/ui/public-back-button";
 import { SiteFooter } from "@/components/ui/site-footer";
 import { getPost, getPublishedEntries, getRelated } from "@/features/blog/blog-server";
 import { sanitizeArticle, htmlToText } from "@/features/blog/sanitize";
+import { renderArticleMath } from "@/features/blog/math";
+/* خطوط KaTeX وتنسيقها — لصفحة المقال وحدها، لا لبقيّة الموقع */
+import "katex/dist/katex.min.css";
 import { labelName } from "@/features/blog/types";
 import { absUrl } from "@/lib/site-url";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
@@ -49,7 +52,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   if (redirectTo) permanentRedirect(`/blog/${encodeURIComponent(redirectTo)}`);
   if (!post || post.status !== "published") notFound();
 
-  const html = sanitizeArticle(post.html);
+  /* المعادلات تُرسم بعد التعقيم (المعقِّم يحذف <math> وما شابه) */
+  const html = renderArticleMath(sanitizeArticle(post.html));
   const related = await getRelated(post);
   const url = post.canonical || absUrl(`/blog/${post.slug}`);
   const description = post.seoDescription || post.excerpt || htmlToText(post.html, 160);
