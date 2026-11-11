@@ -30,6 +30,30 @@ const nextConfig = {
       { protocol: "https", hostname: "blogger.googleusercontent.com" },
     ],
   },
+  /* روابط تخصّصات قديمة لم يعد لها سطر في الدليل (أُدمجت في صفحات أخرى أو
+     أُعيدت تسميتها). كانت تُجيب بـ200 وnoindex وcanonical إلى الرئيسية —
+     «soft 404» يعدّه Search Console ضمن «Excluded by noindex». تحويل دائم
+     إلى الصفحة الحيّة لنفس الموضوع ينقل إشاراتها بدل أن يهدرها.
+     ⚠️ لا تمسّ منطق التخصّصات ولا قائمة noindex: هذه عناوين لا صفحات لها. */
+  async redirects() {
+    const moved = {
+      "architecture": "architecture-uni",
+      "autonomous-systems": "ensas",
+      "biomedical-eng": "biomedical",
+      "data-science": "ensia",
+      "food-science": "agroalimentaire",
+      "industrial-engineering": "gi",
+      "logistics-engineering": "gt",
+      "marine-eng": "marine",
+      "political-science": "sciences-po",
+      "renewable-energy": "renouvelables",
+    };
+    return Object.entries(moved).map(([from, to]) => ({
+      source: `/specialties/${from}`,
+      destination: `/specialties/${to}`,
+      permanent: true,
+    }));
+  },
   async headers() {
     return [
       {
