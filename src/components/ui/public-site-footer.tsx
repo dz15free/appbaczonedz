@@ -25,13 +25,17 @@ const APP_SHELL_PREFIXES = [
   "/u",
 ];
 
+const OWN_FOOTER_PREFIXES = ["/blog", "/features", "/author"];
+
 function hasPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
 function shouldRender(pathname: string | null): boolean {
   if (!pathname || pathname === "/") return false;
-  if (pathname === "/blog" || pathname.startsWith("/blog/")) return false;
+  /* 🐛 صفحات ترسم `<SiteFooter />` بنفسها (من الخادم): إن رسمناه هنا
+     أيضاً ظهر الفوتر مرّتين. `/features` و`/author` كانتا غائبتين. */
+  if (OWN_FOOTER_PREFIXES.some((prefix) => hasPrefix(pathname, prefix))) return false;
   if (["/about", "/contact", "/privacy", "/terms"].includes(pathname)) return false;
   return !APP_SHELL_PREFIXES.some((prefix) => hasPrefix(pathname, prefix));
 }
