@@ -26,6 +26,7 @@ import {
   faGlobe,
   faUserGroup,
   faLock,
+  faThumbtack,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -38,6 +39,7 @@ import { PostAttachment } from "@/features/community/post-attachment";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { hotScore } from "@/features/community/hot-rank";
+import { usePinnedPost, pinPost, unpinPost, withPinnedFirst } from "@/features/community/pinned";
 import {
   createPost,
   listenPosts,
@@ -170,6 +172,7 @@ function Feed({ me, isAdmin, myRole, track }: {
   const [feedProgress, setFeedProgress] = useState<Record<string, FeedProgress>>({});
   const isStaff = myRole === "teacher" || myRole === "admin";
   const [posts, setPosts] = useState<Post[]>([]);
+  const { pin, post: pinnedPost } = usePinnedPost(me.uid);
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const publishingRef = useRef(false);
@@ -321,7 +324,7 @@ function Feed({ me, isAdmin, myRole, track }: {
     p.authorId === me.uid ||
     (p.visibility === "friends" && friendIds.has(p.authorId));
 
-  const shown = [...posts]
+  const sorted = [...posts]
     .filter(visible)
     .filter((p) => !subjectFilter || (p as any).subject === subjectFilter)
     .sort((a, b) => {
@@ -330,6 +333,24 @@ function Feed({ me, isAdmin, myRole, track }: {
       return hotScore(b.score, b.commentCount, b.createdAt)
            - hotScore(a.score, a.commentCount, a.createdAt);
     });
+  /* المثبَّت أوّلاً أيّاً كان الترتيب («الرائج» أو «الأحدث» أو «الأعلى»)،
+     ويحترم فلتر المادّة: من اختار «فيزياء» لا يُفرض عليه منشور رياضيات. */
+  const pinnedShown = pinnedPost && (!subjectFilter || pinnedPost.subject === subjectFilter) ? pinnedPost : null;
+  const shown = withPinnedFirst(sorted, pinnedShown);
+
+  async function togglePin(p: Post) {
+    try {
+      if (pin?.id === p.id) {
+        await unpinPost();
+        toast.success("أُلغي تثبيت المنشور.");
+      } else {
+        await pinPost(p.id, me.uid);
+        toast.success(pin ? "ثُبّت المنشور مكان المثبَّت السابق." : "ثُبّت المنشور أعلى المجتمع والرئيسية.");
+      }
+    } catch (err) {
+      toast.error(errorText(err, "تعذّر تغيير التثبيت. تحقّق من اتصالك وصلاحيّاتك."));
+    }
+  }
 
   /* عناصر الدراسة المرتّبة لهذا المستخدم — تُحقن بين المنشورات لا
      تُستبدل بها. التصفية بالمادّة تسري عليها أيضاً كي يبقى الفلتر صادقاً. */
@@ -505,6 +526,7 @@ function Feed({ me, isAdmin, myRole, track }: {
            (`authorRole`) فلا حاجة لقراءة إضافية. */
         const showAdd = p.authorId !== me.uid && !friendIds.has(p.authorId)
           && p.authorRole !== "admin";
+        const isPinned = pinnedShown?.id === p.id;
         /* عنصر دراسي بعد كل ثلاثة منشورات — لا اثنان متتاليان ولا
            خمسة في صفّ واحد. الأوّل عُرض فوق القائمة، فنبدأ من الثاني. */
         const inject = pi > 0 && (pi + 1) % 3 === 0
@@ -513,8 +535,16 @@ function Feed({ me, isAdmin, myRole, track }: {
         return (
           <Fragment key={p.id}>
           <article
-            className="overflow-hidden rounded-2xl border border-border bg-surface transition hover:border-primary/30 hover:shadow-glass"
+            className={`overflow-hidden rounded-2xl border bg-surface transition hover:shadow-glass ${
+              isPinned ? "bz-pinned-post border-primary/40" : "border-border hover:border-primary/30"
+            }`}
           >
+            {isPinned && (
+              <div className="bz-pinned-tag flex items-center gap-1.5 px-4 pt-3 text-[11.5px] font-extrabold">
+                <FontAwesomeIcon icon={faThumbtack} className="h-3 w-3 -rotate-45" aria-hidden="true" />
+                منشور مثبَّت
+              </div>
+            )}
             {/* ترويسة الكاتب */}
             <div className="flex items-start gap-2.5 px-4 pt-3.5">
               <Link href={`/u/${p.authorId}?name=${encodeURIComponent(p.authorName)}`} className="shrink-0">
@@ -550,7 +580,15 @@ function Feed({ me, isAdmin, myRole, track }: {
 
               <PostMenu
                 canDelete={p.authorId === me.uid || isAdmin}
-                onDelete={() => { if (confirm("حذف هذا المنشور؟")) deletePost(p); }}
+                onDelete={() => {
+                  if (!confirm("حذف هذا المنشور؟")) return;
+                  /* حذف المثبَّت يُلغي تثبيته أيضاً — وإلّا بقي مرجعٌ إلى منشور
+                     غير موجود. (الواجهة تتجاهله على كلّ حال، لكن لا نترك أثراً.) */
+                  if (isAdmin && pin?.id === p.id) void unpinPost().catch(() => {});
+                  void deletePost(p);
+                }}
+                pinState={isAdmin && p.visibility === "public" ? (pin?.id === p.id ? "pinned" : "unpinned") : null}
+                onTogglePin={() => void togglePin(p)}
                 onReport={() => {
                   reportContent("post", p.id, me);
                   toast.success("تم الإبلاغ. شكراً لمساعدتك في إبقاء المجتمع آمناً.");
@@ -860,8 +898,11 @@ function Messages({ me }: { me: Person }) {
 
 /* قائمة إجراءات المنشور — تجمع الثانوي بدل تكديسه في الترويسة */
 function PostMenu({
-  canDelete, onDelete, onReport, friendState, onFriend, onCancelFriend,
+  canDelete, onDelete, onReport, friendState, onFriend, onCancelFriend, pinState, onTogglePin,
 }: {
+  /** للأدمن وحده، وللمنشورات العامّة وحدها — null يُخفي الزرّ */
+  pinState?: "pinned" | "unpinned" | null;
+  onTogglePin?: () => void;
   canDelete: boolean;
   onDelete: () => void;
   onReport: () => void;
@@ -898,7 +939,14 @@ function PostMenu({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-9 z-30 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-glass">
+        <div className="absolute left-0 top-9 z-30 w-48 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-glass">
+          {pinState && onTogglePin && (
+            <MenuRow
+              icon={faThumbtack}
+              label={pinState === "pinned" ? "إلغاء التثبيت" : "تثبيت المنشور"}
+              onClick={() => { setOpen(false); onTogglePin(); }}
+            />
+          )}
           {friendState === "none" && (
             <MenuRow icon={faUserPlus} label="إضافة صديق" onClick={() => { onFriend(); setOpen(false); }} />
           )}
@@ -922,7 +970,7 @@ function MenuRow({ icon, label, onClick, danger }: {
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 px-3 py-2 text-right text-xs font-semibold transition ${
+      className={`flex min-h-[40px] w-full items-center gap-2.5 px-3 py-2 text-right text-xs font-semibold transition ${
         danger ? "text-danger hover:bg-danger/10" : "text-text-primary hover:bg-primary/10"
       }`}
     >

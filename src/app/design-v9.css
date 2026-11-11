@@ -1204,3 +1204,9 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
   .bz-platform-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bz-platform-list.is-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ═══ ١٩ — المنشور المثبَّت ═══
+   تمييز هادئ لا صاخب: خلفية زرقاء خفيفة جدّاً وشارة صغيرة. المثبَّت
+   يُقرأ أوّلاً بحكم موضعه — لا يحتاج أن يصرخ. */
+.bz-pinned-post { background: linear-gradient(180deg, color-mix(in srgb, var(--bz-blue) 6%, var(--bz-surface)) 0%, var(--bz-surface) 120px); }
+.bz-pinned-tag { color: var(--v9-link, var(--bz-blue)); }

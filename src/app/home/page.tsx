@@ -9,7 +9,7 @@ import {
   faUsers, faRobot, faComments, faChalkboardUser,
   faClipboardCheck, faBookOpen, faTrophy, faCalendarCheck,
   faUpRightFromSquare, faLayerGroup, faListCheck,
-  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft,
+  faArrowUp, faArrowDown, faComment, faCrown, faCalendarDays, faPeopleGroup, faGraduationCap, faArrowLeft, faThumbtack,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -26,6 +26,7 @@ import { StudyFeed } from "@/features/feed/study-feed";
 import { DailyPanel } from "@/features/daily/daily-panel";
 import { RoomDiscovery, useSessionReminders } from "@/features/rooms/room-discovery";
 import { listenPosts, votePost, type Post } from "@/features/community/social";
+import { usePinnedPost, withPinnedFirst } from "@/features/community/pinned";
 import { LiveAvatar } from "@/components/ui/live-avatar";
 import { RoleBadge } from "@/components/ui/role-badge";
 import { ref, query, orderByChild, limitToLast, onValue } from "firebase/database";
@@ -61,9 +62,15 @@ function timeAgo(ts: number) {
 }
 
 /* بطاقة منشور */
-const PostCard = memo(function PostCard({ p, uid }: { p: Post; uid: string }) {
+const PostCard = memo(function PostCard({ p, uid, pinned }: { p: Post; uid: string; pinned?: boolean }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/30 hover:shadow-glass">
+    <div className={`rounded-2xl border bg-surface p-4 transition hover:shadow-glass ${pinned ? "bz-pinned-post border-primary/40" : "border-border hover:border-primary/30"}`}>
+      {pinned && (
+        <div className="bz-pinned-tag mb-2.5 flex items-center gap-1.5 text-[11.5px] font-extrabold">
+          <FontAwesomeIcon icon={faThumbtack} className="h-3 w-3 -rotate-45" aria-hidden="true" />
+          منشور مثبَّت
+        </div>
+      )}
       <Link href={`/community/${p.id}`} className="flex items-center gap-2.5">
         <LiveAvatar uid={p.authorId} name={p.authorName} size="md" />
         <div className="min-w-0 flex-1">
@@ -190,6 +197,7 @@ export default function HomePage() {
   }, [user?.uid]);
   const { settings } = useSiteSettings();
   const [posts, setPosts] = useState<Post[]>([]);
+  const { post: pinnedPost } = usePinnedPost(user?.uid);
 
   /* الواجهة تتبع الدور: الأستاذ لا يراجع للبكالوريا، فأدوات التلميذ
      تملأ شاشته بما لا يستعمله. */
@@ -202,12 +210,16 @@ export default function HomePage() {
   useEffect(() => { if (!loading && !user) router.replace(loginHrefFor(window.location.pathname, window.location.search)); }, [loading, user, router]);
   useEffect(() => {
     if (!user) return;
-    const unsub = listenPosts(user.uid, (all) => setPosts(all.slice(0, 6)));
+    /* 🐛 كانت تعرض آخر 6 منشورات بلا فلترة للخصوصية: منشور «خاص» أو
+       «للأصدقاء» كان يظهر في رئيسية كلّ مستخدم. العامّ ومنشوراتك فقط. */
+    const unsub = listenPosts(user.uid, (all) =>
+      setPosts(all.filter((p) => p.visibility === "public" || p.authorId === user.uid).slice(0, 6)));
     return () => { if (typeof unsub === "function") unsub(); };
   }, [user]);
 
   if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
   const name = profile?.name || user.displayName || "تلميذ";
+  const feedPosts = withPinnedFirst(posts, pinnedPost).slice(0, 6);
 
   return (
     <AppShell>
@@ -249,13 +261,13 @@ export default function HomePage() {
               <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
               <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
             </div>
-            {posts.length === 0 ? (
+            {feedPosts.length === 0 ? (
               <div className="rounded-2xl border border-border bg-surface py-10 text-center text-text-muted">
                 <FontAwesomeIcon icon={faComments} className="h-8 w-8 opacity-40" />
                 <p className="mt-3 text-sm">لا منشورات بعد. كن أوّل من يشارك!</p>
               </div>
             ) : (
-              <div className="space-y-3">{posts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} />)}</div>
+              <div className="space-y-3">{feedPosts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} pinned={p.id === pinnedPost?.id} />)}</div>
             )}
           </div>
         </div>
@@ -366,13 +378,13 @@ export default function HomePage() {
             <h2 className="font-display text-lg font-extrabold">آخر المنشورات</h2>
             <Link href="/community" className="text-sm font-semibold text-primary hover:underline">عرض الكل</Link>
           </div>
-          {posts.length === 0 ? (
+          {feedPosts.length === 0 ? (
             <div className="rounded-2xl border border-border bg-surface py-10 text-center text-text-muted">
               <FontAwesomeIcon icon={faComments} className="h-8 w-8 opacity-40" />
               <p className="mt-3 text-sm">لا منشورات بعد. كن أوّل من يشارك!</p>
             </div>
           ) : (
-            <div className="space-y-3">{posts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} />)}</div>
+            <div className="space-y-3">{feedPosts.map((p) => <PostCard key={p.id} p={p} uid={user.uid} pinned={p.id === pinnedPost?.id} />)}</div>
           )}
         </div>
 
