@@ -205,8 +205,24 @@ export function pickShape<T extends GeoShape>(
   return null;
 }
 
+/**
+ * اسم المضلّع المغلق المخزَّن كرسمة قلم (مثلّث · مستطيل مائل · بيضاوي مائل).
+ * التعرّف على الأشكال يخزّن هذه الثلاثة مسارَ قلمٍ مغلقاً لأنّ نموذج الأشكال
+ * لا نوع لها — فنعرفها من بنيتها: أوّل نقطة هي آخر نقطة، وعدد الأضلاع ثابت.
+ */
+export function closedPathName(s: GeoShape): string | null {
+  if (s.kind !== "pen") return null;
+  const n = s.points?.length ?? 0;
+  if (n !== 4 && n !== 5 && n !== 65) return null;
+  const a = s.points[0], z = s.points[n - 1];
+  if (Math.abs(a.x - z.x) > 1e-9 || Math.abs(a.y - z.y) > 1e-9) return null;
+  return n === 4 ? "مثلّث" : n === 5 ? "مستطيل" : "بيضاوي";
+}
+
 /** وصف مختصر للشكل — يُعرض في شريط التحديد وفي البطاقات لاحقاً */
 export function describeShape(s: GeoShape): string {
+  const poly = closedPathName(s);
+  if (poly) return poly;
   switch (s.kind) {
     case "text": return s.text ? `نص: ${s.text.slice(0, 24)}` : "نص";
     case "note": return s.text ? `بطاقة: ${s.text.slice(0, 24)}` : "بطاقة";

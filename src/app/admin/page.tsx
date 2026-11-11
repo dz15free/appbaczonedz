@@ -599,7 +599,7 @@ export default function AdminPage() {
               <b>مباشر:</b> عمليات حقيقية تُخصم من بطاقات الطلبة.
               <br />
               التبديل هنا يسري <b>فوراً</b> بلا إعادة نشر — لكن تأكّد أنّ المفتاح
-              السرّي في Vercel يطابق الوضع (<span className="font-mono">test_sk_</span> أو
+              السرّي في Cloudflare يطابق الوضع (<span className="font-mono">test_sk_</span> أو
               <span className="font-mono"> live_sk_</span>)، وإلّا رفضت البوابة كل عملية.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -609,7 +609,7 @@ export default function AdminPage() {
                   onClick={async () => {
                     if (m === "live" && !confirm(
                       "تحويل الدفع إلى الوضع المباشر؟\n\nستُخصم أموال حقيقية من الطلبة.\n" +
-                      "تأكّد أوّلاً أنّ CHARGILY_SECRET_KEY في Vercel يبدأ بـ live_sk_",
+                      "تأكّد أوّلاً أنّ CHARGILY_SECRET_KEY في Cloudflare يبدأ بـ live_sk_",
                     )) return;
                     await set(ref(rtdb, "settings/chargilyMode"), m);
                     alert(m === "live" ? "الدفع الآن مباشر." : "الدفع الآن تجريبي.");

@@ -943,3 +943,73 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
 @media (min-width: 1024px) {
   .bz-footer-grid { gap: 2rem; grid-template-columns: minmax(13rem, 1.5fr) repeat(5, minmax(6.5rem, 1fr)); }
 }
+
+/* ═══ ١٧ — الغرفة: إصلاحات التجاوب ═══ */
+
+/* الهاتف الضيّق: «مباشر» تبقى نقطةً نابضة بلا نصّ — النصّ كان يأخذ
+   35 بكسلاً من اسم الغرفة، والنقطة الحمراء تقول المعنى نفسه. */
+@media (max-width: 400px) {
+  .bz-room .bz-topbar .bz-live-badge { font-size: 0; gap: 0; padding: 6px; }
+}
+
+/* اللوح العمودي (iPad واقفاً، أو نافذة ضيّقة طويلة على الحاسوب):
+   🐛 الرصيف الجانبي بعرض 240 بكسلاً كان يترك للمسرح 490 فقط، فيخرج
+   اللوح 476×267 وسط عمود ارتفاعه 830 — ثلثا الشاشة فراغ رمادي.
+   الرصيف ينزل تحت المسرح، فيأخذ اللوح عرض الشاشة كلّه (734×413). */
+@media (min-width: 768px) and (max-width: 1099px) and (orientation: portrait) {
+  .bz-room .bz-room-body { flex-direction: column; }
+  .bz-room .bz-room-body > aside {
+    width: auto !important;
+    height: clamp(230px, 30dvh, 340px);
+    margin: 8px 10px 0;
+    flex-shrink: 0;
+  }
+}
+
+/* الهاتف الأفقي: كونسول السبورة يقف **عموداً بجانب اللوح**.
+   🐛 كان عائماً فوق أسفل اللوح: اللوح هناك ٢٦٠ بكسلاً فقط، والشريط
+   يغطّي خُمسه — ما يُكتب في السطر الأخير لا يُرى ولا يُرسم تحته.
+   والارتفاع في هذا الوضع أثمن ما في الشاشة والعرض فائض (اللوح ١٦:٩
+   يترك ثلث العرض فارغاً)، فحجز مكان للشريط تحت اللوح يصغّره ربعاً.
+   الشريط يأخذ من الفائض: عمود بزرّين في السطر على الطرف المقابل لزرّ
+   ملء الشاشة، واللوح يحتفظ بارتفاعه كاملاً. `whiteboard.tsx` يقيس
+   العمود ويحجز له من العرض. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .bz-wbroot .bz-console-wrap {
+    top: 6px;
+    bottom: 6px;
+    left: auto;
+    right: auto;
+    inset-inline-end: 6px;
+    transform: none;
+    width: 84px;
+    max-width: none;
+    padding-bottom: 0;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-snap-type: none;
+    scrollbar-width: none;
+  }
+  .bz-wbroot .bz-console-wrap::-webkit-scrollbar { display: none; }
+  .bz-wbroot .bz-console-wrap > .bz-console-dock {
+    flex-direction: column;
+    width: 100%;
+    gap: 3px;
+  }
+  .bz-wbroot .bz-console-dock > div,
+  .bz-wbroot .bz-console-dock [role="group"] {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-inline: 0;
+    row-gap: 2px;
+  }
+  /* الفاصل العمودي يصير خطّاً أفقياً بين المجموعات */
+  .bz-wbroot .bz-console-dock > span {
+    width: 78%;
+    height: 1px;
+    margin: 2px 0;
+  }
+}

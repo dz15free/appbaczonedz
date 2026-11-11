@@ -107,7 +107,13 @@ export function FloatingConsole({ children, idleDim }: { children: ReactNode; id
     const el = ref.current;
     const root = document.documentElement;
     if (!el) return;
-    const publish = () => root.style.setProperty("--bz-console-h", `${el.offsetHeight}px`);
+    /* على الهاتف الأفقي يقف الكونسول عموداً بجانب اللوح (design-v9 §١٧)،
+       فلا شيء فوقه يتفاداه: ننشر صفراً، وإلّا قفزت بطاقة «تتابع
+       الأستاذ» إلى أعلى الشاشة بارتفاع العمود كلّه. */
+    const publish = () => {
+      const side = el.offsetHeight > el.offsetWidth * 1.3;
+      root.style.setProperty("--bz-console-h", side ? "0px" : `${el.offsetHeight}px`);
+    };
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);

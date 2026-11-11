@@ -464,7 +464,6 @@ export default function RoomPage() {
     if (!user || !canReadLive) return;
     const unsub = listenKicked(roomId, user.uid, (kicked) => {
       if (kicked) router.replace("/rooms");
-    return () => { if (typeof unsub === "function") unsub(); };
     });
     return () => { if (typeof unsub === "function") unsub(); };
   }, [roomId, user, router, canReadLive]);
@@ -650,8 +649,18 @@ export default function RoomPage() {
     sendAnonQuestion(roomId, q);
   }
 
-  if (loading || !user) return <div className="p-10 text-center text-text-muted">جارٍ التحميل...</div>;
-  if (notFound) return <div className="p-10 text-center text-text-muted">الغرفة غير موجودة.</div>;
+  if (loading || !user) return <RoomNotice busy title="جارٍ فتح الغرفة…" />;
+  /* 🐛 كانت سطراً رمادياً بلا أيّ زرّ — والغرفة تُعرض بلا قشرة التطبيق،
+     فمن فتح رابط غرفة حُذفت يجد نفسه في صفحة لا مخرج منها. */
+  if (notFound) {
+    return (
+      <RoomNotice
+        title="الغرفة غير موجودة"
+        text="ربّما أُغلقت أو حُذفت، أو أنّ الرابط ناقص. اطلب من صاحبها رابطاً جديداً."
+        onBack={() => router.replace("/rooms")}
+      />
+    );
+  }
 
   // بوّابة الغرف المدفوعة
   if (room?.isPaid && !isOwner && !roomAccess && !isPrivileged) {
@@ -691,7 +700,11 @@ export default function RoomPage() {
           onClick={() => router.push("/rooms")}
           aria-label="رجوع إلى الغرف"
           title="رجوع إلى الغرف"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--bz-ink-3)] transition hover:bg-[var(--bz-canvas)] hover:text-[var(--bz-ink)]"
+          /* 🐛 على الهاتف كان اسم الغرفة ينسحق إلى حرف واحد: ثمانية
+             عناصر `shrink-0` تتقاسم 375 بكسلاً فلا يبقى للاسم إلّا 19.
+             وهذا الزرّ يكرّر «خروج» في آخر الشريط (الوجهة نفسها)، فيُخفى
+             تحت 640 بكسلاً ويُعاد عرضه حيث يتّسع المكان. */
+          className="hidden h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--bz-ink-3)] transition hover:bg-[var(--bz-canvas)] hover:text-[var(--bz-ink)] sm:grid"
         >
           <Icon name="chevRight" size={17} />
         </button>
@@ -701,7 +714,7 @@ export default function RoomPage() {
           {(room?.name ?? "").charAt(0) || "B"}
         </span>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 md:flex-none">
           <div className="flex items-center gap-1.5">
             <span className="bz-room-title truncate">
               {room?.name ?? "..."}
@@ -746,7 +759,6 @@ export default function RoomPage() {
         )}
         {!isOwner && <span className="mx-auto" />}
 
-        <span className="flex-1 md:hidden" />
 
         {isOwner && (
           <BarButton
@@ -988,8 +1000,9 @@ export default function RoomPage() {
         />
       )}
 
-      {/* المسرح + الرصيف */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* المسرح + الرصيف — `bz-room-body`: على اللوح العمودي يصير
+          الرصيف **تحت** المسرح لا بجانبه (انظر design-v9 §١٧). */}
+      <div className="bz-room-body flex min-h-0 flex-1 overflow-hidden">
         {/* ⚠️ ملء الشاشة انتقل إلى `<main>`: كان على هذا القسم وحده
             فيغطّي شريط التحكّم ويخفي الميكروفون، ولهذا وُلدت واجهتا
             «وضع التركيز» المنفصلتان. الآن الهيكل كلّه يملأ الشاشة
@@ -1337,6 +1350,32 @@ export default function RoomPage() {
       )}
 
     </main>
+  );
+}
+
+/* شاشة حالة للغرفة (تحميل · غير موجودة) — بملء النافذة، وبمخرج واضح */
+function RoomNotice({ title, text, busy, onBack }: {
+  title: string; text?: string; busy?: boolean; onBack?: () => void;
+}) {
+  return (
+    <div className="grid min-h-[100dvh] place-items-center bg-background px-5 text-center" role={busy ? "status" : undefined}>
+      <div className="w-full max-w-xs">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bz-blue-050)] text-[var(--bz-blue)]">
+          <FontAwesomeIcon icon={busy ? faSpinner : faHouse} className={`h-6 w-6 ${busy ? "animate-spin" : ""}`} />
+        </span>
+        <h1 className="mt-4 font-display text-lg font-extrabold text-text-primary">{title}</h1>
+        {text && <p className="mt-1.5 text-sm leading-relaxed text-text-muted">{text}</p>}
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--bz-blue)] px-4 text-sm font-bold text-white transition hover:brightness-110 active:scale-[0.98]"
+          >
+            العودة إلى الغرف
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

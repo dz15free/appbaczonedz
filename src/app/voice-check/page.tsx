@@ -84,7 +84,7 @@ export default function VoiceCheckPage() {
       const h = await (await fetch("/api/realtime/health", { cache: "no-store" })).json();
       if (h.voice !== "configured") {
         end("fail", h.voice);
-        return finish({ kind: "fail", title: "مفاتيح Cloudflare ناقصة", body: "أضف CLOUDFLARE_REALTIME_APP_ID و CLOUDFLARE_REALTIME_APP_SECRET في Vercel ثمّ Redeploy." });
+        return finish({ kind: "fail", title: "مفاتيح Cloudflare ناقصة", body: "أضف CLOUDFLARE_REALTIME_APP_ID و CLOUDFLARE_REALTIME_APP_SECRET في لوحة Cloudflare (Workers ← baczonedz ← Settings ← Variables and Secrets) ثمّ أعد النشر." });
       }
       end("ok", `TURN: ${h.turn === "configured" ? "مفعّل" : "غير مفعّل"}`);
     } catch (e) {
@@ -118,7 +118,7 @@ export default function VoiceCheckPage() {
     try { sidA = await newSession(); end("ok", sidA.slice(0, 10) + "…"); }
     catch (e) {
       end("fail", errText(e));
-      return finish({ kind: "fail", title: "Cloudflare رفض فتح جلسة", body: "تحقّق من صحّة المفاتيح في Vercel. التفاصيل في التقرير." });
+      return finish({ kind: "fail", title: "Cloudflare رفض فتح جلسة", body: "تحقّق من صحّة المفاتيح في لوحة Cloudflare. التفاصيل في التقرير." });
     }
 
     // ٥ — نشر الصوت

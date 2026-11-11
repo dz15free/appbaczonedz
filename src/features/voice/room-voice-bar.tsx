@@ -64,7 +64,7 @@ function joinErrorNotice(e: unknown, canAdmin: boolean): Omit<Notice, "action"> 
       kind: "error",
       title: "الصوت غير مُفعّل على الخادم",
       body: canAdmin
-        ? "أضف CLOUDFLARE_REALTIME_APP_ID و CLOUDFLARE_REALTIME_APP_SECRET في Vercel ← Settings ← Environment Variables، ثمّ أعد النشر."
+        ? "أضف CLOUDFLARE_REALTIME_APP_ID و CLOUDFLARE_REALTIME_APP_SECRET في لوحة Cloudflare ← Workers ← baczonedz ← Settings ← Variables and Secrets (كأسرار)، ثمّ أعد النشر."
         : "صاحب المنصّة لم يُكمل إعداد الصوت بعد. الدردشة والسبورة تعملان.",
     };
   }

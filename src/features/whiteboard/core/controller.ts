@@ -341,6 +341,7 @@ export class BoardController {
       if (rec) {
         const b = normalizeBox({ x: rec.x, y: rec.y, w: rec.w, h: rec.h });
         obj = this.baseObject(rec.type, b);
+        if (rec.type === "rect" || rec.type === "ellipse") obj.angle = rec.angle;
         // حركة ناعمة من صندوق الرسم الأصلي إلى الشكل المثالي
         const rough = this.boundsOfPts(pts);
         this.morph.add(obj.id, rough, b);

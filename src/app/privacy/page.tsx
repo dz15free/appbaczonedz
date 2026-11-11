@@ -151,7 +151,7 @@ export default function PrivacyPage() {
           نراها</strong>؛ يصلنا منهم أنّ العملية نجحت ومعرّفها ومبلغها.
         </li>
         <li>
-          <strong>Vercel:</strong> استضافة الموقع وتقديم صفحاته.
+          <strong>Cloudflare:</strong> استضافة الموقع وتقديم صفحاته.
         </li>
         <li>
           <strong>Google Analytics 4:</strong> إحصاءات استعمال مجمّعة.

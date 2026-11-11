@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { pickShape, boundsOf, describeShape, type Bounds } from "@/features/whiteboard/shape-geometry";
+import { pickShape, boundsOf, describeShape, closedPathName, type Bounds } from "@/features/whiteboard/shape-geometry";
 import { drawMath, looksLikeMath } from "@/features/whiteboard/math-render";
 import { ShapeActionsSheet } from "@/features/whiteboard/shape-actions";
 import {
@@ -170,7 +170,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
   // تحويل الرسم الحرّ إلى أشكال مثالية — يُعطَّل للمواد التي تحتاج رسمًا عضويًّا (الأحياء)
   const [smartShapes, setSmartShapes] = useState(true);
   // شارة «تراجع» بعد تحويل ناجح — الذكاء الذي لا يمكن رفضه إزعاج
-  const [snapUndo, setSnapUndo] = useState<{ shapedId: string; original: Shape } | null>(null);
+  const [snapUndo, setSnapUndo] = useState<{ shapedId: string; original: Shape; label: string } | null>(null);
   /* سحب عنصر محدَّد: تحريك أو تحجيم من إحدى الزوايا الأربع.
      نحتفظ بنسخة من النقاط الأصلية فتُحسب كل خطوة من الأصل لا تراكميًّا. */
   const dragRef = useRef<{
@@ -605,7 +605,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
 
         // لسان النوع فوق الإطار — يجعل اللوح مقروءًا بلا فتح شيء
         {
-          const label = KIND_LABEL[shape.kind] ?? "عنصر";
+          const label = closedPathName(shape) ?? KIND_LABEL[shape.kind] ?? "عنصر";
           const fs = 11 * k;
           ctx.font = `600 ${fs}px system-ui, sans-serif`;
           ctx.direction = "rtl";
@@ -1188,8 +1188,26 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
       const bordY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
       const bordX = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
-      const availW = Math.max(1, r.width - padX - bordX);
-      const availH = Math.max(1, r.height - padY - bordY);
+      /* 🐛 **الكونسول كان يغطّي أسفل اللوح.** هو عائم فوق المنصّة عند
+         `bottom-3`، واللوح يتمدّد حتى حافّتها السفلى — فحيث الارتفاع هو
+         القيد (الحاسوب، والهاتف الأفقي خصوصاً) يقع الشريط فوق آخر ٥٠
+         بكسلاً من اللوح: ما يُكتب هناك لا يُرى، ولا يمكن بدء رسمة تحته.
+         على هاتف أفقي ارتفاع لوحه ٢٦٠ بكسلاً كان ذلك خُمس اللوح.
+
+         نحجز للكونسول ارتفاعه **المقيس** (لا رقماً مخمَّناً: يلتفّ ويكبر
+         مع خطّ النظام) فينتهي اللوح فوقه دائماً. وحيث العرض هو القيد
+         (الهاتف الرأسي) لا يصغر اللوح شيئاً — يرتفع قليلاً فقط. */
+      const con = wrap.querySelector<HTMLElement>(".bz-console-wrap");
+      /* على الهاتف الأفقي يقف الكونسول **عموداً بجانب اللوح** (design-v9
+         §١٧): الارتفاع هناك أثمن ما في الشاشة، والعرض فائض. فنحجز له
+         من العرض لا من الارتفاع — نعرف وضعه من شكله: أطول ممّا هو عريض. */
+      const sideConsole = !!con && con.offsetHeight > con.offsetWidth * 1.3;
+      const reserve = con && con.offsetHeight > 0 && !sideConsole
+        ? Math.round(con.offsetHeight + (parseFloat(getComputedStyle(con).bottom) || 0) + 6)
+        : 0;
+      const reserveX = con && sideConsole ? Math.round(con.offsetWidth + 14) : 0;
+      const availW = Math.max(1, r.width - padX - bordX - reserveX);
+      const availH = Math.max(1, r.height - padY - bordY - reserve);
 
       /* احتواء: أكبر مستطيل بنسبة BOARD_AR يدخل في المساحة المتاحة —
          مقياس واحد لكل الأجهزة، فاللوح على الهاتف هو **نفسه** الذي على
@@ -1214,12 +1232,16 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
       /* بصمة: نفس المقاس ⇒ لا كتابة ولا إعادة رسم. هذه هي التي تقطع
          حلقة `ResizeObserver` (الكتابة تُخطر المراقب فيقيس فيكتب…)
          فيثبت اللوح بدل أن يرتجف. */
-      const key = `${bw}x${bh}:${dpr()}`;
+      const key = `${bw}x${bh}:${dpr()}:${reserve}:${reserveX}`;
       if (key === lastKey) return;
       lastKey = key;
 
       board.style.width = `${bw}px`;
       board.style.height = `${bh}px`;
+      /* الهامش السفلي هو المساحة المحجوزة نفسها: التوسيط يحسبها مع
+         اللوح، فيستقرّ اللوح فوق الكونسول لا خلفه. */
+      board.style.marginBottom = `${reserve}px`;
+      board.style.marginInlineEnd = `${reserveX}px`;
 
       for (const c of [main, prev]) {
         c.width = Math.max(1, Math.floor(bw * dpr()));
@@ -1242,6 +1264,10 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     };
     const ro = new ResizeObserver(schedule);
     ro.observe(wrap);
+    /* الكونسول يتغيّر ارتفاعه (يلتفّ، أو يظهر صفّ إضافي): نعيد القياس
+       معه حتى يبقى الحجز مطابقاً لما هو مرسوم. */
+    const consoleEl = wrap.querySelector(".bz-console-wrap");
+    if (consoleEl) ro.observe(consoleEl);
 
     // تغيّر اتجاه الهاتف لا يُطلق ResizeObserver دائمًا — والمقاسات
     // الجديدة لا تكون جاهزة لحظة الحدث، فنُعيد القياس بعده أيضاً.
@@ -1880,19 +1906,36 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
     const w = c.clientWidth || 1;
     const h = c.clientHeight || 1;
     const px = s.points.map((pt) => ({ x: pt.x * w, y: pt.y * h }));
-    const r = recognize(px, { snapAngles: true });
-    // المثلّث غير مدعوم في نموذج الأشكال الحالي — نترك الرسمة كما هي
-    if (!r || r.type === "triangle") return null;
+    /* الحدّ الأدنى للأشكال المغلقة يتبع مقاس اللوح: ما يُكتب بالقلم
+       («0»، «ه»، «o») صغير، وما يُرسم شكلاً هندسياً أكبر منه بوضوح. */
+    const r = recognize(px, { snapAngles: true, minClosedSize: Math.max(40, Math.min(w, h) * 0.085) });
+    if (!r) return null;
 
-    const a = { x: r.x / w, y: r.y / h };
-    const b = { x: (r.x + r.w) / w, y: (r.y + r.h) / h };
-    return {
+    const base = {
       id: `${user!.uid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       uid: s.uid,
-      kind: r.type as Kind,
       color: s.color,
       size: s.size,
-      points: [a, b],
+    };
+    const norm = (p: { x: number; y: number }) => ({ x: p.x / w, y: p.y / h });
+
+    /* 🐛 المثلّث (والمستطيل والبيضاوي المائلان) لا نوع لها في نموذج الأشكال،
+       فكان المثلّث يُترك رسمةً مهتزّة. نخزّنها **مضلّعاً مغلقاً من نوع القلم**:
+       القلم يُرسم خطوطاً مستقيمة بين نقاطه، فالمثلّث بأربع نقاط (أوّلها
+       آخرها) يظهر مثلّثاً حادّ الأضلاع — بلا نوع جديد في قاعدة البيانات،
+       فيراه حتى من لم يحدّث تطبيقه بعد، ويُحدَّد ويُحرَّك ويُحجَّم كأيّ رسمة. */
+    const closedPath = (pts: { x: number; y: number }[]): Shape => ({
+      ...base, kind: "pen", points: [...pts, pts[0]].map(norm),
+    });
+
+    if (r.type === "triangle") return closedPath(r.pts);
+    if (r.type === "rect" && r.angle !== 0) return closedPath(r.pts);
+    if (r.type === "ellipse" && r.pts) return closedPath(r.pts);
+
+    return {
+      ...base,
+      kind: r.type as Kind,
+      points: [norm({ x: r.x, y: r.y }), norm({ x: r.x + r.w, y: r.y + r.h })],
     };
   }
 
@@ -1977,7 +2020,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
         if (shaped) {
           commit(shaped);
           fullRedraw();                 // امسح أثر الرسمة الحرّة من اللوحة الحيّة
-          setSnapUndo({ shapedId: shaped.id, original: s });
+          setSnapUndo({ shapedId: shaped.id, original: s, label: describeShape(shaped) });
           window.setTimeout(
             () => setSnapUndo((cur) => (cur && cur.shapedId === shaped.id ? null : cur)),
             2600
@@ -2460,7 +2503,7 @@ export function Whiteboard({ roomId, canDraw = true, roomName, subject, consoleE
             }}
           >
             <Icon name="check" size={13} style={{ color: "var(--bz-green)" }} />
-            حُوّلت إلى شكل مثالي
+            حُوّلت إلى {snapUndo.label}
             <button
               onClick={undoSnap}
               className="rounded-full px-2.5 py-1 text-[11px] font-bold text-white transition active:scale-95"
