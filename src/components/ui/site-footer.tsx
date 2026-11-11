@@ -48,7 +48,7 @@ export function SiteFooter({
             {/* روابط داخلية ثابتة إلى صفحات حساب المعدّل من كلّ صفحة عامّة:
                 أقوى إشارة داخلية على أهمّيتها، ونصّ كلّ رابط يسمّي شعبته. */}
             <FooterColumn title="حساب المعدل" links={[{ href: "/calculate", label: "حساب معدل البكالوريا" }, ...BRANCHES.map((b) => ({ href: `/calculate/${b.slug}`, label: `معدل ${b.short}` })), { href: "/tools/weighted-average", label: "المعدل الموزون" }]} />
-            <FooterColumn title="المنصة" links={[{ href: "/courses", label: "الدورات" }, { href: "/rooms", label: "الغرف" }, { href: "/community", label: "المجتمع" }, { href: "/library", label: "المكتبة" }]} />
+            <FooterColumn title="المنصة" links={[{ href: "/courses", label: "الدورات" }, { href: "/rooms", label: "الغرف" }, { href: "/community", label: "المجتمع" }, { href: "/library", label: "المكتبة" }, { href: "/help", label: "دليل المنصّة" }]} />
             <FooterColumn title="عن BacZone" links={legal.map((link) => ({ href: link.href, label: link.label === "شروط الاستخدام" ? "اتفاقية الاستخدام" : link.label }))} />
             <FooterColumn title="الحساب" links={[{ href: "/login", label: "دخول" }, { href: "/register", label: "إنشاء حساب" }]} />
           </div>

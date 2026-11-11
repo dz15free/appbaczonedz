@@ -4,6 +4,7 @@ import { BRANCHES } from "@/features/calculator/branches";
 import { GUIDES } from "@/features/guides/guides-data";
 import { SITE_URL } from "@/lib/site-url";
 import { CALC_UPDATED } from "@/features/calculator/seo";
+import { GUIDE_UPDATED } from "@/features/help/guide-data";
 import { LEGAL_PATHS } from "@/features/settings/legal-links";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { FEATURE_PAGES } from "@/features/landing/features-data";
@@ -90,7 +91,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...blogPages,
     { url: `${BASE}/tools`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     /* v8: صفحات الميزات العامّة وصفحة الكاتب */
-    { url: `${BASE}/features`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/features`, lastModified: new Date(GUIDE_UPDATED), changeFrequency: "monthly", priority: 0.75 },
+    { url: `${BASE}/help`, lastModified: new Date(GUIDE_UPDATED), changeFrequency: "monthly", priority: 0.75 },
     ...FEATURE_PAGES.map((f) => ({ url: `${BASE}/features/${f.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.7 })),
     ...AUTHORS.map((a) => ({ url: `${BASE}/author/${a.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.6 })),
     { url: `${BASE}/tools/study-planner`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },

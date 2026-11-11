@@ -1013,3 +1013,183 @@ body.bz-fullscreen-active .bz-room #bz-room-stage,
     margin: 2px 0;
   }
 }
+
+/* ═══ ١٨ — دليل المنصّة (/help) وصفحة المنصّة (/features) ═══
+   الدليل فهرس يُتصفَّح: كلّ قسم `<details>` مطويّ يعرض عنوانه وجملته
+   الأولى، فيرى القارئ أربعين قسماً في شاشتين ويفتح ما يحتاجه. الهاتف
+   أوّلاً: عمود واحد، وأهداف لمس ٤٤ بكسلاً، ولا شيء يفيض أفقياً. */
+.bz-help { color: var(--bz-ink); }
+.bz-help-crumbs { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--bz-ink-3); }
+.bz-help-crumbs a { padding-block: 11px; color: var(--v9-link, var(--bz-blue)); font-weight: 700; }
+.bz-help-crumbs a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.bz-help-hero { margin-top: 14px; }
+.bz-help-kicker {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+  background: var(--bz-blue-050); color: var(--bz-blue-700, var(--bz-blue)); font-size: 12px; font-weight: 800;
+}
+.bz-help-hero h1 {
+  margin: 14px 0 0; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(25px, 6vw, 38px); line-height: 1.3; color: var(--bz-ink); text-wrap: balance;
+}
+.bz-help-hero > p { margin: 10px 0 0; max-width: 62ch; font-size: 15px; line-height: 1.95; color: var(--bz-ink-2); }
+.bz-help-hero > .bz-help-meta { margin-top: 10px; font-size: 12px; color: var(--bz-ink-3); }
+
+/* البحث */
+.bz-help-search {
+  display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 0 14px; min-height: 50px;
+  border: 1px solid var(--bz-line); border-radius: 16px; background: var(--bz-surface); color: var(--bz-ink-3);
+  box-shadow: var(--bz-shadow-1); transition: border-color .15s, box-shadow .15s;
+}
+.bz-help-search:focus-within { border-color: var(--bz-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bz-blue) 16%, transparent); }
+.bz-help-search input {
+  flex: 1; min-width: 0; height: 48px; border: 0; outline: 0; background: transparent;
+  color: var(--bz-ink); font-size: 16px; /* ١٦: أقلّ منها يكبّر iOS الصفحة عند التركيز */
+}
+.bz-help-search input::placeholder { color: var(--bz-ink-3); font-size: 14px; }
+.bz-help-search input::-webkit-search-cancel-button { cursor: pointer; }
+.bz-help-search-count { flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--bz-ink-2); }
+
+/* البدء السريع */
+.bz-help-quick { margin-top: 26px; }
+.bz-help-quick h2, .bz-help-end h2 { margin: 0; font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--bz-ink); }
+.bz-help-quick > div { display: grid; gap: 10px; margin-top: 12px; }
+.bz-help-quick a {
+  display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; padding: 14px;
+  border: 1px solid var(--bz-line); border-radius: 16px; background: var(--bz-surface); transition: border-color .15s, box-shadow .15s;
+}
+.bz-help-quick a:hover { border-color: var(--bz-blue); box-shadow: var(--bz-shadow-2); }
+.bz-help-quick a > span {
+  grid-row: span 2; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px;
+  background: var(--bz-blue); color: #fff; font-weight: 800; font-size: 15px;
+}
+.bz-help-quick b { font-size: 14px; color: var(--bz-ink); }
+.bz-help-quick small { font-size: 12.5px; line-height: 1.7; color: var(--bz-ink-2); }
+
+/* فهرس الفصول */
+.bz-help-toc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
+.bz-help-toc a {
+  display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 9px 12px;
+  border: 1px solid var(--bz-line); border-radius: 14px; background: var(--bz-surface);
+  color: var(--v9-link, var(--bz-blue)); transition: border-color .15s, background-color .15s;
+}
+.bz-help-toc a:hover { border-color: var(--bz-blue); background: var(--bz-blue-050); }
+.bz-help-toc a > svg { width: 16px; height: 16px; flex-shrink: 0; }
+.bz-help-toc a > span { min-width: 0; }
+.bz-help-toc b { display: block; font-size: 13px; line-height: 1.5; color: var(--bz-ink); }
+.bz-help-toc small { display: block; font-size: 11px; color: var(--bz-ink-3); }
+
+/* الفصل */
+.bz-help-chapter { margin-top: 34px; scroll-margin-top: 84px; }
+.bz-help-chapter-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.bz-help-chapter-head h2 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 800; line-height: 1.4; color: var(--bz-ink); }
+.bz-help-chapter-head p { margin: 2px 0 0; font-size: 13px; line-height: 1.8; color: var(--bz-ink-2); }
+
+/* القسم */
+.bz-help-sec {
+  margin-top: 8px; border: 1px solid var(--bz-line); border-radius: 16px; background: var(--bz-surface);
+  scroll-margin-top: 84px; transition: border-color .15s, box-shadow .15s;
+}
+.bz-help-sec[open] { border-color: var(--bz-line-2, var(--bz-line)); box-shadow: var(--bz-shadow-2); }
+.bz-help-sec > summary {
+  display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; list-style: none; border-radius: 16px;
+}
+.bz-help-sec > summary::-webkit-details-marker { display: none; }
+.bz-help-sec > summary:focus-visible { outline: 2px solid var(--bz-blue); outline-offset: 2px; }
+.bz-help-sec-head { flex: 1; min-width: 0; }
+.bz-help-sec-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bz-help-sec h3 { margin: 0; font-size: 15px; font-weight: 800; line-height: 1.6; color: var(--bz-ink); }
+.bz-help-who { padding: 1px 8px; border-radius: 999px; background: var(--bz-blue-050); color: var(--bz-blue-700, var(--bz-blue)); font-size: 10.5px; font-weight: 800; }
+.bz-help-who.is-teacher { background: var(--bz-amber-050); color: var(--bz-amber-ink, var(--bz-amber)); }
+.bz-help-sec-lead { display: block; margin-top: 3px; font-size: 13px; line-height: 1.85; color: var(--bz-ink-2); }
+/* مطويّاً: سطران من التعريف يكفيان للتعرّف على القسم */
+.bz-help-sec:not([open]) .bz-help-sec-lead { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bz-help-chev {
+  flex-shrink: 0; width: 9px; height: 9px; margin-inline: 6px 4px; border-right: 2px solid var(--bz-ink-3);
+  border-bottom: 2px solid var(--bz-ink-3); transform: translateY(-2px) rotate(45deg); transition: transform .18s;
+}
+.bz-help-sec[open] .bz-help-chev { transform: translateY(2px) rotate(225deg); }
+
+.bz-help-body { padding: 2px 14px 16px; border-top: 1px solid var(--bz-line); }
+.bz-help-where { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 0; font-size: 13px; line-height: 1.85; color: var(--bz-ink-2); }
+.bz-help-where svg { width: 12px; height: 12px; flex-shrink: 0; color: var(--v9-link, var(--bz-blue)); }
+.bz-help-where b { color: var(--bz-ink); }
+
+.bz-help-steps { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }
+.bz-help-steps li { display: flex; align-items: flex-start; gap: 10px; }
+.bz-help-steps li > span {
+  display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; margin-top: 2px; border-radius: 50%;
+  background: var(--bz-blue-050); color: var(--bz-blue-700, var(--bz-blue)); font-size: 12px; font-weight: 800;
+}
+.bz-help-steps p { margin: 0; font-size: 14px; line-height: 1.95; color: var(--bz-ink); }
+
+.bz-help-points { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.bz-help-points li { position: relative; padding-inline-start: 18px; font-size: 14px; line-height: 1.95; color: var(--bz-ink); }
+.bz-help-points li::before { content: ""; position: absolute; inset-inline-start: 4px; top: .82em; width: 6px; height: 6px; border-radius: 50%; background: var(--bz-blue); }
+
+.bz-help-callout { margin: 14px 0 0; padding: 11px 13px; border-radius: 13px; font-size: 13.5px; line-height: 1.9; color: var(--bz-ink); }
+.bz-help-callout b { margin-inline-end: 8px; font-size: 11.5px; font-weight: 800; }
+.bz-help-callout.is-tip { background: var(--bz-green-050, #EAF6F1); }
+.bz-help-callout.is-tip b { color: var(--bz-green, #0E9F75); }
+.bz-help-callout.is-note { background: var(--bz-amber-050); }
+.bz-help-callout.is-note b { color: var(--bz-amber-ink, var(--bz-amber)); }
+
+.bz-help-open, .bz-help-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 14px; padding: 0 16px;
+  border-radius: 13px; background: var(--bz-blue); color: #fff; font-size: 13.5px; font-weight: 800; transition: filter .15s, transform .12s;
+}
+.bz-help-open:hover, .bz-help-btn:hover { filter: brightness(1.08); }
+.bz-help-open:active, .bz-help-btn:active { transform: scale(.98); }
+.bz-help-ghost {
+  display: inline-flex; align-items: center; min-height: 44px; margin-top: 14px; padding: 0 16px; border-radius: 13px;
+  border: 1px solid var(--bz-line); background: var(--bz-surface); color: var(--bz-ink); font-size: 13.5px; font-weight: 700;
+}
+.bz-help-ghost:hover { border-color: var(--bz-blue); }
+
+.bz-help-end { margin-top: 36px; padding: 20px; border-radius: 20px; background: var(--bz-blue-050); }
+.bz-help-end p { margin: 6px 0 0; font-size: 14px; line-height: 1.9; color: var(--bz-ink-2); }
+.bz-help-end > div { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (min-width: 640px) {
+  .bz-help-quick > div { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bz-help-quick a { grid-template-columns: 1fr; row-gap: 6px; align-items: start; }
+  .bz-help-quick a > span { grid-row: auto; }
+  .bz-help-toc { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bz-help-sec > summary { padding: 16px 18px; }
+  .bz-help-body { padding: 4px 18px 18px; }
+  .bz-help-sec h3 { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bz-help-chev, .bz-help-sec, .bz-help-open, .bz-help-btn { transition: none; }
+}
+
+/* ── صفحة المنصّة (/features) ── */
+.bz-platform-sec { margin-top: 44px; }
+.bz-platform-sec > h2 { margin: 0; font-family: var(--font-display); font-size: clamp(20px, 4.4vw, 26px); font-weight: 800; line-height: 1.4; color: var(--bz-ink); }
+.bz-platform-sec > .bz-platform-sub { margin: 8px 0 0; max-width: 64ch; font-size: 14.5px; line-height: 1.95; color: var(--bz-ink-2); }
+.bz-platform-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.bz-platform-stats > div { padding: 14px; border: 1px solid var(--bz-line); border-radius: 16px; background: var(--bz-surface); }
+.bz-platform-stats b { display: block; font-family: var(--font-display); font-size: 24px; font-weight: 800; line-height: 1.2; color: var(--v9-link, var(--bz-blue)); }
+.bz-platform-stats span { display: block; margin-top: 4px; font-size: 12.5px; line-height: 1.7; color: var(--bz-ink-2); }
+.bz-platform-map { display: grid; gap: 10px; margin-top: 16px; }
+.bz-platform-map > a {
+  display: block; padding: 16px; border: 1px solid var(--bz-line); border-radius: 18px; background: var(--bz-surface);
+  transition: border-color .15s, box-shadow .15s;
+}
+.bz-platform-map > a:hover { border-color: var(--bz-blue); box-shadow: var(--bz-shadow-2); }
+.bz-platform-map-head { display: flex; align-items: center; gap: 10px; }
+.bz-platform-map-head svg { width: 17px; height: 17px; color: var(--v9-link, var(--bz-blue)); }
+.bz-platform-map b { font-size: 15px; color: var(--bz-ink); }
+.bz-platform-map p { margin: 6px 0 0; font-size: 13px; line-height: 1.85; color: var(--bz-ink-2); }
+.bz-platform-map ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.bz-platform-map li { padding: 2px 9px; border-radius: 999px; background: var(--bz-canvas); font-size: 11.5px; font-weight: 600; color: var(--bz-ink-2); }
+.bz-platform-list { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.bz-platform-list li { padding: 14px 16px; border: 1px solid var(--bz-line); border-radius: 16px; background: var(--bz-surface); }
+.bz-platform-list b { display: block; font-size: 14.5px; color: var(--bz-ink); }
+.bz-platform-list span { display: block; margin-top: 4px; font-size: 13.5px; line-height: 1.9; color: var(--bz-ink-2); }
+.bz-platform-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+@media (min-width: 640px) {
+  .bz-platform-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bz-platform-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-platform-list.is-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

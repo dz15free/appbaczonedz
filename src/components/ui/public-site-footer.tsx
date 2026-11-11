@@ -10,6 +10,7 @@ const APP_SHELL_PREFIXES = [
   "/community",
   "/courses",
   "/groups",
+  "/help",
   "/home",
   "/leaderboard",
   "/library",

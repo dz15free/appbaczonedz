@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus, faDownload } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faUsers, faGlobe, faBell, faLayerGroup, faMagnifyingGlass, faBullhorn, faXmark, faBookOpen, faBars, faPlus, faRobot, faTrophy, faClipboardCheck, faCalendarCheck, faListCheck, faEllipsis, faChevronDown, faUpRightFromSquare, faScaleBalanced, faFileLines, faCalendarDays, faCalculator, faGraduationCap, faClone, faChartLine, faLink, faChalkboardUser, faRightToBracket, faUserPlus, faDownload, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import { InstallAppButton } from "@/components/pwa/install-prompt";
 import { useAuth } from "@/features/auth/auth-provider";
 import { useProfile } from "@/features/auth/use-profile";
@@ -127,6 +127,8 @@ const MORE_DROPDOWN_BASE = [
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
   { href: "/blog", label: "مقالات BacZone", icon: faFileLines, external: false },
   { href: "/guides", label: "أدلة المراجعة", icon: faBookOpen, external: false },
+  /* دليل استعمال المنصّة نفسها — غير «أدلة المراجعة» (تلك للموادّ) */
+  { href: "/help", label: "دليل المنصّة", icon: faCircleQuestion, external: false },
 ];
 
 // شريط الهاتف السفلي — مع زر إضافة مركزي بارز
@@ -152,6 +154,7 @@ const MENU_ITEMS_BASE = [
   { href: "/tools/tracker", label: "تقدّمي الدراسي", icon: faChartLine, external: false },
   { href: "/leaderboard", label: "لوحة الترتيب", icon: faTrophy, external: false },
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
+  { href: "/help", label: "دليل المنصّة", icon: faCircleQuestion, external: false },
 ];
 
 /* درج الهاتف للأستاذ — بلا أي أداة مراجعة تلميذ.
@@ -165,6 +168,7 @@ const MENU_ITEMS_TEACHER = [
   { href: "/community", label: "المجتمع", icon: faGlobe, external: false },
   { href: "/specialties", label: "التخصصات الجامعية", icon: faGraduationCap, external: false },
   { href: "/blog", label: "مقالات BacZone", icon: faFileLines, external: false },
+  { href: "/help", label: "دليل المنصّة", icon: faCircleQuestion, external: false },
 ];
 const PLATFORM_PUBLIC_LINK = { href: "/tools", label: "الأدوات العامة", icon: faLayerGroup, external: false };
 
