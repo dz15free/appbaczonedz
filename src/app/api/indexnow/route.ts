@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/site-url";
+import { BRANCHES } from "@/features/calculator/branches";
 
 /* ════════════════════════════════════════════════════════════
    IndexNow — إبلاغ محرّكات البحث فور النشر
@@ -24,6 +25,12 @@ import { SITE_URL } from "@/lib/site-url";
 
 /* العنوان من المصدر الوحيد */
 const SITE = SITE_URL;
+/* المحرّكات المشاركة بالترتيب: النقطة العامّة أوّلاً ثمّ بدائلها */
+const INDEXNOW_ENDPOINTS = [
+  "https://api.indexnow.org/IndexNow",
+  "https://www.bing.com/indexnow",
+  "https://yandex.com/indexnow",
+];
 const KEY = process.env.INDEXNOW_KEY || "";
 const DB = (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "").replace(/\/+$/, "");
 const SECRET = process.env.FIREBASE_DB_SECRET || "";
@@ -74,28 +81,53 @@ export async function POST(req: Request) {
   }
 
   const host = new URL(SITE).host;
-  try {
-    const res = await fetch("https://api.indexnow.org/IndexNow", {
-      method: "POST",
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({
-        host,
-        key: KEY,
-        keyLocation: `${SITE}/indexnow-key.txt`,
-        urlList: urls,
-      }),
-    });
-    // ٢٠٠ أو ٢٠٢ كلاهما نجاح في هذا المعيار
-    const ok = res.status === 200 || res.status === 202;
-    return NextResponse.json({ ok, status: res.status, count: urls.length });
-  } catch {
+  const payload = JSON.stringify({
+    host,
+    key: KEY,
+    keyLocation: `${SITE}/indexnow-key.txt`,
+    urlList: urls,
+  });
+
+  /* 🐛 الرمز 429: حدّ IndexNow يُحسب لكلّ عنوان IP مُرسِل، وطلبات Workers
+     تخرج من عناوين Cloudflare المشتركة بين آلاف المواقع — فيُرفض طلبنا
+     بذنب غيرنا (المفتاح نفسه يُقبل من أيّ عنوان آخر). كلّ محرّك مشارك
+     يستقبل على نطاقه ويُبلّغ الباقين، فنجرّب التالي عند 429 أو عطل خادم.
+     أمّا 400/403/422 فخطأ في المفتاح أو الروابط: يتكرّر أينما أرسلنا. */
+  let status = 0;
+  let via = "";
+  for (const endpoint of INDEXNOW_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: payload,
+      });
+      status = res.status;
+      via = new URL(endpoint).host;
+      // ٢٠٠ أو ٢٠٢ كلاهما نجاح في هذا المعيار
+      if (status === 200 || status === 202) {
+        return NextResponse.json({ ok: true, status, via, count: urls.length });
+      }
+      if (status !== 429 && status < 500) break;
+    } catch { /* تعذّر الاتصال بهذا المحرّك: نجرّب التالي */ }
+  }
+
+  if (!status) {
     return NextResponse.json({ ok: false, error: "تعذّر الاتصال بـ IndexNow." }, { status: 502 });
   }
+  const error = status === 429
+    ? "رفضت محرّكات البحث الطلب مؤقتاً (رمز 429: حدّ الطلبات لعنوان الخادم، لا خلل في موقعك). أعد المحاولة بعد ساعة — وخريطة الموقع تكفي في الأثناء."
+    : undefined;
+  return NextResponse.json({ ok: false, status, via, error, count: urls.length });
 }
 
 /** يُرجع قائمة الروابط المرشّحة للإبلاغ — تقرؤها لوحة الإدارة */
 export async function GET() {
-  const urls: string[] = [`${SITE}/`, `${SITE}/specialties`, `${SITE}/calculate`, `${SITE}/courses`];
+  const urls: string[] = [
+    `${SITE}/`, `${SITE}/specialties`, `${SITE}/calculate`,
+    ...BRANCHES.map((b) => `${SITE}/calculate/${b.slug}`),
+    `${SITE}/tools`, `${SITE}/tools/weighted-average`, `${SITE}/courses`,
+  ];
   if (DB) {
     try {
       const res = await fetch(`${DB}/guide/specialities.json`, { cache: "no-store" });
