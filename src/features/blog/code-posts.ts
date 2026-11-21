@@ -1,4 +1,5 @@
 import type { BlogIndexEntry } from "@/features/blog/types";
+import { SCHEDULED_POSTS } from "@/features/blog/code-posts-scheduled";
 
 /* ════════════════════════════════════════════════════════════
    مقالات مكتوبة في المستودع — تُنشر مع كلّ نشر للموقع
@@ -18,7 +19,7 @@ export type CodePost = Omit<BlogIndexEntry, "id" | "status" | "readMinutes" | "o
 
 const day = (iso: string) => new Date(`${iso}T08:00:00Z`).getTime();
 
-export const CODE_POSTS: CodePost[] = [
+const BASE_POSTS: CodePost[] = [
   /* ───────────────────────── المتتاليات ───────────────────────── */
   {
     slug: "المتتاليات-العددية-بكالوريا",
@@ -297,3 +298,6 @@ export const CODE_POSTS: CodePost[] = [
 `,
   },
 ];
+
+/* الدروس المجدولة تُضاف هنا وتُخفى حتى يحين تاريخها (blog-server.ts) */
+export const CODE_POSTS: CodePost[] = [...BASE_POSTS, ...SCHEDULED_POSTS];

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPrint, faPalette, faMobileScreen, faDesktop, faDownload, faFileArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
 import { PublicBackButton } from "@/components/ui/public-back-button";
+import { PlannerGuide } from "@/features/tools/tool-guide";
 import { STUDY_QUOTES } from "@/features/study/quotes";
 import { useSiteSettings } from "@/features/settings/use-site-settings";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
@@ -266,6 +267,7 @@ export default function PlannerPage() {
         </div>
       </div>
 
+      <PlannerGuide />
       <style jsx global>{`
         .planner-sheet {
           background: #fff;

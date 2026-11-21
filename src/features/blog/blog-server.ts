@@ -88,14 +88,30 @@ function normalize(id: string, raw: Omit<BlogIndexEntry, "id">): BlogIndexEntry 
 
 /** كل البطاقات — المسودّات معها، ويُصفّيها المستدعي */
 export async function getAllEntries(): Promise<BlogIndexEntry[]> {
-  const val = await readJson<IndexMap>("blog/index");
-  const fromDb = val ? Object.entries(val).map(([id, raw]) => normalize(id, raw)) : [];
+  const [val, contents] = await Promise.all([
+    readJson<IndexMap>("blog/index"),
+    /* مدّة القراءة تُحسب من النصّ لا من القيمة المخزّنة: المقالات المستوردة
+       قديماً تحمل أرقاماً خاطئة. الجسم كلّه صغير (~170 ك.ب) ومخزّن مؤقّتاً. */
+    readJson<Record<string, BlogContent>>("blog/content"),
+  ]);
+  const fromDb = val
+    ? Object.entries(val).map(([id, raw]) => {
+        const e = normalize(id, raw);
+        const html = contents?.[id]?.html;
+        return html ? { ...e, readMinutes: estimateReadMinutes(html) } : e;
+      })
+    : [];
   /* مقالات مكتوبة في المستودع (`code-posts.ts`) تُنشر مع كلّ نشر للموقع.
      إن وُجد في القاعدة مقال بالرابط نفسه فهو الأولى — يستطيع الأدمن أن
-     يتولّى المقال من اللوحة دون أن يظهر مرّتين. */
+     يتولّى المقال من اللوحة دون أن يظهر مرّتين.
+
+     ── الجدولة ──
+     مقال تاريخه في المستقبل لا يظهر في أيّ مكان (القوائم، الخريطة، صفحته)
+     حتى يحين تاريخه: الصفحات تُعاد كلّ 10 دقائق فيظهر وحده بلا نشر جديد. */
   const taken = new Set(fromDb.map((e) => e.slug.toLowerCase()));
+  const now = Date.now();
   const fromCode: BlogIndexEntry[] = CODE_POSTS
-    .filter((p) => !taken.has(p.slug.toLowerCase()))
+    .filter((p) => (p.publishedAt ?? 0) <= now &&!taken.has(p.slug.toLowerCase()))
     .map(({ html, ...entry }) => ({
       ...entry,
       id: `code-${entry.slug}`,

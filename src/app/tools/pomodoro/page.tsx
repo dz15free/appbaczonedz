@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faPause, faRotateLeft, faBrain, faMugHot, faBed, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { AppShell } from "@/components/app-shell";
 import { PublicBackButton } from "@/components/ui/public-back-button";
+import { PomodoroGuide } from "@/features/tools/tool-guide";
 
 type Phase = "work" | "short" | "long";
 
@@ -173,6 +174,7 @@ export default function PomodoroPage() {
           </div>
         )}
       </section>
+      <PomodoroGuide />
     </AppShell>
   );
 }
