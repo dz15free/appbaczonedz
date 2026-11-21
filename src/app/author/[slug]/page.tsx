@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { minutesLabel } from "@/features/blog/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -101,7 +102,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
                       <span className="bz-roomcard-meta">
                         {p.labels?.[0] && <span className="bz-roomcard-subject">{labelName(p.labels[0])}</span>}
                         <span>{arDate(p.publishedAt)}</span>
-                        <span>· {p.readMinutes} دقائق</span>
+                        <span>· {minutesLabel(p.readMinutes ?? 1)}</span>
                       </span>
                     </span>
                     <FontAwesomeIcon icon={faArrowLeft} className="bz-author-go h-3.5 w-3.5" />

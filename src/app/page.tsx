@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { minutesLabel } from "@/features/blog/types";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -22,7 +23,7 @@ import { SiteFooter } from "@/components/ui/site-footer";
 import { FaviconSync, LandingFaqRow } from "@/components/landing/landing-client";
 import { getPublicSiteSettings } from "@/features/settings/site-settings-server";
 import { GUIDES } from "@/features/guides/guides-data";
-import { TOOLS } from "@/features/tools/tools-data";
+import { TOOLS, REAL_TOOLS } from "@/features/tools/tools-data";
 import { getPublishedEntries } from "@/features/blog/blog-server";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
@@ -73,7 +74,8 @@ export default async function LandingPage() {
   const landingGuides = GUIDES.slice(0, 4);
   const allArticles = await getPublishedEntries();
   const articles = allArticles.slice(0, 6);
-  const freeToolsCount = TOOLS.filter((tool) => !tool.needsAccount).length;
+  /* كلّ الأدوات مجّانية (بعضها يحتاج حساباً مجّانياً) — والعدد لا يشمل دليل التخصّصات */
+  const freeToolsCount = REAL_TOOLS.length;
   const footerDescription = s.landingFooterDescription || "منصّة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر: مقالات وأدلّة وأدوات وغرف ومجتمع في مكان واحد.";
   const fields = SPEC_FIELDS.slice(0, 8);
 
@@ -172,7 +174,7 @@ export default async function LandingPage() {
                       <li key={a.id}>
                         <Link href={`/blog/${a.slug}`}>
                           <b>{a.title}</b>
-                          <small>{articleDate(a.publishedAt)} · {a.readMinutes} دقائق قراءة</small>
+                          <small>{articleDate(a.publishedAt)} · {minutesLabel(a.readMinutes ?? 1)} قراءة</small>
                         </Link>
                       </li>
                     ))}

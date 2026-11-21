@@ -23,7 +23,7 @@ import {
 import { absUrl } from "@/features/guide/site-url";
 import { PublicHeader } from "@/components/public-shell";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
-import { TOOLS, type Tool } from "@/features/tools/tools-data";
+import { TOOLS, REAL_TOOLS, NO_LOGIN_TOOLS, type Tool } from "@/features/tools/tools-data";
 import { AuthAwareCtaLink } from "@/components/ui/auth-aware-cta-link";
 import { OG_DEFAULT } from "@/lib/seo";
 import { BRANCHES } from "@/features/calculator/branches";
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
 
 export default function ToolsPage() {
   const byHref = new Map(TOOLS.map((tool) => [tool.href, tool]));
-  const instant = TOOLS.filter((tool) => !tool.needsAccount);
+  const instant = NO_LOGIN_TOOLS;
   const grouped = GROUPS.map((group) => ({ ...group, tools: group.hrefs.map((href) => byHref.get(href)).filter((tool): tool is Tool => Boolean(tool)) }));
   const jsonLd = {
     "@context": "https://schema.org",
@@ -130,7 +130,7 @@ export default function ToolsPage() {
       <PublicSidebarLayout placement="tools">
         <div className="bz-tools-product-shell mx-auto w-full max-w-6xl px-3 pb-16 sm:px-4">
           <div className="bz-tools-product-overview">
-            <span><b>{TOOLS.length}</b> أداة في مكان واحد</span>
+            <span><b>{REAL_TOOLS.length}</b> أدوات في مكان واحد</span>
             <span><b>{instant.length}</b> تعمل بلا تسجيل</span>
             <span><b>4</b> طرق للبدء</span>
           </div>

@@ -95,3 +95,19 @@ export function estimateReadMinutes(html: string): number {
   /* ١٨٠ كلمة/دقيقة: العربية أبطأ قراءةً من الإنجليزية (٢٢٠) */
   return Math.max(1, Math.round(words / 180));
 }
+
+/* ── مدّة القراءة ──
+   🐛 المقالات المستوردة قديماً تحمل قيمة مخزّنة خاطئة: «7 دقائق» على مقال من 400
+   كلمة (دقيقتان) و«دقيقتان» على مقال من 750. صفحة المقال تحسبها الآن من نصّه
+   بالمعيار نفسه الذي يحفظ به المحرّر (estimateReadMinutes). */
+export function readingMinutes(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 180));
+}
+
+/** «دقيقة» · «دقيقتان» · «3 دقائق» · «11 دقيقة» — العدد العربي يغيّر معدوده */
+export function minutesLabel(n: number): string {
+  if (n <= 1) return "دقيقة واحدة";
+  if (n === 2) return "دقيقتان";
+  return n <= 10 ? `${n} دقائق` : `${n} دقيقة`;
+}

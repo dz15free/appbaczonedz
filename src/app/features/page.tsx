@@ -11,6 +11,7 @@ import { FEATURE_PAGES } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { GUIDE, GUIDE_SECTION_COUNT, GUIDE_UPDATED, type GuideChapter } from "@/features/help/guide-data";
 import { BRANCHES } from "@/features/calculator/branches";
+import { REAL_TOOLS, NO_LOGIN_TOOLS } from "@/features/tools/tools-data";
 import { absUrl } from "@/lib/site-url";
 import { OG_DEFAULT } from "@/lib/seo";
 
@@ -51,11 +52,10 @@ const CHAPTER_ICON: Record<GuideChapter["icon"], typeof faUsers> = {
   help: faCircleQuestion,
 };
 
-const toolsCount = GUIDE.find((c) => c.id === "tools")?.sections.length ?? 0;
 
 const STATS = [
   { n: String(BRANCHES.length), label: "شُعب لها حاسبة معدّل بمعاملاتها" },
-  { n: String(toolsCount), label: "أدوات مراجعة، أغلبها بلا تسجيل" },
+  { n: String(REAL_TOOLS.length), label: `أدوات مراجعة، ${NO_LOGIN_TOOLS.length} منها بلا تسجيل` },
   { n: String(GUIDE_SECTION_COUNT), label: "قسماً مشروحاً في دليل المنصّة" },
   { n: "0 دج", label: "ثمن الحساب والغرف العامّة والمجتمع" },
 ];
