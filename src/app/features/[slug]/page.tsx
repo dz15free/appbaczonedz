@@ -84,6 +84,15 @@ export default async function FeaturePageView({ params }: { params: Promise<{ sl
             <div className="bz-feature-role is-teacher"><span>للأستاذ</span><p>{f.forTeacher}</p></div>
           </section>
 
+          {f.useCases && f.useCases.length > 0 && (
+            <section className="mt-10">
+              <h2 className="bz-feature-h2">كيف تستعملها في مراجعة البكالوريا</h2>
+              <dl className="bz-feature-details">
+                {f.useCases.map((d, i) => <div key={i}><dt>{d.title}</dt><dd>{d.body}</dd></div>)}
+              </dl>
+            </section>
+          )}
+
           <section className="mt-10">
             <h2 className="bz-feature-h2">تفاصيل تهمّك</h2>
             <dl className="bz-feature-details">
