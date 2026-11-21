@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { minutesLabel } from "@/features/blog/types";
 import { LandingKnowledge } from "@/features/landing/landing-knowledge";
+import { LandingLessons, LandingOrientation } from "@/features/landing/landing-hub";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -75,6 +76,7 @@ export default async function LandingPage() {
   const landingGuides = GUIDES.slice(0, 4);
   const allArticles = await getPublishedEntries();
   const articles = allArticles.slice(0, 6);
+  const lessons = allArticles.filter((a) => (a.labels ?? []).includes("subjects")).slice(0, 6);
   /* كلّ الأدوات مجّانية (بعضها يحتاج حساباً مجّانياً) — والعدد لا يشمل دليل التخصّصات */
   const freeToolsCount = REAL_TOOLS.length;
   const footerDescription = s.landingFooterDescription || "منصّة دراسة تفاعلية لتلاميذ البكالوريا في الجزائر: مقالات وأدلّة وأدوات وغرف ومجتمع في مكان واحد.";
@@ -196,6 +198,9 @@ export default async function LandingPage() {
             </div>
           </section>
 
+          {/* ── ١٫٥: دروس محلولة — تزيد وحدها مع الدروس المجدولة ── */}
+          <LandingLessons posts={lessons} />
+
           {/* ── ٢: الأدوات المجّانية ── */}
           <section className="px-5 py-14 sm:px-8 sm:py-16">
             <div className="mx-auto max-w-7xl">
@@ -206,6 +211,9 @@ export default async function LandingPage() {
 
           {/* ── ٢٫٥: معلومة تُقرأ في الصفحة نفسها — المعاملات ومنهجية السنة ── */}
           <LandingKnowledge />
+
+          {/* ── ٢٫٧: التوجيه بأرقام حقيقية وتصفّح التخصّصات ── */}
+          <LandingOrientation />
 
           {/* ── ٣: المنصّة — كل ميزة تقود إلى صفحتها العامّة ── */}
           <section className="bz-platform px-5 py-16 sm:px-8 sm:py-20">
