@@ -7,7 +7,7 @@ const TITLE = "سياسة الخصوصية";
 const DESC =
   "ما تجمعه منصّة BacZoneDZ وتطبيق Android الرسمي من بيانات، ولماذا، ومن يعالجها، " +
   "وكيف تتحكّم فيها وتحذف حسابك — مكتوبة بلغة مفهومة لا بصيغة قانونية مبهمة.";
-const UPDATED = "2026-11-10";
+const UPDATED = "2026-11-21";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -136,7 +136,8 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Google — Gemini (المساعد الآلي):</strong> حين تكتب للمساعد،
-          تُرسَل رسالتك إلى Google لتوليد الردّ. <strong>فلا تكتب له معلومات
+          تُرسَل رسالتك إلى Google لتوليد الردّ. وكذلك صورة الجزء الذي تحدّده على
+          السبورة حين تطلب تحويل الكتابة اليدوية إلى معادلة. <strong>فلا تكتب له معلومات
           حسّاسة</strong> — لا كلمات سرّ ولا بيانات شخصية عن غيرك.
         </li>
         <li>
@@ -146,12 +147,13 @@ export default function PrivacyPage() {
           شيء في Drive إلّا الملفّات التي أنشأتها من داخلها.
         </li>
         <li>
-          <strong>Chargily (بوّابة دفع جزائرية):</strong> عند شراء دورة، يتمّ
+          <strong>Chargily (بوّابة دفع جزائرية):</strong> عند شراء دورة أو دخول غرفة أو مصدر مدفوع، يتمّ
           الدفع عندهم لا عندنا. <strong>لا تمرّ بيانات بطاقتك بخوادمنا ولا
           نراها</strong>؛ يصلنا منهم أنّ العملية نجحت ومعرّفها ومبلغها.
         </li>
         <li>
-          <strong>Cloudflare:</strong> استضافة الموقع وتقديم صفحاته.
+          <strong>Cloudflare:</strong> استضافة الموقع وتقديم صفحاته، ونقل الصوت المباشر في الغرف
+          (Cloudflare Realtime). الصوت يمرّ مباشراً ولا يُسجَّل ولا يُحفظ.
         </li>
         <li>
           <strong>Google Analytics 4:</strong> إحصاءات استعمال مجمّعة.

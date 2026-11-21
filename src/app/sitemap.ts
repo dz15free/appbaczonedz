@@ -79,7 +79,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/specialties`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE}/courses`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
     { url: `${BASE}/guides`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     // صفحة لكل دليل — محتوى مرجعي يستحقّ الفهرسة منفرداً
     ...GUIDES.map((g) => ({
@@ -138,7 +137,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   /* إزالة التكرار: رابط واحد لا يجوز أن يظهر مرّتين في الخريطة */
-  const all = [...statics, ...specs, ...courses];
+  /* 🐛 /courses كان في الخريطة دائماً بأولوية 0.95 و«يومياً» — والكتالوج فارغ
+     (لا دورة منشورة بعد) ويُرسم في المتصفّح، فيرى الزاحف 17 كلمة. صفحة فارغة
+     مُعلَنة كأهمّ صفحة: إشارة «محتوى ضعيف» صريحة. تُعلَن حين توجد دورات فقط. */
+  const catalog: MetadataRoute.Sitemap = courses.length
+    ? [{ url: `${BASE}/courses`, lastModified: now, changeFrequency: "weekly", priority: 0.8 }]
+    : [];
+  const all = [...statics, ...catalog, ...specs, ...courses];
   const seen = new Set<string>();
   return all.filter((e) => (seen.has(e.url) ? false : (seen.add(e.url), true)));
 }

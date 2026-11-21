@@ -11,8 +11,14 @@ export const AD_PLACEMENTS: { id: string; label: string; desc: string }[] = [
   { id: "community", label: "صفحة المجتمع", desc: "أعلى المنشورات" },
 ];
 
+/* مواضع داخل الحساب: لوحة المستخدم ومكتبته والمجتمع بعد الدخول. سياسة AdSense
+   لا تقبل إعلانات في صفحات تسجيل الدخول والحساب أو بجانب محتوى خاصّ، ومراجعها
+   يحكم على الموقع كلّه بها. تُرفض هنا مهما فعّلها الأدمن من اللوحة. */
+const PRIVATE_PLACEMENTS = new Set(["home", "library", "community"]);
+
 export function AdSlot({ placement, className = "" }: { placement: string; className?: string }) {
   const { settings } = useSiteSettings();
+  if (PRIVATE_PLACEMENTS.has(placement)) return null;
   const ad = settings.ads?.[placement];
   if (!ad || !ad.enabled) return null;
 

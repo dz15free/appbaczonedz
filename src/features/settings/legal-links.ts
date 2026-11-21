@@ -13,6 +13,7 @@ export const LEGAL_LINKS: LegalLink[] = [
   { href: "/blog",    label: "المقالات",          short: "المقالات" },
   { href: "/about",   label: "من نحن",            short: "من نحن" },
   { href: "/contact", label: "اتصل بنا",           short: "اتصل بنا" },
+  { href: "/editorial-policy", label: "سياسة التحرير والتصحيح", short: "التحرير" },
   { href: "/privacy", label: "سياسة الخصوصية",    short: "الخصوصية" },
   { href: "/terms",   label: "شروط الاستخدام",    short: "الشروط" },
 ];

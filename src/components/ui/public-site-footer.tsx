@@ -37,7 +37,7 @@ function shouldRender(pathname: string | null): boolean {
   /* 🐛 صفحات ترسم `<SiteFooter />` بنفسها (من الخادم): إن رسمناه هنا
      أيضاً ظهر الفوتر مرّتين. `/features` و`/author` كانتا غائبتين. */
   if (OWN_FOOTER_PREFIXES.some((prefix) => hasPrefix(pathname, prefix))) return false;
-  if (["/about", "/contact", "/privacy", "/terms"].includes(pathname)) return false;
+  if (["/about", "/contact", "/privacy", "/terms", "/editorial-policy"].includes(pathname)) return false;
   return !APP_SHELL_PREFIXES.some((prefix) => hasPrefix(pathname, prefix));
 }
 
