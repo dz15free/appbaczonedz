@@ -1,5 +1,7 @@
 import type { BlogContent, BlogIndexEntry, BlogPost } from "@/features/blog/types";
 import { getBlogCoverFallback } from "@/features/blog/blog-cover-fallbacks";
+import { CODE_POSTS } from "@/features/blog/code-posts";
+import { estimateReadMinutes } from "@/features/blog/types";
 
 /* ════════════════════════════════════════════════════════════
    قراءة المدوّنة **على الخادم**
@@ -87,10 +89,23 @@ function normalize(id: string, raw: Omit<BlogIndexEntry, "id">): BlogIndexEntry 
 /** كل البطاقات — المسودّات معها، ويُصفّيها المستدعي */
 export async function getAllEntries(): Promise<BlogIndexEntry[]> {
   const val = await readJson<IndexMap>("blog/index");
-  if (!val) return [];
-  return Object.entries(val)
-    .map(([id, raw]) => normalize(id, raw))
-    .sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
+  const fromDb = val ? Object.entries(val).map(([id, raw]) => normalize(id, raw)) : [];
+  /* مقالات مكتوبة في المستودع (`code-posts.ts`) تُنشر مع كلّ نشر للموقع.
+     إن وُجد في القاعدة مقال بالرابط نفسه فهو الأولى — يستطيع الأدمن أن
+     يتولّى المقال من اللوحة دون أن يظهر مرّتين. */
+  const taken = new Set(fromDb.map((e) => e.slug.toLowerCase()));
+  const fromCode: BlogIndexEntry[] = CODE_POSTS
+    .filter((p) => !taken.has(p.slug.toLowerCase()))
+    .map(({ html, ...entry }) => ({
+      ...entry,
+      id: `code-${entry.slug}`,
+      status: "published",
+      authorName: "Raouf Said",
+      readMinutes: estimateReadMinutes(html),
+      updatedAt: entry.updatedAt ?? entry.publishedAt,
+      oldSlugs: [],
+    }));
+  return [...fromDb, ...fromCode].sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
 }
 
 /** المنشور وحده — وهو ما يراه الزائر ومحرّك البحث */
@@ -125,6 +140,10 @@ export async function getPost(slug: string): Promise<{ post: BlogPost | null; re
   if (!entry) return { post: null };
   if (redirectTo) return { post: null, redirectTo };
 
+  if (entry.id.startsWith("code-")) {
+    const code = CODE_POSTS.find((p) => `code-${p.slug}` === entry.id);
+    return { post: { ...entry, html: code?.html ?? "" } };
+  }
   const content = await readJson<BlogContent>(`blog/content/${entry.id}`);
   return { post: { ...entry, html: content?.html ?? "" } };
 }

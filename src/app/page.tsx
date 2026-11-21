@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { minutesLabel } from "@/features/blog/types";
+import { LandingKnowledge } from "@/features/landing/landing-knowledge";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -202,6 +203,9 @@ export default async function LandingPage() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{publicTools.map((tool) => <Link key={tool.href} href={tool.href} className="bz-landing-tool-card"><span className="bz-landing-tool-icon" style={{ color: tool.color, backgroundColor: `${tool.color}14` }}><FontAwesomeIcon icon={toolIcon(tool.href)} /></span><h3>{tool.name}</h3><p>{tool.desc}</p><span className="bz-landing-card-link">{tool.cta}<FontAwesomeIcon icon={faArrowLeft} className="h-3 w-3" /></span></Link>)}</div>
             </div>
           </section>
+
+          {/* ── ٢٫٥: معلومة تُقرأ في الصفحة نفسها — المعاملات ومنهجية السنة ── */}
+          <LandingKnowledge />
 
           {/* ── ٣: المنصّة — كل ميزة تقود إلى صفحتها العامّة ── */}
           <section className="bz-platform px-5 py-16 sm:px-8 sm:py-20">
