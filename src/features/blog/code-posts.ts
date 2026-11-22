@@ -1,5 +1,6 @@
 import type { BlogIndexEntry } from "@/features/blog/types";
 import { SCHEDULED_POSTS } from "@/features/blog/code-posts-scheduled";
+import { SCHEDULED_POSTS_2 } from "@/features/blog/code-posts-scheduled-2";
 
 /* ════════════════════════════════════════════════════════════
    مقالات مكتوبة في المستودع — تُنشر مع كلّ نشر للموقع
@@ -300,4 +301,4 @@ const BASE_POSTS: CodePost[] = [
 ];
 
 /* الدروس المجدولة تُضاف هنا وتُخفى حتى يحين تاريخها (blog-server.ts) */
-export const CODE_POSTS: CodePost[] = [...BASE_POSTS, ...SCHEDULED_POSTS];
+export const CODE_POSTS: CodePost[] = [...BASE_POSTS, ...SCHEDULED_POSTS, ...SCHEDULED_POSTS_2];
