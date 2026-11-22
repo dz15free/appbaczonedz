@@ -333,6 +333,19 @@ function personalizeEditorialText(slug: string, content: SpecContent, fallbackTi
 ════════════════════════════════════════════════════════════ */
 const REVIEWED = new Set<string>(REVIEWED_SLUGS);
 
+const AR_MONTHS = ["جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان", "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const SOURCE_DATE_RE = new RegExp(`آخر (?:تحقّق|تحقق|اطّلاع|اطلاع|بحث)\\s*:?\\s*(\\d{1,2})\\s+(${AR_MONTHS.join("|")})\\s+(\\d{4})`, "gu");
+
+/** أحدث تاريخ «آخر تحقّق: 22 نوفمبر 2026» في نصّ المصادر، بصيغة YYYY-MM-DD */
+export function latestSourceDate(sources: string): string | undefined {
+  let best: string | undefined;
+  for (const m of sources.matchAll(SOURCE_DATE_RE)) {
+    const iso = `${m[3]}-${String(AR_MONTHS.indexOf(m[2]) + 1).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    if (!best || iso > best) best = iso;
+  }
+  return best;
+}
+
 const REVIEWED_BY_SLUG = new Map<string, Partial<SpecContent>>(
   SPECIALITIES.filter((x) => REVIEWED.has(x.slug)).map((x) => {
     const { slug, ar, alt: _alt, prosCons, ...rest } = x;
@@ -360,6 +373,14 @@ const REVIEWED_BY_SLUG = new Map<string, Partial<SpecContent>>(
     const extraList = (rest as { extra?: { t?: string; v?: string }[] }).extra;
     const srcItem = Array.isArray(extraList) ? extraList.find((e) => (e?.t ?? "").includes("مصادر")) : undefined;
     if (srcItem?.v && !patch.sources) patch.sources = srcItem.v;
+
+    /* ── تاريخ الصفحة = آخر تحقّق مذكور في مصادرها ──
+       🐛 كانت الصفحات الـ258 كلّها تعرض «آخر مراجعة: 27 أوت 2026» — تاريخ واحد
+       وُضع جملةً في طبقة p17 القديمة، ولم تحمل الطبقة المراجَعة تاريخها. فصفحة
+       العلاج الطبيعي تقول 27 أوت في أعلاها و«آخر تحقّق: 22 نوفمبر» في مصادرها.
+       الآن يُؤخذ أحدث تاريخ «آخر تحقّق/اطّلاع/بحث» من المصادر نفسها؛ وصفحة بلا
+       تاريخ في مصادرها لا تعرض تاريخاً بدل أن تعرض تاريخاً لا يخصّها. */
+    patch.lastVerifiedAt = latestSourceDate(String(patch.sources ?? "")) ?? "";
 
     /* ── v8: الطبقة المراجَعة هي الصفحة كلّها ──
        🐛 كانت تكتب فوق الحقول التي تعرّفها فقط، فتبقى تحتها أقسام القالب

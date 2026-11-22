@@ -75,6 +75,7 @@ function dynamicNavItem(section: SourceSection): ArticleNavItem {
 }
 
 export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }) {
+  const unverified = !spec.indexable;
   const dynamicSections = (spec.sections ?? []).filter((section) => typeof section.body === "string" && section.body.trim().length > 0);
   const hasDynamicSections = dynamicSections.length > 0;
   /* ── أقسام `extra` ──
@@ -91,12 +92,16 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
     if (key === "verdict") orderedSections.push(...extraItems);
     if (key === "sources") continue;
     const value = spec[key];
-    if (typeof value === "string" && value.trim()) orderedSections.push({ key: String(key), label, icon, tone, body: value });
+    /* صفحة غير موثّقة قد تعرض معدّلات أقرب تكوين رسمي (fintech ← F02LAL01):
+       العنوان يقول ذلك بدل «معدلات القبول في المصدر» الذي يوحي بأنّها معدّلاته. */
+    const shownLabel = unverified && key === "numbers" ? "معدّلات أقرب تكوين رسمي (لا لهذا الاسم)" : label;
+    if (typeof value === "string" && value.trim()) orderedSections.push({ key: String(key), label: shownLabel, icon, tone, body: value });
   }
   const written: ArticleNavItem[] = hasDynamicSections
     ? [...dynamicSections.map(dynamicNavItem), ...(spec.sources?.trim() ? [{ key: "sources", label: "مصادر المعلومات", icon: "book" as IconName }] : [])]
     : [...orderedSections, ...(spec.sources?.trim() ? [{ key: "sources", label: "مصادر المعلومات", icon: "book" as IconName }] : [])];
-  const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published).slice(0, 6);
+  /* غير الموثّق لا يُقترح من صفحة أخرى: الرابط بلا وسم يوحي بأنّه تخصّص مؤكّد */
+  const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published && row.indexable).slice(0, 6);
   const introText = spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "");
   const needsEditorialReview = !spec.indexable && spec.quality === "needs-review";
   const articleUrl = `/specialties/${linkOf(spec)}`;
@@ -141,18 +146,19 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
           <PublicBackButton fallbackHref="/specialties" fallbackLabel="التخصّصات" tone="dark" className="mb-6" />
           <div className="bz-spec-editorial-grid">
             <div className="bz-spec-editorial-copy">
-              <div className="bz-spec-identity-line"><span className="bz-spec-hero-kicker"><Icon name="compass" size={12} /> دليل اختيار التخصّص</span><span className="bz-spec-field-pill">{spec.field}</span></div>
+              <div className="bz-spec-identity-line"><span className="bz-spec-hero-kicker"><Icon name="compass" size={12} /> {unverified ? "قيد التحقّق — غير موثّق" : "دليل اختيار التخصّص"}</span><span className="bz-spec-field-pill">{spec.field}</span></div>
               <h1 className="mt-4 max-w-3xl font-display text-[30px] font-extrabold leading-[1.23] sm:text-[48px]">{spec.ar}</h1>
               {spec.fr && <p className="mt-2 text-[13px] font-bold tracking-wide text-white/65" dir="ltr">{spec.fr}</p>}
-              {spec.lastVerifiedAt && <p className="mt-2 text-[11px] font-bold text-white/55">آخر مراجعة للمعلومات: {new Intl.DateTimeFormat("ar-DZ", { dateStyle: "long" }).format(new Date(spec.lastVerifiedAt))}</p>}
+              {spec.lastVerifiedAt && <p className="mt-2 text-[11px] font-bold text-white/55">آخر تحقّق من المصادر: {new Intl.DateTimeFormat("ar-DZ", { dateStyle: "long", numberingSystem: "latn" }).format(new Date(spec.lastVerifiedAt))} <span className="font-normal">· تاريخ كلّ مصدر مذكور بجانبه في «مصادر المعلومات»</span></p>}
+              {unverified && <p role="note" className="bz-spec-unverified-note mt-4 max-w-2xl"><b>غير موثّق:</b> لم نجد لهذا الاسم مصدراً رسمياً — لا رمزاً في منشور التوجيه ولا إعلاناً من مؤسّسة. لا نحتسبه ضمن تخصّصات الدليل الموثّقة، ولا تبنِ عليه رغبتك قبل أن تجده في منشور سنتك.</p>}
               <p className="bz-spec-editorial-intro mt-5 max-w-2xl text-[14px] leading-[2] text-white/80 sm:text-[16px]">{introText || "اقرأ الدليل كاملاً قبل اتخاذ قرارك الدراسي."}</p>
               <div className="bz-spec-hero-actions"><a href="#guide-content"><Icon name="chevDown" size={13} /> ابدأ القراءة</a><Link href="/specialties">تصفّح كل التخصّصات <Icon name="chevLeft" size={12} /></Link></div>
             </div>
             <aside className="bz-spec-hero-summary bz-spec-editorial-summary" aria-label="ملخص التخصص">
-              <span className="bz-spec-summary-label">اقرأ قبل أن تختار</span>
-              <div className="bz-spec-editorial-summary-lead">هذا الدليل يجمع المعلومات الموجودة عن المسار في قراءة واحدة، من طبيعة الدراسة إلى ما ينبغي معرفته قبل القرار.</div>
+              <span className="bz-spec-summary-label">{unverified ? "الحالة" : "اقرأ قبل أن تختار"}</span>
+              <div className="bz-spec-editorial-summary-lead">{unverified ? "غير موثّق، وخارج عدد الدليل. الصفحة تعرض ما نعرفه وما لا نعرفه، وتحيل إلى أقرب التكوينات الرسمية." : "هذا الدليل يجمع المعلومات الموجودة عن المسار في قراءة واحدة، من طبيعة الدراسة إلى ما ينبغي معرفته قبل القرار."}</div>
               <div className="bz-spec-summary-row"><small>المجال</small><b>{spec.field}</b></div>
-              <div className="bz-spec-summary-row"><small>أقسام الدليل المتاحة</small><b>{written.length} قسم مفصّل</b></div>
+              <div className="bz-spec-summary-row"><small>{unverified ? "أقسام الصفحة" : "أقسام الدليل المتاحة"}</small><b>{written.length} {unverified ? "قسماً" : "قسم مفصّل"}</b></div>
             </aside>
           </div>
         </div>

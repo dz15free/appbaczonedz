@@ -89,6 +89,33 @@ for (const slug of reviewed) {
   if (lead.length < 40) fail(`${slug}: السطر الأوّل من المقدّمة قصير جداً (${lead.length} حرفاً)`);
 }
 
+/* ── ٥) سجلّ ما خرج من الدليل ──
+   العدد المعروض تغيّر من 260 إلى 258 في 22 نوفمبر 2026. لا ينقص الدليل
+   صفحةً دون سطر هنا يقول لماذا وإلى أين ذهبت: الفاحص يرفض أيّ معرّف محذوف
+   عاد إلى الفهرس، أو فقد تحويله الدائم في next.config.mjs. */
+const REMOVED = [
+  { slug: "agronomie", to: "agro", date: "2026-11-22",
+    why: "«العلوم الزراعية» و«العلوم الفلاحية» تسميتان للتخصّص نفسه (رموز D03 في توجيه 2026). كانت الصفحة نفسها تقول إنّها تكرار." },
+  { slug: "ensrpc", to: "enscrbc", date: "2026-11-22",
+    why: "المدرسة الوطنية العليا لحفظ الممتلكات الثقافية وترميمها مكرّرة بمعرّفين (رمزها N00TUT01). كانت الصفحة نفسها تقول إنّها تكرار." },
+];
+const nextCfg = readFileSync("next.config.mjs", "utf8");
+for (const r of REMOVED) {
+  if (idxBySlug.has(r.slug)) fail(`${r.slug}: مسجّل محذوفاً لكنّه عاد إلى الفهرس`);
+  if (!idxBySlug.has(r.to)) fail(`${r.slug}: الصفحة التي دُمج فيها (${r.to}) غير موجودة`);
+  if (!nextCfg.includes(`"${r.slug}": "${r.to}"`)) fail(`${r.slug}: لا تحويل دائم إلى ${r.to} في next.config.mjs`);
+}
+
+/* ── ٦) الموثّق وقيد التحقّق ── */
+const noindexBlock = merge.match(/GENERAL_SOURCE_ONLY_NOINDEX = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? "";
+const pending = [...noindexBlock.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+for (const s of pending) if (!idxBySlug.has(s)) fail(`${s}: في قائمة «قيد التحقّق» وغير موجود في الفهرس`);
+
+console.log(`\nالدليل: ${index.length} صفحة · ${index.length - pending.length} خارج قائمة «قيد التحقّق» · ${pending.length} قيد التحقّق`);
+console.log(`قيد التحقّق (لا تُحتسب ولا تُفهرس): ${pending.join("، ")}`);
+console.log(`خرج من الدليل (${REMOVED.length}): ` + REMOVED.map((r) => `${r.slug} ← دُمج في ${r.to} (${r.date})`).join("، "));
+console.log("ملاحظة: «الموثّق» في الموقع = indexable بعد الدمج؛ قد يُخفي p13 صفحات أخرى غير مراجَعة — وكلّها مراجَعة اليوم.");
+
 console.log(errors
   ? `\n✗ ${errors} مشكلة — لا تُسلَّم الدفعة قبل إصلاحها.`
   : `✓ ${reviewed.length}/${specs.length} تخصّصاً مُراجَعاً: يصل الصفحة · فصحى · مخطّط سليم · فهرس متطابق.`);
