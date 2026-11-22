@@ -47,6 +47,9 @@ const nextConfig = {
       "marine-eng": "marine",
       "political-science": "sciences-po",
       "renewable-energy": "renouvelables",
+      /* تكراران حُذفا من الدليل (22 نوفمبر 2026): الاسم الآخر للتخصّص نفسه */
+      "agronomie": "agro",
+      "ensrpc": "enscrbc",
     };
     return Object.entries(moved).map(([from, to]) => ({
       source: `/specialties/${from}`,

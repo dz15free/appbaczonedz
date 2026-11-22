@@ -242,25 +242,24 @@ export const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
      والفرنسية). صفحاتها تقول ذلك وتحيل إلى التكوينات الرسمية القريبة. */
   "esi-kolea",
   "esss",
-  "iedf",
   "fintech",
   "ind-entr",
   /* الدفعة 25 */
   "essp",
   /* commissariat-corps: أُعيد في الدفعة 30 — المعتمدية موثّقة في دليل التجنيد 2026 */
   /* الدفعة 26 */
-  /* الدفعة 28: ensrpc تكرار لصفحة enscrbc (المدرسة نفسها) — يُخفى لتجنّب
-     المحتوى المكرّر؛ scenario و3d-design بلا مصدر بهذين الاسمين. */
-  "ensrpc",
   /* الدفعة 29 */
-  "agronomie",
   "health-info",
   "forensique",
   "enmas",
   "genomic-data",
   "molecular-engineering",
-  /* الدفعة 30 */
-  "esesm",
+  /* 22 نوفمبر 2026: خرجت من هذه القائمة أربع صفحات —
+     • iedf: موثّق من موقع المعهد الرسمي (iedf-dz.com): مسابقة بعد الماستر، لا توجيه بعد البكالوريا؛ الصفحة تقول ذلك.
+     • esesm: المدرسة في توجيه 2026 بـ15 رمزاً (C01PAN01…A16PAN01) ومعدّلاتها؛ كانت الصفحة تقول «لم نجدها».
+     • ensrpc وagronomie: تكراران لـenscrbc وagro، حُذفا من الفهرس وصار رابطاهما تحويلاً دائماً (next.config.mjs).
+     والباقي هنا لم نجد له مصدراً رسمياً: bac-story يذكرها بالأسماء نفسها حرفياً (ومنه أُخذ الفهرس على الأرجح)
+     لكنّه بلا رمز ولا مصدر، ومعدّلات fintech فيه «توقّعات». مواقع esss.dz وenmas وenssp لم تُفتح عند البحث. */
 ]);
 
 function focusPhrase(content: SpecContent): string {
