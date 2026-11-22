@@ -43,6 +43,8 @@ export interface SpecContent {
   field?: string;
   /** وصف قصير للسيو ولبطاقة الفهرس */
   excerpt?: string;
+  /** فقرات إضافية بعنوان حرّ — تُعرض قبل الخلاصة، وبند «مصادر المعلومات» منها يصير `sources` */
+  extra?: { t?: string; v?: string }[];
   intro?: string;
   study?: string;
   admission?: string;

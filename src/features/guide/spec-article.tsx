@@ -77,12 +77,25 @@ function dynamicNavItem(section: SourceSection): ArticleNavItem {
 export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }) {
   const dynamicSections = (spec.sections ?? []).filter((section) => typeof section.body === "string" && section.body.trim().length > 0);
   const hasDynamicSections = dynamicSections.length > 0;
+  /* ── أقسام `extra` ──
+     🐛 كانت تُكتب ولا تُعرض: الصفحة تمرّ على SECTIONS وحدها، و`extra` ليس
+     فيها؛ يُؤخذ منه بند «مصادر المعلومات» فقط (guide-merge). فبقيت 61 فقرة
+     في 40 صفحة — «لا تحويل من الشبه الطبّي ولا إليه»، «لماذا يختلف المعدّل
+     من ولاية إلى أخرى؟»… — مكتوبة ومراجَعة ولا يراها أحد. تُعرض الآن قبل
+     الخلاصة، وبند المصادر يبقى في قسمه الخاصّ آخر الصفحة. */
+  const extraItems = (Array.isArray(spec.extra) ? spec.extra : [])
+    .filter((e): e is { t: string; v: string } => typeof e?.t === "string" && typeof e?.v === "string" && e.t.trim() !== "" && e.v.trim() !== "" && !e.t.includes("مصادر"))
+    .map((e, i) => ({ key: `extra-${i}`, label: e.t.trim(), icon: "target" as IconName, body: e.v }));
+  const orderedSections: (ArticleNavItem & { body: string })[] = [];
+  for (const { key, label, icon, tone } of SECTIONS) {
+    if (key === "verdict") orderedSections.push(...extraItems);
+    if (key === "sources") continue;
+    const value = spec[key];
+    if (typeof value === "string" && value.trim()) orderedSections.push({ key: String(key), label, icon, tone, body: value });
+  }
   const written: ArticleNavItem[] = hasDynamicSections
     ? [...dynamicSections.map(dynamicNavItem), ...(spec.sources?.trim() ? [{ key: "sources", label: "مصادر المعلومات", icon: "book" as IconName }] : [])]
-    : SECTIONS.filter(({ key }) => {
-      const value = spec[key];
-      return typeof value === "string" && value.trim().length > 0;
-    });
+    : [...orderedSections, ...(spec.sources?.trim() ? [{ key: "sources", label: "مصادر المعلومات", icon: "book" as IconName }] : [])];
   const related = rows.filter((row) => row.field === spec.field && row.slug !== spec.slug && row.published).slice(0, 6);
   const introText = spec.excerpt || (spec.intro ?? "").replace(/\*\*/g, "");
   const needsEditorialReview = !spec.indexable && spec.quality === "needs-review";
@@ -161,15 +174,12 @@ export function SpecArticle({ spec, rows }: { spec: SpecFull; rows: SpecFull[] }
                   <div className="bz-spec-sec-heading"><span><Icon name={(section.icon || "book") as IconName} size={15} /></span><div><small>القسم {String(index + 1).padStart(2, "0")}</small><h2>{section.label}</h2></div></div>
                   <Body text={section.body} />
                 </section>)
-                : SECTIONS.filter(({ key }) => key !== "sources").map(({ key, label, icon, tone }) => {
-                  const value = spec[key];
-                  if (typeof value !== "string" || !value.trim()) return null;
-                  const sectionNumber = written.findIndex((item) => item.key === key) + 1;
-                  return <section key={String(key)} id={`sec-${String(key)}`} className={`bz-spec-sec bz-spec-sec-pro ${tone ? `is-${tone}` : ""}`}>
-                    <div className="bz-spec-sec-heading"><span><Icon name={icon} size={15} /></span><div><small>القسم {String(sectionNumber).padStart(2, "0")}</small><h2>{label}</h2></div></div>
-                    <Body text={value} />
-                  </section>;
-                })}
+                : orderedSections.map(({ key, label, icon, tone, body }, index) => (
+                  <section key={key} id={`sec-${key}`} className={`bz-spec-sec bz-spec-sec-pro ${tone ? `is-${tone}` : ""}`}>
+                    <div className="bz-spec-sec-heading"><span><Icon name={icon} size={15} /></span><div><small>القسم {String(index + 1).padStart(2, "0")}</small><h2>{label}</h2></div></div>
+                    <Body text={body} />
+                  </section>
+                ))}
             </div>
           </div>
           {related.length > 0 && <aside className="bz-spec-related-pro"><div><span>مقترحات من نفس الميدان</span><h2>قد تجد ضالتك في تخصّص قريب</h2></div><div className="bz-spec-related-grid">{related.map((row) => <Link key={row.slug} href={`/specialties/${linkOf(row)}`}><span>{row.ar}</span><Icon name="chevLeft" size={13} /></Link>)}</div></aside>}
