@@ -227,42 +227,32 @@ const EDITORIAL_DISAMBIGUATORS: Record<string, string> = {
 /* الدفعة 18: «إدارة المطارات والعبور» لم يُعثر عليه في أيّ منشور وزاري
    لسنوات 2024–2026 — ظهر فقط في موقع طرف ثالث. صفحته صارت تقول ذلك صراحةً
    وتحيل إلى التكوين الرسمي الأقرب، وتبقى خارج الفهرسة حتى يظهر في منشور. */
+/* 22 نوفمبر 2026: أُخرجت من القائمة 15 صفحة ظهر لها رمز رسمي في توجيه بكالوريا 2026
+   (صفحات البرامج على eddirasa.com) فأُعيدت كتابتها بالرمز والمؤسّسات وآخر معدّل مقبول:
+   ens-sport-primaire, aeroport, e-biz, digital-biz, digital-prod, trading, marketing-comm,
+   law-pol, media-pol, sports-psych, history-data, soc-leisure, scenario, 3d-design, health-comm.
+   وبقيت fintech: الرمز الأقرب «التفاوض والتكنولوجيا المالية» لا يطابق اسمها. */
 export const GENERAL_SOURCE_ONLY_NOINDEX = new Set([
-  "ens-sport-primaire",
-  "aeroport",
   /* الدفعة 21: لم تظهر بهذه الأسماء في منشور 2025 ولا في مقالَي الشروق عن
      الشهادات المزدوجة ومسارات الكفاءة المزدوجة؛ صفحاتها تقول ذلك وتحيل إلى
      التكوينات الرسمية القريبة. */
-  "e-biz",
-  "digital-biz",
-  "digital-prod",
   /* الدفعة 24: لم يُعثر عليها بهذه الأسماء في أيّ مصدر جزائري (بحث بالعربية
      والفرنسية). صفحاتها تقول ذلك وتحيل إلى التكوينات الرسمية القريبة. */
   "esi-kolea",
   "esss",
   "iedf",
-  "trading",
   "fintech",
-  "marketing-comm",
   "ind-entr",
   /* الدفعة 25 */
-  "law-pol",
   "essp",
   /* commissariat-corps: أُعيد في الدفعة 30 — المعتمدية موثّقة في دليل التجنيد 2026 */
   /* الدفعة 26 */
-  "media-pol",
-  "sports-psych",
-  "history-data",
-  "soc-leisure",
   /* الدفعة 28: ensrpc تكرار لصفحة enscrbc (المدرسة نفسها) — يُخفى لتجنّب
      المحتوى المكرّر؛ scenario و3d-design بلا مصدر بهذين الاسمين. */
   "ensrpc",
-  "scenario",
-  "3d-design",
   /* الدفعة 29 */
   "agronomie",
   "health-info",
-  "health-comm",
   "forensique",
   "enmas",
   "genomic-data",
