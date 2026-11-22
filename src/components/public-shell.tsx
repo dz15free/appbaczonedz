@@ -118,6 +118,25 @@ function PublicAuthActions({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
+function PublicCompactAuth() {
+  const { user, loading } = useAuth();
+  if (loading) return <span className="h-10 w-[74px] animate-pulse rounded-xl bg-border/60 xl:hidden" aria-hidden="true" />;
+  if (user) {
+    return (
+      <Link href="/home" className="bz-hcta-ghost inline-flex xl:hidden">
+        <FontAwesomeIcon icon={faHouse} className="h-3.5 w-3.5" />
+        <span>منصّتي</span>
+      </Link>
+    );
+  }
+  return (
+    <Link href="/login" className="bz-hcta inline-flex xl:hidden">
+      <FontAwesomeIcon icon={faRightToBracket} className="h-3.5 w-3.5 -scale-x-100" />
+      <span>دخول</span>
+    </Link>
+  );
+}
+
 export function PublicHeader({ variant = "default" }: { variant?: "default" | "landing" }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
@@ -228,6 +247,9 @@ export function PublicHeader({ variant = "default" }: { variant?: "default" | "l
           <div className="bz-pub-auth-desktop hidden items-center gap-1.5 xl:flex">
             <PublicAuthActions />
           </div>
+          {/* الهاتف واللوحي: زرّ الدخول ظاهر دائماً بجانب القائمة لا داخلها فقط */}
+          <PublicCompactAuth />
+
           <button
             type="button"
             className="bz-pubmenu-toggle xl:hidden"

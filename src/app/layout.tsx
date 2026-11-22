@@ -42,7 +42,7 @@ const ADSENSE_ON =
   process.env.VERCEL_ENV !== "preview" &&
   !(ciBranch && !PRODUCTION_BRANCHES.includes(ciBranch));
 
-/* الخطوط مستضافة في /public/fonts (IBM Plex Sans Arabic + Alexandria) ومعرّفة في
+/* الخطوط مستضافة في /public/fonts (IBM Plex Sans Arabic للنصّ + Cairo للعناوين، وAlexandria احتياطاً) ومعرّفة في
    design-v7.css — لا اعتماد على Google لا وقت البناء ولا وقت التشغيل. */
 
 /* العنوان من المصدر الوحيد — كان مكرّراً في ثمانية ملفّات */
@@ -182,7 +182,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* الوزنان الأكثر استعمالاً يُطلبان مع الصفحة لا بعد قراءة CSS —
             فلا يرمش النصّ من خطّ النظام إلى الخطّ الحقيقي. */}
         <link rel="preload" href="/fonts/plex-arabic-arabic-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/alexandria-arabic.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/cairo-arabic.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen font-sans">
         {/* بيانات منظّمة على مستوى الموقع: تُعرّف المنصّة لمحرّكات

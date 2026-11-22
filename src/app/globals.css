@@ -4109,7 +4109,8 @@ body.bz-fullscreen-active .bz-voicebar {
 .dark .bz-pubheader.is-landing .bz-pubmenu-link { color: rgb(255 255 255 / .82); }
 .dark .bz-pubheader.is-landing .bz-pubmenu-link:hover,
 .dark .bz-pubheader.is-landing .bz-pubmenu-link.is-active { background: rgb(255 255 255 / .1); color: #fff; }
-@media (max-width: 767px) {
+/* الروابط تظهر من 1280px (xl)، فالزرّ يظهر تحتها كلّها: كان يختفي بين 768 و1279 فيبقى اللوحي بلا تنقّل */
+@media (max-width: 1279px) {
   .bz-pubmenu-toggle { display: grid; }
 }
 
