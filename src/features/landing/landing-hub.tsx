@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { BlogIndexEntry } from "@/features/blog/types";
-import { minutesLabel } from "@/features/blog/types";
+import { minutesLabel, latestLessonLine } from "@/features/blog/types";
 import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
 
 /* ════════════════════════════════════════════════════════════
@@ -24,7 +24,7 @@ export function LandingLessons({ posts }: { posts: BlogIndexEntry[] }) {
             <span className="bz-landing-kicker">دروس بأمثلة محلولة</span>
             <h2 id="lh-lessons" className="bz-landing-section-title !text-right">راجع درساً كاملاً الآن</h2>
             <p className="bz-landing-section-subtitle !mx-0 !text-right">
-              كلّ درس: القوانين، مثال من نوع البكالوريا محلول خطوة بخطوة ومتحقَّق من حسابه، الأخطاء التي تُضيّع النقاط، ثمّ تمارين بأجوبتها. يُضاف درس جديد كلّ يومين.
+              كلّ درس: القوانين، مثال من نوع البكالوريا محلول خطوة بخطوة ومتحقَّق من حسابه، الأخطاء التي تُضيّع النقاط، ثمّ تمارين بأجوبتها. {latestLessonLine(posts)}
             </p>
           </div>
           <Link href="/blog" className="bz-landing-text-link">كلّ الدروس والمقالات ←</Link>
@@ -55,9 +55,10 @@ const HEALTH_2026: { slug: string; name: string; value: string; note: string }[]
   { slug: "isp", name: "ممرّض الصحّة العمومية", value: "14.25", note: "الوسيط بين الولايات" },
 ];
 
-export function LandingOrientation() {
+/** `verified`: معرّفات التخصّصات الموثّقة فقط — غير الموثّق لا يُحتسب ولا يُعرض هنا */
+export function LandingOrientation({ verified }: { verified: Set<string> }) {
   const byField = SPEC_FIELDS.map((f) => {
-    const items = SPEC_INDEX.filter((s) => s.field === f);
+    const items = SPEC_INDEX.filter((s) => s.field === f && verified.has(s.slug));
     return { field: f, count: items.length, sample: items.slice(0, 4) };
   });
 
@@ -113,7 +114,7 @@ export function LandingOrientation() {
           </div>
         </div>
 
-        <h3 className="mb-3 mt-10 text-[16px] font-extrabold text-[var(--bz-ink)]">تصفّح {SPEC_INDEX.length} تخصّصاً حسب المجال</h3>
+        <h3 className="mb-3 mt-10 text-[16px] font-extrabold text-[var(--bz-ink)]">تصفّح {verified.size} تخصّصاً موثّقاً حسب المجال</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {byField.map((g) => (
             <div key={g.field} className="rounded-2xl border border-[var(--bz-line)] bg-[var(--bz-surface)] p-4">

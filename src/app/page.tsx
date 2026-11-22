@@ -18,7 +18,7 @@ import {
   faUserPlus,
   faVideo,
 } from "@fortawesome/free-solid-svg-icons";
-import { minutesLabel } from "@/features/blog/types";
+import { minutesLabel, latestLessonLine } from "@/features/blog/types";
 import { LandingKnowledge } from "@/features/landing/landing-knowledge";
 import { LandingOrientation } from "@/features/landing/landing-hub";
 import { PublicHeader } from "@/components/public-shell";
@@ -28,6 +28,7 @@ import { getPublicSiteSettings } from "@/features/settings/site-settings-server"
 import { GUIDES } from "@/features/guides/guides-data";
 import { TOOLS, REAL_TOOLS } from "@/features/tools/tools-data";
 import { getPublishedEntries } from "@/features/blog/blog-server";
+import { getGuideRows } from "@/features/guide/guide-server";
 import { PublicSidebarLayout } from "@/features/sidebar/sidebar-server";
 import { DEFAULT_LOGO } from "@/lib/brand-assets";
 import { PublicRootRedirect } from "@/components/ui/public-root-redirect";
@@ -35,7 +36,7 @@ import { LANDING } from "@/features/landing/landing-content";
 import { FEATURE_PAGES } from "@/features/landing/features-data";
 import { FEATURE_ICON } from "@/features/landing/feature-icon";
 import { DEFAULT_AUTHOR } from "@/features/authors/authors";
-import { SPEC_INDEX, SPEC_FIELDS } from "@/features/guide/spec-index";
+import { SPEC_FIELDS } from "@/features/guide/spec-index";
 import { OG_DEFAULT } from "@/lib/seo";
 /* التصميم v10 «أنيق» — طبقة على هذه الصفحة وحدها. */
 import "./home-v10.css";
@@ -83,6 +84,8 @@ export default async function LandingPage() {
   const publicTools = TOOLS.filter((tool) => !tool.needsAccount).slice(0, 8);
   const landingGuides = GUIDES.slice(0, 5);
   const allArticles = await getPublishedEntries();
+  /* العدد المعروض = التخصّصات الموثّقة فقط؛ ما لم نجد له مصدراً رسمياً يبقى خارجه */
+  const verifiedSpecs = new Set((await getGuideRows()).filter((r) => r.indexable).map((r) => r.slug));
   const lessons = allArticles.filter((a) => (a.labels ?? []).includes("subjects")).slice(0, 6);
   /* المقالات العامّة (غير الدروس) أوّلاً، وإن لم تكفِ أكملناها من الكلّ */
   const nonLessons = allArticles.filter((a) => !(a.labels ?? []).includes("subjects"));
@@ -132,7 +135,7 @@ export default async function LandingPage() {
 
                 {/* أرقام حقيقية من المحتوى نفسه — لا أرقام مختلَقة */}
                 <dl className="bz-x-hero-stats">
-                  <div><dt>تخصّصاً في الدليل</dt><dd>{SPEC_INDEX.length}</dd></div>
+                  <div><dt>تخصّصاً موثّقاً في الدليل</dt><dd>{verifiedSpecs.size}</dd></div>
                   <div><dt>أدوات مجّانية</dt><dd>{freeToolsCount}</dd></div>
                   <div><dt>{allArticles.length > 0 ? "مقالاً ودرساً" : "دليل مراجعة"}</dt><dd>{allArticles.length > 0 ? allArticles.length : GUIDES.length}</dd></div>
                 </dl>
@@ -224,7 +227,7 @@ export default async function LandingPage() {
                   <div className="bz-x-card">
                     <span className="bz-x-ico is-mint" aria-hidden="true"><FontAwesomeIcon icon={faGraduationCap} /></span>
                     <h3>دليل التخصّصات الجامعية</h3>
-                    <p>{SPEC_INDEX.length} تخصّصاً ومدرسة عليا: ماذا تدرس فيه، كيف تُقبل، وأين تعمل بعده.</p>
+                    <p>{verifiedSpecs.size} تخصّصاً ومدرسة عليا موثّقة: ماذا تدرس فيه، كيف تُقبل، وأين تعمل بعده.</p>
                     <div className="bz-x-chips">{fields.map((f) => <Link key={f} href="/specialties">{f}</Link>)}</div>
                   </div>
                   <div className="bz-x-card">
@@ -247,7 +250,7 @@ export default async function LandingPage() {
                   <div>
                     <span className="bz-x-kicker">دروس بأمثلة محلولة</span>
                     <h2 id="x-lessons" className="bz-x-h2">راجع درساً كاملاً الآن</h2>
-                    <p className="bz-x-sub">كلّ درس: القوانين، مثال من نوع البكالوريا محلول خطوة بخطوة ومتحقَّق من حسابه، الأخطاء التي تُضيّع النقاط، ثمّ تمارين بأجوبتها. يُضاف درس جديد كلّ يومين.</p>
+                    <p className="bz-x-sub">كلّ درس: القوانين، مثال من نوع البكالوريا محلول خطوة بخطوة ومتحقَّق من حسابه، الأخطاء التي تُضيّع النقاط، ثمّ تمارين بأجوبتها. {latestLessonLine(lessons)}</p>
                   </div>
                   <Link href="/blog" className="bz-x-more">كلّ الدروس <FontAwesomeIcon icon={faChevronLeft} className="h-3 w-3" /></Link>
                 </div>
@@ -293,7 +296,7 @@ export default async function LandingPage() {
           <div className="bz-x-sec is-tint !py-0"><LandingKnowledge /></div>
 
           {/* ── ٥: التوجيه بأرقام حقيقية وتصفّح التخصّصات ── */}
-          <LandingOrientation />
+          <LandingOrientation verified={verifiedSpecs} />
 
           {/* ── ٦: المنصّة — كلّ ميزة تقود إلى صفحتها العامّة ── */}
           <section className="bz-x-sec is-tint" aria-labelledby="x-platform">

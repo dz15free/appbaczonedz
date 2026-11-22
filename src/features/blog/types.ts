@@ -111,3 +111,13 @@ export function minutesLabel(n: number): string {
   if (n === 2) return "دقيقتان";
   return n <= 10 ? `${n} دقائق` : `${n} دقيقة`;
 }
+
+/* «يُضاف درس جديد كلّ يومين» كان وعداً مكتوباً باليد لا يعرف ما نُشر فعلاً:
+   الجدولة كانت تتوقّف أسابيع (1 ← 19 نوفمبر) والجملة باقية. الآن تقول الصفحة
+   ما حدث فعلاً: تاريخ آخر درس منشور، محسوباً من الدروس نفسها. */
+export function latestLessonLine(posts: { publishedAt?: number }[]): string {
+  const last = Math.max(0, ...posts.map((p) => p.publishedAt ?? 0));
+  if (!last) return "";
+  const d = new Date(last).toLocaleDateString("ar-DZ", { day: "numeric", month: "long", year: "numeric", numberingSystem: "latn", timeZone: "Africa/Algiers" });
+  return `آخر درس أُضيف في ${d}.`;
+}

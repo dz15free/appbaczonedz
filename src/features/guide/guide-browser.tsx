@@ -43,16 +43,22 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
   const [q, setQ] = useState("");
   const [field, setField] = useState("");
 
+  /* الموثّق وحده يدخل في العدد وفي المجالات. التخصّص الذي لم نجد له
+     مصدراً رسمياً بعد (وهو خارج الفهرسة أصلاً، انظر GENERAL_SOURCE_ONLY_NOINDEX)
+     كان يُعرض بين الموثّقة ويُحتسب في «+250»؛ الآن له قسم مستقلّ تحتها. */
+  const verifiedRows = useMemo(() => rows.filter((spec) => spec.indexable), [rows]);
+  const pendingRows = useMemo(() => rows.filter((spec) => !spec.indexable && spec.published), [rows]);
+
   const filtered = useMemo(() => {
     const term = q.trim().toLocaleLowerCase("ar");
-    return rows.filter((spec) => {
+    return verifiedRows.filter((spec) => {
       if (field && spec.field !== field) return false;
       if (!term) return true;
       return `${spec.ar} ${spec.fr} ${spec.field} ${spec.excerpt ?? ""}`
         .toLocaleLowerCase("ar")
         .includes(term);
     });
-  }, [rows, q, field]);
+  }, [verifiedRows, q, field]);
 
   const groups = useMemo(() => {
     const map = new Map<string, SpecFull[]>();
@@ -67,15 +73,14 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
     });
   }, [filtered]);
 
-  const published = rows.filter((spec) => spec.published).length;
   const readyInView = filtered.filter((spec) => spec.published).length;
   const fieldTone = (name: string) => FIELD_TONES[Math.max(0, SPEC_FIELDS.indexOf(name)) % FIELD_TONES.length];
 
   return (
     <div className="bz-specialty-explorer">
       <div className="bz-specialty-overview bz-specialty-overview-pro" aria-label="ملخص دليل التخصصات">
-        <div className="is-primary"><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faGraduationCap} /></span><strong>+250</strong><span>تخصصًا في الدليل</span></div>
-        <div><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faCheck} /></span><strong>{published}</strong><span>صفحة مفصلة جاهزة</span></div>
+        <div className="is-primary"><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faGraduationCap} /></span><strong>{verifiedRows.length}</strong><span>تخصصًا موثّقًا في الدليل</span></div>
+        <div><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faCircleInfo} /></span><strong>{pendingRows.length}</strong><span>قيد التحقّق، خارج العدد</span></div>
         <div><span className="bz-specialty-stat-icon"><FontAwesomeIcon icon={faCircleInfo} /></span><strong>{SPEC_FIELDS.length}</strong><span>مجالات للدراسة</span></div>
       </div>
 
@@ -117,11 +122,11 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
                   <div className="bz-specialty-grid bz-specialty-grid-pro">
                     {items.map((spec, index) => spec.published ? (
                       <Link key={spec.slug} href={`/specialties/${linkOf(spec)}`} className="bz-spec-card bz-spec-card-pro">
-                        <span className="bz-spec-card-top"><span className="bz-spec-index">{String(index + 1).padStart(2, "0")}</span>                        <span className={`bz-spec-status ${spec.indexable ? "" : "is-muted"}`}><FontAwesomeIcon icon={spec.indexable ? faCheck : faCircleInfo} /> {spec.indexable ? "صفحة مفصلة" : "يحتاج تدقيقًا"}</span></span>
+                        <span className="bz-spec-card-top"><span className="bz-spec-index">{String(index + 1).padStart(2, "0")}</span>                        <span className="bz-spec-status"><FontAwesomeIcon icon={faCheck} /> صفحة مفصلة</span></span>
                         <span className="bz-spec-name">{spec.ar}</span>
                         {spec.fr && <span className="bz-spec-fr" dir="ltr">{spec.fr}</span>}
                         <span className="bz-spec-ex">{cardExcerpt(spec)}</span>
-                        <span className="bz-spec-go">{spec.indexable ? "افتح الدليل" : "افتح المعلومات المتاحة"} <FontAwesomeIcon icon={faArrowLeft} /></span>
+                        <span className="bz-spec-go">افتح الدليل <FontAwesomeIcon icon={faArrowLeft} /></span>
                       </Link>
                     ) : (
                       <div key={spec.slug} className="bz-spec-card bz-spec-card-pro is-soon" aria-disabled="true">
@@ -137,6 +142,26 @@ export function GuideBrowser({ rows }: { rows: SpecFull[] }) {
             })}
           </div>
         </div>
+      )}
+
+      {pendingRows.length > 0 && !field && (
+        <section className="bz-specialty-group bz-specialty-group-pro mt-10" id="pending-verification" aria-labelledby="pending-title">
+          <div className="bz-specialty-group-heading bz-specialty-group-heading-pro">
+            <div className="bz-specialty-group-title-wrap"><span className="bz-specialty-group-mark" /><div><span className="bz-specialty-group-kicker">قيد التحقّق — خارج العدد</span><h2 id="pending-title">تخصّصات لم نجد لها مصدراً رسمياً بعد</h2><p>{pendingRows.length} {pendingRows.length >= 3 && pendingRows.length <= 10 ? "صفحات" : "صفحة"} لا نحتسبها ضمن الدليل الموثّق: لم يظهر لها رمز في منشور التوجيه 2026، أو اسمها لا يطابق عرضاً تفتحه مؤسسة بعينها. نتركها متاحة لمن يبحث عنها، مع التنبيه داخلها.</p></div></div>
+          </div>
+          <div className="bz-specialty-grid bz-specialty-grid-pro">
+            {pendingRows
+              .filter((spec) => !q.trim() || `${spec.ar} ${spec.fr}`.toLocaleLowerCase("ar").includes(q.trim().toLocaleLowerCase("ar")))
+              .map((spec) => (
+                <Link key={spec.slug} href={`/specialties/${linkOf(spec)}`} className="bz-spec-card bz-spec-card-pro">
+                  <span className="bz-spec-card-top"><span className="bz-spec-status is-muted"><FontAwesomeIcon icon={faCircleInfo} /> غير موثّق</span></span>
+                  <span className="bz-spec-name">{spec.ar}</span>
+                  {spec.fr && <span className="bz-spec-fr" dir="ltr">{spec.fr}</span>}
+                  <span className="bz-spec-go">افتح المعلومات المتاحة <FontAwesomeIcon icon={faArrowLeft} /></span>
+                </Link>
+              ))}
+          </div>
+        </section>
       )}
 
       <a href="https://www.baczonedz.com/2026/07/BAC-2026-Fichier-des-moyennes-minimales.html" target="_blank" rel="noreferrer" className="bz-avg-card bz-specialty-average mt-10"><span className="bz-avg-bg" aria-hidden /><span className="bz-avg-in"><span className="bz-avg-icon"><FontAwesomeIcon icon={faGraduationCap} /></span><span className="min-w-0 flex-1"><span className="bz-avg-t">معدّلات القبول الدنيا — بكالوريا 2026</span><span className="bz-avg-d">قارن معدّلك قبل ترتيب الرغبات، ثم ارجع دائمًا إلى منصة التوجيه الرسمية.</span></span><FontAwesomeIcon icon={faArrowLeft} size="sm" className="shrink-0 opacity-80" /></span></a>

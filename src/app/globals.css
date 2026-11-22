@@ -6703,3 +6703,8 @@ html.bz-exam-mode .bz-exam-running { min-height: 100dvh; border: 0; border-radiu
 @keyframes bzp-ripple { from { opacity: 1; transform: translateY(-50%) scale(.6); } to { opacity: 0; transform: translateY(-50%) scale(1.15); } }
 .bzp-vol { accent-color: #3044E0; height: 4px; }
 @media (prefers-reduced-motion: reduce) { .bzp-ripple { animation: none; opacity: 0; } }
+
+/* جدول الأسبوع في أدلّة المراجعة: عمود اليوم وعمود المدّة على قدر محتواهما،
+   والباقي للحصص — الحدّ الأدنى 112px لكلّ خليّة كان يقسم شاشة الهاتف أثلاثاً. */
+.bz-article .bz-week-table :is(th, td):is(:first-child, :last-child) { min-width: 0; width: 1%; white-space: nowrap; }
+.bz-article .bz-week-table :is(th, td):nth-child(2) { min-width: 0; width: auto; }
